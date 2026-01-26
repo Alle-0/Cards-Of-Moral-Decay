@@ -141,7 +141,8 @@ export default function ShopScreen({ onClose }) {
                     <Text
                         style={[styles.themeName, { color: theme.colors.textPrimary, fontSize: 13 }]}
                         adjustsFontSizeToFit={true}
-                        minimumFontScale={0.8}
+                        minimumFontScale={0.7}
+                        numberOfLines={1}
                     >
                         {itemTheme.label}
                     </Text>
@@ -199,7 +200,14 @@ export default function ShopScreen({ onClose }) {
                 />
 
                 <View style={{ alignItems: 'center', marginBottom: 12 }}>
-                    <Text style={[styles.themeName, { color: theme.colors.textPrimary, textAlign: 'center', fontSize: 14 }]}>{itemFrame.label}</Text>
+                    <Text
+                        style={[styles.themeName, { color: theme.colors.textPrimary, textAlign: 'center', fontSize: 14 }]}
+                        adjustsFontSizeToFit={true}
+                        minimumFontScale={0.7}
+                        numberOfLines={1}
+                    >
+                        {itemFrame.label}
+                    </Text>
                     <Text style={styles.themeDesc}>
                         {isUnlocked ? "COMPRATO" : (price === 0 ? "GRATIS" : `${price} DC`)}
                     </Text>
@@ -266,7 +274,8 @@ export default function ShopScreen({ onClose }) {
                     <Text
                         style={[styles.themeName, { color: theme.colors.textPrimary, fontSize: 13 }]}
                         adjustsFontSizeToFit={true}
-                        minimumFontScale={0.8}
+                        minimumFontScale={0.7}
+                        numberOfLines={1}
                     >
                         {skin.label}
                     </Text>
@@ -338,7 +347,11 @@ export default function ShopScreen({ onClose }) {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={styles.list}
+                showsVerticalScrollIndicator={false}
+            >
                 {activeTab === 'themes' && Object.values(THEMES).map(t => {
                     if (['default', 'onice', 'ghiaccio'].includes(t.id)) return null;
                     return renderThemeItem(t);
@@ -377,21 +390,25 @@ export default function ShopScreen({ onClose }) {
                 onRequestClose={handleClosePreview}
             >
                 {preview && !isClosing && (
-                    <Animated.View
-                        entering={FadeIn.duration(250)}
-                        exiting={FadeOut.duration(250)}
-                        style={styles.previewOverlayContainer}
-                    >
-                        <EfficientBlurView intensity={Platform.OS === 'android' ? 20 : 40} tint="dark" style={styles.blurBackdrop}>
-                            <TouchableOpacity
-                                style={styles.backdropClick}
-                                activeOpacity={1}
-                                onPress={handleClosePreview}
-                            />
+                    <View style={styles.previewOverlayContainer}>
+                        <Animated.View
+                            entering={FadeIn.duration(250)}
+                            exiting={FadeOut.duration(250)}
+                            style={StyleSheet.absoluteFill}
+                        >
+                            <EfficientBlurView intensity={Platform.OS === 'android' ? 20 : 40} tint="dark" style={StyleSheet.absoluteFill}>
+                                <TouchableOpacity
+                                    style={styles.backdropClick}
+                                    activeOpacity={1}
+                                    onPress={handleClosePreview}
+                                />
+                            </EfficientBlurView>
+                        </Animated.View>
 
+                        <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center' }]} pointerEvents="box-none">
                             <Animated.View
-                                entering={ZoomIn.duration(300).easing(Easing.out(Easing.back(1.5)))}
-                                exiting={ZoomOut.duration(200)}
+                                entering={ZoomIn.duration(300).easing(Easing.out(Easing.quad))}
+                                exiting={ZoomOut.duration(250).easing(Easing.out(Easing.quad))}
                                 style={[styles.previewModal, { borderColor: theme.colors.accent, shadowColor: theme.colors.accent }]}
                             >
                                 {/* Header Section */}
@@ -483,8 +500,8 @@ export default function ShopScreen({ onClose }) {
                                 </TouchableOpacity>
 
                             </Animated.View>
-                        </EfficientBlurView>
-                    </Animated.View>
+                        </View>
+                    </View>
                 )}
             </Modal>
         </View>

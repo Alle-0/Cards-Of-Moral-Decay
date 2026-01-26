@@ -111,7 +111,7 @@ const AvatarWithFrame = ({
                 {frameId === 'demon' && (
                     <View style={StyleSheet.absoluteFill} pointerEvents="none">
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: '#7f1d1d', shadowColor: '#ef4444', shadowOpacity: 0.8, shadowRadius: 8, elevation: Platform.OS === 'android' ? 0 : 6 }]} />
-                        <View style={{ position: 'absolute', top: -15 * scale, width: '100%', alignItems: 'center' }}>
+                        <View style={{ position: 'absolute', top: -18 * scale, width: '100%', alignItems: 'center' }}>
                             <HornsIcon size={30 * scale} color="#ef4444" />
                         </View>
                     </View>
@@ -180,11 +180,10 @@ const AvatarWithFrame = ({
                     </View>
                 )}
 
-                {/* CAT */}
                 {frameId === 'cat' && (
                     <View style={StyleSheet.absoluteFill} pointerEvents="none">
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 2 * scale, borderColor: '#f472b6' }]} />
-                        <View style={{ position: 'absolute', top: -10 * scale, width: '100%', alignItems: 'center' }}>
+                        <View style={{ position: 'absolute', top: -18 * scale, width: '100%', alignItems: 'center' }}>
                             <CatIcon size={size * 0.7} color="#f472b6" />
                         </View>
                     </View>
