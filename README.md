@@ -1,42 +1,77 @@
-# Cards of Moral Decay - React Native App
+# 🎴 Cards of Moral Decay
 
-## Setup
+A multiplayer card game built with React Native and Expo, featuring real-time gameplay powered by Firebase.
 
-1. **Impostare l'ambiente**: Assicurati di avere Node.js installato.
-2. **Dipendenze**:
-    Apri un terminale nella cartella `native_app`:
+## 📱 Download
 
-    ```bash
-    cd native_app
-    npm install
-    ```
+**Latest Release:** [v2.0.1](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
 
-    *Nota: Se non hai `npx` o `expo-cli` installato globalmente, potresti doverlo installare.*
+Download the APK for Android devices from the [Releases](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases) page.
 
-3. **Avvio**:
+## 🎮 Features
 
-    ```bash
-    npm start
-    ```
+- **Real-time Multiplayer**: Play with friends using Firebase Realtime Database
+- **Cross-Platform**: Available as Android app (APK) and Progressive Web App (PWA)
+- **Custom Avatars**: Personalize your profile with unique avatars and frames
+- **Multiple Themes**: Choose from various visual themes with dynamic backgrounds
+- **Sound Effects**: Immersive audio feedback for game actions
+- **Leaderboard**: Track player scores and rankings
+- **Premium Shop**: Unlock exclusive avatars, frames, and themes
 
-    Questo avvierà Metro Bundler.
-    - Premi `a` per Android (se hai un emulatore o dispositivo collegato).
-    - Premi `w` per Web (se vuoi testare nel browser velocemente).
-    - Usa l'app **Expo Go** sul tuo telefono per scansionare il QR code.
+## 🚀 Play Online
 
-## Struttura del Progetto
+Visit the web version at: [https://carte-vs-umani.web.app](https://carte-vs-umani.web.app)
 
-- `App.js`: Punto di ingresso. Gestisce la navigazione condizionale (Lobby vs Gioco).
-- `src/context/GameContext.js`: Contiene tutta la logica di gioco e la connessione a Firebase.
-- `src/screens/`:
-  - `LobbyScreen.js`: Schermata iniziale per inserire nome e creare/unirsi alle stanze.
-  - `GameScreen.js`: Schermata di gioco principale (Table, Hand, Black Card).
-- `src/components/Card.js`: Componente riutilizzabile per le carte.
-- `src/styles/theme.js`: Colori e font centralizzati.
-- `src/utils/data.js`: Dati di gioco (Carte) migrati dal progetto web.
+## 🛠️ Development
 
-## Note sulla Migrazione
+### Prerequisites
 
-- Le animazioni complesse (confetti, carte volanti) NON sono state portate 1:1 in quanto richiedono librerie specifiche React Native (es. `react-native-reanimated`). Il gioco è comunque funzionale.
-- L'autenticazione è anonima/basata sul dispositivo (AsyncStorage), come nella web app.
-- La configurazione Firebase è la stessa della web app.
+- Node.js (v14 or higher)
+- npm or yarn
+- Expo CLI
+
+### Installation
+
+```bash
+npm install
+```
+
+### Running the App
+
+```bash
+# Start development server
+npm start
+
+# Run on Android
+npm run android
+
+# Run on Web
+npm run web
+```
+
+### Building for Production
+
+```bash
+# Build web version
+npm run build:web
+
+# Build Android APK (requires Android Studio)
+cd android
+./gradlew assembleRelease
+```
+
+## 📦 Tech Stack
+
+- **React Native** - Mobile framework
+- **Expo** - Development platform
+- **Firebase** - Backend and real-time database
+- **React Native Reanimated** - Animations
+- **Expo Audio** - Sound effects
+
+## 📄 License
+
+This project is private and proprietary.
+
+## 🤝 Contributing
+
+This is a private project. Contributions are not currently accepted.
