@@ -1,79 +1,77 @@
-# 🎴 Cards of Moral Decay
+<div align="center">
 
-A multiplayer card game built with React Native and Expo, featuring real-time gameplay powered by Firebase.
+# 🃏 Cards of Moral Decay
 
-## 📱 Download
+<br/>
+
+<img src="https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?label=VERSIONE&color=ffd700&style=flat-square" />
+<img src="https://img.shields.io/badge/Piattaforma-Android-3DDC84?style=social&logo=android" />
+
+<br/><br/>
+
+<h2>📲 SCARICA ORA</h2>
 
 <a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest">
-  <img src="https://img.shields.io/badge/Scarica_APK_v3.0.0-Download-1a1a1a?style=for-the-badge&logo=android&logoColor=white" alt="Download APK">
+  <img src="https://img.shields.io/badge/⬇_Scarica_APK_Android-333333?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=222222" height="50" style="border-radius: 30px; border: 1px solid #333;" />
 </a>
 
-Download the APK for Android devices from the [Releases](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases) page.
+<p>
+  <em>oppure</em>
+</p>
 
-## 🎮 Features
+<a href="https://carte-vs-umani.web.app">
+  <img src="https://img.shields.io/badge/🌐_Gioca_da_Browser-4285F4?style=social&logo=google-chrome" height="28"/>
+</a>
 
-- **Real-time Multiplayer**: Play with friends using Firebase Realtime Database
-- **Cross-Platform**: Available as Android app (APK) and Progressive Web App (PWA)
-- **Custom Avatars**: Personalize your profile with unique avatars and frames
-- **Multiple Themes**: Choose from various visual themes with dynamic backgrounds
-- **Sound Effects**: Immersive audio feedback for game actions
-- **Leaderboard**: Track player scores and rankings
-- **Premium Shop**: Unlock exclusive avatars, frames, and themes
+<br/><br/>
 
-## 🚀 Play Online
+---
 
-Visit the web version at: [https://carte-vs-umani.web.app](https://carte-vs-umani.web.app)
+## ✨ ESPERIENZA PREMIUM
 
-## 🛠️ Development
+</div>
 
-### Prerequisites
+<div align="center">
 
-- Node.js (v14 or higher)
-- npm or yarn
-- Expo CLI
+Un'esperienza multiplayer in tempo reale pensata per tirare fuori il peggio di te.
 
-### Installation
+<br/>
 
-```bash
-npm install
-```
+🎱 **Multiplayer Istantaneo**
+<br/>
+Latenza zero. Insulti immediati. Powered by Firebase.
 
-### Running the App
+🎨 **Estetica Curata**
+<br/>
+Temi dinamici, Skin Carte sbloccabili e Cornici Avatar.
 
-```bash
-# Start development server
-npm start
+🏆 **Classifiche**
+<br/>
+Scopri scientificamente chi è l'amico peggiore.
 
-# Run on Android
-npm run android
+</div>
 
-# Run on Web
-npm run web
-```
+<br/>
 
-### Building for Production
+<div align="center">
 
-```bash
-# Build web version
-npm run build:web
+---
 
-# Build Android APK (requires Android Studio)
-cd android
-./gradlew assembleRelease
-```
+### 🛍️ SHOP & PERSONALIZZAZIONE
 
-## 📦 Tech Stack
+Non basta vincere, bisogna farlo con stile.
+Spendi i tuoi **Dirty Cash** per sbloccare temi come *Lucifero*, *Tokyo* o *Manicomio*.
 
-- **React Native** - Mobile framework
-- **Expo** - Development platform
-- **Firebase** - Backend and real-time database
-- **React Native Reanimated** - Animations
-- **Expo Audio** - Sound effects
+<br/>
 
-## 📄 License
+<details>
+<summary>🛠️ <strong>AREA TECNICA (Clicca per aprire)</strong></summary>
 
-This project is private and proprietary.
+<br/>
 
-## 🤝 Contributing
+Sei uno sviluppatore? Ecco cosa c'è sotto il cofano.
 
-This is a private project. Contributions are not currently accepted.
+* **Core:** React Native + Expo
+* **Backend:** Firebase Realtime Database
+* **Animazioni:** Reanimated 2
+* **Audio:** Expo AV
