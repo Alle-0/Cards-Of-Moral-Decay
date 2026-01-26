@@ -8,9 +8,10 @@ import { useAuth } from '../context/AuthContext';
 import { useGame } from '../context/GameContext';
 import { ref, update } from 'firebase/database';
 import { db } from '../services/firebase';
-import { LockIcon, CrownIcon, ThornsIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon } from './Icons';
+import { LockIcon } from './Icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import LocalAvatar from './LocalAvatar';
+import AvatarWithFrame from './AvatarWithFrame';
 
 const FrameSelectionModal = ({ onBack, hideBackButton }) => {
     const { theme } = useTheme();
@@ -106,134 +107,13 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                                         width: '100%',
                                     }}
                                 >
-                                    {/* Frame Preview */}
-                                    <View style={{
-                                        width: 60, height: 60, borderRadius: 30,
-                                        marginBottom: 10,
-                                        justifyContent: 'center', alignItems: 'center',
-                                        backgroundColor: '#111',
-                                        position: 'relative'
-                                    }}>
-                                        {/* [NEW] Frames - Back Layer (Glows & Effects) */}
-                                        {/* NEON GLOW [ANDROID] */}
-                                        {frame.id === 'neon' && Platform.OS === 'android' && (
-                                            <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-                                                <Svg height="150%" width="150%" viewBox="0 0 100 100">
-                                                    <Defs>
-                                                        <RadialGradient id="neon_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
-                                                            <Stop offset="0.55" stopColor="#06b6d4" stopOpacity="0" />
-                                                            <Stop offset="0.7" stopColor="#06b6d4" stopOpacity="0.4" />
-                                                            <Stop offset="0.85" stopColor="#06b6d4" stopOpacity="0" />
-                                                        </RadialGradient>
-                                                    </Defs>
-                                                    <Circle cx="50" cy="50" r="50" fill="url(#neon_grad)" />
-                                                </Svg>
-                                            </View>
-                                        )}
-                                        {/* ANGEL GLOW [ANDROID] */}
-                                        {frame.id === 'angel' && Platform.OS === 'android' && (
-                                            <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-                                                <Svg height="150%" width="150%" viewBox="0 0 100 100">
-                                                    <Defs>
-                                                        <RadialGradient id="angel_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
-                                                            <Stop offset="0.55" stopColor="#fbbf24" stopOpacity="0" />
-                                                            <Stop offset="0.7" stopColor="#fbbf24" stopOpacity="0.4" />
-                                                            <Stop offset="0.85" stopColor="#fbbf24" stopOpacity="0" />
-                                                        </RadialGradient>
-                                                    </Defs>
-                                                    <Circle cx="50" cy="50" r="50" fill="url(#angel_grad)" />
-                                                </Svg>
-                                            </View>
-                                        )}
-                                        {/* DEMON GLOW [ANDROID] */}
-                                        {frame.id === 'demon' && Platform.OS === 'android' && (
-                                            <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-                                                <Svg height="150%" width="150%" viewBox="0 0 100 100">
-                                                    <Defs>
-                                                        <RadialGradient id="demon_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
-                                                            <Stop offset="0.55" stopColor="#ef4444" stopOpacity="0" />
-                                                            <Stop offset="0.7" stopColor="#ef4444" stopOpacity="0.4" />
-                                                            <Stop offset="0.85" stopColor="#ef4444" stopOpacity="0" />
-                                                        </RadialGradient>
-                                                    </Defs>
-                                                    <Circle cx="50" cy="50" r="50" fill="url(#demon_grad)" />
-                                                </Svg>
-                                            </View>
-                                        )}
-                                        {/* CAPO GLOW [ANDROID] */}
-                                        {frame.id === 'capo' && Platform.OS === 'android' && (
-                                            <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-                                                <Svg height="150%" width="150%" viewBox="0 0 100 100">
-                                                    <Defs>
-                                                        <RadialGradient id="capo_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
-                                                            <Stop offset="0.55" stopColor="#ff00ff" stopOpacity="0" />
-                                                            <Stop offset="0.7" stopColor="#ff00ff" stopOpacity="0.3" />
-                                                            <Stop offset="0.85" stopColor="#ff00ff" stopOpacity="0" />
-                                                        </RadialGradient>
-                                                    </Defs>
-                                                    <Circle cx="50" cy="50" r="50" fill="url(#capo_grad)" />
-                                                </Svg>
-                                            </View>
-                                        )}
-
-                                        <LocalAvatar seed={user?.username || 'user'} size={45} />
-
-                                        {/* Visual Fallback for Frames */}
-                                        {frame.id === 'glitch' && <View style={[StyleSheet.absoluteFill, { borderRadius: 30, borderWidth: 3, borderColor: '#00ff00', borderStyle: 'dashed' }]} />}
-
-
-
-                                        {/* [NEW] Frames */}
-                                        {frame.id === 'neon' && <View style={[StyleSheet.absoluteFill, { borderRadius: 30, borderWidth: 3, borderColor: '#06b6d4', shadowColor: '#06b6d4', shadowOpacity: 0.8, shadowRadius: 8, elevation: Platform.OS === 'android' ? 0 : 5 }]} />}
-                                        {frame.id === 'angel' && (
-                                            <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                                                <View style={[StyleSheet.absoluteFill, { borderRadius: 30, borderWidth: 3, borderColor: '#fff', shadowColor: '#fbbf24', shadowOpacity: 0.9, shadowRadius: 10, elevation: Platform.OS === 'android' ? 0 : 5 }]} />
-                                                <View style={{ position: 'absolute', top: -16, width: '100%', alignItems: 'center' }}>
-                                                    <HaloIcon size={30} color="#fbbf24" />
-                                                </View>
-                                            </View>
-                                        )}
-                                        {frame.id === 'demon' && (
-                                            <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                                                <View style={[StyleSheet.absoluteFill, { borderRadius: 30, borderWidth: 4, borderColor: '#7f1d1d', shadowColor: '#ef4444', shadowOpacity: 0.6, shadowRadius: 6, elevation: Platform.OS === 'android' ? 0 : 5 }]} />
-                                                <View style={{ position: 'absolute', top: -14, width: '100%', alignItems: 'center' }}>
-                                                    <HornsIcon size={30} color="#ef4444" />
-                                                </View>
-                                            </View>
-                                        )}
-                                        {frame.id === 'pixel' && <View style={[StyleSheet.absoluteFill, { borderRadius: 4, borderWidth: 4, borderColor: '#ec4899', borderStyle: 'dotted' }]} />}
-                                        {frame.id === 'love' && (
-                                            <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                                                <View style={[StyleSheet.absoluteFill, { borderRadius: 30, borderWidth: 3, borderColor: '#f472b6' }]} />
-                                                <View style={{ position: 'absolute', bottom: -10, width: '100%', alignItems: 'center' }}>
-                                                    <HeartIcon size={24} color="#f472b6" />
-                                                </View>
-                                            </View>
-                                        )}
-                                        {frame.id === 'rich' && (
-                                            <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                                                <View style={[StyleSheet.absoluteFill, { borderRadius: 30, borderWidth: 4, borderColor: '#10b981', borderStyle: 'solid' }]} />
-                                                <View style={{ position: 'absolute', top: -14, width: '100%', alignItems: 'center' }}>
-                                                    <MoneyIcon size={28} color="#10b981" />
-                                                </View>
-                                            </View>
-                                        )}
-                                        {frame.id === 'capo' && (
-
-                                            <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                                                {/* Glow Layer */}
-                                                <View style={[StyleSheet.absoluteFill, { borderRadius: 30, borderWidth: 6, borderColor: '#ff00ff', opacity: 0.5 }]} />
-                                                {/* Main Gold Frame */}
-                                                <View style={[StyleSheet.absoluteFill, { borderRadius: 30, borderWidth: 3, borderColor: '#ffd700', shadowColor: '#ffd700', shadowOpacity: 0.8, shadowRadius: 10, elevation: Platform.OS === 'android' ? 0 : 5 }]} />
-                                                {/* Inner Detail */}
-                                                <View style={[StyleSheet.absoluteFill, { borderRadius: 30, borderWidth: 1, borderColor: '#ff00ff', margin: 3 }]} />
-                                                {/* Floating Crown */}
-                                                <View style={{ position: 'absolute', top: -14, width: '100%', alignItems: 'center' }}>
-                                                    <CrownIcon size={18} color="#ffd700" />
-                                                </View>
-                                            </View>
-                                        )}
-                                    </View>
+                                    {/* Frame Preview using standardized component */}
+                                    <AvatarWithFrame
+                                        avatar={user?.username || 'user'}
+                                        frameId={frame.id}
+                                        size={60}
+                                        style={{ marginBottom: 10 }}
+                                    />
 
                                     <Text
                                         numberOfLines={1}

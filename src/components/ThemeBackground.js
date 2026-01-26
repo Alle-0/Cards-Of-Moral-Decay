@@ -12,6 +12,7 @@ import Animated, {
     cancelAnimation
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Ellipse, Circle } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
@@ -453,6 +454,46 @@ const CurrencyRain = React.memo(() => {
     );
 });
 
+// ============================================
+// 10. VOID FLOAT (Slow, eerie eyes)
+// ============================================
+const VoidFloatParticle = React.memo(({ color }) => {
+    const { x, y, size, duration, delay } = useMemo(() => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        size: Math.random() * 40 + 20,
+        duration: 8000 + Math.random() * 4000,
+        delay: Math.random() * 5000
+    }), []);
+
+    const opacity = useSharedValue(0);
+    const scale = useSharedValue(0.5);
+
+    useEffect(() => {
+        opacity.value = withDelay(delay, withRepeat(withSequence(
+            withTiming(0.4, { duration: duration / 2 }),
+            withTiming(0, { duration: duration / 2 })
+        ), -1));
+        scale.value = withDelay(delay, withRepeat(withTiming(1, { duration, easing: Easing.inOut(Easing.sin) }), -1, true));
+        return () => { cancelAnimation(opacity); cancelAnimation(scale); };
+    }, []);
+
+    const style = useAnimatedStyle(() => ({
+        position: 'absolute', left: x, top: y, width: size, height: size / 2,
+        opacity: opacity.value,
+        transform: [{ scale: scale.value }]
+    }));
+
+    return (
+        <Animated.View style={[style, { alignItems: 'center', justifyContent: 'center' }]}>
+            <Svg height="100%" width="100%" viewBox="0 0 100 50">
+                <Ellipse cx="50" cy="25" rx="45" ry="20" stroke={color} strokeWidth="2" />
+                <Circle cx="50" cy="25" r="10" fill={color} />
+            </Svg>
+        </Animated.View>
+    );
+});
+
 // MAIN COMPONENT
 // ============================================
 const ThemeBackground = ({ visible = true, forceTheme = null }) => {
@@ -493,7 +534,8 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
                 theme.particleConfig === 'ash' ? 3 :
                     theme.particleConfig === 'bubble' || theme.particleConfig === 'toxicBubble' ? 3 :
                         theme.particleConfig === 'snow' ? 3 :
-                            theme.particleConfig === 'smoke' ? 5 : 0;
+                            theme.particleConfig === 'smoke' ? 5 :
+                                theme.particleConfig === 'voidFloat' ? 6 : 0;
 
             if (count > 0) {
                 setElements(Array.from({ length: count }).map((_, i) => ({ id: i })));
@@ -519,6 +561,7 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
             case 'smoke': return elements.map(e => <SmokePuff key={e.id} />);
             case 'neonPulse': return <PulsarRipple color={theme.colors.accent} />;
             case 'policeLights': return <PoliceLights />;
+            case 'voidFloat': return elements.map(e => <VoidFloatParticle key={e.id} color={theme.colors.particle} />);
             default: return null;
         }
     };
@@ -530,7 +573,7 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
         return null;
     };
 
-    const isParticleSystem = ['dust', 'ash', 'bubble', 'toxicBubble', 'snow', 'lightSweep', 'smoke', 'neonPulse', 'policeLights'].includes(theme.particleConfig);
+    const isParticleSystem = ['dust', 'ash', 'bubble', 'toxicBubble', 'snow', 'lightSweep', 'smoke', 'neonPulse', 'policeLights', 'voidFloat'].includes(theme.particleConfig);
 
     return (
         <Animated.View style={[styles.container, containerStyle]} pointerEvents="none">

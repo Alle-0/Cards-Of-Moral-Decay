@@ -201,7 +201,7 @@ export const AuthProvider = ({ children }) => {
         const newUid = currentUser.uid;
         console.log(`[DEBUG] Attempting recovery for ${username} with UID: ${newUid}`);
 
-        // 2. Direct Path Lookup (fixes Permission Denied for reading target user)
+        // 2. Direct Path Lookup
         const userRef = ref(db, `users/${username}`);
         const snapshot = await get(userRef);
 
@@ -217,13 +217,20 @@ export const AuthProvider = ({ children }) => {
         }
 
         // 4. Update UID Mapping (Sequential to satisfy Firebase Rules)
-        // Step A: Map UID to Username (Authorized by current session)
+        // [NEW] Step 0: Remove OLD UID mapping if it exists to avoid orphans
+        if (userData.uid && userData.uid !== newUid) {
+            console.log(`[DEBUG] Removing old UID mapping: ${userData.uid}`);
+            await set(ref(db, `uids/${userData.uid}`), null);
+        }
+
+        // Step A: Map NEW UID to Username
         await set(ref(db, `uids/${newUid}`), username);
 
-        // Step B: Update Username's UID (Authorized by the mapping created in Step A)
+        // Step B: Update Username's UID record
         await update(ref(db, `users/${username}`), { uid: newUid });
 
         // 5. [FIX] Manually update state to jumpstart UI
+        // The realtime listener in useEffect will handle the rest
         setUser({ username, ...userData, uid: newUid, isRecovered: true });
 
         return true;
@@ -375,6 +382,12 @@ export const AuthProvider = ({ children }) => {
         return false;
     };
 
+    const updateProfile = async (updates) => {
+        if (!user?.username) return;
+        const userRef = ref(db, `users/${user.username}`);
+        await update(userRef, updates);
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -390,6 +403,7 @@ export const AuthProvider = ({ children }) => {
             buyFrame,
             equipFrame,
             bribe,
+            updateProfile,
             refreshUserData,
             dismissNewUser,
             dismissRecovered

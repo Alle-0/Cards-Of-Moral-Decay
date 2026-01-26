@@ -35,7 +35,7 @@ export const THEMES = {
             particleEmoji: '⚫',
         },
         particleConfig: null, // Nessun effetto (Minimal puro)
-        price: 500,
+        price: 0,
     },
     lucifero: {
         id: 'lucifero',
@@ -99,7 +99,7 @@ export const THEMES = {
             particleEmoji: '❄️',
         },
         particleConfig: null,
-        price: 500,
+        price: 0,
     },
     titanio: {
         id: 'titanio',
@@ -131,7 +131,7 @@ export const THEMES = {
             particleEmoji: '🌸',
         },
         particleConfig: null, // Nessun effetto (fiori rimossi)
-        price: 500,
+        price: 1000,
     },
     pulsar: {
         id: 'pulsar',
@@ -147,7 +147,7 @@ export const THEMES = {
             particleEmoji: '👾',
         },
         particleConfig: 'neonPulse',
-        price: 1000,
+        price: 1500,
     },
     matrix: {
         id: 'matrix',
@@ -163,7 +163,7 @@ export const THEMES = {
             particleEmoji: '💻',
         },
         particleConfig: 'techRain',
-        price: 1000,
+        price: 1500,
     },
     carbonio: {
         id: 'carbonio',
@@ -251,7 +251,7 @@ export const THEMES = {
         colors: {
             accent: '#14b8a6', // Turchese chirurgico
             accentWeak: 'rgba(20, 184, 166, 0.15)',
-            background: ['#e5e5e5', '#d4d4d4', '#a3a3a3'], // Grigio imbottito
+            background: ['#abababff', '#afaeaeff', '#777777ff'], // Grigio imbottito
             cardBg: 'rgba(20, 184, 166, 0.08)',
             cardBorder: 'rgba(20, 184, 166, 0.5)',
             textPrimary: '#0f766e', // Testo scuro per contrasto su background chiaro
@@ -259,7 +259,7 @@ export const THEMES = {
             particleEmoji: '💊',
         },
         particleConfig: null, // [REFINED] Removed pills
-        price: 1500,
+        price: 500,
     },
     vegas: {
         id: 'vegas',
@@ -277,6 +277,38 @@ export const THEMES = {
         particleConfig: null, // [REFINED] Removed dice
         price: 1000,
     },
+    abisso: {
+        id: 'abisso',
+        label: 'Abisso Lovecraft',
+        colors: {
+            accent: '#8b5cf6', // Viola scuro
+            accentWeak: 'rgba(139, 92, 246, 0.15)',
+            background: ['#020617', '#0f172a', '#000000'], // Blu notte profondo
+            cardBg: 'rgba(0, 0, 0, 0.6)',
+            cardBorder: '#4c1d95',
+            textPrimary: '#e2e8f0',
+            particle: '#7c3aed',
+            particleEmoji: '👁️',
+        },
+        particleConfig: 'voidFloat',
+        price: 2000,
+    },
+    cioccolato: {
+        id: 'cioccolato',
+        label: 'Diabete',
+        colors: {
+            accent: '#fcd34d', // Oro caramello
+            accentWeak: 'rgba(252, 211, 77, 0.2)',
+            background: ['#451a03', '#78350f', '#271007'], // Cioccolato fondente
+            cardBg: 'rgba(255, 255, 255, 0.05)',
+            cardBorder: '#d97706',
+            textPrimary: '#fffbeb',
+            particle: '#fca5a5',
+            particleEmoji: '🍩',
+        },
+        particleConfig: null,
+        price: 500,
+    },
 };
 
 export const TEXTURES = {
@@ -287,6 +319,10 @@ export const TEXTURES = {
     mirror: require('../../assets/textures/mirror.png'),
     petrol: require('../../assets/textures/petrol.png'),
     smoke: require('../../assets/textures/smoke.png'),
+    holo: require('../../assets/textures/hologram.png'),
+    leather: require('../../assets/textures/leather.png'),
+    cardboard: require('../../assets/textures/cardboard.png'),
+    marble: require('../../assets/textures/marble.png'),
 };
 
 export const CARD_SKINS = {
@@ -306,32 +342,34 @@ export const CARD_SKINS = {
         label: 'Foglia d\'Oro',
         price: 2500,
         styles: {
-            bg: '#fccb06', // [REFINED] Brighter Metallic Gold
+            bg: '#fccb06',
             text: '#423100',
             border: '#ffd700',
-            texture: 'gold_leaf'
+            texture: 'gold_leaf',
+            textureOpacity: 0.4
         }
     },
     blood: {
         id: 'blood',
-        label: 'Sangue', // Renamed (was Cenere e Sangue)
-        price: 2000,
+        label: 'Sangue',
+        price: 2500,
         styles: {
-            bg: '#fee2e2', // [REFINED] Lighter/more red-tinted pink
-            text: '#991b1b', // [REFINED] More vivid blood red
+            bg: '#fee2e2',
+            text: '#991b1b',
             border: '#ef4444',
-            texture: 'blood_splatter'
+            texture: 'blood_splatter',
+            textureOpacity: 0.25
         }
     },
     noir: {
         id: 'noir',
         label: 'Noir Elegance',
-        price: 2000,
+        price: 3000,
         styles: {
             bg: '#1a1a1a',
             text: '#e2e8f0',
             border: '#475569',
-            texture: null // [REFINED] Removed texture
+            texture: null
         }
     },
     narco: {
@@ -342,7 +380,7 @@ export const CARD_SKINS = {
             bg: '#dcfce7',
             text: '#064e3b',
             border: '#10b981',
-            texture: null // [REFINED] Removed texture
+            texture: null
         }
     },
     graffi: {
@@ -353,41 +391,78 @@ export const CARD_SKINS = {
             bg: '#f8fafc',
             text: '#0f172a',
             border: '#94a3b8',
-            texture: 'mirror'
+            texture: 'mirror',
+            textureOpacity: 0.15
         }
     },
     petrol: {
         id: 'petrol',
         label: 'Petrolio',
-        price: 2200,
+        price: 1500,
         styles: {
             bg: '#000000',
             text: '#f8fafc',
-            border: '#8b5cf6', // Iridescent vibe
-            texture: 'petrol'
+            border: '#8b5cf6',
+            texture: 'petrol',
+            textureOpacity: 0.3
         }
     },
     riscatto: {
         id: 'riscatto',
         label: 'Lettera di Riscatto',
-        price: 2000,
+        price: 1000,
         styles: {
-            bg: '#e3d5b8', // [REFINED] Old paper/ransom beige
+            bg: '#e3d5b8',
             text: '#222',
             border: '#5c5c5c',
-            texture: null // No texture requested
+            texture: null
         }
     },
-
     biohazard: {
         id: 'biohazard',
         label: 'Infetto',
-        price: 1200,
+        price: 1000,
         styles: {
-            bg: '#fef08a', // Giallo malato
-            text: '#451a03', // Marrone ruggine
+            bg: '#fef08a',
+            text: '#451a03',
             border: '#ca8a04',
-            texture: null // No texture requested
+            texture: null
+        }
+    },
+    holo: {
+        id: 'holo',
+        label: 'Olografica Rara',
+        price: 3000,
+        styles: {
+            bg: '#1e293b',
+            text: '#ffffff',
+            border: '#ffffff',
+            texture: 'holo',
+            textureOpacity: 0.5
+        }
+    },
+    pelle: {
+        id: 'pelle',
+        label: 'Necronomicon',
+        price: 1500,
+        styles: {
+            bg: '#451a03',
+            text: '#fcd34d',
+            border: '#78350f',
+            texture: 'leather',
+            textureOpacity: 0.3
+        }
+    },
+    marmo: {
+        id: 'marmo',
+        label: 'Marmo di Carrara',
+        price: 2500,
+        styles: {
+            bg: '#f8fafc',
+            text: '#1e293b',
+            border: '#64748b',
+            texture: 'marble',
+            textureOpacity: 0.6 // [FIX] High visibility for light marble
         }
     }
 };
@@ -396,13 +471,16 @@ export const AVATAR_FRAMES = {
     basic: { id: 'basic', label: 'Nessuna', price: 0, asset: null },
     glitch: { id: 'glitch', label: 'Errore di Sistema', price: 1000, asset: 'frame_glitch' },
     // [NEW]
-    neon: { id: 'neon', label: 'Neon Cyber', price: 1000, asset: 'frame_neon' },
-    angel: { id: 'angel', label: 'Serafino', price: 1500, asset: 'frame_angel' },
-    demon: { id: 'demon', label: 'Demone', price: 1000, asset: 'frame_demon' },
+    neon: { id: 'neon', label: 'Neon Cyber', price: 1500, asset: 'frame_neon' },
+    angel: { id: 'angel', label: 'Serafino', price: 3000, asset: 'frame_angel' },
+    demon: { id: 'demon', label: 'Demone', price: 2000, asset: 'frame_demon' },
     pixel: { id: 'pixel', label: '8-Bit Retro', price: 500, asset: 'frame_pixel' },
-    love: { id: 'love', label: 'Amore Tossico', price: 1000, asset: 'frame_love' },
-    rich: { id: 'rich', label: 'Miliardario', price: 1500, asset: 'frame_rich' },
-    capo: { id: 'capo', label: 'CAPO SUPREMO', price: 999999999, asset: 'frame_capo' }, // [NEW] Exclusive
+    love: { id: 'love', label: 'Amore Tossico', price: 2000, asset: 'frame_love' },
+    rich: { id: 'rich', label: 'Miliardario', price: 10000, asset: 'frame_rich' },
+    capo: { id: 'capo', label: 'CAPO SUPREMO', price: 999999999, asset: 'frame_capo' },
+    wanted: { id: 'wanted', label: 'WANTED', price: 2000, asset: 'frame_wanted' },
+    toilet: { id: 'toilet', label: 'Trono di Ceramica', price: 500, asset: 'frame_toilet' },
+    cat: { id: 'cat', label: 'Gattara', price: 1500, asset: 'frame_cat' },
 };
 
 export const ThemeProvider = ({ children }) => {
@@ -420,6 +498,8 @@ export const ThemeProvider = ({ children }) => {
                 assenzio: { background: ['#0a1f1a', '#064e3b', '#1a633a'] },
                 ghiaccio: { background: ['#2d667eff', '#09374eff', '#05283aff'] },
                 matrix: { background: ['#050a06', '#0a2a0e', '#050a06'] },
+                abisso: { background: ['#01030e', '#090d1a', '#000000'] },
+                cioccolato: { background: ['#381502', '#5f2b0c', '#1a0b05'] },
             };
 
             const override = webOverrides[theme.id];

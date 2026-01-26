@@ -159,7 +159,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                                     style={[
                                         StyleSheet.absoluteFill,
                                         {
-                                            opacity: skin.id === 'mida' ? 0.4 : 0.15,
+                                            opacity: skin.styles.textureOpacity || 0.15,
                                             borderRadius: 15,
                                             transform: [
                                                 { rotate: `${rotation}deg` },

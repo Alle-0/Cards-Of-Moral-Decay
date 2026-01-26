@@ -239,7 +239,7 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
                                 style={[
                                     StyleSheet.absoluteFill,
                                     {
-                                        opacity: skin.id === 'mida' ? 0.4 : 0.15,
+                                        opacity: skin.styles.textureOpacity || 0.15,
                                         borderRadius: 12,
                                         transform: [
                                             { rotate: `${rotation}deg` },

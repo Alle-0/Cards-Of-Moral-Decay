@@ -1,8 +1,8 @@
 import React from 'react';
 import { useWebDragScroll } from '../hooks/useWebDragScroll';
-import { StyleSheet, View, Text, ScrollView, Dimensions, Platform, Pressable } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Dimensions, Platform, Pressable, Image } from 'react-native';
 import PremiumPressable from './PremiumPressable';
-import { useTheme, CARD_SKINS } from '../context/ThemeContext';
+import { useTheme, CARD_SKINS, TEXTURES } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useGame } from '../context/GameContext'; // [NEW]
 import { ref, update } from 'firebase/database'; // [NEW]
@@ -118,11 +118,20 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
                                     <View style={[styles.previewContainer, {
                                         backgroundColor: skin.styles.bg,
                                         borderColor: skin.styles.border,
-                                        borderWidth: 1
+                                        borderWidth: 1,
+                                        overflow: 'hidden'
                                     }]}>
+                                        {/* Texture Preview */}
+                                        {skin.styles.texture && TEXTURES[skin.styles.texture] && (
+                                            <Image
+                                                source={TEXTURES[skin.styles.texture]}
+                                                style={[StyleSheet.absoluteFill, { opacity: skin.styles.textureOpacity || 0.15 }]}
+                                                resizeMode="cover"
+                                            />
+                                        )}
                                         {/* Simulated Text Lines */}
-                                        <View style={{ width: '70%', height: 4, borderRadius: 2, backgroundColor: skin.styles.text, opacity: 0.3, marginBottom: 4 }} />
-                                        <View style={{ width: '50%', height: 4, borderRadius: 2, backgroundColor: skin.styles.text, opacity: 0.3 }} />
+                                        <View style={{ width: '70%', height: 4, borderRadius: 2, backgroundColor: skin.styles.text, opacity: 0.4, marginBottom: 4 }} />
+                                        <View style={{ width: '50%', height: 4, borderRadius: 2, backgroundColor: skin.styles.text, opacity: 0.4 }} />
                                     </View>
 
                                     <Text

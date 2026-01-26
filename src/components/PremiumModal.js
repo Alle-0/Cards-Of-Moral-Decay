@@ -90,69 +90,64 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                     <Pressable
                         style={StyleSheet.absoluteFill}
                         onPress={onClose}
-                        android_disableSound={true}
-                        android_ripple={null}
                     />
 
-                    {/* 3. Modal Content (Interactive) */}
+                    {/* 3. Modal Content Wrapper */}
                     <Animated.View
-                        pointerEvents="box-none"
-                        style={[{ flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' }]}
+                        style={[{
+                            width: '85%', maxWidth: 500, maxHeight: '90%',
+                            alignItems: 'center', justifyContent: 'center'
+                        }, animatedStyle]}
                     >
-                        <View style={{ flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
-                            <Animated.View
-                                style={[{
-                                    width: '85%', maxWidth: 500, maxHeight: '90%',
-                                    alignItems: 'center', justifyContent: 'center'
-                                }, animatedStyle]}
-                            >
-                                {/* THE ACTUAL BOX (Standard View for robust layout) */}
-                                <View style={[styles.modalBox, {
-                                    borderColor: theme.colors.cardBorder,
-                                    width: '100%', // Fill the animated wrapper
-                                    ...(modalHeight ? { height: modalHeight } : {}), // Optional fixed height
-                                    overflow: 'hidden',
-                                    paddingVertical: 20,
-                                    paddingHorizontal: 20,
-                                    paddingBottom: 0 // [FIX] Massive bottom padding
-                                }]}>
-                                    <View style={styles.header}>
-                                        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 10 }}>
-                                            <Text
-                                                style={[styles.title, {
-                                                    color: theme.colors.accent,
-                                                    fontFamily: 'Cinzel Decorative-Bold',
-                                                    fontSize: 22,
-                                                    lineHeight: 32,
-                                                    textAlign: 'center',
-                                                    includeFontPadding: false
-                                                }]}
-                                                numberOfLines={2}
-                                            >
-                                                {title}
-                                            </Text>
+                        {/* THE ACTUAL BOX - Wrapped in a Pressable to block click propagation to backdrop */}
+                        <Pressable
+                            activeOpacity={1}
+                            style={[{ width: '100%' }, modalHeight ? { height: modalHeight, maxHeight: '100%' } : {}]}
+                        >
+                            <View style={[styles.modalBox, {
+                                borderColor: theme.colors.cardBorder,
+                                width: '100%',
+                                height: modalHeight ? '100%' : 'auto',
+                                overflow: 'hidden',
+                                paddingVertical: 20,
+                                paddingHorizontal: 20,
+                                paddingBottom: 0
+                            }]}>
+                                <View style={styles.header}>
+                                    <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 10 }}>
+                                        <Text
+                                            style={[styles.title, {
+                                                color: theme.colors.accent,
+                                                fontFamily: 'Cinzel Decorative-Bold',
+                                                fontSize: 22,
+                                                lineHeight: 32,
+                                                textAlign: 'center',
+                                                includeFontPadding: false
+                                            }]}
+                                            numberOfLines={2}
+                                        >
+                                            {title}
+                                        </Text>
+                                    </View>
+                                    {showClose && (
+                                        <View style={{ position: 'absolute', right: -10, top: 0, bottom: 0, justifyContent: 'center' }}>
+                                            <PremiumIconButton
+                                                icon={<CrossIcon size={24} color="#888" />}
+                                                onPress={onClose}
+                                                enableSound={false}
+                                                size={32}
+                                            />
                                         </View>
-                                        {showClose && (
-                                            <View style={{ position: 'absolute', right: -10, top: 0, bottom: 0, justifyContent: 'center' }}>
-                                                <PremiumIconButton
-                                                    icon={<CrossIcon size={24} color="#888" />}
-                                                    onPress={onClose}
-                                                    enableSound={false}
-                                                    size={32}
-                                                />
-                                            </View>
-                                        )}
-                                    </View>
-
-                                    <View style={[styles.content, modalHeight ? { flex: 1 } : { flex: 0 }]}>
-                                        {children}
-                                    </View>
-
-                                    {/* Safety Spacer */}
-                                    <View style={{ height: 20, width: '100%' }} />
+                                    )}
                                 </View>
-                            </Animated.View>
-                        </View>
+
+                                <View style={[styles.content, modalHeight ? { flex: 1 } : { flex: 0 }]}>
+                                    {children}
+                                </View>
+
+                                <View style={{ height: 20, width: '100%' }} />
+                            </View>
+                        </Pressable>
                     </Animated.View>
                 </View>
             </Animated.View>

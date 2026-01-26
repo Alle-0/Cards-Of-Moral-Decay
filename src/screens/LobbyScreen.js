@@ -46,18 +46,19 @@ const STEPS = {
 
 const LobbyScreen = ({ onStartLoading }) => {
     const {
-        playerName,
-        setPlayerName,
-        avatar,
-        setAvatar,
         createRoom,
         joinRoom,
         availableRooms,
         refreshRooms,
-        login // [FIX] Import login
     } = useGame();
     const { theme, setTheme } = useTheme();
-    const { user: authUser, dismissNewUser, dismissRecovered } = useAuth(); // [NEW] Added dismissRecovered
+    const {
+        user: authUser,
+        signUp,
+        updateProfile,
+        dismissNewUser,
+        dismissRecovered
+    } = useAuth();
     const { MYSTERY_AVATAR, PLAYER_AVATARS, shuffleArray } = require('../utils/data');
     const Clipboard = require('expo-clipboard'); // [NEW] For copying code
 
@@ -65,6 +66,9 @@ const LobbyScreen = ({ onStartLoading }) => {
     const [roomToJoin, setRoomToJoin] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    // [NEW] Local State for Identity (un-synced until "Avanti")
+    const [localPlayerName, setLocalPlayerName] = useState(authUser?.nickname || authUser?.username || '');
+    const [localAvatar, setLocalAvatar] = useState(authUser?.avatar || 'User');
 
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [showShop, setShowShop] = useState(false); // [NEW]
@@ -140,7 +144,7 @@ const LobbyScreen = ({ onStartLoading }) => {
 
     // [NEW] Anchor Avatar: The avatar fixed at position 0 until refresh
     // Initialize with the current avatar (loaded from storage/random-init)
-    const [anchorAvatar, setAnchorAvatar] = useState(avatar);
+    const [anchorAvatar, setAnchorAvatar] = useState(localAvatar);
 
     // [NEW] Store dynamic presets
     const [presetAvatars, setPresetAvatars] = useState(() => {
@@ -181,7 +185,7 @@ const LobbyScreen = ({ onStartLoading }) => {
         );
 
         // [FIX] Stable Refresh Logic: Promote current to Anchor
-        if (avatar) setAnchorAvatar(avatar);
+        if (localAvatar) setAnchorAvatar(localAvatar);
 
         // Shuffle presets
         const all = [...PLAYER_AVATARS];
@@ -199,31 +203,39 @@ const LobbyScreen = ({ onStartLoading }) => {
 
     // [NEW] Reveal Mystery on Next
     const handleNextToActions = async () => {
-        if (!playerName || !playerName.trim()) {
+        if (!localPlayerName || !localPlayerName.trim()) {
             SoundService.play('error');
             setToast({ visible: true, message: "Inserisci un nome!" });
             return;
         }
 
-        // [FIX] Commit name/avatar to GameContext before proceeding
-        // This prevents the "name inconsistency" bug where create/join uses old user state
+        setIsLoading(true);
         try {
-            await login(playerName, avatar);
+            // 1. Reveal Mystery if needed
+            let finalAvatar = localAvatar;
+            if (localAvatar === MYSTERY_AVATAR) {
+                finalAvatar = PLAYER_AVATARS[Math.floor(Math.random() * PLAYER_AVATARS.length)];
+                setLocalAvatar(finalAvatar);
+            }
+
+            // 2. Sync with AuthContext (Firebase)
+            // [FIX] We don't signUp here! That's for accounts. 
+            // We just save the chosen nickname to the current profile.
+            if (authUser?.username) {
+                await updateProfile({
+                    nickname: localPlayerName.trim(),
+                    avatar: finalAvatar
+                });
+            }
+
+            setCurrentStep(STEPS.ACTION);
         } catch (e) {
-            console.error("Login sync failed", e);
+            console.error("Identity sync failed", e);
+            SoundService.play('error');
+            setToast({ visible: true, message: e.message || "Errore durante il salvataggio." });
+        } finally {
+            setIsLoading(false);
         }
-
-        // REVEAL LOGIC
-        let finalAvatar = avatar;
-        if (avatar === MYSTERY_AVATAR) {
-            // Pick rand from ALL avatars
-            finalAvatar = PLAYER_AVATARS[Math.floor(Math.random() * PLAYER_AVATARS.length)];
-            setAvatar(finalAvatar); // Reveal it in UI
-            // Optional: Show a toast "Hai sbloccato: [Name]"?
-        }
-
-
-        setCurrentStep(STEPS.ACTION);
     };
 
     const handleCreateRoom = async () => {
@@ -233,7 +245,7 @@ const LobbyScreen = ({ onStartLoading }) => {
         setIsLoading(true);
         try {
             await createRoom({
-                avatar: avatar, // [FIX] Pass explicit avatar
+                avatar: localAvatar, // [FIX] Pass explicit avatar
                 activeCardSkin: authUser?.activeCardSkin || 'classic',
                 activeFrame: authUser?.activeFrame || 'basic', // [NEW]
                 rank: authUser?.rank || 'Anima Candida' // [NEW]
@@ -261,7 +273,7 @@ const LobbyScreen = ({ onStartLoading }) => {
         setIsLoading(true);
         try {
             await joinRoom(roomId, {
-                avatar: avatar, // [FIX] Pass explicit avatar
+                avatar: localAvatar, // [FIX] Pass explicit avatar
                 activeCardSkin: authUser?.activeCardSkin || 'classic',
                 activeFrame: authUser?.activeFrame || 'basic', // [NEW]
                 rank: authUser?.rank || 'Anima Candida' // [NEW]
@@ -294,8 +306,8 @@ const LobbyScreen = ({ onStartLoading }) => {
 
             <PremiumInput
                 label="IL TUO NOME"
-                value={playerName}
-                onChangeText={setPlayerName}
+                value={localPlayerName}
+                onChangeText={setLocalPlayerName}
                 placeholder=""
                 style={{ marginBottom: 60 }}
                 labelBackgroundColor="#0d0d0d"
@@ -383,8 +395,8 @@ const LobbyScreen = ({ onStartLoading }) => {
             <AvatarCarousel
                 ref={carouselRef}
                 seeds={avatarSeeds}
-                selectedAvatar={avatar}
-                onSelectAvatar={setAvatar}
+                selectedAvatar={localAvatar}
+                onSelectAvatar={setLocalAvatar}
             />
 
             {/* [NEW] Bottom Refresh Section */}
@@ -424,7 +436,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                 title="AVANTI ➜"
                 onPress={handleNextToActions}
                 enableSound={false}
-                disabled={!playerName}
+                disabled={!localPlayerName}
                 style={{
                     marginTop: 30,
                     backgroundColor: theme.colors.accent,

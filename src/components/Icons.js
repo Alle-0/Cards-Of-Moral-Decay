@@ -208,7 +208,6 @@ export const DiceIcon = ({ size = 24, color = "#FFCE6A" }) => (
         <Ellipse cx="32.0021" cy="29.3358" rx="2.13959" ry="1.75689" transform="rotate(96.9266 32.0021 29.3358)" fill={color} />
     </Svg>
 );
-
 export const InfoIcon = ({ size = 24, color = "#FFCE6A" }) => (
     <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
         <Circle cx="24" cy="24" r="21.5" stroke={color} strokeWidth="2.5" />
@@ -316,5 +315,18 @@ export const CrossIcon = ({ size = 24, color = "#FF453A" }) => (
         <Path d="M30 30L41 41" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
         <Path d="M41 7L26 22" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
         <Path d="M24 24L7 41" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+    </Svg>
+);
+
+
+// [NEW] Cat Ears Icon for Cat Frame
+export const CatIcon = ({ size = 24, color = "#f472b6" }) => (
+    <Svg width={size} height={size * 0.8} viewBox="0 0 60 48" fill="none">
+        <Path d="M2.56491 26C2.23839 21.7871 2.42175 17.325 3.22378 14.0133C3.35833 13.4577 3.95105 13.1613 4.47896 13.3807C9.42429 15.4356 16.0442 20.1182 20.5 27" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M3.43308 32C3.72983 33.3166 4.08723 34.506 4.5 35.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M6 17C9.5 21.5 10.5 22.5 14 29.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M39 27C39.5624 26.1313 40.1594 25.2977 40.783 24.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M45 19.9525C48.384 16.8535 52.0126 14.6307 55.0214 13.3805C55.5493 13.1612 56.1411 13.4558 56.2757 14.0114C57.7754 20.2008 57.1133 30.4107 55 35.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M53.5 17C50 21.5 49 22.5 45.5 29.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
     </Svg>
 );

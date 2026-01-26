@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Image, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, Modal } from 'react-native';
 import EfficientBlurView from '../components/EfficientBlurView'; // [NEW]
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
@@ -21,16 +21,24 @@ const { width } = Dimensions.get('window');
 export default function ShopScreen({ onClose }) {
     const { user, buyTheme, buySkin, buyFrame, spendMoney, equipSkin, equipFrame } = useAuth(); // [FIX] Added equipSkin back
     const { theme } = useTheme();
-    const { roomCode } = useGame(); // [NEW]
+    const { roomCode, roomPlayerName } = useGame(); // [NEW] Sync with room
 
     const [activeTab, setActiveTab] = useState('themes'); // 'themes' | 'skins'
 
     const [buyingId, setBuyingId] = useState(null);
     const [modal, setModal] = useState({ visible: false, title: '', message: '' });
-    const [preview, setPreview] = useState(null); // [NEW] { type: 'theme' | 'skin', item: object }
-
+    const [isClosing, setIsClosing] = useState(false); // [NEW] For exit animation
     const handlePreview = (type, item) => {
+        setIsClosing(false);
         setPreview({ type, item });
+    };
+
+    const handleClosePreview = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            setPreview(null);
+            setIsClosing(false);
+        }, 300);
     };
 
     const handleBuy = async (themeId, price, themeName) => {
@@ -70,9 +78,9 @@ export default function ShopScreen({ onClose }) {
         if (activeTab === 'skins') {
             await equipSkin(skinId);
             // [SYNC] If in a room, update the player's skin in the room data immediately
-            if (roomCode && user?.username) {
+            if (roomCode && roomPlayerName) {
                 try {
-                    const playerRef = ref(db, `rooms/${roomCode}/giocatori/${user.username}`);
+                    const playerRef = ref(db, `stanze/${roomCode}/giocatori/${roomPlayerName}`);
                     await fbUpdate(playerRef, { activeCardSkin: skinId });
                 } catch (e) {
                     console.error("Failed to sync skin to room", e);
@@ -81,9 +89,9 @@ export default function ShopScreen({ onClose }) {
         } else if (activeTab === 'frames') {
             await equipFrame(skinId);
             // [SYNC]
-            if (roomCode && user?.username) {
+            if (roomCode && roomPlayerName) {
                 try {
-                    const playerRef = ref(db, `rooms/${roomCode}/giocatori/${user.username}`);
+                    const playerRef = ref(db, `stanze/${roomCode}/giocatori/${roomPlayerName}`);
                     await fbUpdate(playerRef, { activeFrame: skinId });
                 } catch (e) {
                     console.error("Failed to sync frame to room", e);
@@ -127,13 +135,11 @@ export default function ShopScreen({ onClose }) {
                     <Text style={{ fontSize: 24 }}>{itemTheme.colors.particleEmoji}</Text>
                 </View>
 
-                <View style={[styles.infoContainer, { marginLeft: 12 }]}>
+                <View style={[styles.infoContainer, { marginLeft: 10 }]}>
                     <Text
-                        style={[styles.themeName, { color: theme.colors.textPrimary }]}
-                        numberOfLines={1}
+                        style={[styles.themeName, { color: theme.colors.textPrimary, fontSize: 13 }]}
                         adjustsFontSizeToFit={true}
-                        minimumFontScale={0.4}
-                        ellipsizeMode="tail"
+                        minimumFontScale={0.8}
                     >
                         {itemTheme.label}
                     </Text>
@@ -236,20 +242,29 @@ export default function ShopScreen({ onClose }) {
                 {/* Skin Preview */}
                 <View style={[styles.skinPreview, {
                     backgroundColor: skin.styles.bg,
-                    borderColor: skin.styles.border
+                    borderColor: skin.styles.border,
+                    overflow: 'hidden'
                 }]}>
+                    {/* [NEW] Mini Texture Layer */}
+                    {skin.styles.texture && TEXTURES[skin.styles.texture] && (
+                        <Image
+                            source={TEXTURES[skin.styles.texture]}
+                            style={[StyleSheet.absoluteFill, {
+                                opacity: skin.id === 'mida' ? 0.4 : 0.15,
+                            }]}
+                            resizeMode="cover"
+                        />
+                    )}
                     {/* Simulated Text Lines */}
                     <View style={{ width: '70%', height: 2, borderRadius: 1, backgroundColor: skin.styles.text, opacity: 0.3, marginBottom: 2 }} />
                     <View style={{ width: '50%', height: 2, borderRadius: 1, backgroundColor: skin.styles.text, opacity: 0.3 }} />
                 </View>
 
-                <View style={[styles.infoContainer, { marginLeft: 12 }]}>
+                <View style={[styles.infoContainer, { marginLeft: 10 }]}>
                     <Text
-                        style={[styles.themeName, { color: theme.colors.textPrimary }]}
-                        numberOfLines={1}
+                        style={[styles.themeName, { color: theme.colors.textPrimary, fontSize: 13 }]}
                         adjustsFontSizeToFit={true}
-                        minimumFontScale={0.4}
-                        ellipsizeMode="tail"
+                        minimumFontScale={0.8}
                     >
                         {skin.label}
                     </Text>
@@ -352,117 +367,124 @@ export default function ShopScreen({ onClose }) {
                 onConfirm={() => setModal({ ...modal, visible: false })}
             />
 
-            {/* [NEW] Preview Modal Overlay */}
-            {preview && (
-                <Animated.View
-                    entering={FadeIn.duration(200)}
-                    exiting={FadeOut.duration(200)}
-                    style={styles.previewOverlayContainer}
-                >
-                    <EfficientBlurView intensity={Platform.OS === 'android' ? 20 : 40} tint="dark" style={styles.blurBackdrop}>
-                        <TouchableOpacity
-                            style={styles.backdropClick}
-                            activeOpacity={1}
-                            onPress={() => setPreview(null)}
-                        />
-
-                        <Animated.View
-                            entering={ZoomIn.duration(300).easing(Easing.out(Easing.back(1.5)))}
-                            exiting={ZoomOut.duration(200)}
-                            style={[styles.previewModal, { borderColor: theme.colors.accent, shadowColor: theme.colors.accent }]}
-                        >
-                            {/* Header Section */}
-                            <View style={styles.previewHeaderNew}>
-                                <Text style={[styles.previewSubtitle, { color: theme.colors.accent }]}>
-                                    ANTEPRIMA {preview.type === 'skin' ? 'SKIN' : 'TEMA'}
-                                </Text>
-                                {preview.type === 'skin' && (
-                                    <Text style={styles.previewTitleMain}>
-                                        {preview.item.label}
-                                    </Text>
-                                )}
-                            </View>
-
-                            {/* Content Section */}
-                            <View style={styles.previewContent}>
-                                {preview.type === 'skin' ? (
-                                    <View style={[styles.largeCard, {
-                                        backgroundColor: preview.item.styles.bg,
-                                        borderColor: preview.item.styles.border,
-                                        borderWidth: 1, // Thinner border for elegance
-                                    }]}>
-                                        {/* Texture Layer */}
-                                        {preview.item.styles.texture && TEXTURES[preview.item.styles.texture] && (
-                                            <Image
-                                                source={TEXTURES[preview.item.styles.texture]}
-                                                style={[StyleSheet.absoluteFill, {
-                                                    opacity: preview.item.id === 'mida' ? 0.6 : 0.25,
-                                                    transform: [{ scale: 1.1 }] // Slight zoom to avoid edge clipping
-                                                }]}
-                                                resizeMode="cover"
-                                            />
-                                        )}
-
-                                        {/* Card Text */}
-                                        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16 }}>
-                                            <Text style={{
-                                                color: preview.item.styles.text,
-                                                fontFamily: preview.item.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') : 'Outfit',
-                                                fontSize: 16,
-                                                fontWeight: '600',
-                                                textAlign: 'left', // More natural reading
-                                                lineHeight: 22
-                                            }}>
-                                                La corruzione è l'unica via per la salvezza.
-                                            </Text>
-                                        </View>
-
-                                        {/* Card Footer (Brand/Icon placeholder) */}
-                                        <View style={{ paddingBottom: 12, paddingLeft: 16, opacity: 0.8 }}>
-                                            <Text style={{ fontSize: 8, color: preview.item.styles.text, opacity: 0.6, fontFamily: 'Outfit-Bold' }}>
-                                                CARDS OF MORAL DECAY
-                                            </Text>
-                                        </View>
-                                    </View>
-                                ) : (
-                                    <View style={[styles.themePreviewContainer, { borderColor: preview.item.colors.cardBorder, borderWidth: 1 }]}>
-                                        <LinearGradient
-                                            colors={preview.item.colors.background}
-                                            style={StyleSheet.absoluteFill}
-                                        />
-
-                                        <ThemeBackground forceTheme={preview.item} visible={true} />
-
-                                        <View style={[StyleSheet.absoluteFill, {
-                                            backgroundColor: 'rgba(0,0,0,0.3)',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            padding: 20
-                                        }]}>
-                                            <Text style={[styles.themeCardTitle, { color: preview.item.colors.textPrimary }]}>
-                                                {preview.item.label}
-                                            </Text>
-
-                                            <Text style={[styles.themeCardSubtitle, { color: preview.item.colors.accent }]}>
-                                                {preview.item.particleConfig ? 'EFFETTI DINAMICI' : 'DECORAZIONE STATICA'}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                )}
-                            </View>
-
-                            {/* Footer / Close Action */}
+            {/* [NEW] Preview Modal Overlay - Wrapped in Modal for full-screen dimming */}
+            <Modal
+                transparent={true}
+                visible={!!preview}
+                animationType="none"
+                onRequestClose={handleClosePreview}
+            >
+                {preview && !isClosing && (
+                    <Animated.View
+                        entering={FadeIn.duration(250)}
+                        exiting={FadeOut.duration(250)}
+                        style={styles.previewOverlayContainer}
+                    >
+                        <EfficientBlurView intensity={Platform.OS === 'android' ? 20 : 40} tint="dark" style={styles.blurBackdrop}>
                             <TouchableOpacity
-                                style={[styles.closeButton, { borderColor: 'rgba(255,255,255,0.2)' }]}
-                                onPress={() => setPreview(null)}
-                            >
-                                <Text style={styles.closeButtonText}>CHIUDI ANTEPRIMA</Text>
-                            </TouchableOpacity>
+                                style={styles.backdropClick}
+                                activeOpacity={1}
+                                onPress={handleClosePreview}
+                            />
 
-                        </Animated.View>
-                    </EfficientBlurView>
-                </Animated.View>
-            )}
+                            <Animated.View
+                                entering={ZoomIn.duration(300).easing(Easing.out(Easing.back(1.5)))}
+                                exiting={ZoomOut.duration(200)}
+                                style={[styles.previewModal, { borderColor: theme.colors.accent, shadowColor: theme.colors.accent }]}
+                            >
+                                {/* Header Section */}
+                                <View style={styles.previewHeaderNew}>
+                                    <Text style={[styles.previewSubtitle, { color: theme.colors.accent }]}>
+                                        ANTEPRIMA {preview?.type === 'skin' ? 'SKIN' : 'TEMA'}
+                                    </Text>
+                                    {preview?.type === 'skin' && (
+                                        <Text style={styles.previewTitleMain}>
+                                            {preview?.item?.label}
+                                        </Text>
+                                    )}
+                                </View>
+
+                                {/* Content Section */}
+                                <View style={styles.previewContent}>
+                                    {preview?.type === 'skin' ? (
+                                        <View style={[styles.largeCard, {
+                                            backgroundColor: preview.item.styles.bg,
+                                            borderColor: preview.item.styles.border,
+                                            borderWidth: 1, // Thinner border for elegance
+                                        }]}>
+                                            {/* Texture Layer */}
+                                            {preview.item.styles.texture && TEXTURES[preview.item.styles.texture] && (
+                                                <Image
+                                                    source={TEXTURES[preview.item.styles.texture]}
+                                                    style={[StyleSheet.absoluteFill, {
+                                                        opacity: preview.item.id === 'mida' ? 0.6 : 0.25,
+                                                        transform: [{ scale: 1.1 }] // Slight zoom to avoid edge clipping
+                                                    }]}
+                                                    resizeMode="cover"
+                                                />
+                                            )}
+
+                                            {/* Card Text */}
+                                            <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16 }}>
+                                                <Text style={{
+                                                    color: preview.item.styles.text,
+                                                    fontFamily: preview.item.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') : 'Outfit',
+                                                    fontSize: 16,
+                                                    fontWeight: '600',
+                                                    textAlign: 'left', // More natural reading
+                                                    lineHeight: 22
+                                                }}>
+                                                    La corruzione è l'unica via per la salvezza.
+                                                </Text>
+                                            </View>
+
+                                            {/* Card Footer (Brand/Icon placeholder) */}
+                                            <View style={{ paddingBottom: 12, paddingLeft: 16, opacity: 0.8 }}>
+                                                <Text style={{ fontSize: 8, color: preview.item.styles.text, opacity: 0.6, fontFamily: 'Outfit-Bold' }}>
+                                                    CARDS OF MORAL DECAY
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    ) : preview?.type === 'theme' ? (
+                                        <View style={[styles.themePreviewContainer, { borderColor: preview.item.colors.cardBorder, borderWidth: 1 }]}>
+                                            <LinearGradient
+                                                colors={preview.item.colors.background}
+                                                style={StyleSheet.absoluteFill}
+                                            />
+
+                                            <ThemeBackground forceTheme={preview.item} visible={true} />
+
+                                            <View style={[StyleSheet.absoluteFill, {
+                                                backgroundColor: 'rgba(0,0,0,0.3)',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                padding: 20
+                                            }]}>
+                                                <Text style={[styles.themeCardTitle, { color: preview.item.colors.textPrimary }]}>
+                                                    {preview.item.label}
+                                                </Text>
+
+                                                <Text style={[styles.themeCardSubtitle, { color: preview.item.colors.accent }]}>
+                                                    {preview.item.particleConfig ? 'EFFETTI DINAMICI' : 'DECORAZIONE STATICA'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    ) : null}
+                                </View>
+
+                                {/* Footer / Close Action */}
+                                <TouchableOpacity
+                                    style={[styles.closeButton, { borderColor: 'rgba(255,255,255,0.2)' }]}
+                                    onPress={handleClosePreview}
+                                >
+                                    <Text style={styles.closeButtonText}>CHIUDI ANTEPRIMA</Text>
+                                </TouchableOpacity>
+
+                            </Animated.View>
+                        </EfficientBlurView>
+                    </Animated.View>
+                )}
+            </Modal>
         </View>
     );
 }
@@ -612,7 +634,7 @@ const styles = StyleSheet.create({
     },
     backdropClick: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.4)', // Slight dim
+        backgroundColor: 'rgba(0,0,0,0.8)', // Darker dim for focus
     },
     previewModal: {
         width: '90%',

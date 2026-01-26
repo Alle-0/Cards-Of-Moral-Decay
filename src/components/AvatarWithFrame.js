@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Platform, Image, Text } from 'react-native';
 import Svg, { Defs, RadialGradient, Stop, Circle, Path, Ellipse } from 'react-native-svg';
 import LocalAvatar from './LocalAvatar';
-import { CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon } from './Icons';
+import { CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, CatIcon } from './Icons';
 
 // Reusable component for Avatar + Frame + Glows
 const AvatarWithFrame = ({
@@ -154,6 +154,38 @@ const AvatarWithFrame = ({
                         {/* Floating Crown */}
                         <View style={{ position: 'absolute', top: -16 * scale, width: '100%', alignItems: 'center' }}>
                             <CrownIcon size={20 * scale} color="#ffd700" />
+                        </View>
+                    </View>
+                )}
+
+                {/* WANTED */}
+                {frameId === 'wanted' && (
+                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: 4 * scale, borderWidth: 8 * scale, borderColor: '#78350f', backgroundColor: 'transparent' }]} />
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: 2 * scale, borderWidth: 2 * scale, borderColor: '#d97706', margin: 2 * scale }]} />
+                        <View style={{ position: 'absolute', top: 2 * scale, width: '100%', alignItems: 'center' }}>
+                            <Text style={{ fontSize: 7 * scale, color: '#fcd34d', fontWeight: 'bold', backgroundColor: '#451a03', paddingHorizontal: 4 }}>WANTED</Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* TOILET */}
+                {frameId === 'toilet' && (
+                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 6 * scale, borderColor: '#f1f5f9' }]} />
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#cbd5e1', margin: 4 * scale }]} />
+                        <View style={{ position: 'absolute', top: -4 * scale, width: '100%', alignItems: 'center' }}>
+                            <View style={{ width: 30 * scale, height: 10 * scale, backgroundColor: '#f1f5f9', borderRadius: 4, borderWidth: 1, borderColor: '#cbd5e1' }} />
+                        </View>
+                    </View>
+                )}
+
+                {/* CAT */}
+                {frameId === 'cat' && (
+                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 2 * scale, borderColor: '#f472b6' }]} />
+                        <View style={{ position: 'absolute', top: -10 * scale, width: '100%', alignItems: 'center' }}>
+                            <CatIcon size={size * 0.7} color="#f472b6" />
                         </View>
                     </View>
                 )}
