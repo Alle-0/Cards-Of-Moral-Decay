@@ -4,7 +4,7 @@ A multiplayer card game built with React Native and Expo, featuring real-time ga
 
 ## 📱 Download
 
-**Latest Release:** [v2.0.1](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
+**Latest Release:** [v2.5.0](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
 
 Download the APK for Android devices from the [Releases](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases) page.
 
