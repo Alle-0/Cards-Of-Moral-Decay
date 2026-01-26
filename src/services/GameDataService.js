@@ -11,7 +11,7 @@ class GameDataService {
         this.carteNere = defaultCarteNere;
         this.carteBianche = defaultCarteBianche;
         this.isLoaded = false;
-        this.minVersion = "2.5.2";
+        this.minVersion = "2.5.6";
         this.downloadUrl = null;
     }
 

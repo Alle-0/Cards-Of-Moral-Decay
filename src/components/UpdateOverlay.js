@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Platform, Linking, ActivityIndicator } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
 import PremiumBackground from './PremiumBackground';
 import PremiumButton from './PremiumButton';
@@ -85,12 +85,8 @@ const UpdateOverlay = ({ downloadUrl }) => {
             } catch (e) {
                 console.error("Internal update failed", e);
                 setDownloading(false);
-                setError("Aggiornamento automatico fallito. Reindirizzamento al browser...");
-
-                // Wait a bit so user can read the error
-                setTimeout(() => {
-                    Linking.openURL(downloadUrl);
-                }, 2000);
+                setError("Errore: " + (e.message || "Sconosciuto"));
+                // Stopped auto-redirect to allow reading the error
             }
         } else {
             // iOS or others, just open URL
@@ -148,10 +144,13 @@ const UpdateOverlay = ({ downloadUrl }) => {
                             </>
                         )}
 
-                        {Platform.OS !== 'web' && !downloading && (
-                            <Text style={styles.hint}>
-                                L'aggiornamento verrà scaricato ed eseguito direttamente dall'app.
-                            </Text>
+                        {Platform.OS !== 'web' && (
+                            <View style={{ marginTop: 20 }}>
+                                <Text style={{ color: theme.colors.accent, textDecorationLine: 'underline', fontFamily: 'Outfit', fontSize: 14 }}
+                                    onPress={() => Linking.openURL(downloadUrl)}>
+                                    Problemi? Scarica dal browser
+                                </Text>
+                            </View>
                         )}
                     </Animated.View>
                 </Animated.View>
