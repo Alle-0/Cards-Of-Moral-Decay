@@ -2,7 +2,7 @@
   "expo": {
     "name": "Cards of Moral Decay",
     "slug": "cards-of-moral-decay",
-    "version": "2.5.0",
+    "version": "2.5.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,7 +21,11 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.cardsofmoraldecay"
+      "package": "com.anonymous.cardsofmoraldecay",
+      "versionCode": 3,
+      "permissions": [
+        "REQUEST_INSTALL_PACKAGES"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",

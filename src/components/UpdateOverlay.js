@@ -32,25 +32,50 @@ const UpdateOverlay = ({ downloadUrl }) => {
                 setError(null);
                 setProgress(0);
 
+                // Check if URL looks like a direct APK link
+                const isDirectApk = downloadUrl.toLowerCase().endsWith('.apk') || downloadUrl.includes('.apk?');
+                if (!isDirectApk) {
+                    console.warn("The download URL might not be a direct link to an APK file.");
+                }
+
                 const fileUri = FileSystem.cacheDirectory + 'CardsOfMoralDecay_Update.apk';
+
+                // Ensure any old file is removed first
+                const fileInfo = await FileSystem.getInfoAsync(fileUri);
+                if (fileInfo.exists) {
+                    await FileSystem.deleteAsync(fileUri);
+                }
 
                 const downloadResumable = FileSystem.createDownloadResumable(
                     downloadUrl,
                     fileUri,
                     {},
                     (downloadProgress) => {
-                        const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
-                        setProgress(progress);
+                        if (downloadProgress.totalBytesExpectedToWrite > 0) {
+                            const prog = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+                            setProgress(prog);
+                        } else {
+                            // If we don't know the total size (e.g. chunked transfer)
+                            // We just show some movement
+                            setProgress((prev) => (prev + 0.05) % 1);
+                        }
                     }
                 );
 
-                const { uri } = await downloadResumable.downloadAsync();
+                const result = await downloadResumable.downloadAsync();
+
+                if (!result || result.status !== 200) {
+                    throw new Error(`Download fallito con stato: ${result?.status || 'unknown'}`);
+                }
+
+                const { uri } = result;
 
                 // Get Content URI for Intent
                 const contentUri = await FileSystem.getContentUriAsync(uri);
 
                 // Trigger Installation
-                await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
+                // We try ACTION_VIEW which is more universal for APK installation
+                await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
                     data: contentUri,
                     flags: 1, // Intent.FLAG_GRANT_READ_URI_PERMISSION
                     type: 'application/vnd.android.package-archive'
@@ -60,8 +85,12 @@ const UpdateOverlay = ({ downloadUrl }) => {
             } catch (e) {
                 console.error("Internal update failed", e);
                 setDownloading(false);
-                // Fallback to browser if internal fails
-                Linking.openURL(downloadUrl);
+                setError("Aggiornamento automatico fallito. Reindirizzamento al browser...");
+
+                // Wait a bit so user can read the error
+                setTimeout(() => {
+                    Linking.openURL(downloadUrl);
+                }, 2000);
             }
         } else {
             // iOS or others, just open URL
@@ -89,9 +118,9 @@ const UpdateOverlay = ({ downloadUrl }) => {
                         </Text>
 
                         <Text style={styles.message}>
-                            Una nuova versione vitale di {`\n`}
+                            Una nuova versione di {`\n`}
                             <Text style={{ fontFamily: 'Cinzel-Bold', color: '#fff' }}>Cards of Moral Decay</Text>
-                            {`\n`}è disponibile. Per continuare a peccare con noi, devi aggiornare l'app.
+                            {`\n`}è disponibile. Aggiorna l'app.
                         </Text>
 
                         {downloading ? (
@@ -105,12 +134,17 @@ const UpdateOverlay = ({ downloadUrl }) => {
                         ) : (
                             <>
                                 <PremiumButton
-                                    title={Platform.OS === 'web' ? "AGGIORNA ORA" : "INSTALLA AGGIORNAMENTO"}
+                                    title={Platform.OS === 'web' ? "AGGIORNA ORA" : "INSTALLA"}
                                     onPress={handleUpdate}
                                     style={{ backgroundColor: theme.colors.accent, width: '100%', height: 60 }}
                                     textStyle={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 16 }}
                                 />
-                                {error && <Text style={{ color: '#ef4444', marginTop: 10, fontSize: 12 }}>{error}</Text>}
+                                {error && <Text style={{ color: '#ef4444', marginTop: 10, fontSize: 12, textAlign: 'center' }}>{error}</Text>}
+                                {!downloadUrl?.toLowerCase().endsWith('.apk') && !downloadUrl?.includes('.apk?') && (
+                                    <Text style={{ color: '#f59e0b', marginTop: 10, fontSize: 11, textAlign: 'center', fontStyle: 'italic' }}>
+                                        Nota: Il link non sembra un file APK diretto. L'installazione automatica potrebbe non funzionare.
+                                    </Text>
+                                )}
                             </>
                         )}
 

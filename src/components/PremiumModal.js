@@ -94,6 +94,7 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
 
                     {/* 3. Modal Content Wrapper */}
                     <Animated.View
+                        pointerEvents="box-none"
                         style={[{
                             width: '85%', maxWidth: 500, maxHeight: '90%',
                             alignItems: 'center', justifyContent: 'center'

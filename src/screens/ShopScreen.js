@@ -28,6 +28,8 @@ export default function ShopScreen({ onClose }) {
     const [buyingId, setBuyingId] = useState(null);
     const [modal, setModal] = useState({ visible: false, title: '', message: '' });
     const [isClosing, setIsClosing] = useState(false); // [NEW] For exit animation
+    const [preview, setPreview] = useState(null); // [FIX] Missing state declaration
+
     const handlePreview = (type, item) => {
         setIsClosing(false);
         setPreview({ type, item });
@@ -43,7 +45,7 @@ export default function ShopScreen({ onClose }) {
 
     const handleBuy = async (themeId, price, themeName) => {
         if (user.balance < price) {
-            setModal({ visible: true, title: "Poveraccio", message: "Non hai abbastanza Dirty Cash. Vattene." });
+            setModal({ visible: true, title: "Poveraccio", message: "Non hai abbastanza Dirty Cash." });
             return;
         }
 
