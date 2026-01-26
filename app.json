@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Cards of Moral Decay",
+    "slug": "cards-of-moral-decay",
+    "version": "2.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1510"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.anonymous.cardsofmoraldecay"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "themeColor": "#1a1510",
+      "backgroundColor": "#1a1510",
+      "display": "standalone",
+      "orientation": "portrait",
+      "description": "Un gioco di carte cinico e immorale.",
+      "shortName": "Cards of Moral Decay",
+      "splash": {
+        "image": null,
+        "backgroundColor": "#1a1510",
+        "resizeMode": "contain"
+      }
+    },
+    "plugins": [
+      "expo-audio"
+    ]
+  }
+}

@@ -1,0 +1,181 @@
+import React from 'react';
+import { StyleSheet, View, Platform, Image, Text } from 'react-native';
+import Svg, { Defs, RadialGradient, Stop, Circle, Path, Ellipse } from 'react-native-svg';
+import LocalAvatar from './LocalAvatar';
+import { CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon } from './Icons';
+
+// Reusable component for Avatar + Frame + Glows
+const AvatarWithFrame = ({
+    avatar,
+    frameId = 'basic',
+    size = 56,
+    isDominus = false,
+    style
+}) => {
+    // scale factor for internal elements relative to base 56px size
+    // If size is different, we scale the internal icons accordingly or keep them proportional
+    const scale = size / 56;
+    const borderRadius = size / 2;
+
+    return (
+        <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+
+            {/* GLOW LAYER (Background) */}
+            {Platform.OS === 'android' && (
+                <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+                    {frameId === 'neon' && (
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                            <Defs>
+                                <RadialGradient id="neon_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
+                                    <Stop offset="0.55" stopColor="#06b6d4" stopOpacity="0" />
+                                    <Stop offset="0.7" stopColor="#06b6d4" stopOpacity="0.4" />
+                                    <Stop offset="0.85" stopColor="#06b6d4" stopOpacity="0" />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx="50" cy="50" r="50" fill="url(#neon_grad)" />
+                        </Svg>
+                    )}
+                    {frameId === 'angel' && (
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                            <Defs>
+                                <RadialGradient id="angel_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
+                                    <Stop offset="0.55" stopColor="#fbbf24" stopOpacity="0" />
+                                    <Stop offset="0.7" stopColor="#fbbf24" stopOpacity="0.4" />
+                                    <Stop offset="0.85" stopColor="#fbbf24" stopOpacity="0" />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx="50" cy="50" r="50" fill="url(#angel_grad)" />
+                        </Svg>
+                    )}
+                    {frameId === 'demon' && (
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                            <Defs>
+                                <RadialGradient id="demon_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
+                                    <Stop offset="0.55" stopColor="#ef4444" stopOpacity="0" />
+                                    <Stop offset="0.7" stopColor="#ef4444" stopOpacity="0.4" />
+                                    <Stop offset="0.85" stopColor="#ef4444" stopOpacity="0" />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx="50" cy="50" r="50" fill="url(#demon_grad)" />
+                        </Svg>
+                    )}
+                    {frameId === 'capo' && (
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                            <Defs>
+                                <RadialGradient id="capo_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
+                                    <Stop offset="0.55" stopColor="#ff00ff" stopOpacity="0" />
+                                    <Stop offset="0.7" stopColor="#ff00ff" stopOpacity="0.3" />
+                                    <Stop offset="0.85" stopColor="#ff00ff" stopOpacity="0" />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx="50" cy="50" r="50" fill="url(#capo_grad)" />
+                        </Svg>
+                    )}
+                </View>
+            )}
+
+            {/* AVATAR + BORDER FRAME */}
+            <View style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+
+                {/* 1. Base Avatar */}
+                <View style={{ width: size, height: size, borderRadius: borderRadius, overflow: 'hidden', backgroundColor: '#111' }}>
+                    <LocalAvatar
+                        size={size}
+                        seed={avatar?.startsWith('http') ? avatar : (avatar || 'User')}
+                    />
+                </View>
+
+                {/* 2. Visual Frames (Overlays) */}
+
+                {/* GLITCH */}
+                {frameId === 'glitch' && (
+                    <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#00ff00', borderStyle: 'dashed' }]} pointerEvents="none" />
+                )}
+
+                {/* NEON */}
+                {frameId === 'neon' && (
+                    <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#06b6d4', shadowColor: '#06b6d4', shadowOpacity: 1, shadowRadius: 10, elevation: Platform.OS === 'android' ? 0 : 6 }]} pointerEvents="none" />
+                )}
+
+                {/* ANGEL */}
+                {frameId === 'angel' && (
+                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#fff', shadowColor: '#fbbf24', shadowOpacity: 1, shadowRadius: 12, elevation: Platform.OS === 'android' ? 0 : 6 }]} />
+                        <View style={{ position: 'absolute', top: -20 * scale, width: '100%', alignItems: 'center' }}>
+                            <HaloIcon size={30 * scale} color="#fbbf24" />
+                        </View>
+                    </View>
+                )}
+
+                {/* DEMON */}
+                {frameId === 'demon' && (
+                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: '#7f1d1d', shadowColor: '#ef4444', shadowOpacity: 0.8, shadowRadius: 8, elevation: Platform.OS === 'android' ? 0 : 6 }]} />
+                        <View style={{ position: 'absolute', top: -15 * scale, width: '100%', alignItems: 'center' }}>
+                            <HornsIcon size={30 * scale} color="#ef4444" />
+                        </View>
+                    </View>
+                )}
+
+                {/* PIXEL */}
+                {frameId === 'pixel' && (
+                    <View style={[StyleSheet.absoluteFill, { borderRadius: 4 * scale, borderWidth: 4 * scale, borderColor: '#ec4899', borderStyle: 'dotted' }]} pointerEvents="none" />
+                )}
+
+                {/* LOVE */}
+                {frameId === 'love' && (
+                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#f472b6' }]} />
+                        <View style={{ position: 'absolute', bottom: -12 * scale, width: '100%', alignItems: 'center' }}>
+                            <HeartIcon size={24 * scale} color="#f472b6" />
+                        </View>
+                    </View>
+                )}
+
+                {/* RICH */}
+                {frameId === 'rich' && (
+                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: '#10b981' }]} />
+                        <View style={{ position: 'absolute', top: -15 * scale, width: '100%', alignItems: 'center' }}>
+                            <MoneyIcon size={28 * scale} color="#10b981" />
+                        </View>
+                    </View>
+                )}
+
+                {/* CAPO */}
+                {frameId === 'capo' && (
+                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                        {/* Glow Layer */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 6 * scale, borderColor: '#ff00ff', opacity: 0.5 }]} />
+                        {/* Main Gold Frame */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#ffd700', shadowColor: '#ffd700', shadowOpacity: 0.8, shadowRadius: 10, elevation: Platform.OS === 'android' ? 0 : 6 }]} />
+                        {/* Inner Detail */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#ff00ff', margin: 3 * scale }]} />
+                        {/* Floating Crown */}
+                        <View style={{ position: 'absolute', top: -16 * scale, width: '100%', alignItems: 'center' }}>
+                            <CrownIcon size={20 * scale} color="#ffd700" />
+                        </View>
+                    </View>
+                )}
+            </View>
+
+            {/* DOMINUS BADGE (Optional Over-Ride) */}
+            {isDominus && (
+                <View style={{
+                    position: 'absolute',
+                    top: -5, right: -5,
+                    backgroundColor: '#ffd700', borderRadius: 10,
+                    paddingHorizontal: 4, paddingVertical: 1,
+                    zIndex: 20,
+                    borderWidth: 1, borderColor: '#000'
+                }}>
+                    <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#000' }}>DOM</Text>
+                </View>
+            )}
+        </View>
+    );
+};
+
+
+
+export default AvatarWithFrame;
