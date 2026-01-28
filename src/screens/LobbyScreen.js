@@ -1,47 +1,42 @@
-// Verified
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableWithoutFeedback, Keyboard, Dimensions, useWindowDimensions, StatusBar, Platform, Pressable, Image, BackHandler } from 'react-native';
-import { SvgUri, Svg, Path, G } from 'react-native-svg';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withTiming,
-    withSpring,
-    SlideInRight,
-    SlideOutLeft,
-    SlideInLeft,
-    SlideOutRight,
     FadeIn,
-    FadeOut,
-    measure,
-    Easing,
-    withSequence,
     LinearTransition,
-    withRepeat,
-    interpolate
-} from 'react-native-reanimated'; // Updated imports
+    withSequence,
+    Easing
+} from 'react-native-reanimated';
 import { useGame } from '../context/GameContext';
-import { useAuth, RANK_COLORS } from '../context/AuthContext'; // [NEW]
+import { useAuth, RANK_COLORS } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import SoundService from '../services/SoundService';
-import PremiumInput from '../components/PremiumInput';
+import AnalyticsService from '../services/AnalyticsService';
 import PremiumButton from '../components/PremiumButton';
-import AvatarCarousel from '../components/AvatarCarousel';
-import GradientText from '../components/GradientText';
-import RoomItem from '../components/RoomItem';
 import PremiumModal from '../components/PremiumModal';
-import SettingsModal from '../components/SettingsModal';
 import PremiumBackground from '../components/PremiumBackground';
-import PremiumIconButton from '../components/PremiumIconButton';
 import ToastNotification from '../components/ToastNotification';
-import { SettingsIcon, InfoIcon, ScaleIcon, LockIcon, ShieldIcon } from '../components/Icons'; // [NEW] LockIcon, ShieldIcon
-import ShopScreen from './ShopScreen'; // [NEW]
+import ConfirmationModal from '../components/ConfirmationModal';
+import AvatarSelectionModal from '../components/AvatarSelectionModal';
+import { LockIcon, ShieldIcon } from '../components/Icons';
+import IdentityStep from '../components/lobby/IdentityStep';
+import MainMenuStep from '../components/lobby/MainMenuStep';
 
 const STEPS = {
     IDENTITY: 0,
     ACTION: 1,
     JOIN: 2,
+};
+
+// [NEW] Helper for rank keys
+const getRankKey = (rank) => {
+    if (!rank) return 'rank_anima_candida';
+    return `rank_${rank.toLowerCase().replace(/ /g, '_')}`;
 };
 
 const LobbyScreen = ({ onStartLoading }) => {
@@ -51,16 +46,18 @@ const LobbyScreen = ({ onStartLoading }) => {
         availableRooms,
         refreshRooms,
     } = useGame();
-    const { theme, setTheme } = useTheme();
+    const { theme } = useTheme();
+    const { t } = useLanguage();
+    const insets = useSafeAreaInsets();
     const {
         user: authUser,
-        signUp,
         updateProfile,
         dismissNewUser,
-        dismissRecovered
+        dismissRecovered,
+        logout
     } = useAuth();
-    const { MYSTERY_AVATAR, PLAYER_AVATARS, shuffleArray } = require('../utils/data');
-    const Clipboard = require('expo-clipboard'); // [NEW] For copying code
+    const { MYSTERY_AVATAR, PLAYER_AVATARS, shuffleArray } = require('../utils/constants');
+    const Clipboard = require('expo-clipboard');
 
     const [currentStep, setCurrentStep] = useState(STEPS.IDENTITY);
     const [roomToJoin, setRoomToJoin] = useState('');
@@ -70,68 +67,53 @@ const LobbyScreen = ({ onStartLoading }) => {
     const [localPlayerName, setLocalPlayerName] = useState(authUser?.nickname || authUser?.username || '');
     const [localAvatar, setLocalAvatar] = useState(authUser?.avatar || 'User');
 
-    const [showSettingsModal, setShowSettingsModal] = useState(false);
-    const [showShop, setShowShop] = useState(false); // [NEW]
-    const [showAvatarInfo, setShowAvatarInfo] = useState(false); // [NEW] Info Modal State
+    const [showAvatarModal, setShowAvatarModal] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
 
     // [NEW] Exit Modal State
     const [showExitModal, setShowExitModal] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+    // [NEW] Filter rooms: My rooms OR Friends' rooms
+    const validRooms = (availableRooms || []).filter(room => {
+        const isMyRoom = room.creatore === authUser?.username;
+        const isFriendRoom = authUser?.friends && authUser.friends[room.creatore];
+        return isMyRoom || isFriendRoom;
+    });
 
+    // Custom Back Handler
+    useFocusEffect(
+        useCallback(() => {
+            if (Platform.OS === 'web') return;
 
-    const handleHideToast = useCallback(() => {
-        setToast(prev => ({ ...prev, visible: false }));
-    }, []);
+            const backAction = () => {
+                if (currentStep === STEPS.IDENTITY) {
+                    setShowExitModal(true);
+                    return true;
+                } else if (currentStep === STEPS.ACTION) {
+                    setCurrentStep(STEPS.IDENTITY);
+                    return true;
+                } else if (currentStep === STEPS.JOIN) {
+                    setCurrentStep(STEPS.ACTION);
+                    return true;
+                }
+                return false;
+            };
 
-    const handleSettingsPress = () => {
-        setShowSettingsModal(true);
-    };
+            const backHandler = BackHandler.addEventListener(
+                "hardwareBackPress",
+                backAction
+            );
 
-    const closeSettings = () => {
-        setShowSettingsModal(false);
-    };
-
-    // Filter available rooms (mock logic if not provided by GameContext yet)
-    const validRooms = availableRooms || [];
-
-    // [NEW] Custom Back Handler
-    useEffect(() => {
-        if (Platform.OS === 'web') return; // [FIX] Guard for web
-
-        const backAction = () => {
-            if (currentStep === STEPS.IDENTITY) {
-                // [FIX] Use Custom Modal instead of Alert
-                setShowExitModal(true);
-                return true;
-            } else if (currentStep === STEPS.ACTION) {
-                setCurrentStep(STEPS.IDENTITY);
-                return true;
-            } else if (currentStep === STEPS.JOIN) {
-                setCurrentStep(STEPS.ACTION);
-                return true;
-            }
-            return false;
-        };
-
-        const backHandler = BackHandler.addEventListener(
-            "hardwareBackPress",
-            backAction
-        );
-
-        return () => backHandler.remove();
-    }, [currentStep]);
-
-    // [NEW] Avatar Logic:
-    // 1. Current Selection (avatar)
-    // 2. Mystery Option (MYSTERY_AVATAR) - "Dado"
-    // 3. Presets
+            return () => backHandler.remove();
+        }, [currentStep])
+    );
 
     // [NEW] Shared Value for Code Pulse (Static as per user request)
     const codeScale = useSharedValue(1);
     useEffect(() => {
         if (authUser?.isNew) {
-            codeScale.value = withTiming(1); // Set to static
+            codeScale.value = withTiming(1);
         }
     }, [authUser?.isNew]);
 
@@ -139,71 +121,18 @@ const LobbyScreen = ({ onStartLoading }) => {
         transform: [{ scale: codeScale.value }]
     }));
 
-    // [RESTORED] State for seeds
-    const [avatarSeeds, setAvatarSeeds] = useState([]);
-
-    // [NEW] Anchor Avatar: The avatar fixed at position 0 until refresh
-    // Initialize with the current avatar (loaded from storage/random-init)
-    const [anchorAvatar, setAnchorAvatar] = useState(localAvatar);
-
-    // [NEW] Store dynamic presets
-    const [presetAvatars, setPresetAvatars] = useState(() => {
-        // Initial random selection of 10 seeds
-        const all = [...PLAYER_AVATARS];
-        const shuffled = shuffleArray(all);
-        return shuffled.slice(0, 10);
-    });
-    const carouselRef = React.useRef(null);
-    const refreshRotation = useSharedValue(0);
-
-    // Rebuild seeds whenever avatar OR presets changes
-    useEffect(() => {
-        let newSeeds = [];
-
-        // 1. Anchor (The previously selected/saved one) stays at Pos 0
-        if (anchorAvatar) {
-            newSeeds.push(anchorAvatar);
-        }
-
-        // 2. Mystery Option
-        if (anchorAvatar !== MYSTERY_AVATAR) {
-            newSeeds.push(MYSTERY_AVATAR);
-        }
-
-        // 3. Add dynamic presets (filtering out duplicates of anchor)
-        presetAvatars.forEach(p => {
-            if (p !== anchorAvatar && p !== MYSTERY_AVATAR) newSeeds.push(p);
-        });
-
-        setAvatarSeeds(newSeeds);
-
-    }, [anchorAvatar, presetAvatars]);
-
-    const handleRefreshAvatars = () => {
-        refreshRotation.value = withSequence(
-            withTiming(refreshRotation.value + 360, { duration: 400, easing: Easing.out(Easing.quad) })
-        );
-
-        // [FIX] Stable Refresh Logic: Promote current to Anchor
-        if (localAvatar) setAnchorAvatar(localAvatar);
-
-        // Shuffle presets
-        const all = [...PLAYER_AVATARS];
-        const shuffled = shuffleArray(all);
-        setPresetAvatars(shuffled.slice(0, 10));
-
-        if (carouselRef.current) {
-            carouselRef.current.scrollTo({ x: 0, animated: true });
+    const confirmLogout = async () => {
+        try {
+            await logout();
+            setShowLogoutModal(false);
+        } catch (error) {
+            console.error("Logout error:", error);
         }
     };
 
-    const refreshAnimatedStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${refreshRotation.value}deg` }]
-    }));
-
     // [NEW] Reveal Mystery on Next
-    const handleNextToActions = async () => {
-        if (!localPlayerName || !localPlayerName.trim()) {
+    const handleNextToActions = async (name, avatar) => {
+        if (!name || !name.trim()) {
             SoundService.play('error');
             setToast({ visible: true, message: "Inserisci un nome!" });
             return;
@@ -212,18 +141,18 @@ const LobbyScreen = ({ onStartLoading }) => {
         setIsLoading(true);
         try {
             // 1. Reveal Mystery if needed
-            let finalAvatar = localAvatar;
-            if (localAvatar === MYSTERY_AVATAR) {
+            let finalAvatar = avatar;
+            if (avatar === MYSTERY_AVATAR) {
                 finalAvatar = PLAYER_AVATARS[Math.floor(Math.random() * PLAYER_AVATARS.length)];
-                setLocalAvatar(finalAvatar);
+            } else {
+                setLocalAvatar(avatar);
             }
+            setLocalPlayerName(name);
 
             // 2. Sync with AuthContext (Firebase)
-            // [FIX] We don't signUp here! That's for accounts. 
-            // We just save the chosen nickname to the current profile.
             if (authUser?.username) {
                 await updateProfile({
-                    nickname: localPlayerName.trim(),
+                    nickname: name.trim(),
                     avatar: finalAvatar
                 });
             }
@@ -239,23 +168,20 @@ const LobbyScreen = ({ onStartLoading }) => {
     };
 
     const handleCreateRoom = async () => {
-        // Trigger Splash immediately
         if (onStartLoading) onStartLoading();
 
         setIsLoading(true);
         try {
-            await createRoom({
-                avatar: localAvatar, // [FIX] Pass explicit avatar
+            const code = await createRoom({
+                avatar: localAvatar,
                 activeCardSkin: authUser?.activeCardSkin || 'classic',
-                activeFrame: authUser?.activeFrame || 'basic', // [NEW]
-                rank: authUser?.rank || 'Anima Candida' // [NEW]
+                activeFrame: authUser?.activeFrame || 'basic',
+                rank: authUser?.rank || 'Anima Candida'
             });
         } catch (e) {
-            // [FIX] Hide Splash on Error + Sound + Toast
             if (onStartLoading) onStartLoading(false); // Force hide splash
             SoundService.play('error');
             setToast({ visible: true, message: "Impossibile creare la stanza." });
-            // Alert.alert("Errore", "Impossibile creare la stanza.");
         } finally {
             setIsLoading(false);
         }
@@ -267,346 +193,33 @@ const LobbyScreen = ({ onStartLoading }) => {
     };
 
     const handleJoinSpecific = async (roomId) => {
-        // Trigger Splash immediately (normal speed)
-        if (onStartLoading) onStartLoading(); // Default speed
+        if (onStartLoading) onStartLoading();
 
         setIsLoading(true);
         try {
-            await joinRoom(roomId, {
-                avatar: localAvatar, // [FIX] Pass explicit avatar
+            const code = await joinRoom(roomId, {
+                avatar: localAvatar,
                 activeCardSkin: authUser?.activeCardSkin || 'classic',
-                activeFrame: authUser?.activeFrame || 'basic', // [NEW]
-                rank: authUser?.rank || 'Anima Candida' // [NEW]
+                activeFrame: authUser?.activeFrame || 'basic',
+                rank: authUser?.rank || 'Anima Candida'
             });
+            if (code) {
+                AnalyticsService.log('lobby_join', { room_code: code });
+            }
         } catch (e) {
-            // [FIX] Hide Splash on Error + Sound + Toast
-            if (onStartLoading) onStartLoading(false); // Force hide splash
+            if (onStartLoading) onStartLoading(false);
             SoundService.play('error');
             setToast({ visible: true, message: "Stanza non trovata o piena." });
-            // Alert.alert("Errore", "Impossibile unirsi alla stanza.");
         } finally {
             setIsLoading(false);
         }
     };
 
-    const renderIdentityStep = () => (
-        <Animated.View
-            entering={SlideInLeft.springify().damping(35).stiffness(150)}
-            exiting={SlideOutLeft.duration(300)}
-            style={styles.stepContainer}
-        >
-
-            <View style={{ width: '100%', marginBottom: 0, marginTop: 15 }}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.accent }]}>CHI SEI?</Text>
-                <Text style={[styles.subTitle, { color: '#888', fontFamily: 'Outfit' }]}>
-                    Scegli il tuo nome e il tuo volto.
-                </Text>
-            </View>
-
-
-            <PremiumInput
-                label="IL TUO NOME"
-                value={localPlayerName}
-                onChangeText={setLocalPlayerName}
-                placeholder=""
-                style={{ marginBottom: 60 }}
-                labelBackgroundColor="#0d0d0d"
-            />
-
-            {/* Avatar Section Header with Info Button */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 0, zIndex: 20 }}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.accent, fontSize: 16, marginBottom: 0, marginRight: 10 }]}>
-                    SCEGLI IL TUO AVATAR
-                </Text>
-                <View>
-                    <PremiumIconButton
-                        icon={
-                            <InfoIcon size={18} color={theme.colors.accent} />
-                        }
-                        onPress={() => setShowAvatarInfo(!showAvatarInfo)}
-                        style={{
-                            backgroundColor: 'transparent',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            padding: 0
-                        }}
-                        size={32}
-                        hitSlop={15}
-                    />
-                    {showAvatarInfo && (
-                        <Animated.View
-                            entering={FadeIn.duration(200)}
-                            exiting={FadeOut.duration(200)}
-                            style={{
-                                position: 'absolute',
-                                bottom: 40,
-                                right: -10,
-                                width: 220,
-                                backgroundColor: '#1e1e1e',
-                                borderRadius: 12,
-                                padding: 15,
-                                borderWidth: 1,
-                                borderColor: 'rgba(255,255,255,0.1)',
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.3,
-                                shadowRadius: 8,
-                                elevation: 10,
-                                zIndex: 100
-                            }}
-                        >
-                            <Text style={{ color: '#ccc', fontFamily: 'Outfit', fontSize: 13, lineHeight: 18, marginBottom: 8 }}>
-                                L'avatar selezionato non sparirà: resterà il primo della lista anche se aggiorni.
-                            </Text>
-                            <Text style={{ color: '#ccc', fontFamily: 'Outfit', fontSize: 13, lineHeight: 18 }}>
-                                L'avatar <Text style={{ color: theme.colors.accent, fontWeight: 'bold' }}>Dado</Text> ti assegna un'identità segreta.
-                            </Text>
-                            <View style={{
-                                position: 'absolute',
-                                bottom: -8,
-                                right: 18,
-                                width: 0,
-                                height: 0,
-                                borderLeftWidth: 8,
-                                borderRightWidth: 8,
-                                borderTopWidth: 8,
-                                borderLeftColor: 'transparent',
-                                borderRightColor: 'transparent',
-                                borderTopColor: 'rgba(255,255,255,0.1)',
-                            }} />
-                            <View style={{
-                                position: 'absolute',
-                                bottom: -7,
-                                right: 18,
-                                width: 0,
-                                height: 0,
-                                borderLeftWidth: 8,
-                                borderRightWidth: 8,
-                                borderTopWidth: 8,
-                                borderLeftColor: 'transparent',
-                                borderRightColor: 'transparent',
-                                borderTopColor: '#1e1e1e',
-                            }} />
-                        </Animated.View>
-                    )}
-                </View>
-            </View>
-
-            <AvatarCarousel
-                ref={carouselRef}
-                seeds={avatarSeeds}
-                selectedAvatar={localAvatar}
-                onSelectAvatar={setLocalAvatar}
-            />
-
-            {/* [NEW] Bottom Refresh Section */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 10 }}>
-                <Text style={{ color: '#666', fontFamily: 'Outfit', fontSize: 13, fontStyle: 'italic' }}>
-                    Tocca qui per cambiare nuovi avatar
-                </Text>
-                <PremiumIconButton
-                    icon={
-                        <View>
-                            <Animated.View style={refreshAnimatedStyle}>
-                                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                                    <Path
-                                        d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
-                                        fill={theme.colors.accent}
-                                    />
-                                </Svg>
-                            </Animated.View>
-                        </View>
-                    }
-                    onPress={handleRefreshAvatars}
-                    style={{
-                        borderRadius: 20,
-                        borderWidth: 1,
-                        borderColor: theme.colors.accent,
-                        backgroundColor: 'transparent',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        padding: 0
-                    }}
-                    size={32}
-                    hitSlop={15}
-                />
-            </View>
-
-            <PremiumButton
-                title="AVANTI ➜"
-                onPress={handleNextToActions}
-                enableSound={false}
-                disabled={!localPlayerName}
-                style={{
-                    marginTop: 30,
-                    backgroundColor: theme.colors.accent,
-                    borderColor: theme.colors.accent,
-                }}
-                textStyle={{
-                    color: '#000',
-                    fontFamily: 'Cinzel-Bold',
-                    fontSize: 20
-                }}
-            />
-
-            <View style={{ marginBottom: 0 }} />
-        </Animated.View>
-    );
-
-    const renderActionStep = () => (
-        <Animated.View
-            entering={SlideInRight.springify().damping(35).stiffness(150)}
-            exiting={SlideOutRight.duration(300)}
-            style={styles.stepContainer}
-        >
-            {/* Back Button */}
-            <View style={{ width: '100%', alignItems: 'flex-start', marginBottom: 0, marginTop: 10 }}>
-                <PremiumButton
-                    title="← INDIETRO"
-                    variant="ghost"
-                    enableRipple={false}
-                    enableSound={false}
-                    onPress={() => setCurrentStep(STEPS.IDENTITY)}
-                    style={{ paddingVertical: 5, justifyContent: 'flex-start', width: 'auto', alignSelf: 'flex-start' }}
-                    contentContainerStyle={{ paddingHorizontal: 0, paddingVertical: 5 }}
-                    textStyle={{ fontSize: 14, color: '#7b7b7bff', fontFamily: 'Cinzel-Bold', textAlign: 'left' }}
-                />
-            </View>
-
-            {/* Title Section */}
-            <View style={{ width: '100%', marginBottom: 30, marginTop: 10 }}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.accent, fontSize: 26 }]}>SCEGLI LA TUA STRADA</Text>
-                <Text style={[styles.subTitle, { color: '#888', fontFamily: 'Outfit' }]}>
-                    Crea una nuova stanza o unisciti.
-                </Text>
-            </View>
-
-            {/* Code Input */}
-            <View style={{ width: '100%', marginBottom: 20 }}>
-                <PremiumInput
-                    label="CODICE STANZA"
-                    value={roomToJoin}
-                    onChangeText={setRoomToJoin}
-                    placeholder=""
-                    labelBackgroundColor="#0d0d0d"
-                />
-            </View>
-
-
-
-            {/* Action Buttons Row */}
-            <View style={{ flexDirection: 'row', width: '100%', marginBottom: 30, gap: 15 }}>
-                <PremiumButton
-                    title="CREA"
-                    variant="outline"
-                    onPress={handleCreateRoom}
-                    disabled={isLoading}
-                    enableSound={false} // [FIX] Avoid pop before potential error/action
-                    style={{
-                        flex: 1, // Increased width share
-                        borderColor: '#333',
-                        backgroundColor: 'rgba(0,0,0,0.3)',
-                        minHeight: 55
-                    }}
-                    contentContainerStyle={{
-                        paddingVertical: 12,
-                        paddingHorizontal: 10 // Reduced padding to fit text
-                    }}
-                    textStyle={{ color: '#aaa', fontSize: 12, fontFamily: 'Cinzel-Bold' }}
-                />
-                <PremiumButton
-                    title="UNISCITI"
-                    onPress={() => handleJoinSpecific(roomToJoin)}
-                    disabled={!roomToJoin || isLoading}
-                    enableSound={false} // [FIX] Avoid pop before potential error
-                    style={{
-                        flex: 2, // Increased dominance
-                        backgroundColor: theme.colors.accent,
-                        minHeight: 55
-                    }}
-                    contentContainerStyle={{
-                        paddingVertical: 12,
-                    }}
-                    textStyle={{ color: '#000', fontSize: 20, fontFamily: 'Cinzel-Bold' }}
-                />
-            </View>
-
-            {/* Divider */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 20, marginTop: 40 }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: '#333' }} />
-                <Text style={{ marginHorizontal: 10, color: '#666', fontSize: 12, fontFamily: 'Cinzel-Bold' }}>OPPURE</Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: '#333' }} />
-            </View>
-
-            {/* Open Rooms List */}
-            <View style={{ width: '100%', flex: 1, marginTop: 20 }}>
-
-                <View style={{
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.15)',
-                    borderRadius: 12,
-                    padding: 8,
-                    backgroundColor: 'rgba(83, 83, 83, 0.2)',
-                    minHeight: 80
-                }}>
-
-                    <Text style={{ color: '#888', fontFamily: 'Cinzel-Bold', marginBottom: 10, textAlign: 'center' }}>Stanze Aperte</Text>
-
-                    <ScrollView
-                        style={styles.roomList}
-                        contentContainerStyle={{ gap: 8 }}
-                        nestedScrollEnabled={true}
-                        showsVerticalScrollIndicator={false}
-                    >
-                        {validRooms.length === 0 ? (
-                            <Text style={{ color: '#555', textAlign: 'center', marginTop: 20, fontFamily: 'Outfit', fontStyle: 'italic' }}>
-                                Nessuna stanza pubblica al momento.
-                            </Text>
-                        ) : (
-                            validRooms.map((room) => (
-                                <RoomItem
-                                    key={room.id}
-                                    roomName={`Stanza ${room.id}`}
-                                    playerCount={Object.keys(room.giocatori || {}).length}
-                                    state={room.statoPartita === 'LOBBY' ? 'LOBBY' : 'PLAYING'}
-                                    onJoin={() => handleJoinSpecific(room.id)}
-                                    creatorName={room.creatore}
-                                />
-                            ))
-                        )}
-                    </ScrollView>
-                </View>
-            </View>
-        </Animated.View>
-    );
-
     return (
         <PremiumBackground showParticles={true}>
-            <TouchableWithoutFeedback onPress={() => { if (showAvatarInfo) setShowAvatarInfo(false); Keyboard.dismiss(); }}>
+            <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); }}>
                 <View style={{ flex: 1 }}>
                     <StatusBar hidden={true} />
-                    <View style={styles.header}>
-                        <View style={{ flexDirection: 'row', gap: 10 }}>
-                            <PremiumIconButton
-                                icon={
-                                    <ScaleIcon size={32} color={theme.colors.accent} />
-                                }
-                                onPress={() => setShowShop(true)}
-                                style={styles.settingsButton}
-                                size={48}
-                                hitSlop={30}
-                            />
-                            <PremiumIconButton
-                                icon={
-                                    <SettingsIcon size={32} color={theme.colors.accent} />
-                                }
-                                onPress={handleSettingsPress}
-                                style={styles.settingsButton}
-                                size={48}
-                                hitSlop={30}
-                            />
-                        </View>
-                    </View>
 
                     {/* [NEW] Rank Badge Top-Left (Ultra Clean Version) */}
                     {authUser?.rank && (
@@ -617,15 +230,15 @@ const LobbyScreen = ({ onStartLoading }) => {
                             <View style={[styles.rankBadgeGradient, { borderColor: (RANK_COLORS[authUser.rank] || '#888') + '66', borderWidth: 1 }]}>
                                 <View style={[styles.rankVerticalBar, { backgroundColor: RANK_COLORS[authUser.rank] || '#888' }]} />
                                 <Text style={[styles.rankTextLabel, { color: (RANK_COLORS[authUser.rank] || '#888') }]}>
-                                    {authUser.rank}
+                                    {t(getRankKey(authUser.rank))}
                                 </Text>
                             </View>
                         </Animated.View>
                     )}
 
-                    <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                    <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 100 + insets.bottom }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                         {currentStep === STEPS.IDENTITY && (
-                            <View style={{ alignItems: 'center', marginTop: 0, marginBottom: 30 }}>
+                            <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 30 }}>
                                 <Text style={[styles.mainTitle, { color: theme.colors.accent }]}>CARDS OF</Text>
                                 <Text style={[styles.mainTitle, { color: theme.colors.accent }]}>MORAL DECAY</Text>
                             </View>
@@ -635,17 +248,49 @@ const LobbyScreen = ({ onStartLoading }) => {
                                 layout={LinearTransition.duration(300)}
                                 style={[styles.innerFrame, { borderColor: theme.colors.cardBorder, marginTop: 5 }]}
                             >
-                                {currentStep === STEPS.IDENTITY && renderIdentityStep()}
-                                {currentStep === STEPS.ACTION && renderActionStep()}
+                                {currentStep === STEPS.IDENTITY ? (
+                                    <IdentityStep
+                                        theme={theme}
+                                        name={localPlayerName}
+                                        onNameChange={setLocalPlayerName}
+                                        avatar={localAvatar}
+                                        onEditAvatar={() => setShowAvatarModal(true)}
+                                        onNext={() => handleNextToActions(localPlayerName, localAvatar)}
+                                    />
+                                ) : (
+                                    <MainMenuStep
+                                        theme={theme}
+                                        roomToJoin={roomToJoin}
+                                        setRoomToJoin={setRoomToJoin}
+                                        isLoading={isLoading}
+                                        onBack={() => setCurrentStep(STEPS.IDENTITY)}
+                                        onCreateRoom={handleCreateRoom}
+                                        onJoinRoom={handleJoinSpecific}
+                                        validRooms={validRooms}
+                                    />
+                                )}
                             </Animated.View>
                         </View>
                     </ScrollView>
                 </View>
             </TouchableWithoutFeedback>
 
-            <SettingsModal
-                visible={showSettingsModal}
-                onClose={closeSettings}
+            <AvatarSelectionModal
+                visible={showAvatarModal}
+                onClose={() => setShowAvatarModal(false)}
+                onSelect={setLocalAvatar}
+                currentAvatar={localAvatar}
+                avatars={[MYSTERY_AVATAR, ...PLAYER_AVATARS]}
+            />
+
+            {/* [NEW] Logout Confirmation Modal (Might not be accessible from UI here anymore, but keeping logic just in case) */}
+            <ConfirmationModal
+                visible={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                title={t('logout_title')}
+                message={t('logout_msg')}
+                confirmText={t('logout_title')} // or t('exit_btn') / specific logout action
+                onConfirm={confirmLogout}
             />
 
             <ToastNotification
@@ -659,49 +304,41 @@ const LobbyScreen = ({ onStartLoading }) => {
             <PremiumModal
                 visible={showExitModal}
                 onClose={() => setShowExitModal(false)}
-                title="USCIRE?"
+                title={t('exit_app_title')}
             >
-                <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+                <View style={{ alignItems: 'center', paddingVertical: 10, paddingHorizontal: 20, paddingBottom: 20 }}>
                     <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16, marginBottom: 30 }}>
-                        Vuoi chiudere l'applicazione?
+                        {t('exit_app_msg')}
                     </Text>
                     <View style={{ flexDirection: 'row', gap: 15, width: '100%' }}>
                         <PremiumButton
-                            title="NO"
+                            title={t('exit_app_no')}
                             variant="ghost"
                             enableSound={false}
                             onPress={() => setShowExitModal(false)}
-                            style={{ flex: 1 }}
+                            style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+                            textStyle={{ fontSize: 14 }}
                         />
                         <PremiumButton
-                            title="SI, ESCI"
-                            enableSound={false}
+                            title={t('exit_app_yes')}
+                            variant="danger"
+                            enableSound={true}
                             onPress={() => BackHandler.exitApp()}
-                            style={{ flex: 1, backgroundColor: '#ef4444', borderColor: '#b91c1c' }}
-                            textStyle={{ color: 'white' }}
+                            style={{ flex: 1 }}
+                            textStyle={{ fontSize: 14, fontFamily: 'Cinzel-Bold' }}
                         />
                     </View>
                 </View>
             </PremiumModal>
 
-
-            <PremiumModal
-                visible={showShop}
-                onClose={() => setShowShop(false)}
-                title="MERCATO NERO"
-                modalHeight="85%" // [FIX] Maximize vertical space
-            >
-                <ShopScreen onClose={() => setShowShop(false)} />
-            </PremiumModal>
-
             {/* [NEW] Mandatory Recovery Code Modal for New Users */}
             <PremiumModal
                 visible={!!authUser?.isNew}
-                onClose={() => { }} // Non-dismissible without pressing the button
-                title="BENVENUTO"
+                onClose={() => { }}
+                title={t('welcome_title')}
                 showClose={false}
             >
-                <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+                <View style={{ alignItems: 'center', paddingVertical: 10, paddingHorizontal: 20, paddingBottom: 20 }}>
                     <View style={{
                         width: 64, height: 64, borderRadius: 32,
                         backgroundColor: 'rgba(255, 206, 106, 0.1)',
@@ -714,11 +351,11 @@ const LobbyScreen = ({ onStartLoading }) => {
                     </View>
 
                     <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 18, marginBottom: 12, textAlign: 'center', letterSpacing: 1 }}>
-                        SALVA IL TUO CODICE
+                        {t('save_code_title')}
                     </Text>
 
                     <Text style={{ color: '#aaa', textAlign: 'center', fontFamily: 'Outfit', fontSize: 14, marginBottom: 20, lineHeight: 20, paddingHorizontal: 10 }}>
-                        Questo è l'unico modo per recuperare il tuo account se cambi telefono o disinstalli l'app.
+                        {t('save_code_msg')}
                     </Text>
 
                     <Animated.View style={[
@@ -745,28 +382,29 @@ const LobbyScreen = ({ onStartLoading }) => {
                     </Animated.View>
 
                     <Text style={{ color: '#666', fontFamily: 'Outfit', fontSize: 12, marginBottom: 25, textAlign: 'center' }}>
-                        💡 Lo trovi sempre in <Text style={{ color: '#888', fontWeight: 'bold' }}>Impostazioni &gt; Sicurezza</Text>
+                        {t('save_code_hint')} <Text style={{ color: '#888', fontWeight: 'bold' }}>{t('save_code_hint_bold')}</Text>
                     </Text>
 
                     <PremiumButton
-                        title="HO SALVATO IL CODICE"
+                        title={t('code_saved_btn')}
                         onPress={() => {
                             Clipboard.setStringAsync(authUser.recoveryCode);
                             dismissNewUser();
-                            setToast({ visible: true, message: "Codice copiato! Tienilo al sicuro.", type: 'success' });
+                            setToast({ visible: true, message: t('code_saved_toast'), type: 'success' });
                         }}
                         style={{ backgroundColor: theme.colors.accent, width: '100%', height: 55 }}
                         textStyle={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 15 }}
                     />
                 </View>
             </PremiumModal>
+
             {/* [NEW] Success Modal for Account Recovery */}
             <PremiumModal
                 visible={!!authUser?.isRecovered}
                 onClose={dismissRecovered}
-                title="BENTORNATO"
+                title={t('welcome_back_title')}
             >
-                <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+                <View style={{ alignItems: 'center', paddingVertical: 10, paddingHorizontal: 20, paddingBottom: 20 }}>
                     <View style={{
                         width: 64, height: 64, borderRadius: 32,
                         backgroundColor: 'rgba(74, 222, 128, 0.1)',
@@ -779,22 +417,22 @@ const LobbyScreen = ({ onStartLoading }) => {
                     </View>
 
                     <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 18, marginBottom: 12, textAlign: 'center', letterSpacing: 1 }}>
-                        ACCOUNT RECUPERATO
+                        {t('account_recovered_title')}
                     </Text>
 
                     <Text style={{ color: '#aaa', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16, marginBottom: 25 }}>
-                        Tutti i tuoi dati sono stati ripristinati con successo su questo dispositivo.
+                        {t('account_recovered_msg')}
                     </Text>
 
                     <PremiumButton
-                        title="D'ACCORDO"
+                        title={t('agree_btn')}
                         onPress={dismissRecovered}
                         style={{ backgroundColor: theme.colors.accent, width: '100%', height: 50 }}
                         textStyle={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 14 }}
                     />
                 </View>
             </PremiumModal>
-        </PremiumBackground>
+        </PremiumBackground >
     );
 };
 
@@ -804,9 +442,9 @@ const styles = StyleSheet.create({
     },
     scrollContainer: {
         flexGrow: 1,
-        paddingTop: 120,
+        paddingTop: 100, // Reduced top padding
         paddingBottom: 40,
-        minHeight: Dimensions.get('window').height + 1 // Force scrollable content
+        minHeight: Dimensions.get('window').height + 1
     },
     frameContainer: {
         width: '100%',
@@ -817,56 +455,16 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         paddingHorizontal: 20,
         paddingBottom: 20,
-        paddingTop: 0, // Reduced to be just above the top element (Back button)
+        paddingTop: 0,
         backgroundColor: '#0d0d0ddd',
         marginTop: 40,
-        overflow: 'hidden', // Clip content during animations to stay inside the frame
-    },
-    stepContainer: {
-        width: '100%',
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 32,
-        fontFamily: 'Cinzel Decorative-Bold',
-        marginBottom: 30,
-        textAlign: 'center',
-    },
-    subTitle: {
-        fontSize: 18,
-        marginVertical: 15,
-    },
-    roomList: {
-        width: '100%',
-        maxHeight: 300, // Keeps it bounded but not forced large
-        marginVertical: 10,
-    },
-    rowHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '100%',
-        marginBottom: 20,
+        overflow: 'hidden',
     },
     mainTitle: {
         fontSize: 38,
-        fontFamily: 'Cinzel Decorative-Bold',
+        fontFamily: 'Cinzel-Bold',
         textAlign: 'center',
         letterSpacing: 1.5,
-    },
-    sectionTitle: {
-        fontSize: 24,
-        fontFamily: 'Cinzel Decorative-Bold',
-        marginBottom: 5,
-    },
-    header: {
-        position: 'absolute',
-        top: 20, // [FIX] Reduced from 50
-        right: 20,
-        zIndex: 1000,
-    },
-    settingsButton: {
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     rankBadgeContainer: {
         position: 'absolute',
@@ -881,7 +479,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 15,
-        backgroundColor: 'rgba(255,255,255,0.03)', // Ultra subtle
+        backgroundColor: 'rgba(255,255,255,0.03)',
         gap: 10,
     },
     rankVerticalBar: {

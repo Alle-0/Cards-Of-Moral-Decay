@@ -14,11 +14,13 @@ import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
 import { RobotIcon } from './Icons';
 import SoundService from '../services/SoundService';
+import { useLanguage } from '../context/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
 const JokerOverlay = ({ visible, onFinish }) => {
     const { theme } = useTheme();
+    const { t } = useLanguage();
     const scale = useSharedValue(1);
     const rotate = useSharedValue(0);
 
@@ -84,10 +86,10 @@ const JokerOverlay = ({ visible, onFinish }) => {
                 </Animated.View>
 
                 <Text style={[styles.text, { color: theme.colors.accent }]}>
-                    AI STA PENSANDO...
+                    {t('ai_thinking')}
                 </Text>
                 <Text style={styles.subText}>
-                    Calcolo della risposta peggiore in corso.
+                    {t('calculating_response')}
                 </Text>
             </View>
         </Animated.View>

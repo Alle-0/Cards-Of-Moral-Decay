@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useMemo, memo } from 'react';
 import { StyleSheet, View, Text, Pressable, Dimensions, PanResponder, TouchableWithoutFeedback } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS, Easing, interpolate, Extrapolate, withRepeat, interpolateColor } from 'react-native-reanimated';
 import { useTheme, AVATAR_FRAMES } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext'; // [NEW]
 import EfficientBlurView from './EfficientBlurView'; // [NEW]
 import { SvgUri } from 'react-native-svg';
 import PremiumIconButton from './PremiumIconButton';
@@ -22,6 +23,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
     // ... (rest of component start)
 
     const { theme } = useTheme();
+    const { t } = useLanguage();
 
     // Calculate content height - adjusted for tighter handle
     // 75 per player + 100 base (header) + 40 for handle area roughly
@@ -132,10 +134,11 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                 </>
             )}
 
+
             <Animated.View style={[styles.drawer, animatedStyle]}>
                 <View style={styles.header}>
-                    <Text style={[styles.title, { color: theme.colors.accent, fontFamily: 'Cinzel Decorative-Bold' }]}>
-                        Classifica
+                    <Text style={[styles.title, { color: theme.colors.accent, fontFamily: 'Cinzel-Bold' }]}>
+                        {t('leaderboard_title')}
                     </Text>
                     <Pressable onPress={onClose} style={styles.closeBtn}>
                         <CrossIcon size={20} color="#888" />
@@ -146,6 +149,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                 <View style={styles.list}>
                     {players.map((player, index) => (
                         <View key={player.name} style={[styles.playerRow, { borderColor: player.name === currentUserName ? theme.colors.accent : 'rgba(255,255,255,0.1)' }]}>
+                            {/* ... rank and avatar ... */}
                             <View style={styles.rankContainer}>
                                 <Text style={[styles.rank, { color: index === 0 ? '#ffd700' : '#888' }]}>
                                     {index + 1}
@@ -169,7 +173,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                                     fontWeight: 'bold',
                                     marginTop: 0
                                 }}>
-                                    {player.rank || 'Anima Candida'}
+                                    {player.rank ? t('rank_' + player.rank.toLowerCase().replace(/ /g, '_'), player.rank) : t('rank_anima_candida')}
                                 </Text>
                             </View>
                             <Text style={[styles.score, { color: theme.colors.accent }]}>
@@ -201,22 +205,22 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                 <PremiumModal
                     visible={showKickModal}
                     onClose={() => setShowKickModal(false)}
-                    title="Eliminare Giocatore?"
+                    title={t('kick_player_title')}
                 >
                     <View style={{ alignItems: 'center' }}>
                         <Text style={{ color: theme.colors.textPrimary, fontSize: 16, textAlign: 'center', marginBottom: 20, fontFamily: 'Outfit-Regular' }}>
-                            Sei sicuro di voler rimuovere <Text style={{ color: theme.colors.accent, fontWeight: 'bold' }}>{playerToKick?.name}</Text> dalla stanza?
+                            {t('kick_player_msg', { name: playerToKick?.name })}
                         </Text>
                         <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
                             <PremiumButton
-                                title="ANNULLA"
+                                title={t('kick_cancel_btn')}
                                 variant="ghost"
                                 onPress={() => setShowKickModal(false)}
                                 style={{ flex: 1 }}
                                 textStyle={{ fontSize: 14 }}
                             />
                             <PremiumButton
-                                title="ELIMINA"
+                                title={t('kick_btn')}
                                 variant="danger"
                                 onPress={() => {
                                     if (playerToKick) {

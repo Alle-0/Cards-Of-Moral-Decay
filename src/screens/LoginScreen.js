@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ImageBackground, Alert, ScrollView, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ScrollView, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../services/firebase';
 import { signOut } from 'firebase/auth';
@@ -69,7 +69,6 @@ export default function LoginScreen() {
         setLoading(true);
         try {
             await signUp(username.trim());
-            // Reset loading even on success to avoid UI deadlock
             setLoading(false);
         } catch (error) {
             setModal({ visible: true, title: "Errore", message: error.message });
@@ -87,8 +86,6 @@ export default function LoginScreen() {
         try {
             const formattedCode = recoveryCode.trim().toUpperCase();
             await recoverAccount(recoverUsername.trim(), formattedCode);
-            // No need to set modal "Bentornato" as App.js will navigate away instantly
-            // but we reset loading just in case of slight delay
             setLoading(false);
         } catch (error) {
             setModal({ visible: true, title: "Fallimento", message: error.message });
@@ -96,7 +93,172 @@ export default function LoginScreen() {
         }
     };
 
-    // --- UI Components ---
+    // Refactored Form Content to avoid duplication
+    const renderFormContent = () => (
+        <View style={styles.container}>
+            <Animated.View
+                layout={LinearTransition.duration(300).easing(Easing.out(Easing.cubic))}
+                entering={FadeInDown.delay(200).springify()}
+                style={styles.content}
+            >
+                <Text style={styles.title}>Cards of{"\n"}Moral Decay</Text>
+
+                {/* Tabs */}
+                <View style={styles.tabContainer}>
+                    <Animated.View style={[styles.tabIndicator, animatedTabStyle]} />
+
+                    <TouchableOpacity
+                        style={styles.tab}
+                        onPress={() => setActiveTab('new')}
+                    >
+                        <Animated.Text style={[styles.tabText, activeTab === 'new' && styles.activeTabText]}>Nuovo Giocatore</Animated.Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.tab}
+                        onPress={() => setActiveTab('recover')}
+                    >
+                        <Animated.Text style={[styles.tabText, activeTab === 'recover' && styles.activeTabText]}>Recupera</Animated.Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Content Area */}
+                <Animated.View
+                    layout={LinearTransition.duration(300).easing(Easing.out(Easing.cubic))}
+                    style={styles.formArea}
+                >
+                    {activeTab === 'new' ? (
+                        <Animated.View
+                            key="new"
+                            entering={SlideInLeft.duration(300)}
+                            exiting={SlideOutLeft.duration(300)}
+                            style={styles.formSlide}
+                        >
+                            <Text style={styles.subtitle}>Entra nel caos.</Text>
+                            <Text style={styles.desc}>Nessuna email. Nessuna password. Solo il tuo nome.</Text>
+
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.label}>ALIAS</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Come vuoi farti salvare?"
+                                    placeholderTextColor="#666"
+                                    value={username}
+                                    onChangeText={setUsername}
+                                    autoCapitalize="none"
+                                />
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.button, loading && styles.buttonDisabled]}
+                                onPress={handleSignUp}
+                                disabled={loading}
+                            >
+                                <LinearGradient
+                                    colors={['#FFD700', '#FFA500']}
+                                    style={styles.gradientButton}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                >
+                                    <Text style={styles.buttonText}>
+                                        {loading ? "CREAZIONE..." : "ENTRA NEL GIRO"}
+                                    </Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+
+                            <Text style={styles.disclaimer}>
+                                Ti verrà assegnato un Codice di Recupero.{"\n"}Non perderlo, o perdi tutto.
+                            </Text>
+                        </Animated.View>
+                    ) : (
+                        <Animated.View
+                            key="recover"
+                            entering={SlideInRight.duration(300)}
+                            exiting={SlideOutRight.duration(300)}
+                            style={styles.formSlide}
+                        >
+                            <Text style={styles.subtitle}>Riprenditi ciò che è tuo.</Text>
+                            <Text style={styles.desc}>Usa il codice segreto per trasferire il tuo profilo su questo dispositivo.</Text>
+
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.label}>ALIAS</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Il tuo vecchio nome"
+                                    placeholderTextColor="#666"
+                                    value={recoverUsername}
+                                    onChangeText={setRecoverUsername}
+                                    autoCapitalize="none"
+                                />
+                            </View>
+
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.label}>CODICE SEGRETO</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="XXX-XXXX"
+                                    placeholderTextColor="#666"
+                                    value={recoveryCode}
+                                    onChangeText={(text) => {
+                                        const cleaned = text.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                                        let formatted = cleaned;
+                                        if (cleaned.length === 3 && text.length > recoveryCode.length) {
+                                            formatted = cleaned + '-';
+                                        } else if (cleaned.length > 3) {
+                                            formatted = cleaned.slice(0, 3) + '-' + cleaned.slice(3, 7);
+                                        }
+                                        setRecoveryCode(formatted);
+                                    }}
+                                    autoCapitalize="characters"
+                                    maxLength={8}
+                                />
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.button, loading && styles.buttonDisabled]}
+                                onPress={handleRecovery}
+                                disabled={loading}
+                            >
+                                <LinearGradient
+                                    colors={['#ef4444', '#b91c1c']}
+                                    style={styles.gradientButton}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                >
+                                    <Text style={[styles.buttonText, { color: '#fff' }]}>
+                                        {loading ? "VERIFICA..." : "RIPRISTINA"}
+                                    </Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </Animated.View>
+                    )}
+                </Animated.View>
+
+            </Animated.View>
+
+            <ConfirmationModal
+                visible={modal.visible}
+                title={modal.title}
+                message={modal.message}
+                onClose={() => setModal({ ...modal, visible: false })}
+                singleButton={true}
+                confirmText="OK"
+                onConfirm={() => setModal({ ...modal, visible: false })}
+            />
+
+            {/* Debug Button */}
+            <TouchableOpacity
+                onPress={async () => {
+                    await signOut(auth);
+                    if (Platform.OS === 'web') window.location.reload();
+                }}
+                style={{ marginTop: 20, opacity: 0.4 }}
+            >
+                <Text style={{ color: '#aaa', fontSize: 10, textAlign: 'center', fontFamily: 'Outfit' }}>
+                    Problemi con il database? Clicca qui per resettare la sessione
+                </Text>
+            </TouchableOpacity>
+        </View>
+    );
 
     if (authLoading) {
         return (
@@ -113,176 +275,15 @@ export default function LoginScreen() {
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={{ flex: 1 }}
+                enabled={Platform.OS !== 'web'}
             >
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                    <View style={styles.container}>
-                        <Animated.View
-                            layout={LinearTransition.duration(300).easing(Easing.out(Easing.cubic))}
-                            entering={FadeInDown.delay(200).springify()}
-                            style={styles.content}
-                        >
-                            <Text style={styles.title}>Cards of{"\n"}Moral Decay</Text>
-
-                            {/* Tabs */}
-                            <View style={styles.tabContainer}>
-                                {/* [NEW] Animated Indicator */}
-                                <Animated.View style={[styles.tabIndicator, animatedTabStyle]} />
-
-                                <TouchableOpacity
-                                    style={styles.tab}
-                                    onPress={() => setActiveTab('new')}
-                                >
-                                    <Animated.Text style={[styles.tabText, activeTab === 'new' && styles.activeTabText]}>Nuovo Giocatore</Animated.Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.tab}
-                                    onPress={() => setActiveTab('recover')}
-                                >
-                                    <Animated.Text style={[styles.tabText, activeTab === 'recover' && styles.activeTabText]}>Recupera</Animated.Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* Content Area */}
-                            <Animated.View
-                                layout={LinearTransition.duration(300).easing(Easing.out(Easing.cubic))}
-                                style={styles.formArea}
-                            >
-                                {activeTab === 'new' ? (
-                                    <Animated.View
-                                        key="new"
-                                        entering={SlideInLeft.duration(300)}
-                                        exiting={SlideOutLeft.duration(300)}
-                                        style={styles.formSlide}
-                                    >
-                                        <Text style={styles.subtitle}>Entra nel caos.</Text>
-                                        <Text style={styles.desc}>Nessuna email. Nessuna password. Solo il tuo nome.</Text>
-
-                                        <View style={styles.inputContainer}>
-                                            <Text style={styles.label}>ALIAS</Text>
-                                            <TextInput
-                                                style={styles.input}
-                                                placeholder="Come vuoi farti salvare?"
-                                                placeholderTextColor="#666"
-                                                value={username}
-                                                onChangeText={setUsername}
-                                                autoCapitalize="none"
-                                            />
-                                        </View>
-
-                                        <TouchableOpacity
-                                            style={[styles.button, loading && styles.buttonDisabled]}
-                                            onPress={handleSignUp}
-                                            disabled={loading}
-                                        >
-                                            <LinearGradient
-                                                colors={['#FFD700', '#FFA500']}
-                                                style={styles.gradientButton}
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 1, y: 0 }}
-                                            >
-                                                <Text style={styles.buttonText}>
-                                                    {loading ? "CREAZIONE..." : "ENTRA NEL GIRO"}
-                                                </Text>
-                                            </LinearGradient>
-                                        </TouchableOpacity>
-
-                                        <Text style={styles.disclaimer}>
-                                            Ti verrà assegnato un Codice di Recupero.{"\n"}Non perderlo, o perdi tutto.
-                                        </Text>
-                                    </Animated.View>
-                                ) : (
-                                    <Animated.View
-                                        key="recover"
-                                        entering={SlideInRight.duration(300)}
-                                        exiting={SlideOutRight.duration(300)}
-                                        style={styles.formSlide}
-                                    >
-                                        <Text style={styles.subtitle}>Riprenditi ciò che è tuo.</Text>
-                                        <Text style={styles.desc}>Usa il codice segreto per trasferire il tuo profilo su questo dispositivo.</Text>
-
-                                        <View style={styles.inputContainer}>
-                                            <Text style={styles.label}>ALIAS</Text>
-                                            <TextInput
-                                                style={styles.input}
-                                                placeholder="Il tuo vecchio nome"
-                                                placeholderTextColor="#666"
-                                                value={recoverUsername}
-                                                onChangeText={setRecoverUsername}
-                                                autoCapitalize="none"
-                                            />
-                                        </View>
-
-                                        <View style={styles.inputContainer}>
-                                            <Text style={styles.label}>CODICE SEGRETO</Text>
-                                            <TextInput
-                                                style={styles.input}
-                                                placeholder="XXX-XXXX"
-                                                placeholderTextColor="#666"
-                                                value={recoveryCode}
-                                                onChangeText={(text) => {
-                                                    const cleaned = text.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-                                                    let formatted = cleaned;
-
-                                                    // If adding the 3rd char, append hyphen immediately
-                                                    if (cleaned.length === 3 && text.length > recoveryCode.length) {
-                                                        formatted = cleaned + '-';
-                                                    } else if (cleaned.length > 3) {
-                                                        formatted = cleaned.slice(0, 3) + '-' + cleaned.slice(3, 7);
-                                                    }
-
-                                                    setRecoveryCode(formatted);
-                                                }}
-                                                autoCapitalize="characters"
-                                                maxLength={8}
-                                            />
-                                        </View>
-
-                                        <TouchableOpacity
-                                            style={[styles.button, loading && styles.buttonDisabled]}
-                                            onPress={handleRecovery}
-                                            disabled={loading}
-                                        >
-                                            <LinearGradient
-                                                colors={['#ef4444', '#b91c1c']}
-                                                style={styles.gradientButton}
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 1, y: 0 }}
-                                            >
-                                                <Text style={[styles.buttonText, { color: '#fff' }]}>
-                                                    {loading ? "VERIFICA..." : "RIPRISTINA"}
-                                                </Text>
-                                            </LinearGradient>
-                                        </TouchableOpacity>
-                                    </Animated.View>
-                                )}
-                            </Animated.View>
-
-                        </Animated.View>
-
-                        <ConfirmationModal
-                            visible={modal.visible}
-                            title={modal.title}
-                            message={modal.message}
-                            onClose={() => setModal({ ...modal, visible: false })}
-                            singleButton={true}
-                            confirmText="OK"
-                            onConfirm={() => setModal({ ...modal, visible: false })}
-                        />
-                        {/* Debug: Force reset session if stuck */}
-                        <TouchableOpacity
-                            onPress={async () => {
-                                await signOut(auth);
-                                window.location.reload();
-                            }}
-                            style={{ marginTop: 20, opacity: 0.4 }}
-                        >
-                            <Text style={{ color: '#aaa', fontSize: 10, textAlign: 'center', fontFamily: 'Outfit' }}>
-                                Problemi con il database? Clicca qui per resettare la sessione
-                            </Text>
-                        </TouchableOpacity>
-
-                    </View>
-                </TouchableWithoutFeedback>
+                {Platform.OS === 'web' ? (
+                    renderFormContent()
+                ) : (
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                        {renderFormContent()}
+                    </TouchableWithoutFeedback>
+                )}
             </KeyboardAvoidingView>
         </PremiumBackground>
     );
@@ -302,7 +303,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255, 215, 0, 0.15)',
         alignItems: 'center',
-        overflow: 'hidden', // [FIX] Taglia le animazioni che escono dal bordo
+        overflow: 'hidden',
     },
     title: {
         fontFamily: 'Cinzel-Bold',
@@ -348,7 +349,7 @@ const styles = StyleSheet.create({
     },
     formArea: {
         width: '100%',
-        minHeight: 250, // Avoid layout jumping
+        minHeight: 250,
     },
     formSlide: {
         width: '100%'

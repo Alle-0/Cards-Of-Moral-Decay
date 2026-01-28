@@ -3,7 +3,7 @@ import { Alert, Platform } from 'react-native'; // Alert kept for fatal errors i
 import { db } from '../services/firebase';
 import { ref, set, get, update, onValue, runTransaction, onDisconnect, child } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PLAYER_AVATARS, PLAYER_COLORS, shuffleArray, pickColor } from '../utils/data';
+import { PLAYER_AVATARS, PLAYER_COLORS, shuffleArray, pickColor } from '../utils/constants';
 import SoundService from '../services/SoundService';
 import GameDataService from '../services/GameDataService';
 import { useAuth } from './AuthContext';
@@ -88,21 +88,22 @@ export const GameProvider = ({ children }) => {
     const hydrateRoom = (room) => {
         if (!room) return room;
         const newRoom = { ...room };
+        const forcedLang = newRoom.roomLanguage || null;
 
         // 1. Black Card
         if (typeof newRoom.cartaNera === 'number') {
-            newRoom.cartaNera = GameDataService.getBlackCardByIndex(newRoom.cartaNera);
+            newRoom.cartaNera = GameDataService.getBlackCardByIndex(newRoom.cartaNera, forcedLang);
         }
 
         // 2. Decks (Optional, mostly for internal state if needed)
         if (newRoom.blackDeck && Array.isArray(newRoom.blackDeck)) {
             newRoom.blackDeck = newRoom.blackDeck.map(item =>
-                typeof item === 'number' ? GameDataService.getBlackCardByIndex(item) : item
+                typeof item === 'number' ? GameDataService.getBlackCardByIndex(item, forcedLang) : item
             );
         }
         if (newRoom.whiteDeck && Array.isArray(newRoom.whiteDeck)) {
             newRoom.whiteDeck = newRoom.whiteDeck.map(item =>
-                typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item) : item
+                typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item, forcedLang) : item
             );
         }
 
@@ -111,7 +112,7 @@ export const GameProvider = ({ children }) => {
             Object.keys(newRoom.giocatori).forEach(pName => {
                 if (newRoom.giocatori[pName].carte && Array.isArray(newRoom.giocatori[pName].carte)) {
                     newRoom.giocatori[pName].carte = newRoom.giocatori[pName].carte.map(item =>
-                        typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item) : item
+                        typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item, forcedLang) : item
                     );
                 }
             });
@@ -123,10 +124,10 @@ export const GameProvider = ({ children }) => {
                 const val = newRoom.carteGiocate[pName];
                 if (Array.isArray(val)) {
                     newRoom.carteGiocate[pName] = val.map(item =>
-                        typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item) : item
+                        typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item, forcedLang) : item
                     );
                 } else if (typeof val === 'number') {
-                    newRoom.carteGiocate[pName] = GameDataService.getWhiteCardByIndex(val);
+                    newRoom.carteGiocate[pName] = GameDataService.getWhiteCardByIndex(val, forcedLang);
                 }
             });
         }
@@ -137,21 +138,22 @@ export const GameProvider = ({ children }) => {
     const dehydrateRoom = (room) => {
         if (!room) return room;
         const newRoom = { ...room };
+        const forcedLang = newRoom.roomLanguage || null;
 
         // 1. Black Card
         if (newRoom.cartaNera && typeof newRoom.cartaNera === 'object') {
-            newRoom.cartaNera = GameDataService.getBlackCardIndex(newRoom.cartaNera);
+            newRoom.cartaNera = GameDataService.getBlackCardIndex(newRoom.cartaNera, forcedLang);
         }
 
         // 2. Decks
         if (newRoom.blackDeck && Array.isArray(newRoom.blackDeck)) {
             newRoom.blackDeck = newRoom.blackDeck.map(item =>
-                typeof item === 'object' ? GameDataService.getBlackCardIndex(item) : item
+                typeof item === 'object' ? GameDataService.getBlackCardIndex(item, forcedLang) : item
             );
         }
         if (newRoom.whiteDeck && Array.isArray(newRoom.whiteDeck)) {
             newRoom.whiteDeck = newRoom.whiteDeck.map(item =>
-                typeof item === 'string' ? GameDataService.getWhiteCardIndex(item) : item
+                typeof item === 'string' ? GameDataService.getWhiteCardIndex(item, forcedLang) : item
             );
         }
 
@@ -160,7 +162,7 @@ export const GameProvider = ({ children }) => {
             Object.keys(newRoom.giocatori).forEach(pName => {
                 if (newRoom.giocatori[pName].carte && Array.isArray(newRoom.giocatori[pName].carte)) {
                     newRoom.giocatori[pName].carte = newRoom.giocatori[pName].carte.map(item =>
-                        typeof item === 'string' ? GameDataService.getWhiteCardIndex(item) : item
+                        typeof item === 'string' ? GameDataService.getWhiteCardIndex(item, forcedLang) : item
                     );
                 }
             });
@@ -172,10 +174,10 @@ export const GameProvider = ({ children }) => {
                 const val = newRoom.carteGiocate[pName];
                 if (Array.isArray(val)) {
                     newRoom.carteGiocate[pName] = val.map(item =>
-                        typeof item === 'string' ? GameDataService.getWhiteCardIndex(item) : item
+                        typeof item === 'string' ? GameDataService.getWhiteCardIndex(item, forcedLang) : item
                     );
                 } else if (typeof val === 'string') {
-                    newRoom.carteGiocate[pName] = GameDataService.getWhiteCardIndex(val);
+                    newRoom.carteGiocate[pName] = GameDataService.getWhiteCardIndex(val, forcedLang);
                 }
             });
         }
@@ -259,6 +261,9 @@ export const GameProvider = ({ children }) => {
                 creatore: currentName,
                 dominus: currentName,
                 dominusIndex: 0,
+                // [NEW] Store Package Settings & Language
+                allowedPackages: extraData.allowedPackages || { base: true, dark: false },
+                roomLanguage: extraData.roomLanguage || GameDataService.language || 'it',
                 cartaNera: null,
                 carteGiocate: {},
                 punti: { [currentName]: 0 },
@@ -401,8 +406,22 @@ export const GameProvider = ({ children }) => {
         await runTransaction(rRef, (rawRoom) => {
             if (!rawRoom) return rawRoom;
             const room = hydrateRoom(rawRoom);
-            room.blackDeck = shuffleArray([...GameDataService.getCarteNere()]);
-            room.whiteDeck = shuffleArray([...GameDataService.getCarteBianche()]);
+
+            // [NEW] Use room settings for packages and language
+            const packages = room.allowedPackages || { base: true, dark: false };
+            const forcedLang = room.roomLanguage || null;
+
+            // Update GameDataService to the forced language temporarily to get the right packages
+            const oldLang = GameDataService.language;
+            if (forcedLang) GameDataService.setLanguage(forcedLang);
+
+            const { carteNere, carteBianche } = GameDataService.getPackages(packages);
+
+            // Restore language
+            if (forcedLang) GameDataService.setLanguage(oldLang);
+
+            room.blackDeck = shuffleArray([...carteNere]);
+            room.whiteDeck = shuffleArray([...carteBianche]);
             Object.keys(room.giocatori || {}).forEach(pName => {
                 const hand = [];
                 for (let i = 0; i < 10; i++) { if (room.whiteDeck.length) hand.push(room.whiteDeck.pop()); }
@@ -462,14 +481,28 @@ export const GameProvider = ({ children }) => {
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
-                if (!room.blackDeck || room.blackDeck.length === 0) room.blackDeck = shuffleArray([...GameDataService.getCarteNere()]);
+                if (!room.blackDeck || room.blackDeck.length === 0) {
+                    const forcedLang = room.roomLanguage || null;
+                    const oldLang = GameDataService.language;
+                    if (forcedLang) GameDataService.setLanguage(forcedLang);
+                    const { carteNere } = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false });
+                    room.blackDeck = shuffleArray([...carteNere]);
+                    if (forcedLang) GameDataService.setLanguage(oldLang);
+                }
                 if (!room.whiteDeck || room.whiteDeck.length < 10) {
+                    const forcedLang = room.roomLanguage || null;
+                    const oldLang = GameDataService.language;
+                    if (forcedLang) GameDataService.setLanguage(forcedLang);
+
                     const cardsInHand = new Set();
                     Object.values(room.giocatori || {}).forEach(p => {
                         (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) cardsInHand.add(text); });
                     });
-                    const availableCards = GameDataService.getCarteBianche().filter(c => !cardsInHand.has(c));
+                    const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }).carteBianche;
+                    const availableCards = allWhite.filter(c => !cardsInHand.has(c));
                     room.whiteDeck = [...(room.whiteDeck || []), ...shuffleArray(availableCards)];
+
+                    if (forcedLang) GameDataService.setLanguage(oldLang);
                 }
                 const players = Object.keys(room.giocatori);
                 const nextIdx = (players.indexOf(room.dominus) + 1) % players.length;
@@ -588,16 +621,26 @@ export const GameProvider = ({ children }) => {
     const isDominus = useMemo(() => !!(roomPlayerName && roomData && roomData.dominus === roomPlayerName), [roomPlayerName, roomData?.dominus]);
     const myHand = useMemo(() => (roomPlayerName && roomData && roomData.giocatori?.[roomPlayerName]?.carte) ? roomData.giocatori[roomPlayerName].carte : [], [roomPlayerName, roomData?.giocatori]);
 
+    const updateRoomSettings = async (settings) => {
+        if (!roomCode || !isCreator) return;
+        try {
+            await update(ref(db, `stanze/${roomCode}`), settings);
+        } catch (e) {
+            console.error("Failed to update room settings", e);
+        }
+    };
+
     const contextValue = useMemo(() => ({
         user, roomCode, roomData, loading, error, availableRooms,
         refreshRooms,
         login, createRoom, joinRoom, leaveRoom,
         kickPlayer,
+        updateRoomSettings,
         startGame, playCards, confirmDominusSelection, nextRound, discardCard, useAIJoker, forceReveal, bribeHand,
         isCreator, isDominus, myHand, roomPlayerName
     }), [
         user, roomCode, roomData, loading, error, availableRooms,
-        isCreator, isDominus, myHand
+        isCreator, isDominus, myHand, roomPlayerName
     ]);
 
     return (

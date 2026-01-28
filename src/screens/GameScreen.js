@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler } from 'react-native';
-import Animated, { ZoomIn, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { ZoomIn, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut, withRepeat, interpolate } from 'react-native-reanimated';
 
 import { useGame } from '../context/GameContext';
 import { useAuth, RANK_COLORS } from '../context/AuthContext';
 import { THEMES, CARD_SKINS, AVATAR_FRAMES, TEXTURES, useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext'; // [NEW]
 import PremiumBackground from '../components/PremiumBackground';
 import PremiumButton from '../components/PremiumButton';
 import PlayerHand from '../components/PlayerHand';
@@ -16,26 +18,131 @@ import ConfirmationModal from '../components/ConfirmationModal'; // [NEW]
 import JokerOverlay from '../components/JokerOverlay'; // [NEW]
 import VictoryScreen from './VictoryScreen'; // [NEW]
 import SettingsModal from '../components/SettingsModal';
+import InfoScreen from './InfoScreen'; // [NEW]
 import ConfettiSystem from '../components/ConfettiSystem';
 import PremiumIconButton from '../components/PremiumIconButton';
 import PremiumPressable from '../components/PremiumPressable';
 import { SvgUri } from 'react-native-svg';
 import LocalAvatar from '../components/LocalAvatar';
 import AvatarWithFrame from '../components/AvatarWithFrame'; // [NEW]
+import RoundWinnerModal from '../components/RoundWinnerModal'; // [NEW]
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService'; // [FIX] Import added
-import { RankIcon, SettingsIcon, LockIcon, RobotIcon, DirtyCashIcon, ScaleIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, ThornsIcon, MoneyIcon } from '../components/Icons'; // [NEW] Icons
+import EfficientBlurView from '../components/EfficientBlurView'; // [NEW]
+import { CardsIcon, CheckIcon, ThornsIcon, LockIcon, RankIcon, SettingsIcon, RobotIcon, DirtyCashIcon, ScaleIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon } from '../components/Icons';
 import ShopScreen from './ShopScreen'; // [NEW]
+import AnalyticsService from '../services/AnalyticsService';
+
+// --- NUOVI COMPONENTI GRAFICI (Mettili prima di GameScreen o in fondo) ---
+
+// 1. Divisore Art Deco (Sostituisce i titoli fluttuanti)
+const SectionHeader = ({ title }) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 2, width: '100%' }}>
+        <LinearGradient
+            colors={['transparent', 'rgba(212, 175, 55, 0.4)']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={{ flex: 1, height: 1 }}
+        />
+        <Text style={{
+            fontFamily: 'Cinzel-Bold',
+            color: '#d4af37',
+            fontSize: 9,
+            marginHorizontal: 12,
+            letterSpacing: 1.2
+        }}>
+            {title}
+        </Text>
+        <LinearGradient
+            colors={['rgba(212, 175, 55, 0.4)', 'transparent']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={{ flex: 1, height: 1 }}
+        />
+    </View>
+);
+
+// 2. Card Pacchetto Minimale (Sostituisce le scatole 3D)
+const MinimalPackCard = ({ label, type, selected, onPress, owned = true }) => {
+    const isDark = type === 'dark';
+    const baseColor = isDark ? '#ef4444' : '#FDB931';
+
+    return (
+        <PremiumPressable
+            onPress={onPress}
+            disabled={!owned}
+            scaleDown={0.97}
+            style={{
+                width: '100%',
+                height: 52,
+                marginBottom: 6,
+                opacity: owned ? 1 : 0.5
+            }}
+            contentContainerStyle={{ height: '100%' }} // Targeted fix for lobby card height
+        >
+            <View style={{
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: selected ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.4)',
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                borderWidth: 1,
+                borderColor: selected ? baseColor : 'rgba(255,255,255,0.05)',
+                height: '100%' // Ensure it fills parent
+            }}>
+                {/* Icona Sinistra - Cerchio Standardizzato */}
+                <View style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    backgroundColor: selected ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.02)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    overflow: 'hidden',
+                    borderWidth: selected ? 1 : 0,
+                    borderColor: 'rgba(255,255,255,0.05)'
+                }}>
+                    {isDark ?
+                        <ThornsIcon size={20} color={selected ? baseColor : '#555'} /> :
+                        <CardsIcon size={20} color={selected ? baseColor : '#555'} />
+                    }
+                </View>
+
+                {/* Testo Centrale */}
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={{
+                        fontFamily: 'Cinzel-Bold',
+                        color: selected ? baseColor : '#888',
+                        fontSize: 12,
+                        letterSpacing: 0.5
+                    }}>
+                        {label}
+                    </Text>
+                    <Text style={{ fontFamily: 'Outfit', fontSize: 8, color: '#444' }}>
+                        {isDark ? 'Contenuti Adulti' : 'Starter Set'}
+                    </Text>
+                </View>
+
+                {/* Status Destra */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {!owned && <LockIcon size={14} color="#444" />}
+                    {owned && selected && <CheckIcon size={14} color={baseColor} />}
+                </View>
+            </View>
+        </PremiumPressable>
+    );
+};
 
 const GameScreen = ({ onStartLoading }) => {
     const {
         user, roomCode, roomData,
         isCreator, isDominus, myHand,
         leaveRoom, startGame, playCards, confirmDominusSelection, nextRound,
-        discardCard, useAIJoker, forceReveal, kickPlayer, bribeHand
+        discardCard, useAIJoker, forceReveal, kickPlayer, bribeHand,
+        updateRoomSettings
     } = useGame();
     const { theme } = useTheme();
     const { bribe: payBribe, awardMoney, logout, user: authUser } = useAuth(); // [NEW] get authUser for skins
+    const { t } = useLanguage(); // [NEW]
 
 
 
@@ -45,6 +152,17 @@ const GameScreen = ({ onStartLoading }) => {
     // [FIX] Persistent state for Winner Modal to allow exit animation
     const [persistedWinnerInfo, setPersistedWinnerInfo] = useState(null);
     const [showWinnerModal, setShowWinnerModal] = useState(false);
+
+    const [targetPoints, setTargetPoints] = useState(roomData?.puntiPerVincere || 7);
+    const [roomLanguage, setRoomLanguage] = useState(roomData?.roomLanguage || 'it');
+    const [allowedPackages, setAllowedPackages] = useState(roomData?.allowedPackages || { base: true, dark: false });
+    const [showJokerConfirm, setShowJokerConfirm] = useState(false);
+    const [showBribeConfirm, setShowBribeConfirm] = useState(false); // [NEW] Bribe Modal State
+    const [showInfo, setShowInfo] = useState(false); // [NEW]
+    const [showShop, setShowShop] = useState(false); // [NEW] Shop Overlay State
+    const [isAnimatingJoker, setIsAnimatingJoker] = useState(false);
+    const [isAnimatingPlay, setIsAnimatingPlay] = useState(false);
+    const [tempPlayedText, setTempPlayedText] = useState(null);
 
     // [NEW] Screen Shake Animation
     const shakeTranslateX = useSharedValue(0);
@@ -92,7 +210,6 @@ const GameScreen = ({ onStartLoading }) => {
     const [lastPaidTurn, setLastPaidTurn] = useState(null);
 
     useEffect(() => {
-        // Round Win Reward (10 DC)
         if (roomData?.statoTurno === 'SHOWING_WINNER' && roomData?.vincitoreTurno === user.name) {
             if (!lastPaidTurn) {
                 awardMoney(100);
@@ -101,7 +218,21 @@ const GameScreen = ({ onStartLoading }) => {
         } else if (roomData?.statoTurno !== 'SHOWING_WINNER') {
             setLastPaidTurn(null);
         }
-    }, [roomData?.statoTurno, roomData?.vincitoreTurno, user?.name]);
+
+        // Sync local settings if changed by another device or initial load
+        if (roomData?.puntiPerVincere !== undefined && roomData.puntiPerVincere !== targetPoints) {
+            setTargetPoints(roomData.puntiPerVincere);
+        }
+        if (roomData?.roomLanguage && roomData.roomLanguage !== roomLanguage) {
+            setRoomLanguage(roomData.roomLanguage);
+        }
+        if (roomData?.allowedPackages) {
+            // Shallow compare
+            if (JSON.stringify(roomData.allowedPackages) !== JSON.stringify(allowedPackages)) {
+                setAllowedPackages(roomData.allowedPackages);
+            }
+        }
+    }, [roomData?.statoTurno, roomData?.vincitoreTurno, user?.name, roomData?.puntiPerVincere, roomData?.roomLanguage, roomData?.allowedPackages]);
 
     // [NEW] Browser Back Button Support for PWA
     useEffect(() => {
@@ -126,17 +257,17 @@ const GameScreen = ({ onStartLoading }) => {
         title: "",
         message: "",
         singleButton: true,
-        confirmText: "OK",
+        confirmText: t('default_confirm'),
         onConfirm: null
     });
 
     const showLeaveConfirmation = () => {
         setModalConfig({
             visible: true,
-            title: "Abbandona Partita",
-            message: "Sei sicuro di voler uscire dalla stanza corrente?",
+            title: t('leave_game_title'),
+            message: t('leave_game_msg'),
             singleButton: false,
-            confirmText: "Esci",
+            confirmText: t('exit_btn'),
             onConfirm: async () => {
                 if (onStartLoading) onStartLoading(true);
                 await leaveRoom();
@@ -148,10 +279,10 @@ const GameScreen = ({ onStartLoading }) => {
     const handleLogoutRequest = () => {
         setModalConfig({
             visible: true,
-            title: "Disconnetti",
-            message: "Vuoi uscire dall'account?\nDovrai effettuare nuovamente il login.",
+            title: t('logout_title'),
+            message: t('logout_msg'),
             singleButton: false,
-            confirmText: "Esci",
+            confirmText: t('exit_btn'),
             onConfirm: async () => {
                 if (onStartLoading) onStartLoading(true); // Optional splash
                 await logout();
@@ -160,13 +291,23 @@ const GameScreen = ({ onStartLoading }) => {
         });
     };
 
-    const [showShop, setShowShop] = useState(false); // [NEW] Shop State
-
     // [NEW] Custom Back Handler for Game
     useEffect(() => {
         if (Platform.OS === 'web') return;
 
         const backAction = () => {
+            if (showInfo) {
+                setShowInfo(false);
+                return true;
+            }
+            if (showShop) {
+                setShowShop(false);
+                return true;
+            }
+            if (showLeaderboard) {
+                setShowLeaderboard(false);
+                return true;
+            }
             showLeaveConfirmation();
             return true;
         };
@@ -177,14 +318,28 @@ const GameScreen = ({ onStartLoading }) => {
         );
 
         return () => backHandler.remove();
-    }, []);
+    }, [showLeaderboard, showShop, showInfo]);
 
-    const [targetPoints, setTargetPoints] = useState(7);
-    const [showJokerConfirm, setShowJokerConfirm] = useState(false);
-    const [showBribeConfirm, setShowBribeConfirm] = useState(false); // [NEW] Bribe Modal State
-    const [isAnimatingJoker, setIsAnimatingJoker] = useState(false);
-    const [isAnimatingPlay, setIsAnimatingPlay] = useState(false);
-    const [tempPlayedText, setTempPlayedText] = useState(null);
+    // States moved to top
+
+    // [NEW] Lobby Pulse Animation
+    const lobbyPulse = useSharedValue(1);
+    useEffect(() => {
+        if (roomData?.statoPartita === 'LOBBY') {
+            lobbyPulse.value = withRepeat(
+                withTiming(0.4, { duration: 1500, easing: Easing.inOut(Easing.quad) }),
+                -1,
+                true
+            );
+        } else {
+            lobbyPulse.value = 1;
+        }
+    }, [roomData?.statoPartita]);
+
+    const pulsatingStyle = useAnimatedStyle(() => ({
+        opacity: lobbyPulse.value,
+        transform: [{ scale: interpolate(lobbyPulse.value, [0.4, 1], [0.98, 1]) }]
+    }));
 
     const handleSettingsPress = () => {
         setShowSettingsModal(true);
@@ -207,15 +362,16 @@ const GameScreen = ({ onStartLoading }) => {
 
         if (paid) {
             HapticsService.trigger('success');
+            AnalyticsService.logBribeUsed(user.name, 100); // 100 DC is the default cost
         } else {
             // Show error if failed (e.g. not enough money)
             triggerShake(); // [NEW] Shake on error
             setModalConfig({
                 visible: true,
-                title: "Rifiutato",
-                message: "Non hai abbastanza fondi per corrompere il mazziere.",
+                title: t('denied_title'),
+                message: t('bribe_refused_msg'),
                 singleButton: true,
-                confirmText: "Peccato",
+                confirmText: t('too_bad_btn'),
                 onConfirm: () => setModalConfig(prev => ({ ...prev, visible: false }))
             });
         }
@@ -232,6 +388,7 @@ const GameScreen = ({ onStartLoading }) => {
         setShowJokerConfirm(false);
         // Start animation, logic continues in onFinish of JokerOverlay
         setIsAnimatingJoker(true);
+        AnalyticsService.logJokerUsed(user.name);
     };
 
     // Confetti Ref
@@ -300,10 +457,10 @@ const GameScreen = ({ onStartLoading }) => {
             // Alert.alert("Errore", e.message);
             setModalConfig({
                 visible: true,
-                title: "Errore",
+                title: t('error_title'),
                 message: e.message,
                 singleButton: true,
-                confirmText: "Capito"
+                confirmText: t('default_confirm')
             });
         }
     };
@@ -321,10 +478,10 @@ const GameScreen = ({ onStartLoading }) => {
             // Alert.alert("Aspetta!", "Solo il Dominus può scegliere il vincitore.");
             setModalConfig({
                 visible: true,
-                title: "Aspetta!",
-                message: "Solo il Dominus può scegliere il vincitore.",
+                title: t('wait_title'),
+                message: t('only_dominus_msg'),
                 singleButton: true,
-                confirmText: "OK"
+                confirmText: t('default_confirm')
             });
             return;
         }
@@ -377,17 +534,17 @@ const GameScreen = ({ onStartLoading }) => {
 
     const renderLobbyContent = () => (
         <View style={styles.lobbyCenter}>
-            <Text style={[styles.lobbyTitle, { color: theme.colors.textPrimary, fontFamily: 'Cinzel Decorative-Bold' }]}>
-                In attesa...
-            </Text>
+            <Animated.Text style={[styles.lobbyTitle, { color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold' }, pulsatingStyle]}>
+                {t('waiting_title')}
+            </Animated.Text>
 
-            {/* [NEW] Player Grid - Social Visuals */}
+            {/* --- QUESTA PARTE DEGLI AVATAR È RIMASTA INTATTA --- */}
             <View style={{
                 flexDirection: 'row',
                 flexWrap: 'wrap',
                 justifyContent: 'center',
                 gap: 15,
-                marginVertical: 30,
+                marginVertical: 20,
                 width: '100%',
                 maxWidth: 400
             }}>
@@ -401,16 +558,16 @@ const GameScreen = ({ onStartLoading }) => {
                             <AvatarWithFrame
                                 avatar={p.avatar || p.name}
                                 frameId={p.activeFrame || 'basic'}
-                                size={60}
+                                size={54}
                                 isDominus={p.isDominus}
                             />
                         </View>
                         <Text style={{
                             color: '#e2e8f0',
                             fontFamily: 'Outfit',
-                            fontSize: 12,
+                            fontSize: 11,
                             textAlign: 'center',
-                            maxWidth: 70
+                            maxWidth: 60
                         }} numberOfLines={1}>
                             {p.name}
                         </Text>
@@ -418,74 +575,139 @@ const GameScreen = ({ onStartLoading }) => {
                 ))}
             </View>
 
+            {/* --- IMPOSTAZIONI DEL CREATORE --- */}
             {isCreator && (
-                <View style={{ width: '100%', alignItems: 'center', marginBottom: 30 }}>
-                    <Text style={{
-                        color: '#888',
-                        fontFamily: 'Cinzel-Bold',
-                        marginBottom: 15,
-                        textAlign: 'center',
-                        fontSize: 12,
-                        letterSpacing: 2,
-                        includeFontPadding: false, // [FIX] Prevent overlap
-                        textAlignVertical: 'center'
+                <View style={[styles.premiumBox, { marginTop: 0, paddingVertical: 10 }]}>
+
+                    {/* 1. LINGUA (Stile Lingotto) */}
+                    <SectionHeader title={t('select_language')} />
+                    <View style={{
+                        flexDirection: 'row', backgroundColor: '#000', borderRadius: 20, padding: 3,
+                        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+                        width: 200, alignSelf: 'center',
+                        marginBottom: 10
                     }}>
-                        PUNTI PER VINCERE
-                    </Text>
-                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 15, zIndex: 10, elevation: 10 }}>
-                        {[3, 5, 7, 10].map(points => (
-                            <PremiumPressable
-                                key={points}
-                                onPress={() => setTargetPoints(points)}
-                                rippleColor={targetPoints === points ? 'rgba(0,0,0,0.1)' : 'rgba(255, 215, 0, 0.2)'}
-                                enableSound={false}
-                                scaleDown={0.9}
-                                style={{
-                                    width: 50,
-                                    height: 50,
-                                    borderRadius: 25,
-                                    borderWidth: 1,
-                                    backgroundColor: targetPoints === points ? theme.colors.accent : 'rgba(255,255,255,0.05)',
-                                    borderColor: targetPoints === points ? theme.colors.accent : 'rgba(255,255,255,0.1)',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                                contentContainerStyle={{ justifyContent: 'center', alignItems: 'center' }}
-                            >
-                                <Text style={{
-                                    color: targetPoints === points ? '#000' : '#e2e8f0',
-                                    fontWeight: 'bold',
-                                    fontSize: 18,
-                                    fontFamily: 'Outfit-Bold',
-                                    textAlign: 'center',
-                                    includeFontPadding: false,
-                                    textAlignVertical: 'center', // Android specific helpful addition
-                                    marginTop: Platform.OS === 'android' ? -2 : 0 // Micro-adjustment if needed, but start clean first. I'll stick to standard props first.
-                                }}>
-                                    {points}
-                                </Text>
-                            </PremiumPressable>
-                        ))}
+                        {['it', 'en'].map((lang) => {
+                            const isActive = roomLanguage === lang;
+                            return (
+                                <PremiumPressable
+                                    key={lang}
+                                    onPress={() => {
+                                        setRoomLanguage(lang);
+                                        updateRoomSettings({ roomLanguage: lang });
+                                    }}
+                                    style={{
+                                        flex: 1, paddingVertical: 8, borderRadius: 17,
+                                        alignItems: 'center', justifyContent: 'center',
+                                        backgroundColor: isActive ? '#d4af37' : 'transparent'
+                                    }}
+                                >
+                                    <Text style={{
+                                        fontFamily: 'Cinzel-Bold', fontSize: 11,
+                                        color: isActive ? '#000' : '#666',
+                                        textAlign: 'center',
+                                        includeFontPadding: false
+                                    }}>
+                                        {lang === 'it' ? 'ITA 🇮🇹' : 'EN 🇬🇧'}
+                                    </Text>
+                                </PremiumPressable>
+                            );
+                        })}
+                    </View>
+
+                    {/* 2. PACCHETTI (Stile Minimale) */}
+                    <SectionHeader title={t('select_packages')} />
+                    <View style={{ width: '100%' }}>
+                        <MinimalPackCard
+                            label={t('base_pack')}
+                            type="base"
+                            selected={true}
+                        />
+                        <MinimalPackCard
+                            label={t('dark_pack')}
+                            type="dark"
+                            selected={allowedPackages.dark}
+                            owned={authUser?.unlockedPacks?.dark}
+                            onPress={() => {
+                                const newVal = !allowedPackages.dark;
+                                setAllowedPackages({ ...allowedPackages, dark: newVal });
+                                updateRoomSettings({ allowedPackages: { ...allowedPackages, dark: newVal } });
+                            }}
+                        />
+                    </View>
+
+                    {/* 3. PUNTI (Stile Monoliti Ancorati) */}
+                    <SectionHeader title={t('select_points_title')} />
+                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 10 }}>
+                        {[3, 5, 7, 10].map(points => {
+                            const isActive = targetPoints === points;
+                            return (
+                                <PremiumPressable
+                                    key={points}
+                                    onPress={() => {
+                                        setTargetPoints(points);
+                                        updateRoomSettings({ puntiPerVincere: points });
+                                    }}
+                                    scaleDown={0.9}
+                                    style={{
+                                        width: 50, height: 60, borderRadius: 12,
+                                        borderWidth: 1,
+                                        borderColor: isActive ? '#d4af37' : 'rgba(255,255,255,0.1)',
+                                        backgroundColor: isActive ? 'rgba(212, 175, 55, 0.1)' : '#0a0a0a',
+                                        justifyContent: 'center', alignItems: 'center',
+                                        // Ancoraggio senza glow
+                                        borderBottomWidth: isActive ? 4 : 1,
+                                        borderBottomColor: isActive ? '#d4af37' : 'rgba(255,255,255,0.02)',
+                                        shadowColor: 'transparent', shadowOpacity: 0, elevation: 0
+                                    }}
+                                    pressableStyle={{ height: '100%' }}
+                                    contentContainerStyle={{ height: '100%', alignItems: 'center', justifyContent: 'center' }} // Targeted fix for points height
+                                >
+                                    <Text style={{
+                                        fontFamily: 'Cinzel-Bold',
+                                        color: isActive ? '#d4af37' : '#444',
+                                        fontSize: 20,
+                                        textAlign: 'center'
+                                    }}>
+                                        {points}
+                                    </Text>
+                                    <Text style={{
+                                        fontFamily: 'Outfit', fontSize: 7,
+                                        color: isActive ? '#d4af37' : '#333', opacity: 0.7,
+                                        textAlign: 'center'
+                                    }}>
+                                        PUNTI
+                                    </Text>
+                                </PremiumPressable>
+                            );
+                        })}
                     </View>
                 </View>
             )}
 
-            {isCreator ? (
-                <PremiumButton
-                    title="Inizia Partita"
-                    haptic="heavy" // Heavy confirmation
-                    onPress={() => {
-                        console.log("Start Game Pressed with points:", targetPoints);
-                        startGame(targetPoints);
-                    }}
-                    style={{ minWidth: 200, backgroundColor: theme.colors.accent }}
-                    textStyle={{ color: '#000' }}
-                />
-            ) : (
-                <Text style={{ color: '#64748b', fontFamily: 'Outfit', fontStyle: 'italic', marginTop: 10 }}>
-                    In attesa che l'host inizi la partita...
-                </Text>
-            )}
+            <View style={{ marginTop: 10 }}>
+                {isCreator ? (
+                    <PremiumButton
+                        title={t('start_game_btn')}
+                        haptic="heavy"
+                        onPress={() => {
+                            AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
+                            startGame(targetPoints);
+                        }}
+                        style={{ minWidth: 240, height: 54, borderRadius: 27 }}
+                    />
+                ) : (
+                    <View style={styles.guestSettingsView}>
+                        <Text style={styles.waitingHostText}>{t('waiting_host_msg')}</Text>
+                        {/* Pillole riassuntive per gli ospiti */}
+                        <View style={styles.guestSettingsPills}>
+                            <View style={styles.settingPill}><Text style={styles.pillText}>{roomLanguage.toUpperCase()}</Text></View>
+                            <View style={styles.settingPill}><Text style={styles.pillText}>{targetPoints} PTS</Text></View>
+                            <View style={styles.settingPill}><Text style={styles.pillText}>{allowedPackages.dark ? 'BASE+DARK' : 'BASE'}</Text></View>
+                        </View>
+                    </View>
+                )}
+            </View>
         </View>
     );
 
@@ -520,7 +742,7 @@ const GameScreen = ({ onStartLoading }) => {
                 if (isAnimatingPlay || roomData?.carteGiocate?.[user.name]) {
                     const playedRef = roomData?.carteGiocate?.[user.name];
                     const skin = CARD_SKINS[authUser?.activeCardSkin || 'classic'] || CARD_SKINS.classic; // [FIX] Use local auth user skin
-                    let playedText = "Carta Giocata";
+                    let playedText = t('played_card_default');
                     // Use temp text if animating, otherwise real data
                     if (isAnimatingPlay && tempPlayedText) playedText = tempPlayedText;
                     else if (typeof playedRef === 'string') playedText = playedRef;
@@ -574,7 +796,7 @@ const GameScreen = ({ onStartLoading }) => {
                                             letterSpacing: 1.5,
                                             textTransform: 'uppercase',
                                         }}>
-                                            HAI GIOCATO
+                                            {t('you_played_label')}
                                         </Text>
                                     </View>
 
@@ -688,96 +910,6 @@ const GameScreen = ({ onStartLoading }) => {
 
 
 
-            <PremiumModal
-                visible={showWinnerModal}
-                onClose={() => { }} // User can't close it manually
-                title="" // Custom Header inside
-                showClose={false}
-            >
-                <View style={{ alignItems: 'center', width: '100%', paddingTop: 10 }}>
-                    {/* CUSTOM HEADER */}
-                    <View style={{ width: '100%', alignItems: 'center', marginBottom: 50 }}>
-                        <Text style={{
-                            fontFamily: 'Cinzel Decorative-Bold',
-                            color: theme.colors.accent,
-                            fontSize: 24,
-                            textAlign: 'center',
-                            textShadowColor: theme.colors.accent,
-                            textShadowOffset: { width: 0, height: 0 },
-                            textShadowRadius: 10
-                        }}>
-                            VINCITORE
-                        </Text>
-                        <Text style={{
-                            fontFamily: 'Cinzel Decorative-Bold',
-                            color: theme.colors.accent,
-                            fontSize: 18,
-                            textAlign: 'center',
-                            opacity: 0.8
-                        }}>
-                            DEL TURNO
-                        </Text>
-                    </View>
-
-                    {/* AVATAR (Overlapping) */}
-                    <View style={{
-                        position: 'absolute',
-                        top: 60,
-                        zIndex: 10,
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 5 },
-                        shadowOpacity: 0.5,
-                        shadowRadius: 10,
-                        elevation: 10
-                    }}>
-                        <AvatarWithFrame
-                            avatar={persistedWinnerInfo?.avatar?.startsWith('http') ? persistedWinnerInfo.avatar : (persistedWinnerInfo?.avatar || 'User')}
-                            frameId={playersList.find(p => p.name === persistedWinnerInfo?.name)?.activeFrame || 'basic'}
-                            size={90}
-                        />
-                    </View>
-
-                    {/* NAME */}
-                    <Text style={{
-                        fontFamily: 'Cinzel-Bold', color: '#fff', fontSize: 24, marginBottom: 20, marginTop: 40,
-                        textAlign: 'center'
-                    }}>
-                        {persistedWinnerInfo?.name}
-                    </Text>
-
-                    {/* CARD */}
-                    {(() => {
-                        const winningCards = persistedWinnerInfo?.winningCards;
-                        let text = "Carta non trovata";
-                        if (Array.isArray(winningCards)) text = winningCards.join(' / ');
-                        else if (winningCards && typeof winningCards === 'object') text = winningCards.text || Object.values(winningCards).join(' / ');
-                        else if (typeof winningCards === 'string') text = winningCards;
-
-                        return (
-                            <View style={{
-                                width: '90%', minHeight: 140, backgroundColor: 'white',
-                                borderRadius: 16, padding: 20,
-                                justifyContent: 'center', alignItems: 'center',
-                                shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
-                                transform: [{ rotate: '-2deg' }], marginBottom: 20,
-                                borderWidth: 1, borderColor: '#ccc'
-                            }}>
-                                <Text style={{ color: '#222', fontFamily: 'Outfit-Bold', fontSize: 20, textAlign: 'center', lineHeight: 28 }}>
-                                    {text}
-                                </Text>
-                                <View style={{ position: 'absolute', bottom: 10, right: 10 }}>
-                                    <Text style={{ fontSize: 10, color: '#666', fontFamily: 'Outfit-Bold' }}>CARDS OF MORAL DECAY</Text>
-                                </View>
-                            </View>
-                        );
-                    })()}
-
-                    <Text style={{ color: '#666', fontFamily: 'Outfit', fontSize: 12, marginTop: 10 }}>
-                        Il prossimo round inizierà a breve...
-                    </Text>
-                </View>
-            </PremiumModal>
         </>
     );
 
@@ -790,9 +922,9 @@ const GameScreen = ({ onStartLoading }) => {
                     <ConfettiSystem ref={confettiRef} />
                     {!roomData ? (
                         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                            <Text style={{ color: 'white', fontFamily: 'Outfit' }}>Caricamento...</Text>
+                            <Text style={{ color: 'white', fontFamily: 'Outfit' }}>{t('loading')}</Text>
                         </View>
-                    ) : roomData.statoPartita === 'GAME_OVER' ? (
+                    ) : (roomData.statoPartita === 'GAME_OVER' && !showWinnerModal) ? (
                         <VictoryScreen winnerName={roomData.vincitorePartita} />
                     ) : (
                         <>
@@ -808,89 +940,126 @@ const GameScreen = ({ onStartLoading }) => {
                             )}
                         </>
                     )}
-                    <PremiumModal
-                        visible={showJokerConfirm}
-                        onClose={() => setShowJokerConfirm(false)}
-                        title="USARE IL JOKER?"
-                    >
-                        <View style={{ alignItems: 'center', paddingVertical: 10 }}>
-                            <View style={{ marginBottom: 20 }}>
-                                <RobotIcon size={80} color={theme.colors.textPrimary} />
-                            </View>
-                            <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16, marginBottom: 20 }}>
-                                Ti verrà data una delle carte migliori per questo turno e verrà posizionata come ultima nella tua mano.
-                            </Text>
-                            <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', padding: 15, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.5)', marginBottom: 30 }}>
-                                <Text style={{ color: '#ef4444', textAlign: 'center', fontFamily: 'Cinzel-Bold', fontSize: 14 }}>⚠️ ATTENZIONE:</Text>
-                                <Text style={{ color: '#fca5a5', textAlign: 'center', fontFamily: 'Outfit', fontSize: 14, marginTop: 5 }}>La prima carta della tua mano verrà eliminata!</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', gap: 15, width: '100%' }}>
-                                <PremiumButton title="ANNULLA" variant="ghost" enableSound={false} onPress={() => setShowJokerConfirm(false)} style={{ flex: 1 }} textStyle={{ fontSize: 16 }} />
-                                <PremiumButton title="CONFERMA" enableSound={false} onPress={handleConfirmJoker} style={{ flex: 1, backgroundColor: '#3e7e3dff', borderColor: '#1f6140ff' }} textStyle={{ color: 'white', fontSize: 12 }} />
-                            </View>
-                        </View>
-                    </PremiumModal>
-
-                    {/* [NEW] Bribe Confirmation Modal */}
-                    <PremiumModal
-                        visible={showBribeConfirm}
-                        onClose={() => setShowBribeConfirm(false)}
-                        title="CORRUZIONE"
-                    >
-                        <View style={{ alignItems: 'center', paddingVertical: 10 }}>
-                            <View style={{ marginBottom: 20 }}>
-                                <DirtyCashIcon size={80} color="#10b981" />
-                            </View>
-                            <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16, marginBottom: 20 }}>
-                                Vuoi allungare una mazzetta al mazziere per cambiare le tue carte?
-                            </Text>
-
-                            <View style={{
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                padding: 15,
-                                borderRadius: 10,
-                                borderWidth: 1,
-                                borderColor: 'rgba(16, 185, 129, 0.3)',
-                                marginBottom: 15,
-                                width: '100%'
-                            }}>
-                                <Text style={{ color: '#10b981', textAlign: 'center', fontFamily: 'Cinzel-Bold', fontSize: 18 }}>COSTO: 100 DC</Text>
-                            </View>
-
-                            <View style={{
-                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                padding: 10,
-                                borderRadius: 10,
-                                borderWidth: 1,
-                                borderColor: 'rgba(239, 68, 68, 0.3)',
-                                marginBottom: 30,
-                                width: '100%'
-                            }}>
-                                <Text style={{ color: '#fca5a5', textAlign: 'center', fontFamily: 'Outfit', fontSize: 13 }}>
-                                    ⚠️ La tua mano attuale verrà scartata e ne pescherai una nuova.
-                                </Text>
-                            </View>
-
-                            <View style={{ flexDirection: 'row', gap: 15, width: '100%' }}>
-                                <PremiumButton
-                                    title="NON ORA"
-                                    variant="ghost"
-                                    enableSound={false}
-                                    onPress={() => setShowBribeConfirm(false)}
-                                    style={{ flex: 1 }}
-                                    textStyle={{ fontSize: 12 }}
-                                />
-                                <PremiumButton
-                                    title="PAGA 100 DC"
-                                    enableSound={false}
-                                    onPress={confirmBribe}
-                                    style={{ flex: 1, backgroundColor: '#10b981', borderColor: '#059669' }}
-                                    textStyle={{ color: 'white', fontSize: 10, fontFamily: 'Cinzel-Bold' }}
-                                />
-                            </View>
-                        </View>
-                    </PremiumModal>
                 </View>
+
+                {/* --- FULL SCREEN OVERLAYS --- */}
+
+                <RoundWinnerModal
+                    visible={showWinnerModal}
+                    winnerInfo={persistedWinnerInfo}
+                    playersList={playersList}
+                />
+
+                <PremiumModal
+                    visible={showJokerConfirm}
+                    onClose={() => setShowJokerConfirm(false)}
+                    title={t('joker_title')}
+                >
+                    <View style={{ alignItems: 'center', paddingVertical: 5, paddingHorizontal: 20, paddingBottom: 20 }}>
+                        <View style={{ marginBottom: 15 }}>
+                            <RobotIcon size={64} color={theme.colors.textPrimary} />
+                        </View>
+                        <View style={{ gap: 10, width: '100%' }}>
+                            <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16, marginBottom: 20 }}>
+                                {t('joker_desc')}
+                            </Text>
+                            <View style={{
+                                backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                                paddingVertical: 10,
+                                paddingHorizontal: 20,
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: 'rgba(239, 68, 68, 0.15)',
+                                marginBottom: 15,
+                                alignSelf: 'center',
+                                width: '90%'
+                            }}>
+                                <Text style={{ color: '#ef4444', textAlign: 'center', fontFamily: 'Cinzel-Bold', fontSize: 11, letterSpacing: 1.5 }}>{t('attention')}</Text>
+                                <Text style={{ color: '#aaa', textAlign: 'center', fontFamily: 'Outfit', fontSize: 13, marginTop: 2 }}>{t('joker_warning')}</Text>
+                            </View>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginTop: 10 }}>
+                            <PremiumButton
+                                title={t('cancel_btn')}
+                                variant="ghost"
+                                enableSound={false}
+                                onPress={() => setShowJokerConfirm(false)}
+                                style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+                                textStyle={{ fontSize: 13 }}
+                            />
+                            <PremiumButton
+                                title={t('joker_confirm_btn')}
+                                enableSound={false}
+                                onPress={handleConfirmJoker}
+                                style={{ flex: 1 }}
+                                textStyle={{ fontSize: 13, fontFamily: 'Cinzel-Bold' }}
+                            />
+                        </View>
+                    </View>
+                </PremiumModal>
+
+                <PremiumModal
+                    visible={showBribeConfirm}
+                    onClose={() => setShowBribeConfirm(false)}
+                    title={t('bribe_title')}
+                >
+                    <View style={{ alignItems: 'center', paddingVertical: 5, paddingHorizontal: 20, paddingBottom: 20 }}>
+                        <View style={{ marginBottom: 15 }}>
+                            <DirtyCashIcon size={64} color="#10b981" />
+                        </View>
+                        <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16, marginBottom: 20 }}>
+                            {t('bribe_desc')}
+                        </Text>
+
+                        <View style={{
+                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                            paddingVertical: 8,
+                            paddingHorizontal: 20,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: 'rgba(16, 185, 129, 0.15)',
+                            marginBottom: 15,
+                            width: '85%',
+                            alignSelf: 'center'
+                        }}>
+                            <Text style={{ color: '#10b981', textAlign: 'center', fontFamily: 'Cinzel-Bold', fontSize: 15, letterSpacing: 1 }}>{t('bribe_cost_label')}</Text>
+                        </View>
+
+                        <View style={{
+                            backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                            paddingVertical: 10,
+                            paddingHorizontal: 20,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: 'rgba(239, 68, 68, 0.15)',
+                            marginBottom: 20,
+                            width: '90%',
+                            alignSelf: 'center'
+                        }}>
+                            <Text style={{ color: '#fca5a5', textAlign: 'center', fontFamily: 'Outfit', fontSize: 13, lineHeight: 18 }}>
+                                {t('bribe_warning')}
+                            </Text>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+                            <PremiumButton
+                                title={t('bribe_cancel_btn')}
+                                variant="ghost"
+                                enableSound={false}
+                                onPress={() => setShowBribeConfirm(false)}
+                                style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+                                textStyle={{ fontSize: 13 }}
+                            />
+                            <PremiumButton
+                                title={t('bribe_pay_btn')}
+                                enableSound={false}
+                                onPress={confirmBribe}
+                                style={{ flex: 1 }}
+                                textStyle={{ fontSize: 13, fontFamily: 'Cinzel-Bold' }}
+                            />
+                        </View>
+                    </View>
+                </PremiumModal>
 
                 <LeaderboardDrawer
                     visible={showLeaderboard}
@@ -909,7 +1078,18 @@ const GameScreen = ({ onStartLoading }) => {
                     onStartLoading={onStartLoading} // Pass the splash trigger
                     onLeaveRequest={showLeaveConfirmation} // [FIX] Trigger generic function
                     onLogoutRequest={handleLogoutRequest} // [NEW]
+                    onOpenInfo={() => {
+                        setShowInfo(true);
+                        setShowSettingsModal(false);
+                    }}
                 />
+
+                {/* [NEW] Info Overlay */}
+                {showInfo && (
+                    <View style={[StyleSheet.absoluteFill, { zIndex: 9999 }]}>
+                        <InfoScreen onClose={() => setShowInfo(false)} />
+                    </View>
+                )}
 
                 {/* [NEW] Generic Confirmation Modal */}
                 <ConfirmationModal
@@ -960,7 +1140,7 @@ const styles = StyleSheet.create({
         elevation: 10, // For Android
     },
     headerLogo: {
-        fontFamily: 'Cinzel Decorative-Bold',
+        fontFamily: 'Cinzel-Bold',
         fontSize: 16,
         letterSpacing: 1,
     },
@@ -1012,8 +1192,162 @@ const styles = StyleSheet.create({
     },
     footer: {
         flex: 1,
-        // justifyContent: 'flex-end', // Removed to let flex items stack naturally
-        // paddingBottom: 50, // Removed to avoid pushing Hand up
+    },
+    // [NEW] Premium Lobby Styles
+    premiumBox: {
+        width: '95%',
+        maxWidth: 380,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        borderRadius: 20,
+        padding: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(212, 175, 55, 0.1)',
+        marginBottom: 10,
+        alignItems: 'center',
+        alignSelf: 'center',
+        overflow: 'hidden', // Required for BlurView
+    },
+    settingsSection: {
+        width: '100%',
+        marginBottom: 10,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+    },
+    sectionLabel: {
+        color: 'rgba(212, 175, 55, 0.6)',
+        fontFamily: 'Cinzel-Bold',
+        marginBottom: 12,
+        fontSize: 10,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+        textAlign: 'center',
+    },
+    segmentedToggle: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        borderRadius: 20, // More rounded pill
+        padding: 2,
+        width: 140, // Fixed small width
+        height: 32, // Smaller height
+    },
+    toggleOption: {
+        flex: 1,
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 18,
+    },
+    toggleOptionActive: {
+        backgroundColor: '#d4af37',
+    },
+    toggleText: {
+        fontFamily: 'Cinzel-Bold',
+        fontSize: 11, // Slightly larger for readability
+        color: 'rgba(255,255,255,0.4)',
+        textAlign: 'center',
+    },
+    toggleTextActive: {
+        color: '#000',
+    },
+    packCard: {
+        width: 100, // Fixed width
+        height: 120, // Taller portrait aspect ratio
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        borderRadius: 16,
+        borderWidth: 1.2,
+        overflow: 'hidden',
+    },
+    packLabelContainer: {
+        width: '100%',
+        paddingVertical: 8,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        alignItems: 'center',
+    },
+    packText: {
+        fontFamily: 'Cinzel-Bold',
+        fontSize: 10, // Slightly bigger
+        textAlign: 'center',
+        letterSpacing: 0.5,
+    },
+    pointCard: {
+        width: 48,
+        height: 48,
+        borderRadius: 24, // Circle
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        borderWidth: 1.2,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+    pointCardActive: {
+        borderColor: '#FDB931',
+        shadowColor: 'transparent',
+        shadowOpacity: 0,
+        elevation: 0,
+        shadowRadius: 0,
+        shadowOffset: { width: 0, height: 0 },
+    },
+    pointCardInactive: {
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    pointValue: {
+        fontFamily: 'Cinzel-Bold',
+        fontSize: 18,
+        zIndex: 1,
+        textAlign: 'center',
+    },
+    pointLabel: {
+        fontFamily: 'Outfit-Bold',
+        fontSize: 7,
+        color: 'rgba(212, 175, 55, 0.4)',
+        letterSpacing: 1.5,
+        textTransform: 'uppercase',
+        marginTop: -3,
+        zIndex: 1,
+        textAlign: 'center',
+    },
+    guestSettingsView: {
+        alignItems: 'center',
+        padding: 18,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(212, 175, 55, 0.1)',
+        width: '100%',
+        maxWidth: 350,
+        alignSelf: 'center',
+    },
+    waitingHostText: {
+        color: 'rgba(212, 175, 55, 0.5)',
+        fontFamily: 'Outfit',
+        fontSize: 13,
+        fontStyle: 'italic',
+        marginBottom: 15,
+        textAlign: 'center',
+    },
+    guestSettingsPills: {
+        flexDirection: 'row',
+        gap: 10,
+        justifyContent: 'center',
+    },
+    settingPill: {
+        backgroundColor: 'rgba(212,175,55,0.08)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(212,175,55,0.15)',
+    },
+    pillText: {
+        color: '#d4af37',
+        fontSize: 11,
+        fontFamily: 'Cinzel-Bold',
+        textAlign: 'center',
     }
 });
 

@@ -1,39 +1,59 @@
 import React from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { useTheme } from '../context/ThemeContext';
 
-const EfficientBlurView = ({ style, intensity = 20, tint = 'dark', children }) => {
-    const { animationsEnabled } = useTheme();
+const EfficientBlurView = ({ style, intensity = 30, tint = 'dark', children }) => {
+    // Android fa fatica con intensity > 100 o con valori strani. 
+    // Normalizziamo per evitare crash grafici.
+    const safeIntensity = Platform.OS === 'android' ? Math.min(intensity, 30) : intensity;
 
-    // On Android (especially emulators), BlurView is very expensive.
-    // If animations are disabled, we assume the user wants performance.
-    // We also force fallback on low-end androids if needed, but for now we link it to the toggle.
-    if (!animationsEnabled) {
+    if (Platform.OS === 'android') {
         return (
-            <View style={[
-                style,
-                {
-                    backgroundColor: tint === 'dark' ? 'rgba(10, 10, 10, 0.95)' : 'rgba(255, 255, 255, 0.9)',
-                    overflow: 'hidden'
-                }
-            ]}>
+            <View style={[styles.container, style]}>
+                {/* 1. IL PARACADUTE (Fallback Layer) 
+                    Questo è fondamentale. Se il Blur fallisce nell'APK, 
+                    questo sfondo assicura che il testo sia leggibile. 
+                */}
+                <View
+                    style={[
+                        StyleSheet.absoluteFill,
+                        {
+                            backgroundColor: tint === 'light'
+                                ? 'rgba(255, 255, 255, 0.85)'
+                                : 'rgba(15, 15, 15, 0.3)' // Molto scuro per coprire la mancanza di blur
+                        }
+                    ]}
+                />
+
+                {/* 2. IL BLUR SPERIMENTALE
+                    Su Android recenti funziona, su quelli vecchi viene ignorato 
+                    ma c'è il paracadute sotto.
+                */}
+                <BlurView
+                    intensity={safeIntensity}
+                    tint={tint}
+                    style={StyleSheet.absoluteFill}
+                    experimentalBlurMethod="dimezisBlurView" // Forza il metodo migliore su Android
+                />
+
+                {/* 3. IL CONTENUTO */}
                 {children}
             </View>
         );
     }
 
-    // [DEBUG] Disabling BlurView temporarily to fix crash
+    // SU IOS: Lusso sfrenato, blur nativo perfetto.
     return (
-        <View style={[
-            style,
-            {
-                backgroundColor: tint === 'dark' ? 'rgba(10, 10, 10, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-            }
-        ]}>
+        <BlurView intensity={intensity} tint={tint} style={style}>
             {children}
-        </View>
+        </BlurView>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        overflow: 'hidden', // Importante per Android per non far sbavare il blur
+    }
+});
 
 export default EfficientBlurView;

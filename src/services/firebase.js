@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 import {
     initializeAuth,
     getReactNativePersistence,
@@ -20,7 +21,8 @@ const firebaseConfig = {
     projectId: "carte-vs-umani",
     storageBucket: "carte-vs-umani.firebasestorage.app",
     messagingSenderId: "1041474968600",
-    appId: "1:1041474968600:web:466bd4b116fa93d778376d"
+    appId: "1:1041474968600:web:466bd4b116fa93d778376d",
+    measurementId: "G-V4CDRCVTVZ"
 };
 
 // 1. Singleton App (Modular)
@@ -40,4 +42,17 @@ try {
 // 3. Database Singleton (Modular)
 const db = getDatabase(app);
 
-export { app, auth, db };
+// 4. Analytics (Modular) - Check support
+let analytics = null;
+isSupported().then(yes => {
+    if (yes) {
+        analytics = getAnalytics(app);
+        if (__DEV__) console.log("[Firebase] Analytics initialized successfully ✅");
+    } else {
+        if (__DEV__) console.warn("[Firebase] Analytics is not supported in this environment ❌");
+    }
+}).catch(err => {
+    if (__DEV__) console.error("[Firebase] Error checking analytics support:", err);
+});
+
+export { app, auth, db, analytics };

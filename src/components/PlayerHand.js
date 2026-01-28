@@ -8,10 +8,11 @@ import PremiumIconButton from './PremiumIconButton';
 import PremiumPressable from './PremiumPressable';
 import { CardsIcon, RobotIcon, TrashIcon, DirtyCashIcon } from './Icons'; // [NEW] DirtyCashIcon
 import { useWebScroll } from '../hooks/useWebScroll';
+import { useLanguage } from '../context/LanguageContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, showPlayButton, onPlay, onDiscard, isPlaying, selectionOrder, hasDiscarded, isSelectionFull, isSinglePick, skin }) => { // [NEW] skin
+const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, showPlayButton, onPlay, onDiscard, isPlaying, selectionOrder, hasDiscarded, isSelectionFull, isSinglePick, skin, t }) => { // [NEW] skin
     const { theme } = useTheme();
     const [isEliminating, setIsEliminating] = useState(false);
 
@@ -210,7 +211,7 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
                     haptic="heavy" // Confirmation weight
                     enableSound={false} // [FIX] Avoid double sound (pop + swoosh)
                 >
-                    <Text style={styles.actionBtnText}>GIOCA</Text>
+                    <Text style={styles.actionBtnText}>{t('play')}</Text>
                 </PremiumPressable>
             </Animated.View>
 
@@ -328,7 +329,7 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
                     haptic="warning" // Warning/Heavy for delete
                     enableSound={false} // [FIX] Avoid double sound
                 >
-                    <Text style={styles.actionBtnText}>ELIMINA</Text>
+                    <Text style={styles.actionBtnText}>{t('discard_btn')}</Text>
                 </PremiumPressable>
             </Animated.View>
 
@@ -340,6 +341,7 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
 
 const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled, onPlay, jokers = 0, onAIJoker, onDiscard, isPlaying, hasDiscarded, onBackgroundPress, onBribe, skin, balance = 0 }) => { // [NEW] balance
     const { theme } = useTheme();
+    const { t } = useLanguage();
     const scrollRef = useWebScroll(false); // Vertical drag
     // Start at dropped position if initially disabled/playing to avoid "slide down" on mount
     const handOffset = useSharedValue(disabled || isPlaying ? 400 : 0);
@@ -384,7 +386,7 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
                     <View style={{ width: 10 }} />
                     <View>
                         <Text style={[styles.label, { color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', marginBottom: 0 }]}>
-                            La Tua Mano
+                            {t('hand_label', { defaultValue: 'La Tua Mano' })}
                         </Text>
                         {maxSelection > 1 && (
                             <Text style={{
@@ -394,7 +396,7 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
                                 marginTop: 2,
                                 letterSpacing: 0.5
                             }}>
-                                SELEZIONA {maxSelection} CARTE
+                                {t('select_x_cards', { count: maxSelection, defaultValue: `SELEZIONA ${maxSelection} CARTE` })}
                             </Text>
                         )}
                     </View>
@@ -409,10 +411,9 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
                     {/* Bribe Button */}
                     {onBribe && (
                         <PremiumIconButton
-                            // [MODIFIED] Use SVG Icon
-                            icon={<DirtyCashIcon size={30} color={disabled ? '#888' : '#FFD700'} />} // Grayscale if disabled
+                            icon={<DirtyCashIcon size={30} color="#FFD700" />}
                             onPress={onBribe}
-                            style={{ backgroundColor: 'transparent', opacity: disabled ? 0.3 : 1 }}
+                            style={{ backgroundColor: 'transparent', opacity: disabled ? 0.4 : 1 }}
                             disabled={disabled}
                             size={40}
                         />
@@ -425,7 +426,7 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
                         badge={jokers > 0 ? jokers : null}
                         badgeStyle={{ backgroundColor: '#FFD700', borderColor: '#000', borderWidth: 1.5 }}
                         disabled={disabled || jokers === 0}
-                        style={{ opacity: disabled ? 0.5 : 1 }}
+                        style={{ opacity: disabled ? 0.4 : 1 }}
                         size={40}
                     />
                 </View>
@@ -478,6 +479,7 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
                                                 skin={skin}
                                                 isSinglePick={maxSelection === 1} // [NEW] -> Pass single pick mode
                                                 isSelectionFull={selectedCards.length >= maxSelection}
+                                                t={t}
                                             />
                                         </Animated.View>
                                     );
@@ -489,27 +491,27 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
 
                 {/* Top Shadow Gradient - Softened */}
                 <LinearGradient
-                    colors={['rgba(17,17,17,0.7)', 'transparent']}
+                    colors={['rgba(17,17,17,0.4)', 'transparent']}
                     style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
                         right: 0,
-                        height: 30,
+                        height: 10,
                         zIndex: 10,
                     }}
                     pointerEvents="none"
                 />
 
-                {/* Bottom Shadow Gradient - Softened */}
+                {/* Bottom Shadow Gradient - Enhanced */}
                 <LinearGradient
-                    colors={['transparent', 'rgba(17,17,17,0.7)']}
+                    colors={['transparent', 'rgba(17,17,17,0.9)']}
                     style={{
                         position: 'absolute',
                         bottom: 0,
                         left: 0,
                         right: 0,
-                        height: 40,
+                        height: 50,
                         zIndex: 10,
                     }}
                     pointerEvents="none"

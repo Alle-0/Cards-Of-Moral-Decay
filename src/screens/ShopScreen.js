@@ -1,760 +1,1017 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, Modal } from 'react-native';
-import EfficientBlurView from '../components/EfficientBlurView'; // [NEW]
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, Modal, InteractionManager, BackHandler, Pressable } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import EfficientBlurView from '../components/EfficientBlurView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { THEMES, CARD_SKINS, AVATAR_FRAMES, TEXTURES } from '../context/ThemeContext'; // [FIX] Added TEXTURES
-import LocalAvatar from '../components/LocalAvatar'; // [NEW] For frame preview
-import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut, FadeInDown, Layout, Easing } from 'react-native-reanimated'; // [NEW] Added ZoomOut
-import { Ionicons } from '@expo/vector-icons';
-import { DirtyCashIcon, CardsIcon, PaletteIcon, EyeIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ThornsIcon } from '../components/Icons'; // [NEW] Icons
+import { useLanguage } from '../context/LanguageContext';
+import { THEMES, CARD_SKINS, AVATAR_FRAMES, TEXTURES } from '../context/ThemeContext';
+import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut, Easing, useSharedValue, withTiming, useAnimatedStyle, withRepeat, withSequence } from 'react-native-reanimated';
+import { DirtyCashIcon, EyeIcon, CheckIcon } from '../components/Icons';
+import ToastNotification from '../components/ToastNotification';
+import ThemeBackground from '../components/ThemeBackground';
+import AvatarWithFrame from '../components/AvatarWithFrame';
+import PremiumBackground from '../components/PremiumBackground';
+import SoundService from '../services/SoundService';
+import AnalyticsService from '../services/AnalyticsService';
+import * as Haptics from 'expo-haptics';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { useGame } from '../context/GameContext'; // [NEW] Sync with room
-import { ref, update as fbUpdate } from 'firebase/database'; // [NEW] Update room
-import { db } from '../services/firebase'; // [NEW]
-import ThemeBackground from '../components/ThemeBackground'; // [NEW]
-import AvatarWithFrame from '../components/AvatarWithFrame'; // [NEW] Standardized Frame
+import PaywallModal from '../components/PaywallModal';
+import CustomerCenterModal from '../components/CustomerCenterModal';
 
 const { width } = Dimensions.get('window');
 
-export default function ShopScreen({ onClose }) {
-    const { user, buyTheme, buySkin, buyFrame, spendMoney, equipSkin, equipFrame } = useAuth(); // [FIX] Added equipSkin back
+export default function ShopScreen() {
+    const { user, buyTheme, buySkin, buyFrame, buyPack, hasProAccess, refreshProAccess } = useAuth();
     const { theme } = useTheme();
-    const { roomCode, roomPlayerName } = useGame(); // [NEW] Sync with room
+    const { t } = useLanguage();
+    const insets = useSafeAreaInsets();
 
-    const [activeTab, setActiveTab] = useState('themes'); // 'themes' | 'skins'
+    const [activeTab, setActiveTab] = useState(0);
+    const tabs = [t('tab_themes'), t('tab_skins'), t('tab_frames'), t('tab_packs'), 'PRO', t('tab_dc')];
 
     const [buyingId, setBuyingId] = useState(null);
-    const [modal, setModal] = useState({ visible: false, title: '', message: '' });
-    const [isClosing, setIsClosing] = useState(false); // [NEW] For exit animation
-    const [preview, setPreview] = useState(null); // [FIX] Missing state declaration
+    const [ready, setReady] = useState(false);
+    const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+    const [preview, setPreview] = useState(null);
+    const [showExitModal, setShowExitModal] = useState(false);
+    const [showPaywall, setShowPaywall] = useState(false);
+    const [showCustomerCenter, setShowCustomerCenter] = useState(false);
 
-    const handlePreview = (type, item) => {
-        setIsClosing(false);
-        setPreview({ type, item });
-    };
-
-    const handleClosePreview = () => {
-        setIsClosing(true);
-        setTimeout(() => {
-            setPreview(null);
-            setIsClosing(false);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setReady(true);
         }, 300);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Skeleton Helpers
+    const SkeletonCard = ({ isGrid = false }) => {
+        const opacity = useSharedValue(0.3);
+        useEffect(() => {
+            opacity.value = withRepeat(
+                withSequence(
+                    withTiming(0.1, { duration: 800 }),
+                    withTiming(0.3, { duration: 800 })
+                ),
+                -1,
+                true
+            );
+        }, []);
+
+        const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+        return (
+            <Animated.View style={[
+                isGrid ? styles.cardFrame : styles.card,
+                { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.05)', borderWidth: 1 },
+                animStyle
+            ]}>
+                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                <View style={{ flex: 1, marginLeft: 15, gap: 8 }}>
+                    <View style={{ width: '60%', height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                    <View style={{ width: '40%', height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                </View>
+            </Animated.View>
+        );
     };
 
+    const renderSkeleton = () => (
+        <ScrollView contentContainerStyle={{ paddingBottom: 80 + insets.bottom }} showsVerticalScrollIndicator={false}>
+            {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
+        </ScrollView>
+    );
+
+    // Android Back Handler
+    useEffect(() => {
+        const backAction = () => {
+            if (preview) {
+                handleClosePreview();
+                return true;
+            }
+            setShowExitModal(true);
+            return true;
+        };
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+        return () => backHandler.remove();
+    }, [preview]);
+
+    // Tab Animation
+    const tabBarWidth = useSharedValue(0);
+    const tabIndicatorX = useSharedValue(0);
+
+    useEffect(() => {
+        if (tabBarWidth.value > 0) {
+            const tabWidth = (tabBarWidth.value - 8) / 5;
+            tabIndicatorX.value = withTiming(activeTab * tabWidth, { duration: 250, easing: Easing.out(Easing.quad) });
+        }
+    }, [activeTab]);
+
+    const indicatorStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: tabIndicatorX.value }],
+        width: tabBarWidth.value > 0 ? (tabBarWidth.value - 8) / 5 : 0,
+    }));
+
+    const handleTabPress = (index) => {
+        if (activeTab !== index) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setActiveTab(index);
+        }
+    };
+
+    // Purchasing Logic
     const handleBuy = async (themeId, price, themeName) => {
         if (user.balance < price) {
-            setModal({ visible: true, title: "Poveraccio", message: "Non hai abbastanza Dirty Cash." });
+            setToast({ visible: true, message: t('toast_no_money'), type: 'error' });
             return;
         }
-
         setBuyingId(themeId);
         const result = await buyTheme(themeId, price);
         setBuyingId(null);
-
         if (result.success) {
-            setModal({ visible: true, title: "Affare Fatto", message: `Hai acquistato il tema ${themeName}.` });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setToast({ visible: true, message: `${t('toast_theme_bought')} ${themeName}.`, type: 'success' });
+            AnalyticsService.logPurchase(themeId, price, 'COINS');
         } else {
-            setModal({ visible: true, title: "Errore", message: result.message });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setToast({ visible: true, message: result.message, type: 'error' });
         }
-
     };
 
     const handleBuySkin = async (skinId, price, skinName) => {
         if (user.balance < price) {
-            setModal({ visible: true, title: "Poveraccio", message: "Non hai abbastanza Dirty Cash." });
+            setToast({ visible: true, message: t('toast_no_money'), type: 'error' });
             return;
         }
         setBuyingId(skinId);
         const result = await buySkin(skinId, price);
         setBuyingId(null);
         if (result.success) {
-            setModal({ visible: true, title: "Nuova Skin", message: `Hai ottenuto la skin ${skinName}.` });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setToast({ visible: true, message: `${t('toast_skin_bought')} ${skinName}.`, type: 'success' });
+            AnalyticsService.logPurchase(skinId, price, 'COINS');
         } else {
-            setModal({ visible: true, title: "Errore", message: result.message });
-        }
-    };
-
-    const handleEquip = async (skinId) => {
-        if (activeTab === 'skins') {
-            await equipSkin(skinId);
-            // [SYNC] If in a room, update the player's skin in the room data immediately
-            if (roomCode && roomPlayerName) {
-                try {
-                    const playerRef = ref(db, `stanze/${roomCode}/giocatori/${roomPlayerName}`);
-                    await fbUpdate(playerRef, { activeCardSkin: skinId });
-                } catch (e) {
-                    console.error("Failed to sync skin to room", e);
-                }
-            }
-        } else if (activeTab === 'frames') {
-            await equipFrame(skinId);
-            // [SYNC]
-            if (roomCode && roomPlayerName) {
-                try {
-                    const playerRef = ref(db, `stanze/${roomCode}/giocatori/${roomPlayerName}`);
-                    await fbUpdate(playerRef, { activeFrame: skinId });
-                } catch (e) {
-                    console.error("Failed to sync frame to room", e);
-                }
-            }
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setToast({ visible: true, message: result.message, type: 'error' });
         }
     };
 
     const handleBuyFrame = async (frameId, price, frameName) => {
         if (user.balance < price) {
-            setModal({ visible: true, title: "Poveraccio", message: "Non hai abbastanza Dirty Cash." });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setToast({ visible: true, message: t('toast_no_money'), type: 'error' });
             return;
         }
         setBuyingId(frameId);
         const result = await buyFrame(frameId, price);
         setBuyingId(null);
         if (result.success) {
-            setModal({ visible: true, title: "Nuova Cornice", message: `Hai ottenuto ${frameName}.` });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setToast({ visible: true, message: `${t('toast_frame_bought')} ${frameName}.`, type: 'success' });
+            AnalyticsService.logPurchase(frameId, price, 'COINS');
         } else {
-            setModal({ visible: true, title: "Errore", message: result.message });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setToast({ visible: true, message: result.message, type: 'error' });
         }
     };
 
+    const handleBuyPack = async (packId, price, packName) => {
+        if (user.balance < price) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setToast({ visible: true, message: t('toast_no_money'), type: 'error' });
+            return;
+        }
+        setBuyingId(packId);
+        const result = await buyPack(packId, price);
+        setBuyingId(null);
+        if (result.success) {
+            Haptics.notificationAsync(Haptics.notificationFeedbackType.Success);
+            setToast({ visible: true, message: `${t('toast_pack_bought')} ${packName}.`, type: 'success' });
+            AnalyticsService.logPurchase(packId, price, 'COINS');
+        } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setToast({ visible: true, message: result.message, type: 'error' });
+        }
+    };
 
+    const handlePreview = (type, item) => {
+        SoundService.play('tap');
+        setPreview({ type, item });
+    };
 
-    const renderThemeItem = (itemTheme) => {
+    const handleClosePreview = () => {
+        SoundService.play('tap');
+        setPreview(null);
+    };
+
+    // Render Helpers
+    const renderThemeItem = (itemTheme, index) => {
         const isUnlocked = user?.unlockedThemes?.[itemTheme.id];
-        const isCurrent = theme.id === itemTheme.id;
-        const price = itemTheme.price || 500; // [DYNAMIC] Fallback to 500
+        const price = itemTheme.price || 500;
 
         return (
             <Animated.View
                 key={itemTheme.id}
-                entering={FadeInDown}
+                entering={FadeIn.delay(index * 50).duration(400)}
                 style={[
                     styles.card,
-                    { borderColor: isUnlocked ? '#22c55e' : '#333', borderWidth: isUnlocked ? 2 : 1 }
+                    {
+                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255, 255, 255, 0.05)',
+                        borderWidth: isUnlocked ? 2 : 1
+                    }
                 ]}
             >
-                <View style={[styles.previewCircle, { backgroundColor: itemTheme.colors.accent }]}>
-                    <Text style={{ fontSize: 24 }}>{itemTheme.colors.particleEmoji}</Text>
+                <View style={[styles.previewCircle, { overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: '#000' }]}>
+                    <LinearGradient
+                        colors={itemTheme.colors.background}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={StyleSheet.absoluteFill}
+                    />
+                    <View style={{
+                        position: 'absolute', bottom: 6, right: 6,
+                        width: 14, height: 14, borderRadius: 7,
+                        backgroundColor: itemTheme.colors.accent,
+                        borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.3)',
+                    }} />
                 </View>
 
-                <View style={[styles.infoContainer, { marginLeft: 10 }]}>
-                    <Text
-                        style={[styles.themeName, { color: theme.colors.textPrimary, fontSize: 13 }]}
-                        adjustsFontSizeToFit={true}
-                        minimumFontScale={0.7}
-                        numberOfLines={1}
-                    >
-                        {itemTheme.label}
+                <View style={styles.infoContainer}>
+                    <Text style={[styles.itemName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                        {t('theme_' + itemTheme.id, itemTheme.label)}
                     </Text>
-                    <Text style={styles.themeDesc}>{isUnlocked ? "COMPRATO" : "Bloccato"}</Text>
+                    <Text style={styles.itemDesc}>{isUnlocked ? t('owned') : t('exclusive_theme')}</Text>
                 </View>
 
-                {!isUnlocked ? (
-                    <TouchableOpacity
-                        style={[styles.buyButton, { backgroundColor: user.balance >= price ? '#d4af37' : '#555' }]}
-                        onPress={() => handleBuy(itemTheme.id, price, itemTheme.label)}
-                        disabled={buyingId === itemTheme.id || user.balance < price}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Text style={styles.buyText}>{buyingId === itemTheme.id ? "..." : price}</Text>
-                            {buyingId !== itemTheme.id && <DirtyCashIcon size={14} color="#000" />}
+                <View style={styles.actionRow}>
+                    {!isUnlocked ? (
+                        <TouchableOpacity
+                            style={[
+                                styles.buyButton,
+                                {
+                                    backgroundColor: user.balance >= price ? '#d4af37' : 'rgba(255,255,255,0.05)',
+                                    borderColor: user.balance >= price ? '#d4af37' : 'rgba(255,255,255,0.2)'
+                                }
+                            ]}
+                            onPress={() => handleBuy(itemTheme.id, price, t('theme_' + itemTheme.id, itemTheme.label))}
+                            disabled={buyingId === itemTheme.id || user.balance < price}
+                        >
+                            <Text style={[styles.buyText, { color: user.balance >= price ? '#000' : '#888' }]}>
+                                {buyingId === itemTheme.id ? "..." : price}
+                            </Text>
+                            {buyingId !== itemTheme.id && <DirtyCashIcon size={12} color={user.balance >= price ? "#000" : "#888"} />}
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={styles.ownedBadge}>
+                            <CheckIcon size={24} color={theme.colors.accent} />
                         </View>
-                    </TouchableOpacity>
-                ) : (
-                    <View style={styles.ownedBadge}>
-                        <Ionicons name="checkmark-circle" size={24} color={theme.colors.accent} />
-                    </View>
-                )}
+                    )}
 
-                <TouchableOpacity
-                    style={styles.previewButton}
-                    onPress={() => handlePreview('theme', itemTheme)}
-                >
-                    <EyeIcon size={24} color={theme.colors.accent} />
-                </TouchableOpacity>
+                    <TouchableOpacity style={styles.previewButtonIcon} onPress={() => handlePreview('theme', itemTheme)}>
+                        <EyeIcon size={20} color="#888" />
+                    </TouchableOpacity>
+                </View>
             </Animated.View>
         );
     };
 
-    // [NEW] Render Frame Item (Vertical Grid Style)
-    const renderFrameItem = (itemFrame) => {
+    const renderSkinItem = (skin, index) => {
+        const isUnlocked = user?.unlockedSkins?.[skin.id];
+        return (
+            <Animated.View
+                key={skin.id}
+                entering={FadeIn.delay(index * 50).duration(400)}
+                style={[
+                    styles.card,
+                    {
+                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255, 255, 255, 0.05)',
+                        borderWidth: isUnlocked ? 2 : 1
+                    }
+                ]}
+            >
+                <View style={[styles.skinPreview, {
+                    backgroundColor: skin.styles.bg,
+                    borderColor: skin.styles.border,
+                }]}>
+                    {skin.styles.texture && TEXTURES[skin.styles.texture] && (
+                        <Image source={TEXTURES[skin.styles.texture]} style={[StyleSheet.absoluteFill, { opacity: 0.15 }]} resizeMode="cover" />
+                    )}
+                    <View style={{ width: '60%', height: 2, backgroundColor: skin.styles.text, opacity: 0.3, borderRadius: 10 }} />
+                    <View style={{ width: '40%', height: 2, backgroundColor: skin.styles.text, opacity: 0.3, marginTop: 3, borderRadius: 10 }} />
+                </View>
+
+                <View style={styles.infoContainer}>
+                    <Text style={[styles.itemName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                        {t('skin_' + skin.id, skin.label)}
+                    </Text>
+                    <Text style={styles.itemDesc}>{isUnlocked ? t('owned') : t('skin_card')}</Text>
+                </View>
+
+                <View style={styles.actionRow}>
+                    {!isUnlocked ? (
+                        <TouchableOpacity
+                            style={[
+                                styles.buyButton,
+                                {
+                                    backgroundColor: user.balance >= skin.price ? '#d4af37' : 'rgba(255,255,255,0.05)',
+                                    borderColor: user.balance >= skin.price ? '#d4af37' : 'rgba(255,255,255,0.2)'
+                                }
+                            ]}
+                            onPress={() => handleBuySkin(skin.id, skin.price, t('skin_' + skin.id, skin.label))}
+                            disabled={buyingId === skin.id || user.balance < skin.price}
+                        >
+                            <Text style={[styles.buyText, { color: user.balance >= skin.price ? '#000' : '#888' }]}>
+                                {buyingId === skin.id ? "..." : skin.price}
+                            </Text>
+                            {buyingId !== skin.id && <DirtyCashIcon size={12} color={user.balance >= skin.price ? "#000" : "#888"} />}
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={styles.ownedBadge}>
+                            <CheckIcon size={24} color={theme.colors.accent} />
+                        </View>
+                    )}
+
+                    <TouchableOpacity style={styles.previewButtonIcon} onPress={() => handlePreview('skin', skin)}>
+                        <EyeIcon size={20} color="#888" />
+                    </TouchableOpacity>
+                </View>
+            </Animated.View>
+        );
+    };
+
+    const renderFrameItem = (itemFrame, index) => {
         const isUnlocked = user?.unlockedFrames?.[itemFrame.id] || parseFloat(itemFrame.price) === 0;
-        const isCurrent = (user?.activeFrame || 'basic') === itemFrame.id;
         const price = itemFrame.price;
 
         return (
             <Animated.View
                 key={itemFrame.id}
-                entering={FadeInDown.springify()}
+                entering={FadeIn.delay(index * 50).duration(400)}
                 style={[
-                    styles.cardFrame, // [NEW] Vertical card style
-                    { borderColor: isUnlocked ? '#22c55e' : '#333', borderWidth: isUnlocked ? 2 : 1 }
+                    styles.cardFrame,
+                    {
+                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255, 255, 255, 0.05)',
+                        borderWidth: isUnlocked ? 2 : 1
+                    }
                 ]}
             >
-                {/* Preview */}
-                <AvatarWithFrame
-                    avatar={user?.username || 'user'}
-                    frameId={itemFrame.id}
-                    size={75}
-                    style={{ marginBottom: 12 }}
-                />
+                <AvatarWithFrame avatar={user?.avatar || 'user'} frameId={itemFrame.id} size={65} style={{ marginBottom: 12 }} />
+                <Text style={[styles.itemName, { color: theme.colors.textPrimary, textAlign: 'center', fontSize: 13, marginBottom: 4 }]} numberOfLines={1}>
+                    {t('frame_' + itemFrame.id, itemFrame.label)}
+                </Text>
+                <Text style={[styles.itemDesc, { marginBottom: 10 }]}>{isUnlocked ? t('owned') : t('frame_label')}</Text>
 
-                <View style={{ alignItems: 'center', marginBottom: 12 }}>
-                    <Text
-                        style={[styles.themeName, { color: theme.colors.textPrimary, textAlign: 'center', fontSize: 14 }]}
-                        adjustsFontSizeToFit={true}
-                        minimumFontScale={0.7}
-                        numberOfLines={1}
-                    >
-                        {itemFrame.label}
-                    </Text>
-                    <Text style={styles.themeDesc}>
-                        {isUnlocked ? "COMPRATO" : (price === 0 ? "GRATIS" : `${price} DC`)}
-                    </Text>
-                </View>
-
-                {/* Action Button */}
                 {!isUnlocked ? (
-                    <TouchableOpacity
-                        style={[styles.buyButton, { width: '100%', backgroundColor: user.balance >= price ? '#d4af37' : '#444' }]}
-                        onPress={() => handleBuyFrame(itemFrame.id, price, itemFrame.label)}
-                        disabled={buyingId === itemFrame.id || user.balance < price}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                            <Text style={styles.buyText}>
-                                {buyingId === itemFrame.id ? "..." : price}
-                            </Text>
-                            {buyingId !== itemFrame.id && <DirtyCashIcon size={12} color="#000" />}
-                        </View>
-                    </TouchableOpacity>
-                ) : (
-                    <View style={styles.ownedBadge}>
-                        <Ionicons name="checkmark-circle" size={24} color={theme.colors.accent} />
+                    <View style={{ flexDirection: 'row', gap: 5, width: '100%' }}>
+                        <TouchableOpacity
+                            style={[
+                                styles.buyButton,
+                                {
+                                    flex: 1,
+                                    paddingHorizontal: 0,
+                                    backgroundColor: user.balance >= price ? '#d4af37' : 'rgba(255,255,255,0.05)',
+                                    borderColor: user.balance >= price ? '#d4af37' : 'rgba(255,255,255,0.2)'
+                                }
+                            ]}
+                            onPress={() => handleBuyFrame(itemFrame.id, price, t('frame_' + itemFrame.id, itemFrame.label))}
+                            disabled={buyingId === itemFrame.id || user.balance < price}
+                        >
+                            <Text style={[styles.buyText, { color: user.balance >= price ? '#000' : '#888' }]}>{buyingId === itemFrame.id ? "..." : price}</Text>
+                            {buyingId !== itemFrame.id && <DirtyCashIcon size={12} color={user.balance >= price ? "#000" : "#888"} />}
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.previewButtonIcon, { borderRadius: 8, padding: 8 }]} onPress={() => handlePreview('frame', itemFrame)}>
+                            <EyeIcon size={18} color="#888" />
+                        </TouchableOpacity>
                     </View>
-                )}
-            </Animated.View>
+                ) : (
+                    <View style={{ flexDirection: 'row', width: '100%', gap: 5 }}>
+                        <View style={{ flex: 1, height: 36, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(44, 125, 74, 0.1)', borderRadius: 8 }}>
+                            <CheckIcon size={20} color={theme.colors.accent} />
+                        </View>
+                        <TouchableOpacity style={[styles.previewButtonIcon, { borderRadius: 8, padding: 8 }]} onPress={() => handlePreview('frame', itemFrame)}>
+                            <EyeIcon size={18} color="#888" />
+                        </TouchableOpacity>
+                    </View>
+                )
+                }
+            </Animated.View >
         );
     };
-    const renderSkinItem = (skin) => {
-        const isUnlocked = user?.unlockedSkins?.[skin.id];
-        const isEquipped = user?.activeCardSkin === skin.id;
+
+    const renderPackItem = (pack, index) => {
+        const isUnlocked = user?.unlockedPacks?.[pack.id];
+        const price = pack.price;
 
         return (
             <Animated.View
-                key={skin.id}
-                entering={FadeInDown}
-                layout={Layout.springify()}
+                key={pack.id}
+                entering={FadeIn.delay(index * 50).duration(400)}
                 style={[
                     styles.card,
-                    { borderColor: isUnlocked ? '#22c55e' : '#333', borderWidth: isUnlocked ? 2 : 1 }
+                    {
+                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255, 255, 255, 0.05)',
+                        borderWidth: isUnlocked ? 2 : 1
+                    }
                 ]}
             >
-                {/* Skin Preview */}
-                <View style={[styles.skinPreview, {
-                    backgroundColor: skin.styles.bg,
-                    borderColor: skin.styles.border,
-                    overflow: 'hidden'
-                }]}>
-                    {/* [NEW] Mini Texture Layer */}
-                    {skin.styles.texture && TEXTURES[skin.styles.texture] && (
-                        <Image
-                            source={TEXTURES[skin.styles.texture]}
-                            style={[StyleSheet.absoluteFill, {
-                                opacity: skin.id === 'mida' ? 0.4 : 0.15,
-                            }]}
-                            resizeMode="cover"
-                        />
-                    )}
-                    {/* Simulated Text Lines */}
-                    <View style={{ width: '70%', height: 2, borderRadius: 1, backgroundColor: skin.styles.text, opacity: 0.3, marginBottom: 2 }} />
-                    <View style={{ width: '50%', height: 2, borderRadius: 1, backgroundColor: skin.styles.text, opacity: 0.3 }} />
+                <View style={[styles.skinPreview, { backgroundColor: pack.color || '#333', justifyContent: 'center', alignItems: 'center' }]}>
                 </View>
 
-                <View style={[styles.infoContainer, { marginLeft: 10 }]}>
-                    <Text
-                        style={[styles.themeName, { color: theme.colors.textPrimary, fontSize: 13 }]}
-                        adjustsFontSizeToFit={true}
-                        minimumFontScale={0.7}
-                        numberOfLines={1}
-                    >
-                        {skin.label}
+                <View style={styles.infoContainer}>
+                    <Text style={[styles.itemName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                        {t('pack_' + pack.id)}
                     </Text>
-                    <Text style={styles.themeDesc}>{isUnlocked ? "COMPRATO" : `${skin.price} DC`}</Text>
+                    <Text style={styles.itemDesc}>{isUnlocked ? t('owned') : t('pack_label')}</Text>
                 </View>
 
-                {!isUnlocked ? (
-                    <TouchableOpacity
-                        style={[styles.buyButton, { backgroundColor: user.balance >= skin.price ? '#d4af37' : '#555' }]}
-                        onPress={() => handleBuySkin(skin.id, skin.price, skin.label)}
-                        disabled={buyingId === skin.id || user.balance < skin.price}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Text style={styles.buyText}>{buyingId === skin.id ? "..." : skin.price}</Text>
-                            {buyingId !== skin.id && <DirtyCashIcon size={14} color="#000" />}
+                <View style={styles.actionRow}>
+                    {!isUnlocked ? (
+                        <TouchableOpacity
+                            style={[
+                                styles.buyButton,
+                                {
+                                    backgroundColor: user.balance >= price ? '#d4af37' : 'rgba(255,255,255,0.05)',
+                                    borderColor: user.balance >= price ? '#d4af37' : 'rgba(255,255,255,0.2)'
+                                }
+                            ]}
+                            onPress={() => handleBuyPack(pack.id, price, t('pack_' + pack.id))}
+                            disabled={buyingId === pack.id || user.balance < price}
+                        >
+                            <Text style={[styles.buyText, { color: user.balance >= price ? '#000' : '#888' }]}>
+                                {buyingId === pack.id ? "..." : price}
+                            </Text>
+                            {buyingId !== pack.id && <DirtyCashIcon size={12} color={user.balance >= price ? "#000" : "#888"} />}
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={styles.ownedBadge}>
+                            <CheckIcon size={24} color={theme.colors.accent} />
                         </View>
-                    </TouchableOpacity>
-                ) : (
-                    <View style={styles.ownedBadge}>
-                        <Ionicons name="checkmark-circle" size={24} color={theme.colors.accent} />
-                    </View>
-                )}
-
-                <TouchableOpacity
-                    style={styles.previewButton}
-                    onPress={() => handlePreview('skin', skin)}
-                >
-                    <EyeIcon size={24} color={theme.colors.accent} />
-                </TouchableOpacity>
+                    )}
+                </View>
             </Animated.View>
         );
     };
 
     return (
-        <View style={styles.container}>
+        <View style={{ flex: 1, backgroundColor: '#18181b' }}>
+            <PremiumBackground>
+                {/* Header */}
+                <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
+                    {t('shop_title')}
+                </Text>
 
-
-            <View style={styles.balanceHeader}>
-                <View style={styles.balancePill}>
-                    <Text style={styles.balanceLabel}>SALDO:</Text>
+                {/* Balance */}
+                <View style={styles.balanceContainer}>
+                    <Text style={styles.balanceLabel}>{t('balance_label')}</Text>
                     <Text style={styles.balanceValue}>{user?.balance || 0}</Text>
-                    <DirtyCashIcon size={20} color="#d4af37" />
+                    <DirtyCashIcon size={16} color="#d4af37" />
                 </View>
-            </View>
 
-            {/* Tabs */}
-            <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 15, gap: 8 }}>
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'themes' && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
-                    onPress={() => setActiveTab('themes')}
-                >
-                    <PaletteIcon size={20} color={activeTab === 'themes' ? '#000' : '#888'} />
-                    <Text style={[styles.tabText, { color: activeTab === 'themes' ? '#000' : '#888' }]}>Temi</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'skins' && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
-                    onPress={() => setActiveTab('skins')}
-                >
-                    <CardsIcon size={24} color={activeTab === 'skins' ? '#000' : '#888'} />
-                    <Text style={[styles.tabText, { color: activeTab === 'skins' ? '#000' : '#888' }]}>SKIN</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'frames' && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
-                    onPress={() => setActiveTab('frames')}
-                >
-                    <EyeIcon size={26} color={activeTab === 'frames' ? '#000' : '#888'} />
-                    <Text style={[styles.tabText, { color: activeTab === 'frames' ? '#000' : '#888' }]}>CORNICI</Text>
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView
-                style={{ flex: 1 }}
-                contentContainerStyle={styles.list}
-                showsVerticalScrollIndicator={false}
-            >
-                {activeTab === 'themes' && Object.values(THEMES).map(t => {
-                    if (['default', 'onice', 'ghiaccio'].includes(t.id)) return null;
-                    return renderThemeItem(t);
-                })}
-                {activeTab === 'skins' && Object.values(CARD_SKINS).map(s => {
-                    if (s.id === 'classic') return null;
-                    return renderSkinItem(s);
-                })}
-
-                {/* Frame Grid Container */}
-                {activeTab === 'frames' && (
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                        {Object.values(AVATAR_FRAMES).map(f => {
-                            if (['basic', 'capo'].includes(f.id)) return null;
-                            return renderFrameItem(f);
-                        })}
-                    </View>
-                )}
-            </ScrollView>
-
-            <ConfirmationModal
-                visible={modal.visible}
-                title={modal.title}
-                message={modal.message}
-                onClose={() => setModal({ ...modal, visible: false })}
-                singleButton={true}
-                confirmText="OK"
-                onConfirm={() => setModal({ ...modal, visible: false })}
-            />
-
-            {/* [NEW] Preview Modal Overlay - Wrapped in Modal for full-screen dimming */}
-            <Modal
-                transparent={true}
-                visible={!!preview}
-                animationType="none"
-                onRequestClose={handleClosePreview}
-            >
-                {preview && !isClosing && (
-                    <View style={styles.previewOverlayContainer}>
-                        <Animated.View
-                            entering={FadeIn.duration(250)}
-                            exiting={FadeOut.duration(250)}
-                            style={StyleSheet.absoluteFill}
-                        >
-                            <EfficientBlurView intensity={Platform.OS === 'android' ? 20 : 40} tint="dark" style={StyleSheet.absoluteFill}>
-                                <TouchableOpacity
-                                    style={styles.backdropClick}
-                                    activeOpacity={1}
-                                    onPress={handleClosePreview}
-                                />
-                            </EfficientBlurView>
-                        </Animated.View>
-
-                        <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center' }]} pointerEvents="box-none">
-                            <Animated.View
-                                entering={ZoomIn.duration(300).easing(Easing.out(Easing.quad))}
-                                exiting={ZoomOut.duration(250).easing(Easing.out(Easing.quad))}
-                                style={[styles.previewModal, { borderColor: theme.colors.accent, shadowColor: theme.colors.accent }]}
+                <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                    {/* Tab Bar */}
+                    <View
+                        style={styles.tabBarContainer}
+                        onLayout={(e) => {
+                            tabBarWidth.value = e.nativeEvent.layout.width;
+                        }}
+                    >
+                        <Animated.View style={[styles.tabIndicator, indicatorStyle]} />
+                        {tabs.map((tab, index) => (
+                            <Pressable
+                                key={tab}
+                                onPress={() => handleTabPress(index)}
+                                style={styles.tabItem}
                             >
-                                {/* Header Section */}
-                                <View style={styles.previewHeaderNew}>
-                                    <Text style={[styles.previewSubtitle, { color: theme.colors.accent }]}>
-                                        ANTEPRIMA {preview?.type === 'skin' ? 'SKIN' : 'TEMA'}
-                                    </Text>
-                                    {preview?.type === 'skin' && (
-                                        <Text style={styles.previewTitleMain}>
-                                            {preview?.item?.label}
-                                        </Text>
+                                <Text style={{
+                                    color: activeTab === index ? '#000' : '#888',
+                                    fontFamily: 'Outfit-Bold',
+                                    fontSize: 10,
+                                    letterSpacing: 0.5
+                                }}>
+                                    {tab}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </View>
+
+                    {/* Content List */}
+                    {!ready ? (
+                        renderSkeleton()
+                    ) : (
+                        <ScrollView
+                            contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            overScrollMode="never"
+                        >
+                            {activeTab === 0 && Object.values(THEMES).map((t, index) => {
+                                if (['default', 'onice', 'ghiaccio'].includes(t.id)) return null;
+                                return renderThemeItem(t, index);
+                            })}
+                            {activeTab === 1 && Object.values(CARD_SKINS).map((s, index) => {
+                                if (s.id === 'classic') return null;
+                                return renderSkinItem(s, index);
+                            })}
+                            {activeTab === 2 && (
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                                    {Object.values(AVATAR_FRAMES).map((f, index) => {
+                                        if (['basic', 'capo'].includes(f.id)) return null;
+                                        return renderFrameItem(f, index);
+                                    })}
+                                </View>
+                            )}
+                            {activeTab === 3 && [
+                                { id: 'dark', price: 1000, color: '#ef4444' }
+                            ].map((p, index) => renderPackItem(p, index))}
+                            {activeTab === 4 && (
+                                <View style={{ flex: 1, alignItems: 'center', paddingTop: 40, paddingHorizontal: 20 }}>
+                                    {hasProAccess ? (
+                                        <>
+                                            <View style={{ alignItems: 'center', marginBottom: 30 }}>
+                                                <CheckIcon size={64} color={theme.colors.accent} />
+                                                <Text style={{
+                                                    fontFamily: 'Cinzel-Bold',
+                                                    fontSize: 24,
+                                                    color: theme.colors.accent,
+                                                    marginTop: 20
+                                                }}>
+                                                    PRO ACTIVE
+                                                </Text>
+                                                <Text style={{
+                                                    fontFamily: 'Outfit',
+                                                    fontSize: 14,
+                                                    color: theme.colors.textSecondary,
+                                                    marginTop: 10,
+                                                    textAlign: 'center'
+                                                }}>
+                                                    You have access to all premium features
+                                                </Text>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.buyButton,
+                                                    {
+                                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                                        borderColor: theme.colors.accent,
+                                                        paddingHorizontal: 30,
+                                                        paddingVertical: 15
+                                                    }
+                                                ]}
+                                                onPress={() => setShowCustomerCenter(true)}
+                                            >
+                                                <Text style={[
+                                                    styles.buyText,
+                                                    { color: theme.colors.accent, fontSize: 14 }
+                                                ]}>
+                                                    Manage Subscription
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <View style={{ alignItems: 'center', marginBottom: 30 }}>
+                                                <DirtyCashIcon size={64} color="#d4af37" />
+                                                <Text style={{
+                                                    fontFamily: 'Cinzel-Bold',
+                                                    fontSize: 24,
+                                                    color: '#d4af37',
+                                                    marginTop: 20
+                                                }}>
+                                                    UPGRADE TO PRO
+                                                </Text>
+                                                <Text style={{
+                                                    fontFamily: 'Outfit',
+                                                    fontSize: 14,
+                                                    color: theme.colors.textSecondary,
+                                                    marginTop: 10,
+                                                    textAlign: 'center'
+                                                }}>
+                                                    Unlock exclusive features and support development
+                                                </Text>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.buyButton,
+                                                    {
+                                                        backgroundColor: '#d4af37',
+                                                        borderColor: '#d4af37',
+                                                        paddingHorizontal: 30,
+                                                        paddingVertical: 15
+                                                    }
+                                                ]}
+                                                onPress={() => setShowPaywall(true)}
+                                            >
+                                                <Text style={[
+                                                    styles.buyText,
+                                                    { color: '#000', fontSize: 14 }
+                                                ]}>
+                                                    View Plans
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </>
                                     )}
                                 </View>
-
-                                {/* Content Section */}
-                                <View style={styles.previewContent}>
-                                    {preview?.type === 'skin' ? (
-                                        <View style={[styles.largeCard, {
-                                            backgroundColor: preview.item.styles.bg,
-                                            borderColor: preview.item.styles.border,
-                                            borderWidth: 1, // Thinner border for elegance
-                                        }]}>
-                                            {/* Texture Layer */}
-                                            {preview.item.styles.texture && TEXTURES[preview.item.styles.texture] && (
-                                                <Image
-                                                    source={TEXTURES[preview.item.styles.texture]}
-                                                    style={[StyleSheet.absoluteFill, {
-                                                        opacity: preview.item.id === 'mida' ? 0.6 : 0.25,
-                                                        transform: [{ scale: 1.1 }] // Slight zoom to avoid edge clipping
-                                                    }]}
-                                                    resizeMode="cover"
-                                                />
-                                            )}
-
-                                            {/* Card Text */}
-                                            <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16 }}>
-                                                <Text style={{
-                                                    color: preview.item.styles.text,
-                                                    fontFamily: preview.item.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') : 'Outfit',
-                                                    fontSize: 16,
-                                                    fontWeight: '600',
-                                                    textAlign: 'left', // More natural reading
-                                                    lineHeight: 22
-                                                }}>
-                                                    La corruzione è l'unica via per la salvezza.
-                                                </Text>
-                                            </View>
-
-                                            {/* Card Footer (Brand/Icon placeholder) */}
-                                            <View style={{ paddingBottom: 12, paddingLeft: 16, opacity: 0.8 }}>
-                                                <Text style={{ fontSize: 8, color: preview.item.styles.text, opacity: 0.6, fontFamily: 'Outfit-Bold' }}>
-                                                    CARDS OF MORAL DECAY
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    ) : preview?.type === 'theme' ? (
-                                        <View style={[styles.themePreviewContainer, { borderColor: preview.item.colors.cardBorder, borderWidth: 1 }]}>
-                                            <LinearGradient
-                                                colors={preview.item.colors.background}
-                                                style={StyleSheet.absoluteFill}
-                                            />
-
-                                            <ThemeBackground forceTheme={preview.item} visible={true} />
-
-                                            <View style={[StyleSheet.absoluteFill, {
-                                                backgroundColor: 'rgba(0,0,0,0.3)',
-                                                justifyContent: 'center',
-                                                alignItems: 'center',
-                                                padding: 20
-                                            }]}>
-                                                <Text style={[styles.themeCardTitle, { color: preview.item.colors.textPrimary }]}>
-                                                    {preview.item.label}
-                                                </Text>
-
-                                                <Text style={[styles.themeCardSubtitle, { color: preview.item.colors.accent }]}>
-                                                    {preview.item.particleConfig ? 'EFFETTI DINAMICI' : 'DECORAZIONE STATICA'}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    ) : null}
+                            )}
+                            {activeTab === 5 && (
+                                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
+                                    <DirtyCashIcon size={64} color="rgba(212, 175, 55, 0.2)" />
+                                    <Text style={{
+                                        color: theme.colors.accent,
+                                        fontFamily: 'Cinzel-Bold',
+                                        fontSize: 24,
+                                        marginTop: 20,
+                                        letterSpacing: 2
+                                    }}>
+                                        {t('coming_soon')}
+                                    </Text>
+                                    <Text style={{
+                                        color: '#666',
+                                        fontFamily: 'Outfit',
+                                        fontSize: 14,
+                                        marginTop: 10,
+                                        textAlign: 'center',
+                                        maxWidth: '70%'
+                                    }}>
+                                        {t('coming_soon_msg')}
+                                    </Text>
                                 </View>
+                            )}
+                        </ScrollView>
+                    )}
+                </View>
 
-                                {/* Footer / Close Action */}
-                                <TouchableOpacity
-                                    style={[styles.closeButton, { borderColor: 'rgba(255,255,255,0.2)' }]}
-                                    onPress={handleClosePreview}
-                                >
-                                    <Text style={styles.closeButtonText}>CHIUDI ANTEPRIMA</Text>
-                                </TouchableOpacity>
+                <ToastNotification
+                    visible={toast.visible}
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+                />
 
+                {/* Paywall Modal */}
+                <PaywallModal
+                    visible={showPaywall}
+                    onClose={() => setShowPaywall(false)}
+                    onPurchaseSuccess={async () => {
+                        await refreshProAccess();
+                        setToast({
+                            visible: true,
+                            message: 'Welcome to Pro! 🎉',
+                            type: 'success'
+                        });
+                    }}
+                />
+
+                {/* Customer Center Modal */}
+                <CustomerCenterModal
+                    visible={showCustomerCenter}
+                    onClose={() => setShowCustomerCenter(false)}
+                />
+
+                {/* Preview Modal */}
+                <Modal
+                    transparent={true}
+                    visible={!!preview}
+                    animationType="fade"
+                    onRequestClose={handleClosePreview}
+                    statusBarTranslucent={true}
+                    hardwareAccelerated={true}
+                >
+                    {preview && (
+                        <View style={styles.previewOverlayContainer}>
+                            <Animated.View
+                                entering={FadeIn.duration(300)}
+                                exiting={FadeOut.duration(300)}
+                                style={StyleSheet.absoluteFill}
+                            >
+                                <EfficientBlurView intensity={Platform.OS === 'android' ? 20 : 40} tint="dark" style={StyleSheet.absoluteFill}>
+                                    <TouchableOpacity
+                                        style={styles.backdropClick}
+                                        activeOpacity={1}
+                                        onPress={handleClosePreview}
+                                    />
+                                </EfficientBlurView>
                             </Animated.View>
+
+                            <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center' }]} pointerEvents="box-none">
+                                <Animated.View
+                                    entering={ZoomIn.delay(50).duration(300)}
+                                    exiting={ZoomOut.duration(200)}
+                                    style={[styles.previewModal, { borderColor: theme.colors.accent, shadowOpacity: 0, elevation: 0 }]}
+                                >
+                                    <View style={styles.previewHeaderNew}>
+                                        <Text style={[styles.previewSubtitle, { color: theme.colors.accent }]}>
+                                            {preview?.type === 'skin' ? t('preview_subtitle_skin') : (preview?.type === 'frame' ? t('preview_subtitle_frame') : t('preview_subtitle_theme'))}
+                                        </Text>
+                                        {(preview?.type === 'skin' || preview?.type === 'frame') && (
+                                            <Text style={styles.previewTitleMain}>
+                                                {preview?.type === 'skin' ? t('skin_' + preview?.item?.id, preview?.item?.label) : t('frame_' + preview?.item?.id, preview?.item?.label)}
+                                            </Text>
+                                        )}
+                                    </View>
+
+                                    <View style={styles.previewContent}>
+                                        {preview?.type === 'skin' ? (
+                                            <View style={[styles.largeCard, {
+                                                backgroundColor: preview.item.styles.bg,
+                                                borderColor: preview.item.styles.border,
+                                                borderWidth: 1,
+                                            }]}>
+                                                {preview.item.styles.texture && TEXTURES[preview.item.styles.texture] && (
+                                                    <Image
+                                                        source={TEXTURES[preview.item.styles.texture]}
+                                                        style={[StyleSheet.absoluteFill, {
+                                                            opacity: preview.item.id === 'mida' ? 0.6 : 0.25,
+                                                            transform: [{ scale: 1.1 }]
+                                                        }]}
+                                                        resizeMode="cover"
+                                                    />
+                                                )}
+                                                <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16 }}>
+                                                    <Text style={{
+                                                        color: preview.item.styles.text,
+                                                        fontFamily: preview.item.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') : 'Outfit',
+                                                        fontSize: 16,
+                                                        fontWeight: '600',
+                                                        textAlign: 'left',
+                                                        lineHeight: 22
+                                                    }}>
+                                                        {t('flavor_corruption')}
+                                                    </Text>
+                                                </View>
+                                                <View style={{ paddingBottom: 12, paddingLeft: 16, opacity: 0.8 }}>
+                                                    <Text style={{ fontSize: 8, color: preview.item.styles.text, opacity: 0.6, fontFamily: 'Outfit-Bold' }}>
+                                                        CARDS OF MORAL DECAY
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        ) : preview?.type === 'theme' ? (
+                                            <View style={[styles.themePreviewContainer, { borderColor: preview.item.colors.cardBorder, borderWidth: 1 }]}>
+                                                <LinearGradient
+                                                    colors={preview.item.colors.background}
+                                                    style={StyleSheet.absoluteFill}
+                                                />
+                                                <ThemeBackground forceTheme={preview.item} visible={true} />
+                                                <View style={[StyleSheet.absoluteFill, {
+                                                    backgroundColor: 'rgba(0,0,0,0.3)',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                    padding: 20
+                                                }]}>
+                                                    <Text style={[styles.themeCardTitle, { color: preview.item.colors.textPrimary }]}>
+                                                        {t('theme_' + preview.item.id, preview.item.label)}
+                                                    </Text>
+                                                    <Text style={[styles.themeCardSubtitle, { color: preview.item.colors.accent }]}>
+                                                        {preview.item.particleConfig ? t('theme_dynamic_effect') : t('theme_static_decor')}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        ) : preview?.type === 'frame' ? (
+                                            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 20 }}>
+                                                <AvatarWithFrame
+                                                    avatar={user?.avatar || 'user'}
+                                                    frameId={preview.item.id}
+                                                    size={120}
+                                                />
+                                                <Text style={{ color: '#888', fontFamily: 'Outfit', fontSize: 13, marginTop: 20, textAlign: 'center', paddingHorizontal: 30 }}>
+                                                    {t('preview_frame_desc')}
+                                                </Text>
+                                            </View>
+                                        ) : null}
+                                    </View>
+
+                                    <TouchableOpacity
+                                        style={[styles.closeButton, { borderColor: 'rgba(255,255,255,0.2)' }]}
+                                        onPress={handleClosePreview}
+                                    >
+                                        <Text style={styles.closeButtonText}>{t('close_preview')}</Text>
+                                    </TouchableOpacity>
+
+                                </Animated.View>
+                            </View>
                         </View>
-                    </View>
-                )}
-            </Modal>
+                    )}
+                </Modal>
+
+                <ConfirmationModal
+                    visible={showExitModal}
+                    onClose={() => setShowExitModal(false)}
+                    title={t('exit_app_title')}
+                    message={t('exit_app_msg')}
+                    confirmText={t('exit_btn_small')}
+                    onConfirm={() => BackHandler.exitApp()}
+                />
+
+                <ToastNotification
+                    visible={toast.visible}
+                    message={toast.message}
+                    type={toast.type}
+                    onHide={() => setToast({ ...toast, visible: false })}
+                />
+            </PremiumBackground>
         </View>
     );
 }
 
-
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: 'transparent',
-    },
-    balanceHeader: {
-        paddingVertical: 10,
-        alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
-        marginBottom: 10
-    },
-    balancePill: {
+    balanceContainer: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(212, 175, 55, 0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 10,
+        marginBottom: 20,
+        gap: 8,
+        backgroundColor: 'rgba(212, 175, 55, 0.1)',
+        alignSelf: 'center',
+        paddingHorizontal: 16,
         paddingVertical: 8,
-        paddingHorizontal: 20,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: 'rgba(212, 175, 55, 0.3)',
-        alignItems: 'center',
-        gap: 8
+        borderColor: 'rgba(212, 175, 55, 0.3)'
     },
     balanceLabel: {
-        fontFamily: 'Outfit',
-        color: '#d4af37',
-        fontSize: 14,
-        letterSpacing: 1
+        fontFamily: 'Outfit-Bold',
+        color: '#888',
+        fontSize: 10,
+        letterSpacing: 2
     },
     balanceValue: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'Cinzel-Bold',
         color: '#d4af37',
-        fontSize: 18,
+        fontSize: 18
     },
-    list: {
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-        gap: 12
+    tabBarContainer: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        marginBottom: 15,
+        borderRadius: 12,
+        padding: 4,
+        height: 44
+    },
+    tabItem: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 8,
+        zIndex: 1
+    },
+    tabIndicator: {
+        position: 'absolute',
+        top: 4, bottom: 4, left: 4,
+        backgroundColor: '#d4af37',
+        borderRadius: 8,
     },
     card: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        borderRadius: 12,
-        padding: 12,
         alignItems: 'center',
-        borderWidth: 1
-    },
-    // [NEW] Vertical Card Style for Frames
-    cardFrame: {
-        width: '48%', // Grid column width
-        flexDirection: 'column',
-        backgroundColor: 'rgba(255,255,255,0.03)',
+        padding: 10,
+        marginBottom: 12,
         borderRadius: 16,
-        padding: 12,
-        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.03)',
         borderWidth: 1,
-        marginBottom: 12
+        borderColor: 'rgba(255,255,255,0.05)'
+    },
+    cardFrame: {
+        width: width * 0.43,
+        padding: 15,
+        marginBottom: 15,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center'
     },
     previewCircle: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        marginRight: 15
+    },
+    skinPreview: {
+        width: 34,
+        height: 48,
+        borderRadius: 4,
+        marginRight: 15,
+        borderWidth: 1,
+        overflow: 'hidden',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 10
+        paddingHorizontal: 4
     },
     infoContainer: {
         flex: 1,
-        marginLeft: 15,
-        justifyContent: 'center',
-        paddingRight: 10,
-    },
-    themeName: {
-        fontSize: 15, // Slightly smaller base
-        fontFamily: 'Cinzel-Bold',
-        marginBottom: 2,
-        flexShrink: 1, // Crucial for ellipsis logic in flex
-    },
-    themeDesc: {
-        color: '#888',
-        fontSize: 11,
-        fontFamily: 'Outfit'
-    },
-    buyButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-        minWidth: 70
-    },
-    buyText: {
-        color: '#000',
-        fontFamily: 'Outfit-Bold',
-        fontWeight: 'bold',
-        fontSize: 14
-    },
-    ownedBadge: {
-        padding: 5,
-        marginRight: 2
-    },
-    tab: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 10,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#333',
-        gap: 8,
-        backgroundColor: 'rgba(255,255,255,0.02)'
-    },
-    tabText: {
-        fontFamily: 'Outfit-Bold',
-        fontSize: 10,
-        textTransform: 'uppercase'
-    },
-    skinPreview: {
-        width: 30,
-        height: 42,
-        borderRadius: 4,
-        borderWidth: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
         marginRight: 10
     },
-    previewButton: {
-        padding: 8,
-        marginLeft: 5,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+    itemName: {
+        fontFamily: 'Cinzel-Bold',
+        fontSize: 14,
+        marginBottom: 2
+    },
+    itemDesc: {
+        fontFamily: 'Outfit',
+        fontSize: 10,
+        color: '#666',
+        textTransform: 'uppercase',
+        letterSpacing: 1
+    },
+    actionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+    },
+    buyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
         borderRadius: 8,
+        minWidth: 60,
+        justifyContent: 'center',
+        borderWidth: 1
     },
+    buyText: {
+        fontFamily: 'Cinzel-Bold',
+        fontSize: 12
+    },
+    ownedBadge: {
+        paddingVertical: 4,
+        paddingHorizontal: 8
+    },
+    previewButtonIcon: {
+        padding: 6
+    },
+    /* PREVIEW OVERLAY */
     previewOverlayContainer: {
-        ...StyleSheet.absoluteFillObject,
-        zIndex: 1000,
-    },
-    blurBackdrop: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.6)'
     },
     backdropClick: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.8)', // Darker dim for focus
+        width: '100%',
+        height: '100%'
     },
     previewModal: {
-        width: '90%',
-        maxWidth: 420,
-        backgroundColor: '#1a1a1a', // Keep it specific, not just hex
-        borderRadius: 28,
-        paddingHorizontal: 20,
-        paddingVertical: 30,
+        width: '85%',
+        backgroundColor: '#111',
+        borderRadius: 24,
         borderWidth: 1,
+        padding: 20,
         alignItems: 'center',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.6,
-        shadowRadius: 20,
-        elevation: 20,
+        elevation: 0
     },
     previewHeaderNew: {
-        width: '100%',
-        alignItems: 'center',
-        marginBottom: 25,
+        marginBottom: 20,
+        alignItems: 'center'
     },
     previewSubtitle: {
         fontFamily: 'Outfit-Bold',
-        fontSize: 12,
+        fontSize: 10,
         letterSpacing: 2,
-        textTransform: 'uppercase',
-        opacity: 0.9,
         marginBottom: 5
     },
     previewTitleMain: {
-        fontFamily: 'Cinzel-Bold',
-        fontSize: 24, // Bigger
         color: '#fff',
-        textAlign: 'center',
+        fontFamily: 'Cinzel-Bold',
+        fontSize: 22,
+        letterSpacing: 1
     },
     previewContent: {
         width: '100%',
         alignItems: 'center',
-        marginBottom: 30,
+        marginBottom: 20
     },
     largeCard: {
-        width: 180, // Larger scale
-        height: 252, // 1.4 Aspect Ratio
-        borderRadius: 16, // Proportional
-        backgroundColor: '#fff',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        elevation: 15,
+        width: width * 0.55,
+        height: width * 0.55 * 1.4,
+        borderRadius: 12,
         overflow: 'hidden'
     },
     themePreviewContainer: {
-        width: 180,
-        height: 252,
-        borderRadius: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        elevation: 15,
+        width: '100%',
+        height: 180,
+        borderRadius: 16,
         overflow: 'hidden',
         position: 'relative'
     },
-    previewCircleLarge: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-        shadowColor: '#000',
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 5
-    },
     themeCardTitle: {
         fontFamily: 'Cinzel-Bold',
-        fontSize: 22,
-        textAlign: 'center',
-        marginBottom: 8,
-        textShadowColor: 'rgba(0, 0, 0, 0.75)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4
+        fontSize: 24,
+        marginBottom: 5,
+        textAlign: 'center'
     },
     themeCardSubtitle: {
         fontFamily: 'Outfit-Bold',
         fontSize: 10,
-        letterSpacing: 2,
-        textTransform: 'uppercase',
-        textAlign: 'center',
-        opacity: 0.9,
-        textShadowColor: 'rgba(0, 0, 0, 0.75)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2
+        letterSpacing: 2
     },
     closeButton: {
-        paddingVertical: 12,
-        paddingHorizontal: 30,
-        borderRadius: 30,
         borderWidth: 1,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        backgroundColor: 'rgba(255,255,255,0.05)'
     },
     closeButtonText: {
         color: '#fff',

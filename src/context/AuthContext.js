@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { ref, get, set, child, update, increment, onValue, off, query, orderByChild, equalTo } from 'firebase/database';
 import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from '../services/firebase';
+import RevenueCatService from '../services/RevenueCatService';
 
 // [NEW] Rank Style Config
 export const RANK_COLORS = {
@@ -22,6 +23,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [hasProAccess, setHasProAccess] = useState(false);
 
     // 1. Auto-Login (Init)
     useEffect(() => {
@@ -29,6 +31,14 @@ export const AuthProvider = ({ children }) => {
             if (currentUser) {
                 // User is authenticated in Firebase Auth
                 await loadUserByUid(currentUser.uid);
+
+                // Initialize RevenueCat with user ID
+                try {
+                    await RevenueCatService.initialize(currentUser.uid);
+                    setHasProAccess(RevenueCatService.hasProAccess());
+                } catch (error) {
+                    console.error('[AuthContext] RevenueCat init failed:', error);
+                }
             } else {
                 // [NEW] If no user, sign in anonymously for global rule access
                 try {
@@ -63,12 +73,33 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
 
-                // Merge to update local state with latest DB data
-                setUser(prev => ({ ...prev, ...data }));
+                // Merge to update local state with latest DB data, handling deleted nodes
+                setUser(prev => ({
+                    ...prev,
+                    ...data,
+                    friends: data.friends || {},
+                    friendRequests: data.friendRequests || {}
+                }));
             }
         });
 
         return () => unsubscribe();
+    }, [user?.username]);
+
+    // 3. RevenueCat Customer Info Listener
+    useEffect(() => {
+        if (!user?.username) return;
+
+        const listener = RevenueCatService.addCustomerInfoUpdateListener((info) => {
+            setHasProAccess(RevenueCatService.hasProAccess());
+            console.log('[AuthContext] Pro access updated:', RevenueCatService.hasProAccess());
+        });
+
+        return () => {
+            if (listener && listener.remove) {
+                listener.remove();
+            }
+        };
     }, [user?.username]);
 
     // --- Helper: Generate Recovery Code ---
@@ -95,6 +126,16 @@ export const AuthProvider = ({ children }) => {
 
                 if (userSnapshot.exists()) {
                     const userData = userSnapshot.val();
+
+                    // [SECURITY] Check if this UID is still the valid owner
+                    // If the account was recovered by another UID, userData.uid will be different.
+                    if (userData.uid && userData.uid !== uid) {
+                        console.warn(`[SECURITY] UID mismatch! ${uid} maps to ${username}, but owner is ${userData.uid}. Cleaning up stale mapping.`);
+                        // We are authenticated as 'uid', so we HAVE permission to delete 'uids/${uid}'
+                        await set(uidRef, null);
+                        setUser(null);
+                        return;
+                    }
 
                     // [NEW] Special override for Alle
                     if (username.toLowerCase() === 'alle') {
@@ -151,6 +192,8 @@ export const AuthProvider = ({ children }) => {
             totalScore: 0,
             rank: "Anima Candida",
             createdAt: new Date().toISOString(),
+            friends: {}, // Initialize friends
+            friendRequests: {}, // [NEW] Initialize friend requests
             unlockedThemes: {
                 default: true,
                 ghiaccio: true,
@@ -163,6 +206,9 @@ export const AuthProvider = ({ children }) => {
             activeFrame: 'basic',
             unlockedFrames: {
                 basic: true
+            },
+            unlockedPacks: {
+                dark: false
             }
         };
 
@@ -217,17 +263,21 @@ export const AuthProvider = ({ children }) => {
         }
 
         // 4. Update UID Mapping (Sequential to satisfy Firebase Rules)
-        // [NEW] Step 0: Remove OLD UID mapping if it exists to avoid orphans
-        if (userData.uid && userData.uid !== newUid) {
-            console.log(`[DEBUG] Removing old UID mapping: ${userData.uid}`);
-            await set(ref(db, `uids/${userData.uid}`), null);
-        }
+        // [MODIFIED] We skip removing the OLD UID mapping because we don't have permission 
+        // to write to uids/${oldUid} from the new account. 
+        // Instead, we rely on the ownership check in loadUserByUid to invalidate the old session.
 
         // Step A: Map NEW UID to Username
         await set(ref(db, `uids/${newUid}`), username);
 
         // Step B: Update Username's UID record
-        await update(ref(db, `users/${username}`), { uid: newUid });
+        // [FIX] We verify the recovery code in the rules by sending it as 'recoveryProof'.
+        // This is required because our 'uid' (new) doesn't match the record's 'uid' (old),
+        // so standard ownership rules would block this write.
+        await update(ref(db, `users/${username}`), {
+            uid: newUid,
+            recoveryProof: code
+        });
 
         // 5. [FIX] Manually update state to jumpstart UI
         // The realtime listener in useEffect will handle the rest
@@ -294,12 +344,12 @@ export const AuthProvider = ({ children }) => {
                 await update(userRef, { "unlockedFrames/capo": true });
             }
         } else {
-            if (score >= 5000) newRank = "Entità Apocalittica";
-            else if (score >= 2500) newRank = "Eminenza Grigia";
-            else if (score >= 1000) newRank = "Architetto del Caos";
-            else if (score >= 750) newRank = "Socio del Vizio";
-            else if (score >= 500) newRank = "Corrotto";
-            else if (score >= 250) newRank = "Innocente";
+            if (score >= 50000) newRank = "Entità Apocalittica";
+            else if (score >= 25000) newRank = "Eminenza Grigia";
+            else if (score >= 10000) newRank = "Architetto del Caos";
+            else if (score >= 5000) newRank = "Socio del Vizio";
+            else if (score >= 2500) newRank = "Corrotto";
+            else if (score >= 1000) newRank = "Innocente";
             else newRank = "Anima Candida";
         }
 
@@ -372,6 +422,22 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const buyPack = async (packId, cost) => {
+        if (!user) return { success: false, message: "Non autenticato" };
+        if (user.unlockedPacks && user.unlockedPacks[packId]) return { success: true, message: "Già posseduto" };
+
+        if (user.balance >= cost) {
+            const updates = {};
+            updates[`users/${user.username}/balance`] = increment(-cost);
+            updates[`users/${user.username}/unlockedPacks/${packId}`] = true;
+
+            await update(ref(db), updates);
+            return { success: true, message: "Pacchetto acquistato!" };
+        } else {
+            return { success: false, message: "Non hai abbastanza Dirty Cash." };
+        }
+    };
+
     const bribe = async (onSuccess) => {
         const cost = 100;
         const success = await spendMoney(cost);
@@ -388,6 +454,73 @@ export const AuthProvider = ({ children }) => {
         await update(userRef, updates);
     };
 
+    // --- Action: Friends System (Mutual) ---
+    const sendFriendRequest = async (friendUsername) => {
+        if (!user || !user.username) throw new Error("Devi essere loggato.");
+        const target = friendUsername.trim();
+
+        if (target === user.username) throw new Error("Non puoi essere amico di te stesso (triste).");
+
+        // Check if user exists
+        const friendRef = ref(db, `users/${target}`);
+        const snapshot = await get(friendRef);
+        if (!snapshot.exists()) {
+            throw new Error("Utente non trovato.");
+        }
+
+        // Check if already friends
+        if (user.friends && user.friends[target]) {
+            throw new Error("Siete già amici!");
+        }
+
+        // Send request to target
+        await update(ref(db, `users/${target}/friendRequests`), {
+            [user.username]: true
+        });
+
+        return true;
+    };
+
+    const acceptFriendRequest = async (requesterUsername) => {
+        if (!user || !user.username) return;
+
+        // Atomic update: Add to my friends, add to their friends, remove request
+        const updates = {};
+        updates[`users/${user.username}/friends/${requesterUsername}`] = true;
+        updates[`users/${user.username}/friendRequests/${requesterUsername}`] = null;
+        updates[`users/${requesterUsername}/friends/${user.username}`] = true;
+
+        await update(ref(db), updates);
+    };
+
+    const rejectFriendRequest = async (requesterUsername) => {
+        if (!user || !user.username) return;
+        await set(ref(db, `users/${user.username}/friendRequests/${requesterUsername}`), null);
+    };
+
+    const removeFriend = async (friendUsername) => {
+        if (!user || !user.username) return;
+
+        // Remove from BOTH sides
+        const updates = {};
+        updates[`users/${user.username}/friends/${friendUsername}`] = null;
+        updates[`users/${friendUsername}/friends/${user.username}`] = null;
+
+        await update(ref(db), updates);
+    };
+
+    // --- RevenueCat Functions ---
+    const refreshProAccess = async () => {
+        try {
+            await RevenueCatService.refreshCustomerInfo();
+            setHasProAccess(RevenueCatService.hasProAccess());
+            return RevenueCatService.hasProAccess();
+        } catch (error) {
+            console.error('[AuthContext] Failed to refresh Pro access:', error);
+            return false;
+        }
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -402,11 +535,18 @@ export const AuthProvider = ({ children }) => {
             equipSkin,
             buyFrame,
             equipFrame,
+            buyPack,
             bribe,
             updateProfile,
             refreshUserData,
             dismissNewUser,
-            dismissRecovered
+            dismissRecovered,
+            sendFriendRequest,   // [NEW]
+            acceptFriendRequest, // [NEW]
+            rejectFriendRequest, // [NEW]
+            removeFriend,
+            hasProAccess,
+            refreshProAccess
         }}>
             {children}
         </AuthContext.Provider>

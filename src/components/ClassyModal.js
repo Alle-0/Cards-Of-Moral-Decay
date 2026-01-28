@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, Pressable, Dimensions, useWindowDimensions, Platform } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Dimensions, useWindowDimensions, Platform, Image } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, {
     useAnimatedStyle,
@@ -21,7 +21,7 @@ import { CrossIcon } from './Icons';
 
 
 
-const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconColor }) => {
+const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconColor, texture = null }) => {
     const { theme } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
     const opacity = useSharedValue(0);
@@ -113,12 +113,23 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
                             width: Math.min(windowWidth * 0.85, 340),
                             backgroundColor: '#121214',
                             borderColor: theme.colors.cardBorder,
-                            borderWidth: 1.5
+                            borderWidth: 1.5,
                         },
                         animatedStyle
                     ]}
                 >
-                    <Pressable activeOpacity={1} style={styles.innerContainer}>
+                    {/* Texture Layer - Clipped but separate from floating elements */}
+                    <View style={[StyleSheet.absoluteFill, { borderRadius: 22, overflow: 'hidden' }]}>
+                        {texture && (
+                            <Image
+                                source={texture}
+                                style={[StyleSheet.absoluteFill, { opacity: 0.05, tintColor: '#fff' }]}
+                                resizeMode="repeat"
+                            />
+                        )}
+                    </View>
+
+                    <Pressable style={styles.innerContainer}>
 
 
                         <PremiumIconButton

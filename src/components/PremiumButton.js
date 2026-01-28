@@ -21,7 +21,7 @@ const PremiumButton = ({
         const base = {
             backgroundColor: 'rgba(30, 27, 26, 0.95)',
             borderColor: theme.colors.cardBorder,
-            borderWidth: 1,
+            borderWidth: 1.5,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 6 },
             shadowOpacity: 0.4,
@@ -40,8 +40,8 @@ const PremiumButton = ({
         if (variant === 'danger') {
             return {
                 ...base,
-                borderColor: '#ff6b6b',
-                backgroundColor: 'rgba(50, 20, 20, 0.8)',
+                borderColor: 'rgba(239, 68, 68, 0.3)',
+                backgroundColor: 'rgba(127, 29, 29, 0.8)', // Deep Dark Red
             };
         }
 
@@ -55,15 +55,19 @@ const PremiumButton = ({
             };
         }
 
-        // Default Primary
-        return base;
+        // Default Primary (Gold/Accent)
+        return {
+            ...base,
+            backgroundColor: theme.colors.accent,
+            borderColor: theme.colors.accent,
+        };
     };
 
     const getTextStyle = () => {
         if (variant === 'outline') return { color: theme.colors.accent };
-        if (variant === 'danger') return { color: '#ff6b6b' };
+        if (variant === 'danger') return { color: '#fca5a5' };
         if (variant === 'ghost') return { color: theme.colors.textPrimary, opacity: 0.8 };
-        return { color: theme.colors.accent };
+        return { color: '#000' }; // Black on Gold (Primary)
     };
 
     return (
@@ -81,11 +85,15 @@ const PremiumButton = ({
             contentContainerStyle={[{
                 justifyContent: 'center',
                 alignItems: 'center',
-                paddingVertical: 16,
-                paddingHorizontal: 24,
+                paddingVertical: 10,
+                paddingHorizontal: 12,
             }, contentContainerStyle]} // Merge prop
         >
-            <Text style={[styles.text, { fontFamily: 'Cinzel Decorative-Bold' }, getTextStyle(), textStyle]}>
+            <Text
+                style={[styles.text, { fontFamily: 'Cinzel-Bold' }, getTextStyle(), textStyle]}
+                numberOfLines={1}
+                adjustsFontSizeToFit={false}
+            >
                 {title}
             </Text>
         </PremiumPressable>
@@ -97,15 +105,16 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        marginVertical: 10,
+        marginVertical: 8,
         width: '100%',
         maxWidth: 320,
         alignSelf: 'center',
+        minHeight: 48, // Ensure touch target
     },
     text: {
-        fontSize: 18,
+        fontSize: 15,
         textTransform: 'uppercase',
-        letterSpacing: 2,
+        letterSpacing: 1,
         textAlign: 'center',
     },
 });

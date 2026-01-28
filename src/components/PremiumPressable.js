@@ -84,7 +84,7 @@ const PremiumPressable = ({
                 disabled={disabled}
                 hitSlop={hitSlop}
                 android_disableSound={true} // [FIX] Silence native Android touch sound
-                style={[{ width: '100%', justifyContent: 'center', alignItems: 'center' }, Platform.OS === 'web' && { flex: 1, outlineStyle: 'none' }, pressableStyle]}
+                style={[{ width: '100%' }, Platform.OS === 'web' && { flex: 1, outlineStyle: 'none' }, pressableStyle]}
             >
                 <View style={[StyleSheet.absoluteFill, { zIndex: 0 }]}>
                     {enableRipple && (

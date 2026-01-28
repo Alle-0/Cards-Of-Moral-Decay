@@ -1,0 +1,101 @@
+import { logEvent } from 'firebase/analytics';
+import { analytics } from './firebase';
+
+/**
+ * AnalyticsService
+ * Standardized wrapper for Firebase Analytics events.
+ */
+const eventQueue = [];
+
+const AnalyticsService = {
+    log: (eventName, params = {}) => {
+        if (!analytics) {
+            if (__DEV__) {
+                console.log(`[Analytics] Analytics not ready, queuing event: ${eventName}`, params);
+            }
+            eventQueue.push({ eventName, params });
+            return;
+        }
+
+        try {
+            // Process queue first if any
+            while (eventQueue.length > 0) {
+                const { eventName: qName, params: qParams } = eventQueue.shift();
+                logEvent(analytics, qName, {
+                    ...qParams,
+                    queued: true,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            // Flatten params and ensure they are compatible with Firebase
+            const cleanParams = {
+                ...params,
+                timestamp: new Date().toISOString(),
+                platform: typeof window !== 'undefined' ? 'web' : 'native'
+            };
+
+            logEvent(analytics, eventName, cleanParams);
+
+            // Console log for debug (will be stripped in prod if needed, or left for easier debugging)
+            if (__DEV__) {
+                console.log(`[Analytics] ${eventName}:`, cleanParams);
+            }
+        } catch (error) {
+            console.warn('[Analytics] Error logging event:', error);
+        }
+    },
+
+    // --- Predefined Events ---
+
+    logGameStart: (roomCode, playerCount, pointsToWin) => {
+        AnalyticsService.log('game_start', {
+            room_code: roomCode,
+            player_count: playerCount,
+            points_to_win: pointsToWin
+        });
+    },
+
+    logGameWin: (playerName, points) => {
+        AnalyticsService.log('game_win', {
+            winner_name: playerName,
+            winner_points: points
+        });
+    },
+
+    logBribeUsed: (playerName, cost) => {
+        AnalyticsService.log('bribe_used', {
+            player_name: playerName,
+            cost: cost
+        });
+    },
+
+    logJokerUsed: (playerName) => {
+        AnalyticsService.log('joker_used', {
+            player_name: playerName
+        });
+    },
+
+    logPurchase: (itemName, price, currency = 'COINS') => {
+        AnalyticsService.log('item_purchase', {
+            item_id: itemName,
+            price: price,
+            currency: currency
+        });
+    },
+
+    logDonation: (fromPlayer, amount) => {
+        AnalyticsService.log('coins_donated', {
+            from: fromPlayer,
+            amount: amount
+        });
+    },
+
+    logDonationIntent: (playerName) => {
+        AnalyticsService.log('donation_intent', {
+            player_name: playerName
+        });
+    }
+};
+
+export default AnalyticsService;

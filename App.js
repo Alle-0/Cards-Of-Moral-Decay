@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StatusBar } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native'; // [NEW] Navigation Helper
 import {
     useFonts,
     Cinzel_400Regular,
@@ -19,8 +21,9 @@ import {
 import { GameProvider, useGame } from './src/context/GameContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { LanguageProvider } from './src/context/LanguageContext'; // [NEW]
 
-import LobbyScreen from './src/screens/LobbyScreen';
+import AppNavigator from './src/navigation/AppNavigator'; // [NEW] Bottom Tabs
 import GameScreen from './src/screens/GameScreen';
 import LoginScreen from './src/screens/LoginScreen';
 
@@ -67,21 +70,27 @@ export default function App() {
     if (!appIsReady) return null;
 
     return (
-        <ErrorBoundary>
-            <AuthProvider>
-                <ThemeProvider>
-                    <GameProvider>
-                        {!splashAnimationFinished ? (
-                            <Animated.View style={{ flex: 1 }} exiting={FadeOut.duration(500)}>
-                                <ElegantSplashScreen onFinish={() => setSplashAnimationFinished(true)} />
-                            </Animated.View>
-                        ) : (
-                            <AppContent />
-                        )}
-                    </GameProvider>
-                </ThemeProvider>
-            </AuthProvider>
-        </ErrorBoundary>
+        <SafeAreaProvider>
+            <ErrorBoundary>
+                <AuthProvider>
+                    <ThemeProvider>
+                        <LanguageProvider>
+                            <GameProvider>
+                                {!splashAnimationFinished ? (
+                                    <Animated.View style={{ flex: 1 }} exiting={FadeOut.duration(500)}>
+                                        <ElegantSplashScreen onFinish={() => setSplashAnimationFinished(true)} />
+                                    </Animated.View>
+                                ) : (
+                                    <NavigationContainer theme={DarkTheme}>
+                                        <AppContent />
+                                    </NavigationContainer>
+                                )}
+                            </GameProvider>
+                        </LanguageProvider>
+                    </ThemeProvider>
+                </AuthProvider>
+            </ErrorBoundary>
+        </SafeAreaProvider>
     );
 }
 
@@ -129,7 +138,7 @@ const AppContent = () => {
             {roomCode ? (
                 <GameScreen onStartLoading={() => handleStartLoading(true)} />
             ) : (
-                <LobbyScreen onStartLoading={() => handleStartLoading(false)} />
+                <AppNavigator onStartLoading={handleStartLoading} />
             )}
 
             {showGameSplash && (

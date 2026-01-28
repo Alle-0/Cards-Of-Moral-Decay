@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Image, Pressable } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown, useAnimatedStyle, useSharedValue, withTiming, interpolate, Easing } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 import PremiumPressable from './PremiumPressable';
 import { ErrorIcon, RankIcon, CrownIcon, SkipIcon, EyeIcon, CrossIcon } from './Icons';
@@ -9,136 +10,136 @@ import SoundService from '../services/SoundService';
 
 const DominusOverlay = ({ status, onSkip, onReveal }) => {
     const { theme } = useTheme();
+    const { t } = useLanguage();
     const [isExpanded, setIsExpanded] = useState(false);
+    const expansion = useSharedValue(0);
 
     const isJudging = status === 'DOMINUS_CHOOSING';
     const text = isJudging
-        ? "Tocca a te scegliere il vincitore!"
-        : "Sei il Dominus. Attendi le risposte...";
-
-    // Animation Shared Value (0 = Collapsed, 1 = Expanded)
-    const expansion = useSharedValue(0);
+        ? t('dominus_choosing_msg')
+        : t('dominus_waiting_msg');
 
     useEffect(() => {
-        if (isExpanded) SoundService.play('tap');
         expansion.value = withTiming(isExpanded ? 1 : 0, {
             duration: 400,
-            easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Cubic Bezier for smooth "Apple-like" feel
+            easing: Easing.out(Easing.back(1))
         });
     }, [isExpanded]);
 
-    // Trigger Style: Fades out and scales down when expanded
-    const triggerStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(expansion.value, [0, 0.5], [1, 0]),
-        transform: [{ scale: interpolate(expansion.value, [0, 1], [1, 0.5]) }],
-        pointerEvents: expansion.value > 0.1 ? 'none' : 'auto',
-    }));
-
-    // Card Style: Fades in and scales up when expanded
-    const cardStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(expansion.value, [0.3, 1], [0, 1]),
-        transform: [
-            { scale: interpolate(expansion.value, [0, 1], [0.8, 1]) },
-            { translateY: interpolate(expansion.value, [0, 1], [20, 0]) }
-        ],
-        pointerEvents: expansion.value > 0.9 ? 'auto' : 'none',
-    }));
-
-    // Backdrop: Only visible when expanded
     const backdropStyle = useAnimatedStyle(() => ({
-        opacity: expansion.value,
-        pointerEvents: expansion.value > 0.1 ? 'auto' : 'none',
+        opacity: withTiming(isExpanded ? 1 : 0, { duration: 300 }),
+        pointerEvents: isExpanded ? 'auto' : 'none'
     }));
 
+    const cardStyle = useAnimatedStyle(() => {
+        return {
+            transform: [
+                { translateY: interpolate(expansion.value, [0, 1], [400, 0]) },
+                { scale: interpolate(expansion.value, [0, 1], [0.8, 1]) }
+            ],
+            opacity: expansion.value
+        };
+    });
+
+    const triggerStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: withTiming(isExpanded ? 0 : 1, { duration: 250 }) }],
+        opacity: withTiming(isExpanded ? 0 : 1, { duration: 200 })
+    }));
+
+    const toggleExpanded = () => {
+        if (!isExpanded) SoundService.play('woosh_soft');
+        setIsExpanded(!isExpanded);
+    };
 
     return (
-        <>
-            {/* Backdrop for closing */}
-            <Animated.View style={[styles.backdrop, backdropStyle]}>
+        <View style={styles.rootContainer} pointerEvents="box-none">
+            {/* 0. BACKDROP */}
+            <Animated.View
+                pointerEvents={isExpanded ? 'auto' : 'none'}
+                style={[styles.backdrop, backdropStyle]}
+            >
                 <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsExpanded(false)} />
             </Animated.View>
 
-            {/* Container for both elements */}
-            <View style={styles.rootContainer} pointerEvents="box-none">
+            {/* 1. TRIGGER BUTTON */}
+            <Animated.View style={[styles.triggerContainer, triggerStyle]}>
+                <PremiumPressable
+                    onPress={toggleExpanded}
+                    style={[styles.triggerButton, {
+                        borderColor: isJudging ? theme.colors.accent : '#ffd700',
+                        shadowColor: isJudging ? theme.colors.accent : '#ffd700'
+                    }]}
+                    rippleColor={isJudging ? theme.colors.accent + '30' : '#ffd70030'}
+                    scaleDown={0.9}
+                    contentContainerStyle={{ height: '100%', justifyContent: 'center' }}
+                >
+                    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                        <ErrorIcon size={24} color={isJudging ? theme.colors.accent : '#ffd700'} />
+                    </View>
+                </PremiumPressable>
+            </Animated.View>
 
-                {/* 1. TRIGGER BUTTON */}
-                <Animated.View style={[styles.triggerContainer, triggerStyle]}>
-                    <PremiumPressable
-                        onPress={() => setIsExpanded(true)}
-                        style={[styles.triggerButton, { borderColor: theme.colors.accent, shadowColor: theme.colors.accent }]}
-                        rippleColor={theme.colors.accent + '40'}
-                        scaleDown={0.9}
-                        pressableStyle={{ flex: 1 }} // Force Pressable to fill the container
-                        contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 3 }} // Force content to fill Pressable and center
+            {/* 2. EXPANDED CARD */}
+            <Animated.View style={[styles.cardContainer, cardStyle]}>
+                <View style={[styles.card, { borderColor: theme.colors.accent }]}>
+                    <Pressable
+                        onPress={() => setIsExpanded(false)}
+                        style={styles.closeButton}
+                        hitSlop={15}
                     >
-                        <ErrorIcon size={28} color={theme.colors.accent} />
-                    </PremiumPressable>
-                </Animated.View>
+                        <CrossIcon size={20} color="#666" />
+                    </Pressable>
 
-                {/* 2. EXPANDED CARD */}
-                <Animated.View style={[styles.cardContainer, cardStyle]}>
-                    <View style={[styles.card, { borderColor: theme.colors.accent }]}>
-                        {/* Close Button */}
-                        <Pressable
-                            style={styles.closeButton}
-                            onPress={() => setIsExpanded(false)}
-                            hitSlop={20}
-                        >
-                            <CrossIcon size={20} color="#666" />
-                        </Pressable>
-
-                        {/* Header Section */}
-                        <View style={styles.headerRow}>
-                            {isJudging ? (
-                                <View style={{ marginRight: 12 }}>
-                                    <RankIcon size={28} color={theme.colors.accent} />
-                                </View>
-                            ) : (
-                                <View style={{ marginRight: 12 }}>
-                                    <CrownIcon size={28} color="#ffd700" />
-                                </View>
-                            )}
-                            <View style={{ flex: 1 }}>
-                                <Text style={[styles.title, { color: theme.colors.accent }]}>
-                                    {isJudging ? "GIUDIZIO IN CORSO" : "DOMINUS"}
-                                </Text>
-                                <Text style={[styles.subtitle, { color: '#bbb' }]} numberOfLines={1}>
-                                    {text}
-                                </Text>
+                    {/* Header Section */}
+                    <View style={styles.headerRow}>
+                        {isJudging ? (
+                            <View style={{ marginRight: 12 }}>
+                                <RankIcon size={28} color={theme.colors.accent} />
                             </View>
-                        </View>
-
-                        {/* Actions Section */}
-                        <View style={styles.actionsRow}>
-                            <PremiumPressable
-                                onPress={onSkip}
-                                style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
-                                rippleColor="rgba(255, 255, 255, 0.1)"
-                                scaleDown={0.96}
-                                contentContainerStyle={styles.actionBtnContent}
-                                pressableStyle={{ height: '100%' }}
-                            >
-                                <SkipIcon size={24} color="#ddd" />
-                                <Text style={styles.actionBtnText}>SALTA</Text>
-                            </PremiumPressable>
-
-                            <PremiumPressable
-                                onPress={onReveal}
-                                style={[styles.actionBtn, { backgroundColor: theme.colors.accent + '20' }]} // Slight accent tint
-                                rippleColor={theme.colors.accent + '40'}
-                                scaleDown={0.96}
-                                contentContainerStyle={styles.actionBtnContent}
-                                pressableStyle={{ height: '100%' }}
-                            >
-                                <EyeIcon size={24} color={theme.colors.accent} />
-                                <Text style={[styles.actionBtnText, { color: theme.colors.accent }]}>SVELA</Text>
-                            </PremiumPressable>
+                        ) : (
+                            <View style={{ marginRight: 12 }}>
+                                <CrownIcon size={28} color="#ffd700" />
+                            </View>
+                        )}
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.title, { color: theme.colors.accent }]}>
+                                {isJudging ? t('judging_title') : t('dominus_title')}
+                            </Text>
+                            <Text style={[styles.subtitle, { color: '#bbb' }]} numberOfLines={1}>
+                                {text}
+                            </Text>
                         </View>
                     </View>
-                </Animated.View>
 
-            </View>
-        </>
+                    {/* Actions Section */}
+                    <View style={styles.actionsRow}>
+                        <PremiumPressable
+                            onPress={onSkip}
+                            style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
+                            rippleColor="rgba(255, 255, 255, 0.1)"
+                            scaleDown={0.96}
+                            contentContainerStyle={styles.actionBtnContent}
+                            pressableStyle={{ height: '100%' }}
+                        >
+                            <SkipIcon size={24} color="#ddd" />
+                            <Text style={styles.actionBtnText}>{t('skip_btn')}</Text>
+                        </PremiumPressable>
+
+                        <PremiumPressable
+                            onPress={onReveal}
+                            style={[styles.actionBtn, { backgroundColor: theme.colors.accent + '20' }]} // Slight accent tint
+                            rippleColor={theme.colors.accent + '40'}
+                            scaleDown={0.96}
+                            contentContainerStyle={styles.actionBtnContent}
+                            pressableStyle={{ height: '100%' }}
+                        >
+                            <EyeIcon size={24} color={theme.colors.accent} />
+                            <Text style={[styles.actionBtnText, { color: theme.colors.accent }]}>{t('reveal_btn')}</Text>
+                        </PremiumPressable>
+                    </View>
+                </View>
+            </Animated.View>
+        </View>
     );
 };
 

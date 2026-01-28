@@ -5,14 +5,15 @@ import { useTheme, CARD_SKINS, TEXTURES } from '../context/ThemeContext'; // [NE
 import PremiumIconButton from './PremiumIconButton';
 import PremiumPressable from './PremiumPressable';
 import { useAuth } from '../context/AuthContext'; // [NEW] useAuth
+import { useLanguage } from '../context/LanguageContext';
 import { CrownIcon } from './Icons';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers }) => (
+const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers, t }) => (
     <View style={styles.blackCard}>
         {/* Texture removed per user request "solo sulle bianche" */}
-        <Text style={styles.headerTitle}>Carta Nera</Text>
+        <Text style={styles.headerTitle}>{t('black_card_label')}</Text>
         <View style={styles.cardInternal}>
             <Text style={styles.blackCardText}>{text}</Text>
 
@@ -20,10 +21,10 @@ const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers }) => (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <CrownIcon size={24} color="#ffd36a" />
                     <View style={{ width: 6 }} />
-                    <Text style={styles.footerText}>Dominus: <Text style={{ color: '#ffd36a' }}>{dominusName || '?'}</Text></Text>
+                    <Text style={styles.footerText}>{t('dominus_label')} <Text style={{ color: '#ffd36a' }}>{dominusName || '?'}</Text></Text>
                 </View>
                 {answerCount < totalAnswers && (
-                    <Text style={styles.footerText}>Risposte: <Text style={{ color: '#ffd36a' }}>{answerCount}/{totalAnswers}</Text></Text>
+                    <Text style={styles.footerText}>{t('answers_label')} <Text style={{ color: '#ffd36a' }}>{answerCount}/{totalAnswers}</Text></Text>
                 )}
             </View>
         </View>
@@ -39,7 +40,7 @@ const FaceDownCard = memo(() => (
     </View>
 ));
 
-const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed, isSelected, onSelect, skin }) => { // [NEW] skin
+const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed, isSelected, onSelect, skin, t }) => { // [NEW] skin
     const aniValue = useSharedValue(0);
 
     useEffect(() => {
@@ -207,7 +208,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                         haptic="heavy"
                         contentContainerStyle={{ alignItems: 'center', justifyContent: 'center' }}
                     >
-                        <Text style={styles.winnerBtnText}>SCEGLI</Text>
+                        <Text style={styles.winnerBtnText}>{t('choose_btn')}</Text>
                     </PremiumPressable>
                 </Animated.View>
             )}
@@ -215,7 +216,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
     );
 });
 
-const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnswers }) => {
+const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnswers, t }) => {
     // Local state for the card content being currently displayed
     const [displayedCard, setDisplayedCard] = useState(blackCard);
     const rotateX = useSharedValue(0);
@@ -252,10 +253,11 @@ const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnsw
     return (
         <Animated.View style={[{ width: '100%', alignItems: 'center', marginBottom: 20, zIndex: 10 }, animatedStyle]}>
             <BlackCard
-                text={displayedCard?.testo || displayedCard || "Scegli una carta..."}
+                text={displayedCard?.testo || displayedCard || t('select_card_placeholder')}
                 dominusName={dominusName}
                 answerCount={answerCount}
                 totalAnswers={totalAnswers}
+                t={t}
             />
         </Animated.View>
     );
@@ -263,6 +265,7 @@ const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnsw
 
 const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, status, dominusName, playerCount, onSkip, onReveal, showPlayedArea = true, style, players }) => { // [NEW] players
     const { theme } = useTheme();
+    const { t } = useLanguage();
     const { user } = useAuth(); // [NEW] Get user for skins
     const [selectedCandidate, setSelectedCandidate] = useState(null);
 
@@ -289,6 +292,7 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
                 dominusName={dominusName}
                 answerCount={answerCount}
                 totalAnswers={totalAnswers}
+                t={t}
             />
 
             <ScrollView
@@ -306,7 +310,7 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
                                 {!cardsRevealed && (
                                     <View style={{ width: '100%', alignItems: 'center', marginVertical: 10 }}>
                                         <Text style={{ color: '#888', fontFamily: 'Cinzel', fontSize: 14 }}>
-                                            In attesa delle carte... ({validPlayedCards.length}/{playerCount - 1})
+                                            {t('waiting_cards')} ({validPlayedCards.length}/{playerCount - 1})
                                         </Text>
                                     </View>
                                 )}
@@ -323,6 +327,7 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
                                         onPickWinner={() => onSelectWinner(player)}
                                         // [FIX] Personal Skins: Always use MY skin, not the player's skin
                                         skin={CARD_SKINS[user?.activeCardSkin] || null}
+                                        t={t}
                                     />
                                 ))}
 

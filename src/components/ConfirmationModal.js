@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import PremiumModal from './PremiumModal';
 import PremiumButton from './PremiumButton';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const ConfirmationModal = ({
     visible,
@@ -11,10 +12,11 @@ const ConfirmationModal = ({
     message,
     onConfirm,
     confirmText = "OK",
-    cancelText = "Annulla",
+    cancelText = null,
     singleButton = false
 }) => {
     const { theme } = useTheme();
+    const { t } = useLanguage();
 
     return (
         <PremiumModal
@@ -23,7 +25,7 @@ const ConfirmationModal = ({
             title={title}
             showClose={false}
         >
-            <View style={{ gap: 20 }}>
+            <View style={{ gap: 20, paddingHorizontal: 20, paddingBottom: 20 }}>
                 <Text style={styles.message}>
                     {message}
                 </Text>
@@ -31,13 +33,13 @@ const ConfirmationModal = ({
                 <View style={styles.buttonRow}>
                     {!singleButton && (
                         <PremiumButton
-                            title={cancelText}
+                            title={cancelText || t('cancel_btn')}
                             variant="ghost"
                             enableSound={false}
                             onPress={onClose}
-                            style={{ flex: 1, borderWidth: 1, borderColor: '#333' }}
-                            contentContainerStyle={{ paddingVertical: 10, paddingHorizontal: 12 }}
-                            textStyle={{ color: '#ccc', fontSize: 13 }}
+                            style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+                            contentContainerStyle={{ paddingVertical: 12 }}
+                            textStyle={{ fontSize: 13 }}
                         />
                     )}
                     <PremiumButton
@@ -48,9 +50,9 @@ const ConfirmationModal = ({
                             if (onConfirm) onConfirm();
                             onClose();
                         }}
-                        style={{ flex: 1, backgroundColor: singleButton ? theme.colors.accent : '#ff453a' }}
-                        contentContainerStyle={{ paddingVertical: 10, paddingHorizontal: 12 }}
-                        textStyle={{ color: singleButton ? '#000' : '#fff', fontSize: 13, fontFamily: 'Cinzel-Bold' }}
+                        style={{ flex: 1 }}
+                        contentContainerStyle={{ paddingVertical: 12 }}
+                        textStyle={{ fontSize: 13, fontFamily: 'Cinzel-Bold' }}
                     />
                 </View>
             </View>
@@ -70,7 +72,7 @@ const styles = StyleSheet.create({
     },
     buttonRow: {
         flexDirection: 'row',
-        gap: 15,
+        gap: 12,
         justifyContent: 'center',
         width: '100%'
     }

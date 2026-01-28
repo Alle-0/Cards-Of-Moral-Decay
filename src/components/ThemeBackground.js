@@ -169,15 +169,24 @@ const DustParticle = React.memo(({ color }) => {
     }, []);
 
     const style = useAnimatedStyle(() => ({
-        position: 'absolute', left: x, top: y, width: size, height: size, borderRadius: size / 2, backgroundColor: color,
-        opacity: opacity.value * 0.8, // Slightly softer
-        ...(Platform.OS !== 'android' ? {
-            shadowColor: color, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 10,
-        } : {}),
+        position: 'absolute', left: x, top: y, width: size + 4, height: size + 4, opacity: opacity.value * 0.9,
         transform: [{ translateY: translateY.value }]
     }));
 
-    return <Animated.View style={style} />;
+    return (
+        <Animated.View style={[style, { alignItems: 'center', justifyContent: 'center' }]}>
+            <View style={{
+                width: '100%', height: '100%', borderRadius: (size + 4) / 2, backgroundColor: color,
+                shadowColor: color, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8,
+                overflow: 'hidden'
+            }}>
+                <View style={{
+                    position: 'absolute', top: '20%', left: '20%', width: '40%', height: '40%',
+                    backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 10,
+                }} />
+            </View>
+        </Animated.View>
+    );
 });
 
 // ============================================
@@ -298,7 +307,7 @@ const BubbleParticle = React.memo(({ color }) => {
 // ============================================
 // 6. SNOW/PETAL PARTICLES (Warm Start)
 // ============================================
-const SnowParticle = React.memo(({ colorEmoji }) => {
+const SnowParticle = React.memo(({ colorEmoji, theme }) => { // Added theme prop
     const { startX, size, duration, delay, rotationDir, initialY } = useMemo(() => ({
         startX: Math.random() * width,
         size: Math.random() * 10 + 10,
@@ -334,14 +343,50 @@ const SnowParticle = React.memo(({ colorEmoji }) => {
     }, []);
 
     const style = useAnimatedStyle(() => ({
-        position: 'absolute', opacity: opacity.value,
+        position: 'absolute',
+        opacity: opacity.value,
         transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { rotate: `${rotation.value}deg` }]
     }));
 
     return (
-        <Animated.Text style={[style, { fontSize: size, color: '#fb7185' }]}>
-            {colorEmoji || '🌸'}
-        </Animated.Text>
+        <Animated.View style={[
+            style,
+            {
+                width: 16,
+                height: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: theme.colors.particle || theme.colors.accent,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.9,
+                shadowRadius: 10,
+            }
+        ]}>
+            <View style={{
+                width: 14,
+                height: 14,
+                borderRadius: 7,
+                backgroundColor: theme.colors.particle || theme.colors.accent,
+                overflow: 'hidden'
+            }}>
+                <LinearGradient
+                    colors={['transparent', 'rgba(255,255,255,0.4)', 'transparent']}
+                    style={StyleSheet.absoluteFill}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0.5, y: 0.5 }}
+                />
+                {/* Glossy reflection */}
+                <View style={{
+                    position: 'absolute',
+                    top: '15%',
+                    left: '20%',
+                    width: '35%',
+                    height: '35%',
+                    backgroundColor: 'rgba(255,255,255,0.6)',
+                    borderRadius: 10,
+                }} />
+            </View>
+        </Animated.View>
     );
 });
 
@@ -556,7 +601,7 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
             case 'ash': return elements.map(e => <AshParticle key={e.id} color={theme.colors.particle} />);
             case 'bubble': return elements.map(e => <BubbleParticle key={e.id} color={theme.colors.particle} />);
             case 'toxicBubble': return elements.map(e => <BubbleParticle key={e.id} color={theme.colors.particle} />);
-            case 'snow': return elements.map(e => <SnowParticle key={e.id} colorEmoji={theme.colors.particleEmoji} />);
+            case 'snow': return elements.map(e => <SnowParticle key={e.id} colorEmoji={theme.colors.particleEmoji} theme={theme} />);
             case 'lightSweep': return <LightSweep />;
             case 'smoke': return elements.map(e => <SmokePuff key={e.id} />);
             case 'neonPulse': return <PulsarRipple color={theme.colors.accent} />;

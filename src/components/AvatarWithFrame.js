@@ -22,7 +22,7 @@ const AvatarWithFrame = ({
 
             {/* GLOW LAYER (Background) */}
             {Platform.OS === 'android' && (
-                <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+                <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]} pointerEvents="none">
                     {frameId === 'neon' && (
                         <Svg height="150%" width="150%" viewBox="0 0 100 100">
                             <Defs>

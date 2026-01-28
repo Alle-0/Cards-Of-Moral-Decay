@@ -1,0 +1,39 @@
+{
+    "rules": {
+        "uids": {
+            "$uid": {
+                ".read": "auth != null",
+                ".write": "auth != null && auth.uid === $uid"
+            }
+        },
+        "users": {
+            ".read": "auth != null",
+            ".indexOn": [
+                "uid"
+            ],
+            "$username": {
+                ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid || (data.child('recoveryCode').val() === newData.child('recoveryProof').val()))",
+                "friendRequests": {
+                    "$requester": {
+                        ".write": "auth != null && root.child('uids').child(auth.uid).val() === $requester"
+                    }
+                },
+                "friends": {
+                    "$friend": {
+                        ".write": "auth != null && root.child('uids').child(auth.uid).val() === $friend && ((!data.exists() && newData.exists() && (root.child('users').child($friend).child('friendRequests').child($username).exists() || root.child('users').child($username).child('friendRequests').child($friend).exists())) || (data.exists() && !newData.exists()))"
+                    }
+                }
+            }
+        },
+        "stanze": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+        },
+        "carte": {
+            ".read": "true"
+        },
+        "game_data": {
+            ".read": "true"
+        }
+    }
+}

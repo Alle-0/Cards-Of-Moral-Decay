@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Switch, ScrollView, Pressable, Share, Alert, Image } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Pressable, Share, Alert, Image, TouchableOpacity } from 'react-native';
 import PremiumPressable from './PremiumPressable';
+import PremiumToggle from './PremiumToggle'; // [NEW]
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import ThemeSelectionModal from './ThemeSelectionModal';
@@ -11,6 +12,7 @@ import { useGame } from '../context/GameContext';
 
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService';
 import { APP_VERSION } from '../constants/Config';
@@ -19,10 +21,11 @@ import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutRight, SlideInLeft, Sl
 import { RulesIcon, PaletteIcon, SettingsIcon, LinkIcon, OpenDoorIcon, CardsIcon, EyeIcon, EyeOffIcon } from './Icons'; // [NEW] EyeOffIcon
 import FrameSelectionModal from './FrameSelectionModal'; // [NEW]
 
-const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLogoutRequest }) => { // [NEW] onLogoutRequest
+const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLogoutRequest, onOpenInfo = () => { } }) => { // [NEW] onLogoutRequest/onOpenInfo
     const { theme, themes, setTheme, animationsEnabled, toggleAnimations } = useTheme(); // [NEW] anims
     const { leaveRoom, roomCode } = useGame(); // Get game info
     const { logout, user: authUser } = useAuth(); // [FIX] Use Auth user for recovery code
+    const { t, language, setLanguage } = useLanguage();
 
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [hapticsEnabled, setHapticsEnabled] = useState(true);
@@ -100,11 +103,11 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
 
     const handleShare = async () => {
         if (!roomCode) {
-            showModal("Nessun Codice", "Non sei connesso a nessuna stanza al momento.");
+            showModal(t('no_code_title'), t('no_code_msg'));
             return;
         }
         await Clipboard.setStringAsync(roomCode);
-        showModal("Copiato!", `Il codice ${roomCode} è stato copiato negli appunti.`);
+        showModal(t('copied_title'), t('code_copied_msg', { code: roomCode }));
     };
 
     const handleLeave = () => {
@@ -113,15 +116,15 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
         } else {
             // Fallback if prop is missing (shouldn't happen)
             showModal(
-                "Abbandona Partita",
-                "Sei sicuro di voler uscire dalla stanza corrente?",
+                t('leave_game_title'),
+                t('leave_game_msg'),
                 false,
                 () => {
                     if (onStartLoading) onStartLoading(true);
                     leaveRoom();
                     onClose();
                 },
-                "Esci"
+                t('exit_btn')
             );
         }
     };
@@ -131,14 +134,14 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
             onLogoutRequest();
         } else {
             showModal(
-                "Disconnetti",
-                "Vuoi uscire dall'account?\nDovrai effettuare nuovamente il login.",
+                t('logout_title'),
+                t('logout_msg'),
                 false,
                 () => {
                     onClose();
                     logout();
                 },
-                "Esci"
+                t('exit_btn')
             );
         }
     };
@@ -170,7 +173,6 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
 
     return (
         <ClassyModal
-            // ... (props unchanged)
             visible={visible}
             onClose={
                 showRules ? () => setShowRules(false) :
@@ -180,11 +182,11 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                 onClose
             }
             title={
-                showRules ? "Regole" :
-                    showPersonalization ? "Personalizza" :
-                        showPreferences ? "Preferenze" :
-                            showAccount ? "Sicurezza" :
-                                "Impostazioni"
+                showRules ? t('rules_cat') :
+                    showPersonalization ? t('style_cat') :
+                        showPreferences ? t('settings_title') :
+                            showAccount ? t('account_cat') :
+                                t('settings_title')
             }
             icon={
                 showRules ? (
@@ -231,7 +233,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                             indicatorStyle
                         ]} />
 
-                        {['Temi', 'Carte', 'Cornici'].map((tab, index) => {
+                        {[t('tab_themes'), t('tab_cards'), t('tab_frames')].map((tab, index) => {
                             const isActive = activeTab === index;
                             return (
                                 <Pressable
@@ -274,7 +276,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         rippleColor="rgba(255, 255, 255, 0.2)"
                         contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }}
                     >
-                        <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>Indietro</Text>
+                        <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back_button')}</Text>
                     </PremiumPressable>
                 </Animated.View>
             ) : showRules ? (
@@ -286,18 +288,30 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                 >
                     <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, marginBottom: 15 }}>
                         <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit' }]}>
-                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary }}>Scopo del gioco:</Text>{'\n'}
-                            Essere il più divertente, cinico o assurdo possibile.{'\n\n'}
+                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13 }}>{t('rule_objective_title')}</Text>{'\n'}
+                            {t('rule_objective_content')}{'\n\n'}
 
-                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary }}>Come si gioca:</Text>{'\n'}
-                            1. Il "Dominus" legge una Carta Nera.{'\n'}
-                            2. Gli altri giocatori scelgono una Carta Bianca dalla loro mano che completa meglio la frase.{'\n'}
-                            3. Il Dominus le legge ad alta voce.{'\n'}
-                            4. Il Dominus sceglie la vincitrice.{'\n'}
-                            5. Il vincitore ottiene un punto.{'\n\n'}
+                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13 }}>{t('rule_dynamics_title')}</Text>{'\n'}
+                            1. {t('rule_dynamics_1')}{'\n'}
+                            2. {t('rule_dynamics_2')}{'\n'}
+                            3. {t('rule_dynamics_3')}{'\n'}
+                            4. {t('rule_dynamics_4')}{'\n'}
+                            5. {t('rule_dynamics_5')}{'\n\n'}
 
-                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary }}>Punteggio:</Text>{'\n'}
-                            Vince chi arriva prima al limite punti.
+                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13 }}>{t('rule_ranks_title')}</Text>{'\n'}
+                            - {t('rank_anima_candida')} (0 DC){'\n'}
+                            - {t('rank_innocente')} (1.000 DC){'\n'}
+                            - {t('rank_corrotto')} (2.500 DC){'\n'}
+                            - {t('rank_socio_vizio')} (5.000 DC){'\n'}
+                            - {t('rank_architetto_caos')} (10.000 DC){'\n'}
+                            - {t('rank_eminenza_grigia')} (25.000 DC){'\n'}
+                            - {t('rank_entita_apocalittica')} (50.000 DC){'\n\n'}
+
+                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13 }}>{t('rule_economy_title')}</Text>{'\n'}
+                            {t('rule_economy_1')}{'\n'}
+                            {t('rule_economy_2')}{'\n'}
+                            {t('rule_economy_3')}{'\n'}
+                            {t('rule_economy_footer')}
                         </Text>
                     </ScrollView>
 
@@ -308,7 +322,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         rippleColor="rgba(255, 255, 255, 0.2)"
                         contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }}
                     >
-                        <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>Torna al Menu</Text>
+                        <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back_button')}</Text>
                     </PremiumPressable>
                 </Animated.View>
             ) : showPreferences ? (
@@ -319,40 +333,66 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     style={{ gap: 15, width: '100%' }}
                 >
                     <View style={[styles.settingsGroup, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
-                        <View style={styles.row}>
+                        {/* [NEW] Language Toggle */}
+                        <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 12 }]}>
                             <View>
-                                <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>VIBRAZIONE</Text>
-                                <Text style={styles.rowSub}>Feedback tattile</Text>
+                                <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>LINGUA / LANGUAGE</Text>
+                                <Text style={styles.rowSub}>Italiano / English</Text>
                             </View>
-                            <Switch
+                            <View style={{ flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 10, padding: 3 }}>
+                                <TouchableOpacity
+                                    onPress={() => setLanguage('it')}
+                                    style={{
+                                        paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
+                                        backgroundColor: language === 'it' ? '#d4af37' : 'transparent',
+                                        shadowColor: 'transparent', shadowOpacity: 0, elevation: 0,
+                                        shadowRadius: 0, shadowOffset: { width: 0, height: 0 }
+                                    }}
+                                >
+                                    <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 10, color: language === 'it' ? '#000' : '#666' }}>IT</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => setLanguage('en')}
+                                    style={{
+                                        paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
+                                        backgroundColor: language === 'en' ? '#d4af37' : 'transparent',
+                                        shadowColor: 'transparent', shadowOpacity: 0, elevation: 0,
+                                        shadowRadius: 0, shadowOffset: { width: 0, height: 0 }
+                                    }}
+                                >
+                                    <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 10, color: language === 'en' ? '#000' : '#666' }}>EN</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={[styles.row, { paddingTop: 12 }]}>
+                            <View>
+                                <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('vibration')}</Text>
+                                <Text style={styles.rowSub}>{t('tactile_feedback')}</Text>
+                            </View>
+                            <PremiumToggle
                                 value={hapticsEnabled}
                                 onValueChange={toggleHaptics}
-                                trackColor={{ false: '#333', true: theme.colors.accent }}
-                                thumbColor={'#fff'}
                             />
                         </View>
                         <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
                             <View>
-                                <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>ANIMAZIONI SFONDO</Text>
-                                <Text style={styles.rowSub}>Particelle ed effetti</Text>
+                                <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('bg_animations')}</Text>
+                                <Text style={styles.rowSub}>{t('particles_effects')}</Text>
                             </View>
-                            <Switch
+                            <PremiumToggle
                                 value={animationsEnabled}
                                 onValueChange={toggleAnimations}
-                                trackColor={{ false: '#333', true: theme.colors.accent }}
-                                thumbColor={'#fff'}
                             />
                         </View>
                         <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
                             <View>
-                                <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>EFFETTI SONORI</Text>
-                                <Text style={styles.rowSub}>Suoni e notifiche</Text>
+                                <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('sound_effects')}</Text>
+                                <Text style={styles.rowSub}>{t('sounds_notifs')}</Text>
                             </View>
-                            <Switch
+                            <PremiumToggle
                                 value={soundEnabled}
                                 onValueChange={toggleSound}
-                                trackColor={{ false: '#333', true: theme.colors.accent }}
-                                thumbColor={'#fff'}
                             />
                         </View>
                     </View>
@@ -364,7 +404,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         rippleColor="rgba(255, 255, 255, 0.2)"
                         contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }}
                     >
-                        <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>Indietro</Text>
+                        <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back_button')}</Text>
                     </PremiumPressable>
                 </Animated.View>
             ) : showAccount ? (
@@ -383,10 +423,10 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                 ) : (
                                     <EyeIcon size={20} color="#ef4444" />
                                 )}
-                                <Text style={{ color: '#ef4444', fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 1 }}>ZONA DI RECUPERO</Text>
+                                <Text style={{ color: '#ef4444', fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 1 }}>{t('recovery_code')}</Text>
                             </View>
                             <Text style={{ color: '#aaa', fontFamily: 'Outfit', fontSize: 11, marginBottom: 15 }}>
-                                Se perdi questo codice, perdi l'account per sempre.
+                                {t('recovery_sub')}
                             </Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                 <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.2)', alignItems: 'center' }}>
@@ -400,14 +440,14 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                     onPress={() => {
                                         if (showRecoveryCode) {
                                             Clipboard.setStringAsync(authUser.recoveryCode);
-                                            showModal("Copiato", "Codice salvato. Custodiscilo con la vita.");
+                                            showModal(t('copied_title'), t('recovery_saved_msg'));
                                         } else {
                                             setShowRecoveryCode(true);
                                         }
                                     }}
                                 >
                                     <Text style={{ color: '#fff', fontFamily: 'Outfit-Bold', fontSize: 11, textAlign: 'center', includeFontPadding: false }}>
-                                        {showRecoveryCode ? "COPY" : "VEDI"}
+                                        {showRecoveryCode ? t('recovery_copy_btn') : t('recovery_view_btn')}
                                     </Text>
                                 </PremiumPressable>
                             </View>
@@ -425,7 +465,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                             <View style={styles.menuCardIconWrap}>
                                 <OpenDoorIcon size={20} color="#ef4444" />
                             </View>
-                            <Text style={[styles.menuCardText, { color: '#ef4444' }]}>Disconnetti Account</Text>
+                            <Text style={[styles.menuCardText, { color: '#ef4444' }]}>{t('logout_btn')}</Text>
                         </PremiumPressable>
                     </View>
 
@@ -436,7 +476,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         rippleColor="rgba(255, 255, 255, 0.2)"
                         contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }}
                     >
-                        <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>Indietro</Text>
+                        <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back_button')}</Text>
                     </PremiumPressable>
                 </Animated.View>
             ) : (
@@ -446,68 +486,68 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     exiting={SlideOutLeft.duration(500).easing(Easing.out(Easing.quad))}
                     style={{ gap: 8, width: '100%' }}
                 >
-                    {/* CATEGORIES */}
-                    <CategoryCard
-                        title="Personalizza"
-                        subtitle="Temi, Carte e Skin"
-                        icon={<PaletteIcon size={24} color={theme.colors.accent} />}
-                        onPress={() => setShowPersonalization(true)}
-                        color={theme.colors.accent}
-                    />
-                    <CategoryCard
-                        title="Preferenze"
-                        subtitle="Audio, Vibrazione e FX"
-                        icon={<SettingsIcon size={24} color="#94a3b8" />}
-                        onPress={() => setShowPreferences(true)}
-                        color="#94a3b8"
-                    />
-                    {!roomCode && (
-                        <CategoryCard
-                            title="Sicurezza"
-                            subtitle="Codice di Recupero e Account"
-                            icon={<EyeIcon size={24} color="#ef4444" />}
-                            onPress={() => setShowAccount(true)}
-                            color="#ef4444"
+                    {/* GRID CATEGORIES */}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+                        <CategoryTile
+                            title={t('style_cat')}
+                            subtitle={t('style_sub')}
+                            icon={<PaletteIcon size={28} color={theme.colors.accent} />}
+                            onPress={() => setShowPersonalization(true)}
                         />
-                    )}
-                    <CategoryCard
-                        title="Regole"
-                        subtitle="Manuale del gioco"
-                        icon={<RulesIcon size={24} color="#3b82f6" />}
-                        onPress={() => setShowRules(true)}
-                        color="#3b82f6"
-                    />
+                        <CategoryTile
+                            title={t('audio_cat')}
+                            subtitle={t('audio_sub')}
+                            icon={<SettingsIcon size={28} color="#94a3b8" />}
+                            onPress={() => setShowPreferences(true)}
+                        />
+                        {!roomCode && (
+                            <CategoryTile
+                                title={t('account_cat')}
+                                subtitle="Recupero"
+                                icon={<EyeIcon size={28} color="#ef4444" />}
+                                onPress={() => setShowAccount(true)}
+                            />
+                        )}
+                        <CategoryTile
+                            title={t('rules_cat')}
+                            subtitle={t('manual_sub')}
+                            icon={<RulesIcon size={28} color="#3b82f6" />}
+                            onPress={() => setShowRules(true)}
+                        />
+                    </View>
 
                     {/* ACTIONS (Contextual) */}
                     {roomCode && (
-                        <>
-                            <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 10 }} />
-
-                            <PremiumPressable
-                                style={{ width: '100%', borderRadius: 16, overflow: 'hidden', marginBottom: 8 }}
-                                pressableStyle={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.2)', borderRadius: 16 }}
-                                contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 }}
+                        <View style={{ marginTop: 20, gap: 10 }}>
+                            <SecondaryAction
+                                icon={<LinkIcon size={18} color="#eab308" />}
+                                label={t('copy_code_action')}
                                 onPress={handleShare}
-                            >
-                                <LinkIcon size={20} color="#eab308" />
-                                <Text style={{ color: '#eab308', fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 1 }}>Copia Codice Stanza</Text>
-                            </PremiumPressable>
-
-                            <PremiumPressable
-                                style={{ width: '100%', borderRadius: 16, overflow: 'hidden' }}
-                                pressableStyle={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.2)', borderRadius: 16 }}
-                                contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 }}
+                                bgColor="rgba(234, 179, 8, 0.1)"
+                                color="#eab308"
+                            />
+                            <SecondaryAction
+                                icon={<OpenDoorIcon size={18} color="#ef4444" />}
+                                label={t('leave_room_action')}
                                 onPress={handleLeave}
-                            >
-                                <OpenDoorIcon size={20} color="#ef4444" />
-                                <Text style={{ color: '#ef4444', fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 1 }}>Abbandona Partita</Text>
-                            </PremiumPressable>
-                        </>
+                                bgColor="rgba(239, 68, 68, 0.1)"
+                                color="#ef4444"
+                            />
+                        </View>
                     )}
 
-                    <Text style={{ textAlign: 'center', color: '#666', fontSize: 10, fontFamily: 'Outfit', marginTop: 10, opacity: 0.5 }}>
-                        Version {APP_VERSION}
-                    </Text>
+                    <TouchableOpacity
+                        activeOpacity={0.6}
+                        style={{ marginTop: 25, alignItems: 'center', paddingBottom: 10 }}
+                        onPress={onOpenInfo}
+                    >
+                        <Text style={{ fontFamily: 'Outfit', fontSize: 11, color: '#666', textDecorationLine: 'underline', letterSpacing: 0.5 }}>
+                            {t('info_privacy_link')}
+                        </Text>
+                        <Text style={{ textAlign: 'center', color: '#666', fontSize: 9, fontFamily: 'Outfit', marginTop: 4, opacity: 0.4 }}>
+                            {t('version_label')} {APP_VERSION}
+                        </Text>
+                    </TouchableOpacity>
                 </Animated.View>
             )}
             <ConfirmationModal
@@ -523,37 +563,54 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
     );
 };
 
-const CategoryCard = ({ title, subtitle, icon, onPress, color }) => {
+const CategoryTile = ({ title, subtitle, icon, onPress }) => {
     return (
         <PremiumPressable
-            style={{ width: '100%', borderRadius: 16, overflow: 'hidden', marginBottom: 2 }}
+            style={{ width: '47%', borderRadius: 18, overflow: 'hidden' }}
             pressableStyle={{
-                backgroundColor: 'rgba(255,255,255,0.03)',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.05)',
-                borderRadius: 16
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                borderWidth: 1.5,
+                borderColor: 'rgba(255,255,255,0.08)',
+                borderRadius: 18,
+                height: 120,
             }}
             contentContainerStyle={{
-                flexDirection: 'row',
                 alignItems: 'center',
-                padding: 16,
+                justifyContent: 'center',
+                padding: 12,
+                height: '100%',
             }}
             onPress={onPress}
             enableSound={false}
         >
             <View style={{
-                width: 48, height: 48, borderRadius: 14,
+                width: 54, height: 54, borderRadius: 16,
                 backgroundColor: 'rgba(255,255,255,0.05)',
                 alignItems: 'center', justifyContent: 'center',
-                marginRight: 16
+                marginBottom: 10,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.05)'
             }}>
                 {icon}
             </View>
-            <View style={{ flex: 1 }}>
-                <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{title?.toUpperCase()}</Text>
-                <Text style={{ color: '#888', fontFamily: 'Outfit', fontSize: 11, marginTop: 2 }}>{subtitle}</Text>
+            <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 11, letterSpacing: 1.5, textAlign: 'center' }}>{title}</Text>
+            <Text style={{ color: '#666', fontFamily: 'Outfit', fontSize: 9, marginTop: 2, textAlign: 'center' }}>{subtitle}</Text>
+        </PremiumPressable>
+    );
+};
+
+const SecondaryAction = ({ icon, label, onPress, bgColor, color }) => {
+    return (
+        <PremiumPressable
+            style={{ width: '100%', borderRadius: 14, overflow: 'hidden' }}
+            pressableStyle={{ backgroundColor: bgColor, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderRadius: 14 }}
+            contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 }}
+            onPress={onPress}
+        >
+            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                {icon}
             </View>
-            <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 18, fontFamily: 'Outfit-Bold' }}>→</Text>
+            <Text style={{ color: color, fontFamily: 'Cinzel-Bold', fontSize: 11, letterSpacing: 1.5 }}>{label}</Text>
         </PremiumPressable>
     );
 };

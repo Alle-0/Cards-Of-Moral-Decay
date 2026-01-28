@@ -43,7 +43,7 @@ const ToastNotification = ({ message, visible, onClose, type = 'error' }) => {
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        bottom: 50,
+        bottom: 120,
         alignSelf: 'center',
         width: '90%',
         backgroundColor: '#1A1A1A',

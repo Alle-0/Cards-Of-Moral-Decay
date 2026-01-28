@@ -8,7 +8,7 @@ import PremiumPressable from './PremiumPressable';
 import LocalAvatar from './LocalAvatar'; // [NEW]
 
 import { useWebDragScroll } from '../hooks/useWebDragScroll';
-import { MYSTERY_AVATAR } from '../utils/data';
+import { MYSTERY_AVATAR } from '../utils/constants';
 import { Image } from 'react-native';
 import { DiceIcon } from './Icons';
 

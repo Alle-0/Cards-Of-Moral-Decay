@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View, Text, Dimensions } from 'react-native';
 import Animated, {
     useSharedValue,
@@ -72,10 +73,20 @@ const Particle = ({ emoji, animationType, delay }) => {
         };
     });
 
+    const particleColor = (emoji === '⚫' || theme.id === 'onice') ? '#fff' : (theme.colors.particle || theme.colors.accent);
+
     return (
-        <Animated.Text style={[styles.particle, animatedStyle]}>
-            {emoji}
-        </Animated.Text>
+        <Animated.View style={[
+            styles.particle,
+            animatedStyle,
+            {
+                backgroundColor: particleColor,
+                shadowColor: particleColor,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 1,
+                shadowRadius: 6,
+            }
+        ]} />
     );
 };
 
@@ -118,11 +129,9 @@ const ParticleSystem = () => {
 const styles = StyleSheet.create({
     particle: {
         position: 'absolute',
-        fontSize: 24,
-        color: '#fff',
-        textShadowColor: 'rgba(255, 255, 255, 0.5)',
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 10,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
     },
 });
 

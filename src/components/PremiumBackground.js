@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
 import { StatusBar } from 'expo-status-bar';
 import ThemeBackground from './ThemeBackground';
@@ -21,49 +21,80 @@ const NoisePattern = () => (
     </Svg>
 );
 
-const PremiumBackground = ({ children, showParticles = true }) => {
+const PremiumBackground = ({ children, showParticles = true, immediate = false }) => {
     const { theme, animationsEnabled } = useTheme();
 
+    // Cross-fade state
+    const [baseTheme, setBaseTheme] = useState(theme);
+    const [overlayTheme, setOverlayTheme] = useState(null);
     const opacity = useSharedValue(0);
 
     useEffect(() => {
-        // Fade effect when theme changes
-        opacity.value = 0;
-        opacity.value = withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) });
-    }, [theme.id]);
+        if (immediate) {
+            setBaseTheme(theme);
+            setOverlayTheme(null);
+            opacity.value = 0;
+            return;
+        }
 
-    const animatedStyle = useAnimatedStyle(() => {
-        return {
-            opacity: opacity.value,
-        };
-    });
+        if (theme.id !== (overlayTheme?.id || baseTheme.id)) {
+            // Step 1: Place NEW theme in overlay and start fade instantly
+            setOverlayTheme(theme);
+            opacity.value = 0;
+            opacity.value = withTiming(1, {
+                duration: 1000,
+                easing: Easing.bezier(0.33, 1, 0.68, 1) // Snappy start
+            }, (finished) => {
+                if (finished) {
+                    runOnJS(finalizeTransition)(theme);
+                }
+            });
+        }
+    }, [theme.id, immediate]);
+
+    const finalizeTransition = (newTheme) => {
+        // Step 2: Swap base layer to new theme (while still hidden under overlay)
+        setBaseTheme(newTheme);
+
+        // Step 3: Wait long enough for base layer particles to initialize (300ms)
+        setTimeout(() => {
+            setOverlayTheme(null);
+            opacity.value = 0;
+        }, 300);
+    };
+
+    const overlayStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+    }));
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background[0] }]}>
+        <View style={[styles.container, { backgroundColor: '#000' }]}>
             <StatusBar style="light" />
 
-            {/* Active Theme Gradient */}
-            {Platform.OS === 'web' ? (
+            {/* Layer 1: Base Theme (Stable Anchor) */}
+            <View style={StyleSheet.absoluteFill}>
                 <LinearGradient
-                    colors={theme.colors.background}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                    colors={baseTheme.colors.background}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
                 />
-            ) : (
-                <AnimatedLinearGradient
-                    colors={theme.colors.background}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={[StyleSheet.absoluteFill, animatedStyle]}
-                />
+                <ThemeBackground visible={showParticles && animationsEnabled} forceTheme={baseTheme} />
+            </View>
+
+            {/* Layer 2: Overlay Theme (Fades In) */}
+            {overlayTheme && (
+                <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]}>
+                    <LinearGradient
+                        colors={overlayTheme.colors.background}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                        style={StyleSheet.absoluteFill}
+                    />
+                    <ThemeBackground visible={showParticles && animationsEnabled} forceTheme={overlayTheme} />
+                </Animated.View>
             )}
 
-            {/* [NEW] Dynamic Theme Background (Effects + Textures) */}
-            <ThemeBackground visible={showParticles && animationsEnabled} />
-
-            {/* SVG Noise Texture Overlay */}
-            <View style={[StyleSheet.absoluteFill, { opacity: 0.15 }]}>
+            {/* SVG Noise Texture Overlay (Global) */}
+            <View style={[StyleSheet.absoluteFill, { opacity: 0.15 }]} pointerEvents="none">
                 <NoisePattern />
             </View>
 

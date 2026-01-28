@@ -21,7 +21,7 @@ const LocalAvatar = ({ seed, size = 128, style }) => {
             size: 128,
             // [FIX] Removed background generation to prevent theme clashing.
             // Result will be transparent, utilizing the parent container's background.
-            radius: 0,
+            radius: 50, // [FIX] Round avatars by default
         }).toString();
     }, [seed]);
 

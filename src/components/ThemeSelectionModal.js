@@ -5,10 +5,14 @@ import PremiumPressable from './PremiumPressable';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { LockIcon } from './Icons';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useLanguage } from '../context/LanguageContext';
 
 const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
     const { theme, themes, setTheme } = useTheme();
+    const { t } = useLanguage();
     const { user } = useAuth();
     const windowWidth = Dimensions.get('window').width;
 
@@ -44,7 +48,8 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
                 style={{ flex: 1 }}
                 contentContainerStyle={{
                     flexGrow: 1, // Window frame
-                    paddingBottom: 20,
+                    paddingBottom: 120,
+                    paddingHorizontal: 5,
                 }}
                 showsVerticalScrollIndicator={false}
             >
@@ -52,37 +57,36 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
                     style={{
                         flexDirection: 'row',
                         flexWrap: 'wrap',
-                        columnGap: gap,
+                        justifyContent: 'space-between',
                         rowGap: gap + 4,
-                        justifyContent: 'flex-start',
                         minHeight: '100%', // Ensure it fills the scrollview
                         cursor: 'default' // Avoid pointer cursor on background
                     }}
                 >
-                    {Object.values(themes).map((t, index) => {
-                        const isSelected = theme.id === t.id;
+                    {Object.values(themes).map((themeItem, index) => {
+                        const isSelected = theme.id === themeItem.id;
                         // Default is always unlocked, others check user profile
-                        const isUnlocked = t.id === 'default' || user?.unlockedThemes?.[t.id];
+                        const isUnlocked = themeItem.id === 'default' || user?.unlockedThemes?.[themeItem.id];
 
                         return (
                             <Animated.View
-                                key={t.id}
+                                key={themeItem.id}
                                 entering={FadeInDown.delay(index * 50).springify()}
+                                style={{ width: '31%' }}
                             >
                                 <PremiumPressable
-                                    onPress={isUnlocked ? () => setTheme(t.id) : null}
+                                    onPress={isUnlocked ? () => setTheme(themeItem.id) : null}
                                     disabled={!isUnlocked}
                                     enableSound={isUnlocked}
                                     scaleDown={isUnlocked ? 0.95 : 1}
                                     style={[
                                         styles.themeCard,
                                         {
-                                            width: itemWidth,
-                                            height: itemWidth * 1.2,
-                                            backgroundColor: '#18181b', // Dark container
-                                            borderColor: isSelected ? t.colors.accent : (isUnlocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)'),
-                                            borderWidth: isSelected ? 2 : 1,
-                                            opacity: isUnlocked ? 1 : 0.5
+                                            height: (windowWidth - 40) / 3 * 1.2,
+                                            backgroundColor: isSelected ? (themeItem.colors.accentWeak || themeItem.colors.accent) : 'rgba(255,255,255,0.03)',
+                                            borderColor: isSelected ? themeItem.colors.accent : 'rgba(255, 255, 255, 0.08)',
+                                            borderWidth: 1,
+                                            opacity: isUnlocked ? 1 : 0.6,
                                         }
                                     ]}
                                     contentContainerStyle={{
@@ -94,32 +98,29 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
                                         ...(Platform.OS === 'web' ? { flex: 1 } : {})
                                     }}
                                 >
-                                    <View style={[
-                                        styles.colorCircle,
-                                        {
-                                            backgroundColor: t.colors.accent,
-                                            shadowColor: t.colors.accent,
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }
-                                    ]}>
-                                        <Text style={{
-                                            fontSize: 18,
-                                            textAlign: 'center',
-                                            textAlignVertical: 'center',
-                                            includeFontPadding: false,
-                                            lineHeight: 22,
-                                            height: 22
-                                        }}>{t.colors.particleEmoji}</Text>
+                                    <View style={[styles.previewCircle, { overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: '#000' }]}>
+                                        <LinearGradient
+                                            colors={themeItem.colors.background}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={StyleSheet.absoluteFill}
+                                        />
+
+                                        <View style={{
+                                            position: 'absolute', bottom: 6, right: 6,
+                                            width: 14, height: 14, borderRadius: 7,
+                                            backgroundColor: themeItem.colors.accent,
+                                            borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.3)',
+                                        }} />
                                     </View>
                                     <Text
                                         numberOfLines={1}
                                         style={[
                                             styles.themeLabel,
-                                            { color: isSelected ? t.colors.accent : '#a1a1aa' }
+                                            { color: isSelected ? themeItem.colors.accent : '#a1a1aa' }
                                         ]}
                                     >
-                                        {t.label}
+                                        {t('theme_' + themeItem.id, themeItem.label)}
                                     </Text>
                                     {!isUnlocked && (
                                         <View style={{ position: 'absolute', top: 5, right: 5 }}>
@@ -133,18 +134,20 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
                 </Pressable>
             </ScrollView>
 
-            {!hideBackButton && (
-                <PremiumPressable
-                    onPress={onBack}
-                    enableSound={false}
-                    style={[styles.backButton, { backgroundColor: 'rgba(255,255,255,0.05)', zIndex: 20, elevation: 20, paddingVertical: 0 }]}
-                    rippleColor="rgba(255, 255, 255, 0.2)"
-                    contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }}
-                >
-                    <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>Indietro</Text>
-                </PremiumPressable>
-            )}
-        </View>
+            {
+                !hideBackButton && (
+                    <PremiumPressable
+                        onPress={onBack}
+                        enableSound={false}
+                        style={[styles.backButton, { backgroundColor: 'rgba(255,255,255,0.05)', zIndex: 20, elevation: 20, paddingVertical: 0 }]}
+                        rippleColor="rgba(255, 255, 255, 0.2)"
+                        contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }}
+                    >
+                        <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back')}</Text>
+                    </PremiumPressable>
+                )
+            }
+        </View >
     );
 };
 
@@ -153,16 +156,24 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         overflow: 'hidden',
     },
-    colorCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
-        shadowRadius: 6,
-        elevation: 3,
+    previewCircle: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: '#000',
+    },
+    accentDot: {
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        position: 'absolute',
+        bottom: 6,
+        right: 6,
+        borderWidth: 1.5,
+        borderColor: 'rgba(0,0,0,0.3)',
     },
     themeLabel: {
         fontSize: 10,

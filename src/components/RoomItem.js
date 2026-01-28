@@ -1,15 +1,17 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import PremiumPressable from './PremiumPressable';
 import { DoorClosedIcon, PeopleIcon } from './Icons';
 
 const RoomItem = ({ roomName, playerCount, state, onJoin, creatorName }) => {
     const { theme } = useTheme();
+    const { t } = useLanguage();
 
     const isWaiting = state === 'LOBBY';
     const baseColor = isWaiting ? '#51cf66' : '#ffd36a'; // Green : Gold
     const badgeBg = isWaiting ? 'rgba(81, 207, 102, 0.2)' : 'rgba(255, 211, 106, 0.2)';
-    const badgeTextStr = isWaiting ? 'In attesa' : 'In gioco';
+    const badgeTextStr = isWaiting ? t('room_state_waiting') : t('room_state_playing');
 
     const displayCode = roomName.replace('Stanza ', '').toUpperCase();
 

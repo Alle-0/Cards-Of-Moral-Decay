@@ -9,9 +9,11 @@ import { ref, update } from 'firebase/database'; // [NEW]
 import { db } from '../services/firebase'; // [NEW]
 import { LockIcon } from './Icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useLanguage } from '../context/LanguageContext';
 
 const SkinSelectionModal = ({ onBack, hideBackButton }) => {
     const { theme } = useTheme();
+    const { t } = useLanguage();
     const { user, equipSkin } = useAuth();
     const { roomCode } = useGame(); // [NEW]
     const windowWidth = Dimensions.get('window').width;
@@ -66,7 +68,7 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
                 style={{ flex: 1 }}
                 contentContainerStyle={{
                     flexGrow: 1,
-                    paddingBottom: 100,
+                    paddingBottom: 120,
                     paddingHorizontal: 4,
                 }}
                 showsVerticalScrollIndicator={false}
@@ -100,7 +102,7 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
                                         styles.skinCard,
                                         {
                                             height: numericItemWidth * 1.25, // Fixed Numeric Height (Aspect Ratio 1.25)
-                                            backgroundColor: '#18181b',
+                                            backgroundColor: 'rgba(255,255,255,0.03)',
                                             borderColor: isSelected ? theme.colors.accent : (isUnlocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)'),
                                             borderWidth: isSelected ? 2 : 1,
                                             opacity: isUnlocked ? 1 : 0.5
@@ -143,7 +145,7 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
                                             { color: isSelected ? theme.colors.accent : '#a1a1aa' }
                                         ]}
                                     >
-                                        {skin.label}
+                                        {t('skin_' + skin.id, skin.label)}
                                     </Text>
 
                                     {!isUnlocked && (
@@ -166,7 +168,7 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
                     rippleColor="rgba(255, 255, 255, 0.2)"
                     contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }}
                 >
-                    <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>Indietro</Text>
+                    <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back')}</Text>
                 </PremiumPressable>
             )}
         </View>

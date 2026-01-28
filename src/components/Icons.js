@@ -257,8 +257,8 @@ export const HaloIcon = ({ size = 24, color = "#FFCE6A" }) => (
 // [RE-DESIGNED] Horns Icon for Demon Frame (from corna.svg)
 export const HornsIcon = ({ size = 24, color = "#ef4444" }) => (
     <Svg width={size * 1.5} height={size} viewBox="-8 0 64 48" fill="none">
-        <Path transform="translate(-6, 0)" d="M5.55869 36.0741C6.47227 37.3556 7.58561 38.5644 8.90589 39.6938C9.10867 39.8673 9.41208 39.8436 9.5939 39.6482C12.0039 37.0589 13.9626 35.8541 17.3046 35.2902C17.8428 35.1994 17.9428 34.3474 17.4384 34.1387C9.22369 30.739 6.60173 25.1015 8.02762 10.2884C8.07907 9.75395 7.38024 9.51425 7.12 9.98392C3.1515 17.146 1.54313 23.778 2.69939 29.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
-        <Path transform="translate(6, 0)" d="M41.071 15C41.0157 13.5391 40.9056 11.9691 40.7429 10.2799C40.6914 9.74544 41.3922 9.51624 41.6524 9.98592C48.2878 21.9623 48.3236 32.4563 39.8681 39.6915C39.6653 39.865 39.3592 39.8436 39.1774 39.6482C36.7674 37.0589 34.8087 35.8541 31.4667 35.2902C30.9285 35.1994 30.8266 34.3482 31.3309 34.1395C37.2384 31.6952 40.2541 28.0942 40.9525 20.757" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path transform="translate(-8, 0)" d="M5.55869 36.0741C6.47227 37.3556 7.58561 38.5644 8.90589 39.6938C9.10867 39.8673 9.41208 39.8436 9.5939 39.6482C12.0039 37.0589 13.9626 35.8541 17.3046 35.2902C17.8428 35.1994 17.9428 34.3474 17.4384 34.1387C9.22369 30.739 6.60173 25.1015 8.02762 10.2884C8.07907 9.75395 7.38024 9.51425 7.12 9.98392C3.1515 17.146 1.54313 23.778 2.69939 29.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path transform="translate(4, 0)" d="M41.071 15C41.0157 13.5391 40.9056 11.9691 40.7429 10.2799C40.6914 9.74544 41.3922 9.51624 41.6524 9.98592C48.2878 21.9623 48.3236 32.4563 39.8681 39.6915C39.6653 39.865 39.3592 39.8436 39.1774 39.6482C36.7674 37.0589 34.8087 35.8541 31.4667 35.2902C30.9285 35.1994 30.8266 34.3482 31.3309 34.1395C37.2384 31.6952 40.2541 28.0942 40.9525 20.757" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
     </Svg>
 );
 
@@ -331,3 +331,51 @@ export const CatIcon = ({ size = 24, color = "#f472b6" }) => (
         <Path d="M53.5 17C50 21.5 49 22.5 45.5 29.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
     </Svg>
 );
+
+// [NEW] Back Arrow Icon
+export const ArrowLeftIcon = ({ size = 24, color = "#FFCE6A" }) => (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <Path d="M31 36L19 24L31 12" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+export const HomeIcon = ({ size = 24, color = "#FFCE6A" }) => (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <Path d="M9 18V42H39V18L24 6L9 18Z" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M19 29V42H29V29H19Z" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M9 42H39" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+    </Svg>
+);
+
+export const ShopIcon = ({ size = 24, color = "#FFCE6A" }) => (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <Path d="M39 32H13L8 12H44L39 32Z" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M3 6H8" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Circle cx="13" cy="39" r="3" stroke={color} strokeWidth="2.5" />
+        <Circle cx="39" cy="39" r="3" stroke={color} strokeWidth="2.5" />
+    </Svg>
+);
+
+export const WalletIcon = ({ size = 24, color = "#FFCE6A" }) => (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <Path d="M4 10C4 8.89543 4.89543 8 6 8H42C43.1046 8 44 8.89543 44 10V14H4V10Z" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M4 14V38C4 39.1046 4.89543 40 6 40H42C43.1046 40 44 39.1046 44 38V14H4Z" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M34 27H44" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Circle cx="34" cy="27" r="3" fill={color} />
+    </Svg>
+);
+
+export const ShirtIcon = ({ size = 24, color = "#FFCE6A" }) => (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <Path d="M36.1904 15H11.8096C11.129 15 10.4939 15.346 10.0963 15.9184L6 21.8125V39C6 40.1046 6.89543 41 8 41H40C41.1046 41 42 40.1046 42 39V21.8125L37.9037 15.9184C37.5061 15.346 36.871 15 36.1904 15Z" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M24 15V8L32 10" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M24 15V8L16 10" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+export const PlayIcon = ({ size = 24, color = "#FFCE6A" }) => (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <Path d="M13.8141 38.4009L11.4068 39.6758C9.40876 40.734 7.0027 39.2856 7.0027 37.0247V10.9765C7.0027 8.71527 9.40926 7.2669 11.4073 8.32559L35.9983 21.3556C38.1247 22.4823 38.1257 25.5283 36 26.6564L20.0593 35.116" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    </Svg>
+);
+

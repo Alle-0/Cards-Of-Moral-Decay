@@ -12,9 +12,11 @@ import { LockIcon } from './Icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import LocalAvatar from './LocalAvatar';
 import AvatarWithFrame from './AvatarWithFrame';
+import { useLanguage } from '../context/LanguageContext';
 
 const FrameSelectionModal = ({ onBack, hideBackButton }) => {
     const { theme } = useTheme();
+    const { t } = useLanguage();
     const { user, equipFrame } = useAuth();
     const { roomCode, user: gameUser } = useGame(); // [FIX] Get game user identity
     const windowWidth = Dimensions.get('window').width;
@@ -61,7 +63,7 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                 style={{ flex: 1 }}
                 contentContainerStyle={{
                     flexGrow: 1,
-                    paddingBottom: 20,
+                    paddingBottom: 120,
                     paddingHorizontal: 4
                 }}
                 showsVerticalScrollIndicator={false}
@@ -95,7 +97,7 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                                         styles.frameCard,
                                         {
                                             paddingVertical: 15,
-                                            backgroundColor: '#18181b',
+                                            backgroundColor: 'rgba(255,255,255,0.03)',
                                             borderColor: isSelected ? theme.colors.accent : (isUnlocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)'),
                                             borderWidth: isSelected ? 2 : 1,
                                             opacity: isUnlocked ? 1 : 0.5
@@ -109,7 +111,7 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                                 >
                                     {/* Frame Preview using standardized component */}
                                     <AvatarWithFrame
-                                        avatar={user?.username || 'user'}
+                                        avatar={user?.avatar || 'user'}
                                         frameId={frame.id}
                                         size={60}
                                         style={{ marginBottom: 10 }}
@@ -122,7 +124,7 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                                             { color: isSelected ? theme.colors.accent : '#a1a1aa' }
                                         ]}
                                     >
-                                        {frame.label}
+                                        {t('frame_' + frame.id, frame.label)}
                                     </Text>
 
                                     {!isUnlocked && (
@@ -145,7 +147,7 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                     rippleColor="rgba(255, 255, 255, 0.2)"
                     contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }}
                 >
-                    <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>Indietro</Text>
+                    <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back')}</Text>
                 </PremiumPressable>
             )}
         </View>
