@@ -20,7 +20,7 @@
 </p>
 
 <a href="https://carte-vs-umani.web.app">
-  <img src="https://img.shields.io/badge/🌐_Gioca_da_Browser-4285F4?style=social&logo=google-chrome" height="28"/>
+  <img src="https://img.shields.io/badge/🌐_Gioca_da_Browser-4285F4?style=social&logo=google-chrome" height="35"/>
 </a>
 
 <br/><br/>
