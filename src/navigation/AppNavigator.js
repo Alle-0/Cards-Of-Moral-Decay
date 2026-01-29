@@ -19,6 +19,7 @@ export default function AppNavigator({ onStartLoading }) {
             screenOptions={{
                 swipeEnabled: true,
                 lazy: true,
+                lazyPreloadDistance: 1,
                 tabBarIndicatorStyle: { opacity: 0 }
             }}
         >

@@ -9,7 +9,7 @@ const ToastNotification = ({ message, visible, onClose, type = 'error' }) => {
 
     useEffect(() => {
         if (visible) {
-            const timer = setTimeout(onClose, 3000);
+            const timer = setTimeout(onClose, 1500); // [FIX] Reduced duration (was 3000)
             return () => clearTimeout(timer);
         }
     }, [visible, onClose]);

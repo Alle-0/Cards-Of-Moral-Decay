@@ -29,6 +29,7 @@ export const GameProvider = ({ children }) => {
     const user = useMemo(() => {
         if (!authUser) return null;
         return {
+            username: authUser.username, // [FIX] Expose canonical username for logic
             name: authUser.nickname || authUser.username, // [FIX] Prioritize secondary nickname
             avatar: authUser.avatar || authUser.activeAvatar || 'User' // Fallback
         };
@@ -250,7 +251,8 @@ export const GameProvider = ({ children }) => {
 
     const createRoom = async (extraData = {}) => {
         const currentName = user?.name;
-        if (!currentName) throw new Error("User not logged in or name missing");
+        const currentUsername = user?.username;
+        if (!currentName || !currentUsername) throw new Error("User not logged in or name missing");
         setLoading(true);
         try {
             const code = generateRoomCode();
@@ -259,6 +261,7 @@ export const GameProvider = ({ children }) => {
 
             await set(ref(db, `stanze/${code}`), dehydrateRoom({
                 creatore: currentName,
+                creatorUsername: currentUsername, // [FIX] Storing canonical ID for friend matching
                 dominus: currentName,
                 dominusIndex: 0,
                 // [NEW] Store Package Settings & Language

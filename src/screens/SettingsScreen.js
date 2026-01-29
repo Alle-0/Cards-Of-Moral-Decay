@@ -11,6 +11,8 @@ import * as Clipboard from 'expo-clipboard';
 import ConfirmationModal from '../components/ConfirmationModal';
 import PremiumBackground from '../components/PremiumBackground';
 import { useGame } from '../context/GameContext';
+import ToastNotification from '../components/ToastNotification';
+import AvatarWithFrame from '../components/AvatarWithFrame'; // [NEW] // [NEW]
 
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, RANK_COLORS } from '../context/AuthContext';
@@ -47,6 +49,7 @@ const SettingsScreen = ({ navigation }) => {
         confirmText: t('ok_btn')
     });
     const [showExitAppModal, setShowExitAppModal] = useState(false);
+    const [toast, setToast] = useState({ visible: false, message: '', type: 'info' }); // [NEW] Toast State
 
     useEffect(() => {
         loadSettings();
@@ -93,11 +96,11 @@ const SettingsScreen = ({ navigation }) => {
 
     const handleShare = async () => {
         if (!roomCode) {
-            showModal(t('no_code_toast_title'), t('no_code_msg'));
+            setToast({ visible: true, message: t('no_code_msg'), type: 'error' });
             return;
         }
         await Clipboard.setStringAsync(roomCode);
-        showModal(t('copied_toast_title'), t('code_copied_msg', { code: roomCode }));
+        setToast({ visible: true, message: t('code_copied_msg', { code: roomCode }), type: 'success' });
     };
 
     const handleLeave = () => {
@@ -128,6 +131,19 @@ const SettingsScreen = ({ navigation }) => {
     // Android Back Handler
     useFocusEffect(
         useCallback(() => {
+            // [RE-APPLYING FIX] Reset sub-sections when coming back or leaving, ensuring fresh state
+            return () => {
+                setShowRules(false);
+                setShowPreferences(false);
+                setShowAccount(false);
+                setShowInfo(false);
+                setShowRecoveryCode(false); // [FIX] Re-hide recovery code when leaving screen
+            };
+        }, [])
+    );
+
+    useFocusEffect(
+        useCallback(() => {
             if (Platform.OS === 'web') return;
 
             const backAction = () => {
@@ -149,17 +165,36 @@ const SettingsScreen = ({ navigation }) => {
         }, [showRules, showPreferences, showAccount, showInfo])
     );
 
+    // [FIX] Reset sub-sections when leaving the screen
+    useFocusEffect(
+        useCallback(() => {
+            return () => {
+                setShowRules(false);
+                setShowPreferences(false);
+                setShowAccount(false);
+                setShowInfo(false);
+            };
+        }, [])
+    );
+
     const handleBack = () => {
         setShowRules(false);
         setShowPreferences(false);
         setShowAccount(false);
         setShowInfo(false);
+        setShowRecoveryCode(false); // [FIX] Re-hide recovery code when going back
     };
 
     return (
         <View style={{ flex: 1 }}>
             <PremiumBackground>
                 <View style={styles.container}>
+                    <ToastNotification
+                        visible={toast.visible}
+                        message={toast.message}
+                        type={toast.type}
+                        onClose={() => setToast({ ...toast, visible: false })}
+                    />
 
 
 
@@ -343,6 +378,27 @@ const SettingsScreen = ({ navigation }) => {
                             exiting={SlideOutRight.duration(300).easing(Easing.out(Easing.quad))}
                             style={{ flex: 1, width: '100%', paddingTop: 50, gap: 15, paddingBottom: 80 + insets.bottom }}
                         >
+                            {/* Profile Header */}
+                            <View style={{ alignItems: 'center', marginBottom: 10 }}>
+                                <AvatarWithFrame
+                                    avatar={authUser?.avatar || 'user'}
+                                    frameId={authUser?.activeFrame || 'basic'}
+                                    size={80}
+                                />
+                                <Text style={{
+                                    color: '#d4af37',
+                                    fontFamily: 'Cinzel-Bold',
+                                    fontSize: 22,
+                                    marginTop: 12,
+                                    letterSpacing: 1,
+                                    textShadowColor: 'rgba(0,0,0,0.5)',
+                                    textShadowOffset: { width: 0, height: 2 },
+                                    textShadowRadius: 4
+                                }}>
+                                    {authUser?.username || "Incognito"}
+                                </Text>
+                            </View>
+
                             {authUser?.recoveryCode && (
                                 <View style={{ padding: 16, backgroundColor: 'rgba(220, 38, 38, 0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.3)' }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 10 }}>
@@ -537,6 +593,7 @@ const CategoryTile = ({ title, subtitle, icon, color, onPress }) => {
                 borderRadius: 25,
                 minHeight: 80,
                 paddingVertical: 12,
+                justifyContent: 'center', // [FIX] Vertically center the content
             }}
             contentContainerStyle={{
                 flexDirection: 'row',
@@ -551,7 +608,7 @@ const CategoryTile = ({ title, subtitle, icon, color, onPress }) => {
             <View style={{
                 width: 42,
                 height: 42,
-                borderRadius: 21,
+                borderRadius: 50, // [FIX] Ensure perfect circle
                 backgroundColor: addAlpha(effectiveColor, '22'),
                 alignItems: 'center',
                 justifyContent: 'center',

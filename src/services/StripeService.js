@@ -12,7 +12,8 @@ export const useStripePayment = () => {
     const [isProcessing, setIsProcessing] = useState(false);
 
     const buyItem = async (itemType) => {
-        if (!user || isProcessing) return;
+        if (!user) return { success: false, message: "User not logged in" };
+        if (isProcessing) return { success: false, message: "Already processing" };
 
         try {
             setIsProcessing(true);
@@ -59,8 +60,11 @@ export const useStripePayment = () => {
             const { error: paymentError } = await presentPaymentSheet();
 
             if (paymentError) {
-                if (paymentError.code !== 'Canceled') {
+                if (paymentError.code === 'Canceled') {
+                    return { success: false, message: "Payment cancelled by user" };
+                } else {
                     Alert.alert("Errore", paymentError.message);
+                    return { success: false, message: paymentError.message };
                 }
             } else {
                 // 4. PAGAMENTO RIUSCITO! Sblocca il contenuto
@@ -72,10 +76,11 @@ export const useStripePayment = () => {
                     await awardMoney(amount);
                     return { success: true, type: 'dc', amount };
                 }
+                return { success: true }; // Fallback for other successful cases
             }
         } catch (e) {
             console.error('[Stripe] Error:', e);
-            return { success: false, error: e.message };
+            return { success: false, error: e.message, message: e.message };
         } finally {
             setIsProcessing(false);
         }

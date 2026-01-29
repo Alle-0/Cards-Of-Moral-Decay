@@ -1,3 +1,4 @@
+import React from 'react';
 import { StyleSheet, Pressable, View, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring, Easing } from 'react-native-reanimated';
 import HapticsService from '../services/HapticsService';
@@ -120,4 +121,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default PremiumPressable;
+export default React.memo(PremiumPressable);

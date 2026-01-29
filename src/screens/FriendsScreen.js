@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, BackHandler, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, BackHandler, Platform, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
@@ -7,7 +7,7 @@ import PremiumInput from '../components/PremiumInput';
 import PremiumButton from '../components/PremiumButton';
 import PremiumIconButton from '../components/PremiumIconButton';
 import PremiumBackground from '../components/PremiumBackground'; // [NEW] Wrapper
-import { TrashIcon, LinkIcon, CheckIcon, CrossIcon } from '../components/Icons';
+import { TrashIcon, LinkIcon, CheckIcon, CrossIcon, ShareIcon } from '../components/Icons';
 import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 import ToastNotification from '../components/ToastNotification';
@@ -57,6 +57,16 @@ const FriendsScreen = () => {
         setToast({ visible: true, message: t('toast_id_copied'), type: 'success' });
     };
 
+    const shareMyId = async () => {
+        try {
+            await Share.share({
+                message: t('share_msg', { id: myUsername }),
+            });
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
     const friendList = Object.keys(friends || {});
     const requestList = Object.keys(friendRequests || {});
 
@@ -92,11 +102,24 @@ const FriendsScreen = () => {
                     <View style={{ flex: 1, paddingHorizontal: 20, paddingBottom: 20 }}>
                         {/* My ID Section */}
                         <View style={styles.idContainer}>
-                            <Text style={[styles.label, { color: '#888' }]}>{t('your_id')}</Text>
-                            <TouchableOpacity onPress={copyMyId} style={styles.idBox}>
-                                <Text style={[styles.myId, { color: theme.colors.accent }]}>{myUsername}</Text>
-                                <LinkIcon size={16} color={theme.colors.accent} />
-                            </TouchableOpacity>
+                            <View>
+                                <Text style={[styles.label, { color: '#888' }]}>{t('your_id')}</Text>
+                                <Text style={[styles.myId, { color: theme.colors.accent, fontSize: 20, marginTop: 4 }]}>{myUsername}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', gap: 8 }}>
+                                <PremiumIconButton
+                                    icon={<LinkIcon size={18} color="#000" />}
+                                    onPress={copyMyId}
+                                    size={40}
+                                    style={{ backgroundColor: theme.colors.accent, borderRadius: 12 }}
+                                />
+                                <PremiumIconButton
+                                    icon={<ShareIcon size={18} color="#fff" />}
+                                    onPress={shareMyId}
+                                    size={40}
+                                    style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}
+                                />
+                            </View>
                         </View>
 
                         {/* Add Friend Request Section */}
@@ -224,7 +247,7 @@ const FriendsScreen = () => {
                     visible={toast.visible}
                     message={toast.message}
                     type={toast.type}
-                    onHide={() => setToast(prev => ({ ...prev, visible: false }))}
+                    onClose={() => setToast(prev => ({ ...prev, visible: false }))}
                     duration={2000}
                     style={{ bottom: 100 }} // Higher to not overlap navigation
                 />

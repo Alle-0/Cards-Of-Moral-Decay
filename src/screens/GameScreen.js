@@ -162,6 +162,7 @@ const GameScreen = ({ onStartLoading }) => {
     const [showShop, setShowShop] = useState(false); // [NEW] Shop Overlay State
     const [isAnimatingJoker, setIsAnimatingJoker] = useState(false);
     const [isAnimatingPlay, setIsAnimatingPlay] = useState(false);
+    const [optimisticWinner, setOptimisticWinner] = useState(null); // [NEW] Optimistic UI
     const [tempPlayedText, setTempPlayedText] = useState(null);
 
     // [NEW] Screen Shake Animation
@@ -194,6 +195,12 @@ const GameScreen = ({ onStartLoading }) => {
     }));
 
     useEffect(() => {
+        // [FIX] Priority: GAME_OVER suppresses Round Winner
+        if (roomData?.statoPartita === 'GAME_OVER') {
+            setShowWinnerModal(false);
+            return;
+        }
+
         if (roomData?.vincitoreTurno && roomData?.statoTurno === 'SHOWING_WINNER') {
             setPersistedWinnerInfo({
                 name: roomData.vincitoreTurno,
@@ -204,7 +211,7 @@ const GameScreen = ({ onStartLoading }) => {
         } else {
             setShowWinnerModal(false);
         }
-    }, [roomData?.vincitoreTurno, roomData?.statoTurno]);
+    }, [roomData?.vincitoreTurno, roomData?.statoTurno, roomData?.statoPartita]);
 
     // [NEW] Economy Integration
     const [lastPaidTurn, setLastPaidTurn] = useState(null);
@@ -288,6 +295,18 @@ const GameScreen = ({ onStartLoading }) => {
                 await logout();
                 setModalConfig(prev => ({ ...prev, visible: false }));
             }
+        });
+    };
+
+    // [NEW] Handle Kick Request with Confirmation
+    const handleKickRequest = (player) => {
+        setModalConfig({
+            visible: true,
+            title: t('kick_player_title') || "Elimina Giocatore?",
+            message: t('kick_player_msg', { name: player.name }),
+            confirmText: "KICK",
+            singleButton: false,
+            onConfirm: () => kickPlayer(player.name)
         });
     };
 
@@ -397,6 +416,7 @@ const GameScreen = ({ onStartLoading }) => {
     // Reset selection on round change
     useEffect(() => {
         setSelectedCards([]);
+        setOptimisticWinner(null); // [NEW] Clear optimistic state
     }, [roomData?.turnoCorrente]);
 
     // Show winner modal (Side effects only)
@@ -473,9 +493,8 @@ const GameScreen = ({ onStartLoading }) => {
         }
     }, [roomData?.carteGiocate, user.name, isAnimatingPlay]);
 
-    const handlePickWinner = (player) => {
+    const handlePickWinner = async (player) => {
         if (!isDominus) {
-            // Alert.alert("Aspetta!", "Solo il Dominus può scegliere il vincitore.");
             setModalConfig({
                 visible: true,
                 title: t('wait_title'),
@@ -485,7 +504,27 @@ const GameScreen = ({ onStartLoading }) => {
             });
             return;
         }
-        confirmDominusSelection(player);
+
+        // Optimistic UI: Update local state immediately
+        setOptimisticWinner(player);
+        SoundService.play('success'); // Play sound immediately
+
+        try {
+            await confirmDominusSelection(player);
+            // Success: State will clear when roomData updates via useEffect or next round
+        } catch (error) {
+            // Revert on failure
+            setOptimisticWinner(null);
+            SoundService.play('error');
+            HapticsService.trigger('error');
+            setModalConfig({
+                visible: true,
+                title: t('error_title'),
+                message: error.message || "Errore nella selezione",
+                singleButton: true,
+                confirmText: t('default_confirm')
+            });
+        }
     };
 
     // Prepare Player List for Drawer
@@ -723,19 +762,14 @@ const GameScreen = ({ onStartLoading }) => {
                 dominusName={roomData?.dominus}
                 playerCount={playersList.length}
                 players={roomData?.giocatori} // [NEW] Pass players for skins
+                optimisticWinner={optimisticWinner} // [NEW]
                 style={[
                     !isDominus ? { flex: 0.7, maxHeight: '45%' } : { flex: 1 },
                     Platform.OS === 'web' && !isDominus ? { maxHeight: '40%' } : {}
                 ]}
             />
 
-            {isDominus && (roomData?.statoTurno === 'WAITING_CARDS' || roomData?.statoTurno === 'DOMINUS_CHOOSING') && (
-                <DominusOverlay
-                    status={roomData?.statoTurno}
-                    onSkip={nextRound}
-                    onReveal={forceReveal}
-                />
-            )}
+            {/* DominusOverlay moved to root render */}
 
 
             {(() => {
@@ -944,6 +978,15 @@ const GameScreen = ({ onStartLoading }) => {
 
                 {/* --- FULL SCREEN OVERLAYS --- */}
 
+                {/* [FIX] Dominus Overlay rendered BEFORE modals so they cover it */}
+                {isDominus && roomData?.statoPartita !== 'GAME_OVER' && (roomData?.statoTurno === 'WAITING_CARDS' || roomData?.statoTurno === 'DOMINUS_CHOOSING') && (
+                    <DominusOverlay
+                        status={roomData?.statoTurno}
+                        onSkip={nextRound}
+                        onReveal={forceReveal}
+                    />
+                )}
+
                 <RoundWinnerModal
                     visible={showWinnerModal}
                     winnerInfo={persistedWinnerInfo}
@@ -1063,11 +1106,14 @@ const GameScreen = ({ onStartLoading }) => {
 
                 <LeaderboardDrawer
                     visible={showLeaderboard}
-                    onClose={() => setShowLeaderboard(false)}
+                    onClose={() => {
+                        setShowLeaderboard(false);
+                        setModalConfig(prev => ({ ...prev, visible: false })); // [FIX] Close kick modal if open
+                    }}
                     players={playersList}
                     currentUserName={user?.name}
                     isCreator={isCreator}
-                    onKick={kickPlayer}
+                    onKick={handleKickRequest}
                     status={roomData?.statoTurno} // [NEW] Pass turn status
                     playedPlayers={roomData?.carteGiocate ? Object.keys(roomData.carteGiocate) : []} // [NEW] Pass who played
                 />
@@ -1121,6 +1167,9 @@ const GameScreen = ({ onStartLoading }) => {
                         useAIJoker(); // Trigger logic after animation
                     }}
                 />
+
+                {/* [FIX] Dominus Overlay moved here to cover full screen (including Header) */}
+
             </PremiumBackground>
         </Animated.View>
     );

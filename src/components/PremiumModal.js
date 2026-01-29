@@ -11,7 +11,7 @@ import SoundService from '../services/SoundService';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const PremiumModal = ({ visible, onClose, title, children, showClose = true, modalHeight, borderColor, glowColor, titleColor, closeIconColor, backgroundColor }) => {
+const PremiumModal = ({ visible, onClose, title, children, showClose = true, modalHeight, borderColor, glowColor, titleColor, closeIconColor, backgroundColor, disableBottomSpacer = false }) => {
     const { theme } = useTheme();
     const opacity = useSharedValue(0);
     const scale = useSharedValue(0.9);
@@ -160,7 +160,7 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                                     {children}
                                 </View>
 
-                                <View style={{ height: 20, width: '100%' }} />
+                                {!disableBottomSpacer && <View style={{ height: 20, width: '100%' }} />}
                             </View>
                         </AnimatedPressable>
                     </View>

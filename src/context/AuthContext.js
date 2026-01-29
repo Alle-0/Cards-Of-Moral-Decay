@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { ref, get, set, child, update, increment, onValue, off, query, orderByChild, equalTo } from 'firebase/database';
 import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from '../services/firebase';
@@ -139,8 +139,9 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // --- Action: Sign Up (New Burner Account) ---
-    const signUp = async (username) => {
+    // --- MEMOIZED ACTIONS ---
+
+    const signUp = useCallback(async (username) => {
         // [MODIFIED] Re-use current anonymous session if available to avoid races
         let currentUser = auth.currentUser;
         if (!currentUser) {
@@ -203,18 +204,18 @@ export const AuthProvider = ({ children }) => {
         setUser({ username, ...newUser, isNew: true });
 
         return true;
-    };
+    }, []);
 
-    const dismissNewUser = () => {
+    const dismissNewUser = useCallback(() => {
         setUser(prev => prev ? { ...prev, isNew: false } : null);
-    };
+    }, []);
 
-    const dismissRecovered = () => {
+    const dismissRecovered = useCallback(() => {
         setUser(prev => prev ? { ...prev, isRecovered: false } : null);
-    };
+    }, []);
 
     // --- Action: Recover Account ---
-    const recoverAccount = async (username, code) => {
+    const recoverAccount = useCallback(async (username, code) => {
         // [MODIFIED] Re-use current anonymous session if available
         let currentUser = auth.currentUser;
         if (!currentUser) {
@@ -241,70 +242,39 @@ export const AuthProvider = ({ children }) => {
         }
 
         // 4. Update UID Mapping (Sequential to satisfy Firebase Rules)
-        // [MODIFIED] We skip removing the OLD UID mapping because we don't have permission 
-        // to write to uids/${oldUid} from the new account. 
-        // Instead, we rely on the ownership check in loadUserByUid to invalidate the old session.
-
         // Step A: Map NEW UID to Username
         await set(ref(db, `uids/${newUid}`), username);
 
         // Step B: Update Username's UID record
-        // [FIX] We verify the recovery code in the rules by sending it as 'recoveryProof'.
-        // This is required because our 'uid' (new) doesn't match the record's 'uid' (old),
-        // so standard ownership rules would block this write.
         await update(ref(db, `users/${username}`), {
             uid: newUid,
             recoveryProof: code
         });
 
         // 5. [FIX] Manually update state to jumpstart UI
-        // The realtime listener in useEffect will handle the rest
         setUser({ username, ...userData, uid: newUid, isRecovered: true });
 
         return true;
-    };
+    }, []);
 
     // --- Action: Logout ---
-    const logout = async () => {
+    const logout = useCallback(async () => {
         await signOut(auth);
         // User state cleared by onAuthStateChanged
-    };
+    }, []);
 
     // --- Economy & Assets (Keep existing logic, just adapt refs) ---
 
     // Note: 'user' object now contains everything we need.
 
-    const refreshUserData = async () => {
+    const refreshUserData = useCallback(async () => {
         // Handled by realtime listener mostly, but keep for manual sync if needed
         if (!user) return;
         const snapshot = await get(ref(db, `users/${user.username}`));
         if (snapshot.exists()) {
             setUser({ username: user.username, ...snapshot.val() });
         }
-    };
-
-    const awardMoney = async (amount) => {
-        if (!user) return;
-        const userRef = ref(db, `users/${user.username}`);
-        await update(userRef, {
-            balance: increment(amount),
-            totalScore: increment(amount)
-        });
-        await updateRank(user.username);
-        // Listener updates state
-    };
-
-    const spendMoney = async (amount) => {
-        if (!user) return false;
-        if (user.balance < amount) return false;
-
-        const userRef = ref(db, `users/${user.username}`);
-        await update(userRef, {
-            balance: increment(-amount)
-        });
-        // Listener updates state
-        return true;
-    };
+    }, [user?.username]);
 
     const updateRank = async (username) => {
         const userRef = ref(db, `users/${username}`);
@@ -336,7 +306,30 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const buyTheme = async (themeId, cost) => {
+    const awardMoney = useCallback(async (amount) => {
+        if (!user) return;
+        const userRef = ref(db, `users/${user.username}`);
+        await update(userRef, {
+            balance: increment(amount),
+            totalScore: increment(amount)
+        });
+        await updateRank(user.username);
+        // Listener updates state
+    }, [user?.username]);
+
+    const spendMoney = useCallback(async (amount) => {
+        if (!user) return false;
+        if (user.balance < amount) return false;
+
+        const userRef = ref(db, `users/${user.username}`);
+        await update(userRef, {
+            balance: increment(-amount)
+        });
+        // Listener updates state
+        return true;
+    }, [user]);
+
+    const buyTheme = useCallback(async (themeId, cost) => {
         if (!user) return { success: false, message: "Non autenticato" };
         if (user.unlockedThemes && user.unlockedThemes[themeId]) return { success: true, message: "Già posseduto" };
 
@@ -350,9 +343,9 @@ export const AuthProvider = ({ children }) => {
         } else {
             return { success: false, message: "Fondi insufficienti" };
         }
-    };
+    }, [user]);
 
-    const buySkin = async (skinId, cost) => {
+    const buySkin = useCallback(async (skinId, cost) => {
         if (!user) return { success: false, message: "Non autenticato" };
         if (user.unlockedSkins && user.unlockedSkins[skinId]) return { success: true, message: "Già posseduto" };
 
@@ -366,17 +359,17 @@ export const AuthProvider = ({ children }) => {
         } else {
             return { success: false, message: "Non hai abbastanza Dirty Cash." };
         }
-    };
+    }, [user]);
 
-    const equipSkin = async (skinId) => {
+    const equipSkin = useCallback(async (skinId) => {
         if (!user) return;
         if (user.unlockedSkins && user.unlockedSkins[skinId]) {
             const userRef = ref(db, `users/${user.username}`);
             await update(userRef, { activeCardSkin: skinId });
         }
-    };
+    }, [user]);
 
-    const buyFrame = async (frameId, cost) => {
+    const buyFrame = useCallback(async (frameId, cost) => {
         if (!user) return { success: false, message: "Non autenticato" };
         if (user.unlockedFrames && user.unlockedFrames[frameId]) return { success: true, message: "Già posseduto" };
 
@@ -390,17 +383,17 @@ export const AuthProvider = ({ children }) => {
         } else {
             return { success: false, message: "Non hai abbastanza Dirty Cash." };
         }
-    };
+    }, [user]);
 
-    const equipFrame = async (frameId) => {
+    const equipFrame = useCallback(async (frameId) => {
         if (!user) return;
         if (frameId === 'basic' || (user.unlockedFrames && user.unlockedFrames[frameId])) {
             const userRef = ref(db, `users/${user.username}`);
             await update(userRef, { activeFrame: frameId });
         }
-    };
+    }, [user]);
 
-    const buyPack = async (packId, cost) => {
+    const buyPack = useCallback(async (packId, cost) => {
         if (!user) return { success: false, message: "Non autenticato" };
         if (user.unlockedPacks && user.unlockedPacks[packId]) return { success: true, message: "Già posseduto" };
 
@@ -414,9 +407,9 @@ export const AuthProvider = ({ children }) => {
         } else {
             return { success: false, message: "Non hai abbastanza Dirty Cash." };
         }
-    };
+    }, [user]);
 
-    const bribe = async (onSuccess) => {
+    const bribe = useCallback(async (onSuccess) => {
         const cost = 100;
         const success = await spendMoney(cost);
         if (success) {
@@ -424,16 +417,16 @@ export const AuthProvider = ({ children }) => {
             return true;
         }
         return false;
-    };
+    }, [spendMoney]);
 
-    const updateProfile = async (updates) => {
+    const updateProfile = useCallback(async (updates) => {
         if (!user?.username) return;
         const userRef = ref(db, `users/${user.username}`);
         await update(userRef, updates);
-    };
+    }, [user?.username]);
 
     // --- Action: Friends System (Mutual) ---
-    const sendFriendRequest = async (friendUsername) => {
+    const sendFriendRequest = useCallback(async (friendUsername) => {
         if (!user || !user.username) throw new Error("Devi essere loggato.");
         const target = friendUsername.trim();
 
@@ -457,9 +450,9 @@ export const AuthProvider = ({ children }) => {
         });
 
         return true;
-    };
+    }, [user]);
 
-    const acceptFriendRequest = async (requesterUsername) => {
+    const acceptFriendRequest = useCallback(async (requesterUsername) => {
         if (!user || !user.username) return;
 
         // Atomic update: Add to my friends, add to their friends, remove request
@@ -469,14 +462,14 @@ export const AuthProvider = ({ children }) => {
         updates[`users/${requesterUsername}/friends/${user.username}`] = true;
 
         await update(ref(db), updates);
-    };
+    }, [user]);
 
-    const rejectFriendRequest = async (requesterUsername) => {
+    const rejectFriendRequest = useCallback(async (requesterUsername) => {
         if (!user || !user.username) return;
         await set(ref(db, `users/${user.username}/friendRequests/${requesterUsername}`), null);
-    };
+    }, [user]);
 
-    const removeFriend = async (friendUsername) => {
+    const removeFriend = useCallback(async (friendUsername) => {
         if (!user || !user.username) return;
 
         // Remove from BOTH sides
@@ -485,45 +478,59 @@ export const AuthProvider = ({ children }) => {
         updates[`users/${friendUsername}/friends/${user.username}`] = null;
 
         await update(ref(db), updates);
-    };
+    }, [user]);
 
-    // --- RevenueCat Functions ---
-    const refreshProAccess = async () => {
-        try {
-            await RevenueCatService.refreshCustomerInfo();
-            setHasProAccess(RevenueCatService.hasProAccess());
-            return RevenueCatService.hasProAccess();
-        } catch (error) {
-            console.error('[AuthContext] Failed to refresh Pro access:', error);
-            return false;
-        }
-    };
+    // Memoize the context value to avoid re-rendering consumers unless necessary
+    const value = React.useMemo(() => ({
+        user,
+        loading,
+        signUp,
+        recoverAccount,
+        logout,
+        awardMoney,
+        spendMoney,
+        buyTheme,
+        buySkin,
+        equipSkin,
+        buyFrame,
+        equipFrame,
+        buyPack,
+        bribe,
+        updateProfile,
+        refreshUserData,
+        dismissNewUser,
+        dismissRecovered,
+        sendFriendRequest,
+        acceptFriendRequest,
+        rejectFriendRequest,
+        removeFriend
+    }), [
+        user,
+        loading,
+        signUp,
+        recoverAccount,
+        logout,
+        awardMoney,
+        spendMoney,
+        buyTheme,
+        buySkin,
+        equipSkin,
+        buyFrame,
+        equipFrame,
+        buyPack,
+        bribe,
+        updateProfile,
+        refreshUserData,
+        dismissNewUser,
+        dismissRecovered,
+        sendFriendRequest,
+        acceptFriendRequest,
+        rejectFriendRequest,
+        removeFriend
+    ]);
 
     return (
-        <AuthContext.Provider value={{
-            user,
-            loading,
-            signUp,        // [NEW] 
-            recoverAccount,// [NEW]
-            logout,
-            awardMoney,
-            spendMoney,
-            buyTheme,
-            buySkin,
-            equipSkin,
-            buyFrame,
-            equipFrame,
-            buyPack,
-            bribe,
-            updateProfile,
-            refreshUserData,
-            dismissNewUser,
-            dismissRecovered,
-            sendFriendRequest,   // [NEW]
-            acceptFriendRequest, // [NEW]
-            rejectFriendRequest, // [NEW]
-            removeFriend
-        }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

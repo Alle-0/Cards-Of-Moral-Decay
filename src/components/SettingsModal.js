@@ -302,8 +302,8 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                             - {t('rank_anima_candida')} (0 DC){'\n'}
                             - {t('rank_innocente')} (1.000 DC){'\n'}
                             - {t('rank_corrotto')} (2.500 DC){'\n'}
-                            - {t('rank_socio_vizio')} (5.000 DC){'\n'}
-                            - {t('rank_architetto_caos')} (10.000 DC){'\n'}
+                            - {t('rank_socio_del_vizio')} (5.000 DC){'\n'}
+                            - {t('rank_architetto_del_caos')} (10.000 DC){'\n'}
                             - {t('rank_eminenza_grigia')} (25.000 DC){'\n'}
                             - {t('rank_entita_apocalittica')} (50.000 DC){'\n\n'}
 
@@ -584,7 +584,7 @@ const CategoryTile = ({ title, subtitle, icon, onPress }) => {
             enableSound={false}
         >
             <View style={{
-                width: 54, height: 54, borderRadius: 16,
+                width: 54, height: 54, borderRadius: 27,
                 backgroundColor: 'rgba(255,255,255,0.05)',
                 alignItems: 'center', justifyContent: 'center',
                 marginBottom: 10,

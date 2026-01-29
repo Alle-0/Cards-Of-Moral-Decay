@@ -10,7 +10,8 @@ import {
     RulesIcon,
     LinkIcon,
     SettingsIcon,
-    LockIcon
+    LockIcon,
+    GithubIcon // [NEW]
 } from '../components/Icons';
 import PremiumBackground from '../components/PremiumBackground';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -57,6 +58,14 @@ const InfoScreen = ({ onClose }) => {
             title: t('section_credits'),
             icon: <PeopleIcon size={20} color={theme.colors.accent} />,
             content: t('credits_content')
+        },
+        {
+            id: 'contacts',
+            title: t('section_contacts'),
+            icon: <GithubIcon size={20} color={theme.colors.accent} />,
+            content: t('contacts_content'),
+            action: 'GITHUB',
+            url: 'https://github.com/Alle-0/Cards-Of-Moral-Decay'
         },
         {
             id: 'privacy',

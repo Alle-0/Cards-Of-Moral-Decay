@@ -56,8 +56,9 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
             showClose={false}
             borderColor="#d4af37"
             backgroundColor="transparent"
+            disableBottomSpacer={true}
         >
-            <View style={{ alignItems: 'center', width: '100%', paddingTop: 30, paddingBottom: 10 }}>
+            <View style={{ alignItems: 'center', width: '100%', paddingTop: 30, paddingBottom: 30 }}>
 
                 {/* 1. GLASS BACKGROUND */}
                 <View style={[StyleSheet.absoluteFill, { borderRadius: 20, overflow: 'hidden', zIndex: -1 }]}>

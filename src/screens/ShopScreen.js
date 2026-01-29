@@ -22,10 +22,26 @@ import ConfirmationModal from '../components/ConfirmationModal';
 
 const { width } = Dimensions.get('window');
 
+// [NEW] Dark Pack Preview Cards
+const DARK_PACK_PREVIEW = {
+    it: [
+        "Usare il {primogenito} come sacco da boxe",
+        "Don Giuseppe e il suo discutibile amore per i {chierichetti}",
+        "Un'invasione di campo {anatomica} decisamente non autorizzata",
+        "Un'{orgia} con i malati {terminali}"
+    ],
+    en: [
+        "Using your {firstborn} as a literal punching bag",
+        "Father John and his questionable 'special time' with {altar boys}",
+        "An entirely unauthorized {anatomical} pitch invasion",
+        "An {orgy} with {terminal} patients"
+    ]
+};
+
 export default function ShopScreen() {
     const { user, buyTheme, buySkin, buyFrame, buyPack } = useAuth();
     const { theme } = useTheme();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const insets = useSafeAreaInsets();
 
     const [activeTab, setActiveTab] = useState(0);
@@ -46,7 +62,9 @@ export default function ShopScreen() {
     const buyItem = async (type) => {
         console.log('[ShopScreen] buyItem initiated for:', type);
         SoundService.play('tap');
+        setBuyingId(type); // [FIX] Set buyingId to show spinner/disable button
         const result = await stripeBuyItem(type);
+        setBuyingId(null); // [FIX] Reset buyingId
         console.log('[ShopScreen] buyItem result:', result);
 
         if (result) {
@@ -244,7 +262,7 @@ export default function ShopScreen() {
         return (
             <Animated.View
                 key={itemTheme.id}
-                entering={FadeIn.delay(index * 50).duration(400)}
+                entering={FadeIn.delay((index % 6) * 50).duration(400)}
                 style={[
                     styles.card,
                     {
@@ -312,7 +330,7 @@ export default function ShopScreen() {
         return (
             <Animated.View
                 key={skin.id}
-                entering={FadeIn.delay(index * 50).duration(400)}
+                entering={FadeIn.delay((index % 6) * 50).duration(400)}
                 style={[
                     styles.card,
                     {
@@ -378,7 +396,7 @@ export default function ShopScreen() {
         return (
             <Animated.View
                 key={itemFrame.id}
-                entering={FadeIn.delay(index * 50).duration(400)}
+                entering={FadeIn.delay((index % 6) * 50).duration(400)}
                 style={[
                     styles.cardFrame,
                     {
@@ -501,41 +519,52 @@ export default function ShopScreen() {
     };
 
     const renderDCBundle = (bundle, index) => {
-        const isProcessingBundle = isProcessing && processingBundleId === bundle.id;
+        const isBuying = buyingId === bundle.id; // [FIX] Use buyingId instead of processingBundleId
         return (
             <Animated.View
                 key={bundle.id}
-                entering={FadeIn.delay(index * 50).duration(400)}
-                style={[styles.card, { marginBottom: 10 }]}
+                entering={FadeIn.delay((index % 6) * 50).duration(400)}
+                style={[styles.card, { marginBottom: 10, padding: 0, overflow: 'hidden' }]} // Remove default padding for full control
             >
-                <View style={[styles.skinPreview, { backgroundColor: '#333', justifyContent: 'center', alignItems: 'center' }]}>
-                    <DirtyCashIcon size={40} color="#d4af37" />
-                    <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 24, color: '#d4af37', marginTop: 5 }}>
-                        {bundle.amount}
-                    </Text>
-                </View>
+                <LinearGradient
+                    colors={['#2c2c2c', '#1a1a1a']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                        width: 80,
+                        height: 80,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderRightWidth: 1,
+                        borderRightColor: 'rgba(255,255,255,0.05)'
+                    }}
+                >
+                    <DirtyCashIcon size={42} color="#d4af37" />
+                </LinearGradient>
 
-                <View style={styles.infoContainer}>
-                    <Text style={[styles.itemName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                <View style={[styles.infoContainer, { paddingLeft: 15, paddingVertical: 10 }]}>
+                    <Text style={[styles.itemName, { color: '#d4af37', fontSize: 16 }]} numberOfLines={1}>
                         {t('dc_bundle_title', { amount: bundle.amount })}
                     </Text>
-                    <Text style={styles.itemDesc}>{t('dc_bundle_desc')}</Text>
+                    <Text style={[styles.itemDesc, { marginTop: 4 }]}>{t('dc_bundle_desc')}</Text>
                 </View>
 
-                <View style={styles.actionRow}>
+                <View style={[styles.actionRow, { paddingRight: 15 }]}>
                     <TouchableOpacity
                         style={[
                             styles.buyButton,
                             {
-                                backgroundColor: '#d4af37',
-                                borderColor: '#d4af37'
+                                backgroundColor: isBuying ? 'rgba(212, 175, 55, 0.5)' : '#d4af37',
+                                borderColor: '#d4af37',
+                                height: 36,
+                                paddingHorizontal: 15
                             }
                         ]}
                         onPress={() => buyItem(bundle.id)}
-                        disabled={isProcessingBundle}
+                        disabled={isBuying || isProcessing}
                     >
                         <Text style={[styles.buyText, { color: '#000' }]}>
-                            {isProcessingBundle ? "..." : bundle.priceLabel}
+                            {isBuying ? "..." : bundle.priceLabel}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -616,9 +645,24 @@ export default function ShopScreen() {
                                 })}
                             </View>
                         )}
-                        {activeTab === 3 && [
-                            { id: 'dark', price: 1000, color: '#ef4444' }
-                        ].map((p, index) => renderPackItem(p, index))}
+                        {activeTab === 3 && (
+                            <View>
+                                <Text style={{
+                                    fontFamily: 'Outfit',
+                                    fontSize: 12,
+                                    color: '#888',
+                                    textAlign: 'center',
+                                    marginBottom: 15,
+                                    paddingHorizontal: 10,
+                                    lineHeight: 18
+                                }}>
+                                    {t('shop_pack_info')}
+                                </Text>
+                                {[
+                                    { id: 'dark', price: 1000, color: '#ef4444' }
+                                ].map((p, index) => renderPackItem(p, index))}
+                            </View>
+                        )}
                         {activeTab === 4 && (
                             <View style={{ paddingBottom: 20 }}>
                                 <Text style={{
@@ -732,30 +776,43 @@ export default function ShopScreen() {
                                         </View>
                                     ) : preview?.type === 'pack' ? (
                                         <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 20 }}>
-                                            <View style={[styles.largeCard, {
-                                                backgroundColor: '#1a1a1a',
-                                                borderColor: '#ef4444',
-                                                borderWidth: 1
-                                            }]}>
-                                                <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16 }}>
-                                                    <CensoredText
-                                                        text="Vorrei tanto infilare il mio {CAZZO} nella {FIGA} di tua madre finché non {SBOARRO}."
-                                                        censoredWords={['{CAZZO}', '{FIGA}', '{SBOARRO}']}
-                                                        style={{ flexDirection: 'row', flexWrap: 'wrap' }}
-                                                        textStyle={{
-                                                            color: '#fff',
-                                                            fontFamily: 'Outfit',
-                                                            fontSize: 18,
-                                                            fontWeight: '600',
-                                                            lineHeight: 28
-                                                        }}
-                                                    />
-                                                </View>
-                                                <View style={{ paddingBottom: 12, paddingLeft: 16, opacity: 0.8 }}>
-                                                    <Text style={{ fontSize: 9, color: '#ef4444', opacity: 0.8, fontFamily: 'Outfit-Bold' }}>
-                                                        CARDS OF MORAL DECAY
-                                                    </Text>
-                                                </View>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+                                                {(DARK_PACK_PREVIEW[language] || DARK_PACK_PREVIEW['en']).map((text, index) => {
+                                                    // Extract censored words (e.g., "{word}")
+                                                    const censoredMatches = text.match(/\{[^}]+\}/g) || [];
+
+                                                    return (
+                                                        <View key={index} style={[styles.largeCard, {
+                                                            backgroundColor: '#f5f5f5', // White Answer Card
+                                                            borderColor: '#ddd',
+                                                            borderWidth: 1,
+                                                            width: (width * 0.85 - 60) / 2, // Safe width: Millimectric fit (85% modal - 40 padding - 10 gap - 10 buffer)
+                                                            height: ((width * 0.85 - 60) / 2) * 1.4, // Aspect ratio
+                                                            padding: 8 // Reduced padding
+                                                        }]}>
+                                                            <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 4 }}>
+                                                                <CensoredText
+                                                                    text={text}
+                                                                    censoredWords={censoredMatches}
+                                                                    style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}
+                                                                    textStyle={{
+                                                                        color: '#000',
+                                                                        fontFamily: 'Outfit',
+                                                                        fontSize: 10,
+                                                                        fontWeight: '600',
+                                                                        lineHeight: 14,
+                                                                        textAlign: 'center'
+                                                                    }}
+                                                                />
+                                                            </View>
+                                                            <View style={{ paddingBottom: 6, paddingLeft: 8, opacity: 0.8 }}>
+                                                                <Text style={{ fontSize: 5, color: '#000', opacity: 0.8, fontFamily: 'Outfit-Bold' }}>
+                                                                    MORAL DECAY
+                                                                </Text>
+                                                            </View>
+                                                        </View>
+                                                    );
+                                                })}
                                             </View>
                                             <Text style={{ color: '#888', fontFamily: 'Outfit', fontSize: 13, marginTop: 20, textAlign: 'center', paddingHorizontal: 30 }}>
                                                 {t('preview_pack_desc', 'Esplicito, Osceno e Moralmente Discutibile.')}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
 import { StyleSheet, View, Text, ScrollView, Dimensions, Pressable, Image } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring, Easing, withSequence, runOnJS } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring, Easing, withSequence, runOnJS, interpolate } from 'react-native-reanimated';
 import { useTheme, CARD_SKINS, TEXTURES } from '../context/ThemeContext'; // [NEW] CARD_SKINS, TEXTURES
 import PremiumIconButton from './PremiumIconButton';
 import PremiumPressable from './PremiumPressable';
@@ -40,7 +40,7 @@ const FaceDownCard = memo(() => (
     </View>
 ));
 
-const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed, isSelected, onSelect, skin, t }) => { // [NEW] skin
+const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed, isSelected, isWinning, onSelect, skin, t }) => { // [NEW] isWinning
     const aniValue = useSharedValue(0);
 
     useEffect(() => {
@@ -52,26 +52,27 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
 
     const cardAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{
-            scale: withTiming(isSelected ? 1.03 : 1, {
-                duration: 50,
-                easing: Easing.out(Easing.exp)
-            })
+            scale: interpolate(aniValue.value, [0, 1], [1, 1.03])
         }],
     }));
 
     // Selection Overlay (Opacity is native-driven, BorderColor is not)
     const overlayStyle = useAnimatedStyle(() => ({
-        opacity: withTiming(isSelected ? 1 : 0, { duration: 50 }),
+        opacity: aniValue.value,
     }));
 
     const btnAnimatedStyle = useAnimatedStyle(() => ({
-        opacity: withTiming(isSelected ? 1 : 0, { duration: 50 }),
+        opacity: isWinning ? 0 : aniValue.value, // Hide if winning, else follow selection
         transform: [{
-            translateY: withTiming(isSelected ? 0 : 30, {
-                duration: 50,
-                easing: Easing.out(Easing.quad)
-            })
+            translateY: interpolate(aniValue.value, [0, 1], [30, 0])
         }]
+    }));
+
+    // [NEW] Winning Animation Style
+    const winningStyle = useAnimatedStyle(() => ({
+        borderColor: withTiming(isWinning ? '#10b981' : '#ffd700', { duration: 300 }),
+        backgroundColor: withTiming(isWinning ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 215, 0, 0.05)', { duration: 300 }),
+        transform: [{ scale: withSpring(isWinning ? 1.1 : (1 + aniValue.value * 0.03)) }] // Sync scale
     }));
 
     // Safety check for cards array
@@ -111,7 +112,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
     };
 
     return (
-        <View style={styles.playedCardGroup}>
+        <View style={[styles.playedCardGroup, { zIndex: isSelected ? 999 : 1 }]}>
             <PremiumPressable
                 onPress={handlePress}
                 hitSlop={0} // [FIX] Ensure no extra touch area
@@ -131,7 +132,8 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                 <Animated.View style={[
                     StyleSheet.absoluteFill,
                     { borderColor: '#ffd700', borderWidth: 2, borderRadius: 15, backgroundColor: 'rgba(255, 215, 0, 0.05)' },
-                    overlayStyle
+                    overlayStyle,
+                    isWinning && winningStyle // [NEW]
                 ]} pointerEvents="none" />
 
 
@@ -263,7 +265,7 @@ const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnsw
     );
 });
 
-const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, status, dominusName, playerCount, onSkip, onReveal, showPlayedArea = true, style, players }) => { // [NEW] players
+const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, status, dominusName, playerCount, onSkip, onReveal, showPlayedArea = true, style, players, optimisticWinner }) => { // [NEW] optimisticWinner
     const { theme } = useTheme();
     const { t } = useLanguage();
     const { user } = useAuth(); // [NEW] Get user for skins
@@ -323,6 +325,7 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
                                         isDominus={isDominus}
                                         revealed={cardsRevealed}
                                         isSelected={selectedCandidate === player}
+                                        isWinning={optimisticWinner === player} // [NEW] Optimistic visual feedback
                                         onSelect={() => setSelectedCandidate(prev => prev === player ? null : player)}
                                         onPickWinner={() => onSelectWinner(player)}
                                         // [FIX] Personal Skins: Always use MY skin, not the player's skin

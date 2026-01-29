@@ -379,3 +379,16 @@ export const PlayIcon = ({ size = 24, color = "#FFCE6A" }) => (
     </Svg>
 );
 
+export const ShareIcon = ({ size = 24, color = "#FFCE6A" }) => (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <Path d="M28 6H42V20" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M42 29.4737V39C42 40.6569 40.6569 42 39 42H9C7.34315 42 6 40.6569 6 39V9C6 7.34315 7.34315 6 9 6L18.5263 6" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M25.8 22.2L41.1 6.9" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+export const GithubIcon = ({ size = 24, color = "#FFCE6A" }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <Path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></Path>
+    </Svg>
+);

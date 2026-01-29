@@ -312,17 +312,13 @@ export const THEMES = {
 };
 
 export const TEXTURES = {
-    gold_leaf: require('../../assets/textures/gold_leaf.png'),
-    blood_splatter: require('../../assets/textures/blood_splatter.png'),
-    carbon_fiber: require('../../assets/textures/carbon_pattern.png'),
-    dollar: require('../../assets/textures/dollar.png'),
-    mirror: require('../../assets/textures/mirror.png'),
-    petrol: require('../../assets/textures/petrol.png'),
+    gold_leaf: require('../../assets/textures/gold_leaf.jpg'),
+    mirror: require('../../assets/textures/mirror.jpg'),
+    petrol: require('../../assets/textures/petrol.jpg'),
     smoke: require('../../assets/textures/smoke.png'),
-    holo: require('../../assets/textures/hologram.png'),
-    leather: require('../../assets/textures/leather.png'),
-    cardboard: require('../../assets/textures/cardboard.png'),
-    marble: require('../../assets/textures/marble.png'),
+    holo: require('../../assets/textures/hologram.jpg'),
+    leather: require('../../assets/textures/leather.jpg'),
+    marble: require('../../assets/textures/marble.jpg'),
 };
 
 export const CARD_SKINS = {
@@ -357,8 +353,7 @@ export const CARD_SKINS = {
             bg: '#fee2e2',
             text: '#991b1b',
             border: '#ef4444',
-            texture: 'blood_splatter',
-            textureOpacity: 0.25
+            texture: null
         }
     },
     noir: {
@@ -385,7 +380,7 @@ export const CARD_SKINS = {
     },
     graffi: {
         id: 'graffi',
-        label: 'Graffi',
+        label: 'Ombre',
         price: 1000,
         styles: {
             bg: '#f8fafc',

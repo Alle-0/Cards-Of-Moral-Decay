@@ -156,6 +156,7 @@ const styles = StyleSheet.create({
         bottom: 30,
         right: 20,
         alignItems: 'center',
+        zIndex: 100, // [FIX] Ensure it sits above backdrop (zIndex 99)
     },
     triggerButton: {
         width: 56,
@@ -176,7 +177,8 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         width: '94%',
         maxWidth: 500,
-        alignItems: 'center'
+        alignItems: 'center',
+        zIndex: 100, // [FIX] Ensure it sits above backdrop (zIndex 99)
     },
     backdrop: {
         ...StyleSheet.absoluteFillObject,

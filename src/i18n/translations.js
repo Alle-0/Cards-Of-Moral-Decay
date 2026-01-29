@@ -94,7 +94,10 @@ export const translations = {
         cancel_btn: "ANNULLA",
         farewell_btn: "ADDIO",
         toast_req_sent: "Richiesta inviata!",
+        toast_req_sent: "Richiesta inviata!",
         toast_id_copied: "ID copiato!",
+        share_btn: "CONDIVIDI", // [NEW]
+        share_msg: "Unisciti a me su Cards of Moral Decay! Il mio ID amico è: %{id}\nEntra online: https://cards-of-moral-decay.web.app", // [NEW]
 
         // LOBBY / IDENTITY
         who_are_you: "CHI SEI?",
@@ -130,6 +133,7 @@ export const translations = {
         toast_frame_bought: "Hai ottenuto la cornice",
         toast_pack_bought: "Hai ottenuto il pacchetto",
         pack_label: "Pacchetto",
+        shop_pack_info: "Tutti i giocatori nella stanza utilizzeranno i pack selezionati dal creatore della stanza. I pack saranno nella lingua selezionata dal creatore della stanza.", // [NEW]
         pack_dark: "DARK PACK",
         preview_subtitle_skin: "ANTEPRIMA SKIN",
         preview_subtitle_frame: "ANTEPRIMA CORNICE",
@@ -176,7 +180,7 @@ export const translations = {
         skin_blood: "Blood",
         skin_noir: "Noir",
         skin_narco: "Narco",
-        skin_graffi: "Graffi",
+        skin_graffi: "Ombre",
         skin_petrol: "Petrol",
         skin_riscatto: "Riscatto",
 
@@ -206,7 +210,7 @@ export const translations = {
         // ROOM LIST
         open_rooms_title: "STANZE APERTE",
         room_visibility_msg: "Puoi vedere solo le stanze dei tuoi amici/complici o quelle che crei te.",
-        no_public_rooms: "Nessuna stanza pubblica al momento.",
+        no_public_rooms: "Nessuna stanza al momento.",
         playing_state: "IN CORSO",
         lobby_state: "LOBBY",
         join_btn: "ENTRA",
@@ -352,7 +356,7 @@ export const translations = {
         skin_blood: "Sangue",
         skin_noir: "Noir Elegance",
         skin_narco: "Narcodollaro",
-        skin_graffi: "Graffi",
+        skin_graffi: "Ombre",
         skin_petrol: "Petrolio",
         skin_riscatto: "Lettera di Riscatto",
         skin_biohazard: "Infetto",
@@ -369,12 +373,14 @@ export const translations = {
         // ARCHIVIO
         archive_title: "ARCHIVIO",
         archive_intro: "Dettagli tecnici, informativa legale e opzioni per supportare lo sviluppo del progetto indipendente.",
+        section_contacts: "CONTATTI", // [NEW]
         section_donate: "SUPPORTO AL PROGETTO",
         section_credits: "CREDITI",
         section_privacy: "INFORMATIVA PRIVACY",
         section_terms: "CONDIZIONI DI UTILIZZO",
         section_copyright: "PROPRIETÀ INTELLETTUALE",
         section_info: "INFO SOFTWARE",
+        contacts_content: "Per segnalare bug, suggerire nuove idee, puoi aprire una issue su GitHub o scrivere una mail.", // [NEW]
         donate_content: "Il mantenimento delle infrastrutture server e lo sviluppo di nuovi contenuti richiedono un impegno costante. Chi desidera sostenere la continuità del progetto può farlo attraverso un contributo volontario.",
         donate_action: "SOSTIENI ORA",
         credits_content: "Sviluppo & Design:\nAlessandro (Alle-0)\n\nCollaboratori:\nUn ringraziamento speciale a chi ha dedicato tempo ai test e ai feedback.",
@@ -406,6 +412,8 @@ export const translations = {
         payment_dark_pack_msg: "Benvenuto nell'abisso. Il Dark Pack è tuo.",
         payment_dc_msg: "+%{amount} Dirty Cash aggiunti al tuo bilancio.",
         payment_cancelled: "Pagamento annullato.",
+        dc_bundle_title: "%{amount} Dirty Cash",
+        dc_bundle_desc: "Boundle DC",
     },
     en: {
         play: "PLAY",
@@ -500,7 +508,10 @@ export const translations = {
         cancel_btn: "CANCEL",
         farewell_btn: "FAREWELL",
         toast_req_sent: "Request sent!",
+        toast_req_sent: "Request sent!",
         toast_id_copied: "ID copied!",
+        share_btn: "SHARE", // [NEW]
+        share_msg: "Join me on Cards of Moral Decay! My Friend ID is: %{id}\nOnline here: https://cards-of-moral-decay.web.app", // [NEW]
 
         // LOBBY / IDENTITY
         who_are_you: "WHO ARE YOU?",
@@ -536,6 +547,7 @@ export const translations = {
         toast_frame_bought: "You obtained the frame",
         toast_pack_bought: "You obtained the pack",
         pack_label: "Pack",
+        shop_pack_info: "All players in the room will use the packs selected by the room creator. Packs will be in the language selected by the room creator.", // [NEW]
         pack_dark: "DARK PACK",
         preview_subtitle_skin: "SKIN PREVIEW",
         preview_subtitle_frame: "FRAME PREVIEW",
@@ -584,7 +596,7 @@ export const translations = {
         skin_blood: "Blood",
         skin_noir: "Noir",
         skin_narco: "Narco",
-        skin_graffi: "Scratches",
+        skin_graffi: "Shadows",
         skin_petrol: "Petrol",
         skin_riscatto: "Ransom",
 
@@ -612,7 +624,7 @@ export const translations = {
         // ROOM LIST
         open_rooms_title: "OPEN ROOMS",
         room_visibility_msg: "You can only see rooms of your friends/accomplices or those created by you.",
-        no_public_rooms: "No public rooms at the moment.",
+        no_public_rooms: "No rooms at the moment.",
         playing_state: "PLAYING",
         lobby_state: "LOBBY",
         join_btn: "JOIN",
@@ -762,7 +774,7 @@ export const translations = {
         skin_blood: "Blood",
         skin_noir: "Noir Elegance",
         skin_narco: "Narco Dollar",
-        skin_graffi: "Scratches",
+        skin_graffi: "Shadows",
         skin_petrol: "Oil Spill",
         skin_riscatto: "Ransom Note",
         skin_biohazard: "Infected",
@@ -779,12 +791,14 @@ export const translations = {
         // ARCHIVE
         archive_title: "ARCHIVE",
         archive_intro: "Technical details, legal information, and project support options.",
+        section_contacts: "CONTACTS", // [NEW]
         section_donate: "SUPPORT THE PROJECT",
         section_credits: "CREDITS",
         section_privacy: "PRIVACY POLICY",
         section_terms: "TERMS OF USE",
         section_copyright: "INTELLECTUAL PROPERTY",
         section_info: "SOFTWARE INFO",
+        contacts_content: "To report bugs, suggest new ideas, you can open an issue on GitHub or send an email.", // [NEW]
         donate_content: "Server maintenance and new content development require constant effort. Those who wish to support the project can do so via a voluntary contribution.",
         donate_action: "SUPPORT NOW",
         credits_content: "Development & Design:\nAlessandro (Alle-0)\n\nContributors:\nA special thanks to everyone who dedicated time for testing and feedback.",
@@ -798,6 +812,8 @@ export const translations = {
         exit_app_title: "EXIT?",
         exit_app_msg: "Do you want to close the application?",
         exit_app_yes: "YES, EXIT",
+        dc_bundle_title: "%{amount} Dirty Cash",
+        dc_bundle_desc: "Bundle DC",
         exit_app_no: "NO",
         welcome_title: "WELCOME",
         save_code_title: "SAVE YOUR CODE",

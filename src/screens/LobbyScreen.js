@@ -75,8 +75,18 @@ const LobbyScreen = ({ onStartLoading }) => {
 
     // [NEW] Filter rooms: My rooms OR Friends' rooms
     const validRooms = (availableRooms || []).filter(room => {
-        const isMyRoom = room.creatore === authUser?.username;
-        const isFriendRoom = authUser?.friends && authUser.friends[room.creatore];
+        // [FIX] Use username for creation check - Match against canonical ID
+        const isMyRoom = (room.creatorUsername && room.creatorUsername === authUser?.username) || room.creatore === authUser?.username;
+
+        // [FIX] Checks if the room creator (by Username ID) is in my friends list
+        // Fallback to 'creatore' (nickname) only if creatorUsername is missing (legacy rooms)
+        // This ensures friendship works even if user changes nickname, provided new rooms use creatorUsername
+        const creatorId = room.creatorUsername || room.creatore;
+        const isFriendRoom = authUser?.friends && (
+            authUser.friends[creatorId] ||
+            authUser.friends[creatorId?.replace(/\./g, '_')]
+        );
+
         return isMyRoom || isFriendRoom;
     });
 

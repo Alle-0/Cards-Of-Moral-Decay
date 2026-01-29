@@ -25,7 +25,7 @@ const ConfirmationModal = ({
             title={title}
             showClose={false}
         >
-            <View style={{ gap: 20, paddingHorizontal: 20, paddingBottom: 20 }}>
+            <View style={{ gap: 20, paddingHorizontal: 30, paddingBottom: 25 }}>
                 <Text style={styles.message}>
                     {message}
                 </Text>
@@ -37,7 +37,7 @@ const ConfirmationModal = ({
                             variant="ghost"
                             enableSound={false}
                             onPress={onClose}
-                            style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+                            style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', maxWidth: '100%', width: 'auto' }}
                             contentContainerStyle={{ paddingVertical: 12 }}
                             textStyle={{ fontSize: 13 }}
                         />
@@ -50,7 +50,7 @@ const ConfirmationModal = ({
                             if (onConfirm) onConfirm();
                             onClose();
                         }}
-                        style={{ flex: 1 }}
+                        style={{ flex: 1, maxWidth: '100%', width: 'auto' }}
                         contentContainerStyle={{ paddingVertical: 12 }}
                         textStyle={{ fontSize: 13, fontFamily: 'Cinzel-Bold' }}
                     />

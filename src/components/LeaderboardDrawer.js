@@ -188,8 +188,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                                         }
                                         size={32}
                                         onPress={() => {
-                                            setPlayerToKick(player);
-                                            setShowKickModal(true);
+                                            onKick && onKick(player);
                                         }}
                                         style={{ marginLeft: 10, backgroundColor: 'rgba(255, 107, 107, 0.1)', borderColor: 'rgba(255, 107, 107, 0.3)', borderWidth: 1, borderRadius: 20 }}
                                     />
@@ -200,40 +199,6 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                         </View>
                     ))}
                 </View>
-
-                {/* Confirm Kick Modal */}
-                <PremiumModal
-                    visible={showKickModal}
-                    onClose={() => setShowKickModal(false)}
-                    title={t('kick_player_title')}
-                >
-                    <View style={{ alignItems: 'center' }}>
-                        <Text style={{ color: theme.colors.textPrimary, fontSize: 16, textAlign: 'center', marginBottom: 20, fontFamily: 'Outfit-Regular' }}>
-                            {t('kick_player_msg', { name: playerToKick?.name })}
-                        </Text>
-                        <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
-                            <PremiumButton
-                                title={t('kick_cancel_btn')}
-                                variant="ghost"
-                                onPress={() => setShowKickModal(false)}
-                                style={{ flex: 1 }}
-                                textStyle={{ fontSize: 14 }}
-                            />
-                            <PremiumButton
-                                title={t('kick_btn')}
-                                variant="danger"
-                                onPress={() => {
-                                    if (playerToKick) {
-                                        onKick && onKick(playerToKick.name);
-                                        setShowKickModal(false);
-                                    }
-                                }}
-                                style={{ flex: 1 }}
-                                textStyle={{ fontSize: 14 }}
-                            />
-                        </View>
-                    </View>
-                </PremiumModal>
 
                 {/* Draggable Handle Area - Fades out at Fullscreen */}
                 <Animated.View
