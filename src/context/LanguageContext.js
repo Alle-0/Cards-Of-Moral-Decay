@@ -6,7 +6,7 @@ import GameDataService from '../services/GameDataService';
 const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
-    const [language, setLanguageState] = useState('it'); // Default IT
+    const [language, setLanguageState] = useState('en'); // Default EN
 
     // Wrapper to update Service when state changes
     const setLanguage = (lang) => {
