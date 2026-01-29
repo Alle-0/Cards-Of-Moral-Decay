@@ -7,7 +7,17 @@
 <img src="https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?label=VERSION&color=ffd700&style=flat-square" />
 <img src="https://img.shields.io/badge/Platform-Android_&_Web-3DDC84?style=social&logo=android" />
 
-<br/><br/>
+<br/>
+
+<img src="https://img.shields.io/badge/RATING-18%2B-red?style=for-the-badge" height="30" />
+
+<p>
+  ⚠️ <strong>STRICTLY FOR ADULTS</strong> ⚠️<br/>
+  Contains strong language, blasphemy, and offensive humor.<br/>
+  If you are easily offended or under 18, <strong>close this page immediately.</strong>
+</p>
+
+<br/>
 
 <h2>🚀 CHOOSE HOW TO PLAY</h2>
 
@@ -40,9 +50,13 @@ A real-time multiplayer experience designed to bring out the worst in you.
 
 <br/>
 
+🤝 **Bring Your Own Victims**
+<br/>
+Strictly <strong>Private Lobbies</strong>. Share the Room Code with friends. Insulting strangers is fine, but ruining real friendships is better. No global matchmaking (yet).
+
 🎱 **Instant Multiplayer**
 <br/>
-Zero latency. Immediate insults. Powered by Firebase.
+Zero latency. Immediate regrets. Powered by Firebase.
 
 🎨 **Polished Aesthetics**
 <br/>
