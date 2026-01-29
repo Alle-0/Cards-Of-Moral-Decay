@@ -207,8 +207,8 @@ const SettingsScreen = ({ navigation }) => {
                                             <Text key="ac"><Text style={{ color: RANK_COLORS["Anima Candida"], fontWeight: 'bold' }}>{t('rank_anima_candida')}</Text> (0 DC)</Text>,
                                             <Text key="in"><Text style={{ color: RANK_COLORS["Innocente"], fontWeight: 'bold' }}>{t('rank_innocente')}</Text> (1.000 DC)</Text>,
                                             <Text key="co"><Text style={{ color: RANK_COLORS["Corrotto"], fontWeight: 'bold' }}>{t('rank_corrotto')}</Text> (2.500 DC)</Text>,
-                                            <Text key="sv"><Text style={{ color: RANK_COLORS["Socio del Vizio"], fontWeight: 'bold' }}>{t('rank_socio_vizio')}</Text> (5.000 DC)</Text>,
-                                            <Text key="chk"><Text style={{ color: RANK_COLORS["Architetto del Caos"], fontWeight: 'bold' }}>{t('rank_architetto_caos')}</Text> (10.000 DC)</Text>,
+                                            <Text key="sv"><Text style={{ color: RANK_COLORS["Socio del Vizio"] || '#eab308', fontWeight: 'bold' }}>{t('rank_socio_del_vizio')}</Text> (5.000 DC)</Text>,
+                                            <Text key="chk"><Text style={{ color: RANK_COLORS["Architetto del Caos"] || '#f97316', fontWeight: 'bold' }}>{t('rank_architetto_del_caos')}</Text> (10.000 DC)</Text>,
                                             <Text key="eg"><Text style={{ color: RANK_COLORS["Eminenza Grigia"], fontWeight: 'bold' }}>{t('rank_eminenza_grigia')}</Text> (25.000 DC)</Text>,
                                             <Text key="ea"><Text style={{ color: RANK_COLORS["Entità Apocalittica"], fontWeight: 'bold' }}>{t('rank_entita_apocalittica')}</Text> (50.000 DC)</Text>
                                         ]}

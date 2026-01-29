@@ -7,6 +7,7 @@ const SOUND_MAP = {
     'card_slide': require('../sounds/deal.mp3'),   // Card moving
     'card_play': require('../sounds/play.mp3'),    // Card hitting table
     'success': require('../sounds/win.wav'),       // Win round/game
+    'purchase': require('../sounds/win.wav'),      // Purchase success
     'notification': require('../sounds/deal.mp3'), // Generic notification
     'error': require('../sounds/error.mp3'),       // Errors
     'shuffle': require('../sounds/deal.mp3'),      // Deck shuffle

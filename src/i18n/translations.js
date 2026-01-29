@@ -66,8 +66,8 @@ export const translations = {
         rank_anima_candida: "Anima Candida",
         rank_innocente: "Innocente",
         rank_corrotto: "Corrotto",
-        rank_socio_vizio: "Socio del Vizio",
-        rank_architetto_caos: "Architetto del Caos",
+        rank_socio_del_vizio: "Socio del Vizio",
+        rank_architetto_del_caos: "Architetto del Caos",
         rank_eminenza_grigia: "Eminenza Grigia",
         rank_entita_apocalittica: "Entità Apocalittica",
         rank_capo_supremo: "Capo Supremo",
@@ -203,6 +203,7 @@ export const translations = {
 
         // ROOM LIST
         open_rooms_title: "STANZE APERTE",
+        room_visibility_msg: "Puoi vedere solo le stanze dei tuoi amici/complici o quelle che crei te.",
         no_public_rooms: "Nessuna stanza pubblica al momento.",
         playing_state: "IN CORSO",
         lobby_state: "LOBBY",
@@ -396,7 +397,13 @@ export const translations = {
         welcome_back_title: "BENTORNATO",
         account_recovered_title: "ACCOUNT RECUPERATO",
         account_recovered_msg: "Tutti i tuoi dati sono stati ripristinati con successo su questo dispositivo.",
-        agree_btn: "D'ACCORDO"
+        payment_success_title: "PAGAMENTO RIUSCITO",
+        payment_success_msg: "Il contenuto è stato aggiunto al tuo account.",
+        payment_failed_title: "PAGAMENTO FALLITO",
+        payment_error: "Errore durante la transazione:",
+        payment_dark_pack_msg: "Benvenuto nell'abisso. Il Dark Pack è tuo.",
+        payment_dc_msg: "+%{amount} Dirty Cash aggiunti al tuo bilancio.",
+        payment_cancelled: "Pagamento annullato.",
     },
     en: {
         play: "PLAY",
@@ -463,8 +470,8 @@ export const translations = {
         rank_anima_candida: "Pure Soul",
         rank_innocente: "Innocent",
         rank_corrotto: "Corrupt",
-        rank_socio_vizio: "Partner in Vice",
-        rank_architetto_caos: "Architect of Chaos",
+        rank_socio_del_vizio: "Partner in Vice",
+        rank_architetto_del_caos: "Architect of Chaos",
         rank_eminenza_grigia: "Grey Eminence",
         rank_entita_apocalittica: "Apocalyptic Entity",
         rank_capo_supremo: "Supreme Boss",
@@ -600,6 +607,7 @@ export const translations = {
 
         // ROOM LIST
         open_rooms_title: "OPEN ROOMS",
+        room_visibility_msg: "You can only see rooms of your friends/accomplices or those created by you.",
         no_public_rooms: "No public rooms at the moment.",
         playing_state: "PLAYING",
         lobby_state: "LOBBY",
@@ -797,6 +805,12 @@ export const translations = {
         welcome_back_title: "WELCOME BACK",
         account_recovered_title: "ACCOUNT RECOVERED",
         account_recovered_msg: "All your data has been successfully restored on this device.",
-        agree_btn: "AGREED"
-    }
+        payment_success_title: "PAYMENT SUCCESSFUL",
+        payment_success_msg: "Content has been added to your account.",
+        payment_failed_title: "PAYMENT FAILED",
+        payment_error: "Transaction error:",
+        payment_dark_pack_msg: "Welcome to the abyss. The Dark Pack is yours.",
+        payment_dc_msg: "+%{amount} Dirty Cash added to your balance.",
+        payment_cancelled: "Payment cancelled.",
+    },
 };

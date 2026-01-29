@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StatusBar } from 'react-native';
+import StripeAppWrapper from './src/components/StripeAppWrapper';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -33,6 +34,9 @@ import SoundService from './src/services/SoundService';
 import GameDataService from './src/services/GameDataService';
 import UpdateOverlay from './src/components/UpdateOverlay';
 import { APP_VERSION } from './src/constants/Config';
+import PaymentResultModal from './src/components/PaymentResultModal'; // [NEW] Global Feedback
+import { useLanguage } from './src/context/LanguageContext';
+import { Platform } from 'react-native';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -70,36 +74,74 @@ export default function App() {
     if (!appIsReady) return null;
 
     return (
-        <SafeAreaProvider>
-            <ErrorBoundary>
-                <AuthProvider>
-                    <ThemeProvider>
-                        <LanguageProvider>
-                            <GameProvider>
-                                {!splashAnimationFinished ? (
-                                    <Animated.View style={{ flex: 1 }} exiting={FadeOut.duration(500)}>
-                                        <ElegantSplashScreen onFinish={() => setSplashAnimationFinished(true)} />
-                                    </Animated.View>
-                                ) : (
-                                    <NavigationContainer theme={DarkTheme}>
-                                        <AppContent />
-                                    </NavigationContainer>
-                                )}
-                            </GameProvider>
-                        </LanguageProvider>
-                    </ThemeProvider>
-                </AuthProvider>
-            </ErrorBoundary>
-        </SafeAreaProvider>
+        <StripeAppWrapper>
+            <SafeAreaProvider>
+                <ErrorBoundary>
+                    <AuthProvider>
+                        <ThemeProvider>
+                            <LanguageProvider>
+                                <GameProvider>
+                                    {!splashAnimationFinished ? (
+                                        <Animated.View style={{ flex: 1 }} exiting={FadeOut.duration(500)}>
+                                            <ElegantSplashScreen onFinish={() => setSplashAnimationFinished(true)} />
+                                        </Animated.View>
+                                    ) : (
+                                        <NavigationContainer theme={DarkTheme}>
+                                            <AppContent />
+                                        </NavigationContainer>
+                                    )}
+                                </GameProvider>
+                            </LanguageProvider>
+                        </ThemeProvider>
+                    </AuthProvider>
+                </ErrorBoundary>
+            </SafeAreaProvider>
+        </StripeAppWrapper>
     );
 }
 
 const AppContent = () => {
     const { roomCode } = useGame();
     const { user, loading: authLoading } = useAuth();
+    const { t } = useLanguage(); // [NEW]
     const [showGameSplash, setShowGameSplash] = useState(false);
     const [isFastSplash, setIsFastSplash] = useState(false);
     const [needsUpdate, setNeedsUpdate] = useState(false);
+
+    // [NEW] Global Stripe Feedback
+    const [paymentResult, setPaymentResult] = useState({ visible: false, result: null });
+
+    useEffect(() => {
+        if (Platform.OS === 'web' && user) {
+            const params = new URLSearchParams(window.location.search);
+            const paymentStatus = params.get('payment');
+
+            if (paymentStatus === 'success') {
+                const type = params.get('type');
+                const amount = params.get('amount');
+
+                setPaymentResult({
+                    visible: true,
+                    result: {
+                        success: true,
+                        type: type,
+                        amount: amount
+                    }
+                });
+                SoundService.play('purchase');
+                // Clean URL
+                window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+            } else if (paymentStatus === 'cancel') {
+                setPaymentResult({
+                    visible: true,
+                    result: { success: false, error: t('payment_cancelled') }
+                });
+                SoundService.play('error');
+                // Clean URL
+                window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+            }
+        }
+    }, [user]);
 
     useEffect(() => {
         // Check versioning
@@ -156,6 +198,13 @@ const AppContent = () => {
                     <UpdateOverlay downloadUrl={GameDataService.getDownloadUrl()} />
                 </View>
             )}
+
+            {/* [NEW] Global Payment Feedback Modal */}
+            <PaymentResultModal
+                visible={paymentResult.visible}
+                result={paymentResult.result}
+                onClose={() => setPaymentResult({ visible: false, result: null })}
+            />
         </View>
     );
 };

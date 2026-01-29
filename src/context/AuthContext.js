@@ -2,7 +2,6 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { ref, get, set, child, update, increment, onValue, off, query, orderByChild, equalTo } from 'firebase/database';
 import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from '../services/firebase';
-import RevenueCatService from '../services/RevenueCatService';
 
 // [NEW] Rank Style Config
 export const RANK_COLORS = {
@@ -23,7 +22,6 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [hasProAccess, setHasProAccess] = useState(false);
 
     // 1. Auto-Login (Init)
     useEffect(() => {
@@ -32,13 +30,7 @@ export const AuthProvider = ({ children }) => {
                 // User is authenticated in Firebase Auth
                 await loadUserByUid(currentUser.uid);
 
-                // Initialize RevenueCat with user ID
-                try {
-                    await RevenueCatService.initialize(currentUser.uid);
-                    setHasProAccess(RevenueCatService.hasProAccess());
-                } catch (error) {
-                    console.error('[AuthContext] RevenueCat init failed:', error);
-                }
+                await loadUserByUid(currentUser.uid);
             } else {
                 // [NEW] If no user, sign in anonymously for global rule access
                 try {
@@ -87,20 +79,6 @@ export const AuthProvider = ({ children }) => {
     }, [user?.username]);
 
     // 3. RevenueCat Customer Info Listener
-    useEffect(() => {
-        if (!user?.username) return;
-
-        const listener = RevenueCatService.addCustomerInfoUpdateListener((info) => {
-            setHasProAccess(RevenueCatService.hasProAccess());
-            console.log('[AuthContext] Pro access updated:', RevenueCatService.hasProAccess());
-        });
-
-        return () => {
-            if (listener && listener.remove) {
-                listener.remove();
-            }
-        };
-    }, [user?.username]);
 
     // --- Helper: Generate Recovery Code ---
     const generateRecoveryCode = () => {
@@ -544,9 +522,7 @@ export const AuthProvider = ({ children }) => {
             sendFriendRequest,   // [NEW]
             acceptFriendRequest, // [NEW]
             rejectFriendRequest, // [NEW]
-            removeFriend,
-            hasProAccess,
-            refreshProAccess
+            removeFriend
         }}>
             {children}
         </AuthContext.Provider>

@@ -10,6 +10,7 @@ const RoomListStep = ({ validRooms, onJoinRoom }) => {
         <View style={{ width: '100%', flex: 1, marginTop: 20 }}>
             <View style={styles.listContainer}>
                 <Text style={styles.listHeader}>{t('open_rooms_title')}</Text>
+                <Text style={styles.disclaimerText}>{t('room_visibility_msg')}</Text>
 
                 <ScrollView
                     style={styles.roomList}
@@ -53,8 +54,16 @@ const styles = StyleSheet.create({
     listHeader: {
         color: '#888',
         fontFamily: 'Cinzel-Bold',
-        marginBottom: 10,
+        marginBottom: 5,
         textAlign: 'center'
+    },
+    disclaimerText: {
+        color: '#666',
+        fontSize: 10,
+        fontFamily: 'Outfit',
+        textAlign: 'center',
+        marginBottom: 10,
+        fontStyle: 'italic'
     },
     roomList: {
         width: '100%',

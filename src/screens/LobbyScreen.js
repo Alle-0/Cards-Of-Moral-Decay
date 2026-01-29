@@ -33,10 +33,9 @@ const STEPS = {
     JOIN: 2,
 };
 
-// [NEW] Helper for rank keys
 const getRankKey = (rank) => {
     if (!rank) return 'rank_anima_candida';
-    return `rank_${rank.toLowerCase().replace(/ /g, '_')}`;
+    return `rank_${rank.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ /g, '_')}`;
 };
 
 const LobbyScreen = ({ onStartLoading }) => {
