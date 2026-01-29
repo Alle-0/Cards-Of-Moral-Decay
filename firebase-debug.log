@@ -1,0 +1,16 @@
+[debug] [2026-01-29T19:12:11.144Z] ----------------------------------------------------------------------
+[debug] [2026-01-29T19:12:11.147Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\39338\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy
+[debug] [2026-01-29T19:12:11.147Z] CLI Version:   15.2.1
+[debug] [2026-01-29T19:12:11.147Z] Platform:      win32
+[debug] [2026-01-29T19:12:11.147Z] Node Version:  v24.11.0
+[debug] [2026-01-29T19:12:11.148Z] Time:          Thu Jan 29 2026 20:12:11 GMT+0100 (Ora standard dell’Europa centrale)
+[debug] [2026-01-29T19:12:11.148Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-29T19:12:12.779Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-29T19:12:12.779Z] > authorizing via signed-in user (alessandrobasile909@gmail.com)
+[debug] [2026-01-29T19:12:12.779Z] [iam] checking project carte-vs-umani for permissions ["firebase.projects.get","firebasedatabase.instances.update","firebasehosting.sites.update"]
+[debug] [2026-01-29T19:12:12.780Z] Checked if tokens are valid: true, expires at: 1769717356153
+[debug] [2026-01-29T19:12:12.780Z] Checked if tokens are valid: true, expires at: 1769717356153
+[debug] [2026-01-29T19:12:12.781Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/carte-vs-umani:testIamPermissions [none]
+[debug] [2026-01-29T19:12:12.781Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/carte-vs-umani:testIamPermissions x-goog-quota-user=projects/carte-vs-umani
+[debug] [2026-01-29T19:12:12.781Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/carte-vs-umani:testIamPermissions {"permissions":["firebase.projects.get","firebasedatabase.instances.update","firebasehosting.sites.update"]}
