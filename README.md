@@ -40,9 +40,13 @@ A real-time multiplayer experience designed to bring out the worst in you.
 
 <br/>
 
+🤝 **Bring Your Own Victims**
+<br/>
+Strictly <strong>Private Lobbies</strong>. Share the Room Code with friends. Insulting strangers is fine, but ruining real friendships is better. No global matchmaking (yet).
+
 🎱 **Instant Multiplayer**
 <br/>
-Zero latency. Immediate insults. Powered by Firebase.
+Zero latency. Immediate regrets. Powered by Firebase.
 
 🎨 **Polished Aesthetics**
 <br/>
