@@ -5,25 +5,27 @@
 <br/>
 
 <img src="https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?label=VERSIONE&color=ffd700&style=flat-square" />
-<img src="https://img.shields.io/badge/Piattaforma-Android-3DDC84?style=social&logo=android" />
+<img src="https://img.shields.io/badge/Piattaforma-Android_&_Web-3DDC84?style=social&logo=android" />
 
 <br/><br/>
 
-<h2>📲 SCARICA ORA</h2>
+<h2>🚀 SCEGLI COME GIOCARE</h2>
 
 <a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest">
-  <img src="https://img.shields.io/badge/⬇_Scarica_APK_Android-333333?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=222222" height="50" style="border-radius: 30px; border: 1px solid #333;" />
+  <img src="https://img.shields.io/badge/⬇_Scarica_APK_Android-333333?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=222222" height="55" style="border-radius: 10px; margin: 10px;" />
+</a>
+
+&nbsp;&nbsp;
+
+<a href="https://carte-vs-umani.web.app">
+  <img src="https://img.shields.io/badge/🌐_Gioca_Subito_Online-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white&labelColor=0d47a1" height="55" style="border-radius: 10px; margin: 10px;" />
 </a>
 
 <p>
-  <em>oppure</em>
+  <em>Nessuna installazione richiesta per la versione Web.</em>
 </p>
 
-<a href="https://carte-vs-umani.web.app">
-  <img src="https://img.shields.io/badge/🌐_Gioca_da_Browser-4285F4?style=social&logo=google-chrome" height="35"/>
-</a>
-
-<br/><br/>
+<br/>
 
 ---
 
