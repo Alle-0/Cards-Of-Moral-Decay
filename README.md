@@ -7,7 +7,17 @@
 <img src="https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?label=VERSION&color=ffd700&style=flat-square" />
 <img src="https://img.shields.io/badge/Platform-Android_&_Web-3DDC84?style=social&logo=android" />
 
-<br/><br/>
+<br/>
+
+<img src="https://img.shields.io/badge/RATING-18%2B-red?style=for-the-badge" height="30" />
+
+<p>
+  ⚠️ <strong>STRICTLY FOR ADULTS</strong> ⚠️<br/>
+  Contains strong language, blasphemy, and offensive humor.<br/>
+  If you are easily offended or under 18, <strong>close this page immediately.</strong>
+</p>
+
+<br/>
 
 <h2>🚀 CHOOSE HOW TO PLAY</h2>
 
