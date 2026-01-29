@@ -14,10 +14,6 @@
   <br/>
   🇬🇧 ENGLISH &nbsp;&nbsp;|&nbsp;&nbsp; 🇮🇹 ITALIANO
 </h3>
-<p>
-  The game automatically detects your system language.<br/>
-  <em>Double the languages, double the insults.</em>
-</p>
 
 <br/>
 
