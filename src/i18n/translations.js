@@ -136,7 +136,9 @@ export const translations = {
         preview_subtitle_theme: "ANTEPRIMA TEMA",
         preview_frame_desc: "Questa cornice apparirà intorno al tuo avatar in partita e nella classifica.",
         theme_dynamic_effect: "EFFETTI DINAMICI",
+        theme_dynamic_effect: "EFFETTI DINAMICI",
         theme_static_decor: "DECORAZIONE STATICA",
+        preview_pack_desc: "Esplicito, Osceno e Moralmente Discutibile.",
 
         // ITEM NAMES (Themes)
         theme_default: "Default",
@@ -540,7 +542,9 @@ export const translations = {
         preview_subtitle_theme: "THEME PREVIEW",
         preview_frame_desc: "This frame will appear around your avatar in the game and leaderboard.",
         theme_dynamic_effect: "DYNAMIC EFFECTS",
+        theme_dynamic_effect: "DYNAMIC EFFECTS",
         theme_static_decor: "STATIC DECORATION",
+        preview_pack_desc: "Explicit, Obscene and Morally Questionable.",
 
         // ITEM NAMES (Themes)
         theme_default: "Default",

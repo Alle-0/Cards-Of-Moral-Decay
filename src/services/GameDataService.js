@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// AsyncStorage removed to prevent local caching
 import { ref, get } from 'firebase/database';
 import { db } from './firebase'; // Import initialized DB
 import { carteNere as baseNereIT, carteBianche as baseBiancheIT } from '../utils/pacchetto_base';
@@ -23,27 +23,13 @@ class GameDataService {
         this.darkPack = { nere: [], bianche: [] };
 
         this.isLoaded = false;
-        this.minVersion = "2.5.6";
+        this.minVersion = "3.0.0";
         this.downloadUrl = null;
     }
 
-    // Initialize data: Load from Cache -> Then Fetch from Firebase
+    // Initialize data: Fetch from Firebase (Memory Only)
     async initialize() {
-        try {
-            // 1. Try to load DARK PACK from cache first
-            const cachedDark = await AsyncStorage.getItem(DARK_CACHE_KEY);
-            if (cachedDark) {
-                const parsedDark = JSON.parse(cachedDark);
-                if (parsedDark.carteBianche && parsedDark.carteBianche.length > 0) {
-                    this.darkPack = parsedDark;
-                    console.log('Dark Pack loaded from cache');
-                }
-            }
-        } catch (e) {
-            console.error('Failed to load cache', e);
-        }
-
-        // 2. Fetch fresh data in background
+        // Fetch fresh data in background
         this.fetchAndCache();
     }
 

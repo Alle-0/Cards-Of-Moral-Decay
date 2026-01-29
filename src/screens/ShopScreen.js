@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, Modal, InteractionManager, BackHandler, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import EfficientBlurView from '../components/EfficientBlurView';
+import CensoredText from '../components/CensoredText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -222,60 +223,7 @@ export default function ShopScreen() {
 
 
 
-    const renderDCBundle = (bundle, index) => {
-        return (
-            <Animated.View
-                key={bundle.id}
-                entering={FadeIn.delay(index * 50).duration(400)}
-                style={[
-                    styles.card,
-                    {
-                        borderColor: '#d4af37',
-                        borderWidth: 1
-                    }
-                ]}
-            >
-                <View style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 8,
-                    backgroundColor: '#00000050',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginRight: 15,
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.1)'
-                }}>
-                    <DirtyCashIcon size={24} color="#d4af37" />
-                </View>
 
-                <View style={styles.infoContainer}>
-                    <Text style={[styles.itemName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
-                        {bundle.amount} DC
-                    </Text>
-                    <Text style={styles.itemDesc}>Dirty Cash Bundle</Text>
-                </View>
-
-                <View style={styles.actionRow}>
-                    <TouchableOpacity
-                        style={[
-                            styles.buyButton,
-                            {
-                                backgroundColor: '#d4af37',
-                                borderColor: '#d4af37'
-                            }
-                        ]}
-                        onPress={() => buyItem(bundle.id)}
-                        disabled={isProcessing}
-                    >
-                        <Text style={[styles.buyText, { color: '#000' }]}>
-                            {isProcessing ? "..." : bundle.priceLabel}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
-        );
-    };
 
 
     const handlePreview = (type, item) => {
@@ -510,33 +458,86 @@ export default function ShopScreen() {
 
                 <View style={styles.actionRow}>
                     {!isUnlocked ? (
-                        <TouchableOpacity
-                            style={[
-                                styles.buyButton,
-                                {
-                                    backgroundColor: '#d4af37',
-                                    borderColor: '#d4af37'
-                                }
-                            ]}
-                            onPress={() => {
-                                if (pack.id === 'dark') {
-                                    buyItem('dark_pack');
-                                } else {
-                                    handleBuyPack(pack.id, price, t('pack_' + pack.id));
-                                }
-                            }}
-                            disabled={isProcessing || (pack.id !== 'dark' && user.balance < price)}
-                        >
-                            <Text style={[styles.buyText, { color: '#000' }]}>
-                                {isProcessing && pack.id === 'dark' ? "..." : (pack.id === 'dark' ? "4.99€" : price)}
-                            </Text>
-                            {(!isProcessing || pack.id !== 'dark') && pack.id !== 'dark' && <DirtyCashIcon size={12} color="#000" />}
-                        </TouchableOpacity>
+                        <>
+                            <TouchableOpacity
+                                style={[
+                                    styles.buyButton,
+                                    {
+                                        backgroundColor: '#d4af37',
+                                        borderColor: '#d4af37'
+                                    }
+                                ]}
+                                onPress={() => {
+                                    if (pack.id === 'dark') {
+                                        buyItem('dark_pack');
+                                    } else {
+                                        handleBuyPack(pack.id, price, t('pack_' + pack.id));
+                                    }
+                                }}
+                                disabled={isProcessing || (pack.id !== 'dark' && user.balance < price)}
+                            >
+                                <Text style={[styles.buyText, { color: '#000' }]}>
+                                    {isProcessing && pack.id === 'dark' ? "..." : (pack.id === 'dark' ? "4.99€" : price)}
+                                </Text>
+                                {(!isProcessing || pack.id !== 'dark') && pack.id !== 'dark' && <DirtyCashIcon size={12} color="#000" />}
+                            </TouchableOpacity>
+                            {pack.id === 'dark' && (
+                                <TouchableOpacity
+                                    style={[styles.previewButtonIcon, { marginLeft: 0 }]}
+                                    onPress={() => handlePreview('pack', pack)}
+                                >
+                                    <EyeIcon size={20} color="#888" />
+                                </TouchableOpacity>
+                            )}
+                        </>
                     ) : (
                         <View style={styles.ownedBadge}>
                             <CheckIcon size={24} color={theme.colors.accent} />
                         </View>
                     )}
+                </View>
+            </Animated.View>
+        );
+    };
+
+    const renderDCBundle = (bundle, index) => {
+        const isProcessingBundle = isProcessing && processingBundleId === bundle.id;
+        return (
+            <Animated.View
+                key={bundle.id}
+                entering={FadeIn.delay(index * 50).duration(400)}
+                style={[styles.card, { marginBottom: 10 }]}
+            >
+                <View style={[styles.skinPreview, { backgroundColor: '#333', justifyContent: 'center', alignItems: 'center' }]}>
+                    <DirtyCashIcon size={40} color="#d4af37" />
+                    <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 24, color: '#d4af37', marginTop: 5 }}>
+                        {bundle.amount}
+                    </Text>
+                </View>
+
+                <View style={styles.infoContainer}>
+                    <Text style={[styles.itemName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                        {t('dc_bundle_title', { amount: bundle.amount })}
+                    </Text>
+                    <Text style={styles.itemDesc}>{t('dc_bundle_desc')}</Text>
+                </View>
+
+                <View style={styles.actionRow}>
+                    <TouchableOpacity
+                        style={[
+                            styles.buyButton,
+                            {
+                                backgroundColor: '#d4af37',
+                                borderColor: '#d4af37'
+                            }
+                        ]}
+                        onPress={() => buyItem(bundle.id)}
+                        disabled={isProcessingBundle}
+                    >
+                        <Text style={[styles.buyText, { color: '#000' }]}>
+                            {isProcessingBundle ? "..." : bundle.priceLabel}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </Animated.View>
         );
@@ -681,11 +682,15 @@ export default function ShopScreen() {
                             >
                                 <View style={styles.previewHeaderNew}>
                                     <Text style={[styles.previewSubtitle, { color: theme.colors.accent }]}>
-                                        {preview?.type === 'skin' ? t('preview_subtitle_skin') : (preview?.type === 'frame' ? t('preview_subtitle_frame') : t('preview_subtitle_theme'))}
+                                        {preview?.type === 'skin' ? t('preview_subtitle_skin') :
+                                            (preview?.type === 'frame' ? t('preview_subtitle_frame') :
+                                                (preview?.type === 'pack' ? "DARK PACK" : t('preview_subtitle_theme')))}
                                     </Text>
-                                    {(preview?.type === 'skin' || preview?.type === 'frame') && (
+                                    {(preview?.type === 'skin' || preview?.type === 'frame' || preview?.type === 'pack') && (
                                         <Text style={styles.previewTitleMain}>
-                                            {preview?.type === 'skin' ? t('skin_' + preview?.item?.id, preview?.item?.label) : t('frame_' + preview?.item?.id, preview?.item?.label)}
+                                            {preview?.type === 'skin' ? t('skin_' + preview?.item?.id, preview?.item?.label) :
+                                                (preview?.type === 'frame' ? t('frame_' + preview?.item?.id, preview?.item?.label) :
+                                                    t('pack_' + preview?.item?.id))}
                                         </Text>
                                     )}
                                 </View>
@@ -724,6 +729,37 @@ export default function ShopScreen() {
                                                     CARDS OF MORAL DECAY
                                                 </Text>
                                             </View>
+                                        </View>
+                                    ) : preview?.type === 'pack' ? (
+                                        <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 20 }}>
+                                            <View style={[styles.largeCard, {
+                                                backgroundColor: '#1a1a1a',
+                                                borderColor: '#ef4444',
+                                                borderWidth: 1
+                                            }]}>
+                                                <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16 }}>
+                                                    <CensoredText
+                                                        text="Vorrei tanto infilare il mio {CAZZO} nella {FIGA} di tua madre finché non {SBOARRO}."
+                                                        censoredWords={['{CAZZO}', '{FIGA}', '{SBOARRO}']}
+                                                        style={{ flexDirection: 'row', flexWrap: 'wrap' }}
+                                                        textStyle={{
+                                                            color: '#fff',
+                                                            fontFamily: 'Outfit',
+                                                            fontSize: 18,
+                                                            fontWeight: '600',
+                                                            lineHeight: 28
+                                                        }}
+                                                    />
+                                                </View>
+                                                <View style={{ paddingBottom: 12, paddingLeft: 16, opacity: 0.8 }}>
+                                                    <Text style={{ fontSize: 9, color: '#ef4444', opacity: 0.8, fontFamily: 'Outfit-Bold' }}>
+                                                        CARDS OF MORAL DECAY
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <Text style={{ color: '#888', fontFamily: 'Outfit', fontSize: 13, marginTop: 20, textAlign: 'center', paddingHorizontal: 30 }}>
+                                                {t('preview_pack_desc', 'Esplicito, Osceno e Moralmente Discutibile.')}
+                                            </Text>
                                         </View>
                                     ) : preview?.type === 'theme' ? (
                                         <View style={[styles.themePreviewContainer, { borderColor: preview.item.colors.cardBorder, borderWidth: 1 }]}>
