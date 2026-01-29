@@ -7,6 +7,18 @@
 <img src="https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?label=VERSION&color=ffd700&style=flat-square" />
 <img src="https://img.shields.io/badge/Platform-Android_&_Web-3DDC84?style=social&logo=android" />
 
+<br/><br/>
+
+<h3>
+  🌍 NOW AVAILABLE IN:
+  <br/>
+  🇬🇧 ENGLISH &nbsp;&nbsp;|&nbsp;&nbsp; 🇮🇹 ITALIANO
+</h3>
+<p>
+  The game automatically detects your system language.<br/>
+  <em>Double the languages, double the insults.</em>
+</p>
+
 <br/>
 
 <img src="https://img.shields.io/badge/RATING-18%2B-red?style=for-the-badge" height="30" />
@@ -47,6 +59,8 @@
 <div align="center">
 
 A real-time multiplayer experience designed to bring out the worst in you.
+<br/>
+<strong>Fully localized in English 🇬🇧 and Italian 🇮🇹.</strong>
 
 <br/>
 
