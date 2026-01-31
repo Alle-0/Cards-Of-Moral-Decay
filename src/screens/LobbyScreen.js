@@ -19,7 +19,7 @@ import SoundService from '../services/SoundService';
 import AnalyticsService from '../services/AnalyticsService';
 import PremiumButton from '../components/PremiumButton';
 import PremiumModal from '../components/PremiumModal';
-import PremiumBackground from '../components/PremiumBackground';
+// [REMOVED] PremiumBackground - Handled globally in AppNavigator
 import ToastNotification from '../components/ToastNotification';
 import ConfirmationModal from '../components/ConfirmationModal';
 import AvatarSelectionModal from '../components/AvatarSelectionModal';
@@ -225,7 +225,7 @@ const LobbyScreen = ({ onStartLoading }) => {
     };
 
     return (
-        <PremiumBackground showParticles={true}>
+        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
             <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); }}>
                 <View style={{ flex: 1 }}>
                     <StatusBar hidden={true} />
@@ -441,7 +441,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                     />
                 </View>
             </PremiumModal>
-        </PremiumBackground >
+        </View >
     );
 };
 

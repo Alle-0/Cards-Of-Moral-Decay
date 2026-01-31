@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ScrollView, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../services/firebase';
@@ -23,6 +24,7 @@ const { width } = Dimensions.get('window');
 
 export default function LoginScreen() {
     const { signUp, recoverAccount, loading: authLoading, user: authUserSession } = useAuth();
+    const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState('new'); // 'new' | 'recover'
 
     // [NEW] Monitor for Database Index Errors
@@ -30,8 +32,8 @@ export default function LoginScreen() {
         if (authUserSession?.error === "MISSING_INDEX") {
             setModal({
                 visible: true,
-                title: "DATABASE BLOCCATO",
-                message: "Devi aggiungere l'indice nelle regole di Firebase per poter entrare. Controlla il piano di implementazione (implementation_plan.md) per il codice da incollare."
+                title: t('login_db_blocked_title'),
+                message: t('login_db_blocked_msg')
             });
         }
     }, [authUserSession]);
@@ -50,6 +52,11 @@ export default function LoginScreen() {
         transform: [{ translateX: tabProgress.value * ((width * 0.9 - 48 - 8) / 2) }]
     }));
 
+    const animatedContentStyle = useAnimatedStyle(() => ({
+        // We must subtract the padding (24 * 2 = 48) from the width to get the correct inner width
+        transform: [{ translateX: -tabProgress.value * (width * 0.9 - 48) }]
+    }));
+
     // Form States
     const [username, setUsername] = useState('');
     const [recoverUsername, setRecoverUsername] = useState('');
@@ -62,7 +69,7 @@ export default function LoginScreen() {
 
     const handleSignUp = async () => {
         if (!username.trim()) {
-            setModal({ visible: true, title: "Errore", message: "Devi scegliere un nome." });
+            setModal({ visible: true, title: t('login_error_title'), message: t('login_error_missing_name') });
             return;
         }
 
@@ -71,14 +78,14 @@ export default function LoginScreen() {
             await signUp(username.trim());
             setLoading(false);
         } catch (error) {
-            setModal({ visible: true, title: "Errore", message: error.message });
+            setModal({ visible: true, title: t('login_error_title'), message: error.message });
             setLoading(false);
         }
     };
 
     const handleRecovery = async () => {
         if (!recoverUsername.trim() || !recoveryCode.trim()) {
-            setModal({ visible: true, title: "Errore", message: "Inserisci nome e codice segreto." });
+            setModal({ visible: true, title: t('login_error_title'), message: t('login_error_missing_recover_data') });
             return;
         }
 
@@ -88,7 +95,7 @@ export default function LoginScreen() {
             await recoverAccount(recoverUsername.trim(), formattedCode);
             setLoading(false);
         } catch (error) {
-            setModal({ visible: true, title: "Fallimento", message: error.message });
+            setModal({ visible: true, title: t('login_error_title'), message: error.message });
             setLoading(false);
         }
     };
@@ -101,7 +108,37 @@ export default function LoginScreen() {
                 entering={FadeInDown.delay(200).springify()}
                 style={styles.content}
             >
-                <Text style={styles.title}>Cards of{"\n"}Moral Decay</Text>
+                {/* [NEW] Language Selector (Top Right) */}
+                <View style={{ position: 'absolute', top: 20, right: 20, zIndex: 10, flexDirection: 'row', gap: 8 }}>
+                    {['it', 'en'].map((lang) => {
+                        const { language, setLanguage } = useLanguage();
+                        const isActive = language === lang;
+                        return (
+                            <TouchableOpacity
+                                key={lang}
+                                onPress={() => setLanguage(lang)}
+                                style={{
+                                    paddingVertical: 4,
+                                    paddingHorizontal: 8,
+                                    borderRadius: 6,
+                                    backgroundColor: isActive ? 'rgba(255, 215, 0, 0.2)' : 'transparent',
+                                    borderWidth: 1,
+                                    borderColor: isActive ? '#FFD700' : 'rgba(255,255,255,0.1)'
+                                }}
+                            >
+                                <Text style={{
+                                    color: isActive ? '#FFD700' : '#666',
+                                    fontFamily: 'Cinzel-Bold',
+                                    fontSize: 10
+                                }}>
+                                    {lang.toUpperCase()}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
+                <Text style={styles.title}>{t('login_title')}</Text>
 
                 {/* Tabs */}
                 <View style={styles.tabContainer}>
@@ -111,36 +148,30 @@ export default function LoginScreen() {
                         style={styles.tab}
                         onPress={() => setActiveTab('new')}
                     >
-                        <Animated.Text style={[styles.tabText, activeTab === 'new' && styles.activeTabText]}>Nuovo Giocatore</Animated.Text>
+                        <Animated.Text style={[styles.tabText, activeTab === 'new' && styles.activeTabText]}>{t('login_new_player')}</Animated.Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.tab}
                         onPress={() => setActiveTab('recover')}
                     >
-                        <Animated.Text style={[styles.tabText, activeTab === 'recover' && styles.activeTabText]}>Recupera</Animated.Text>
+                        <Animated.Text style={[styles.tabText, activeTab === 'recover' && styles.activeTabText]}>{t('login_recover')}</Animated.Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Content Area */}
-                <Animated.View
-                    layout={LinearTransition.duration(300).easing(Easing.out(Easing.cubic))}
-                    style={styles.formArea}
-                >
-                    {activeTab === 'new' ? (
-                        <Animated.View
-                            key="new"
-                            entering={SlideInLeft.duration(300)}
-                            exiting={SlideOutLeft.duration(300)}
-                            style={styles.formSlide}
-                        >
-                            <Text style={styles.subtitle}>Entra nel caos.</Text>
-                            <Text style={styles.desc}>Nessuna email. Nessuna password. Solo il tuo nome.</Text>
+                {/* Content Area - Carousel Wrapper */}
+                <View style={styles.carouselContainer}>
+                    <Animated.View style={[styles.carouselTrack, animatedContentStyle]}>
+
+                        {/* SLIDE 1: NEW PLAYER */}
+                        <View style={styles.formSlide}>
+                            <Text style={styles.subtitle}>{t('login_enter_chaos')}</Text>
+                            <Text style={styles.desc}>{t('login_no_password')}</Text>
 
                             <View style={styles.inputContainer}>
-                                <Text style={styles.label}>ALIAS</Text>
+                                <Text style={styles.label}>{t('login_alias_label')}</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Come vuoi farti salvare?"
+                                    placeholder={t('login_alias_placeholder')}
                                     placeholderTextColor="#666"
                                     value={username}
                                     onChangeText={setUsername}
@@ -160,30 +191,26 @@ export default function LoginScreen() {
                                     end={{ x: 1, y: 0 }}
                                 >
                                     <Text style={styles.buttonText}>
-                                        {loading ? "CREAZIONE..." : "ENTRA NEL GIRO"}
+                                        {loading ? t('login_btn_creating') : t('login_btn_create')}
                                     </Text>
                                 </LinearGradient>
                             </TouchableOpacity>
 
                             <Text style={styles.disclaimer}>
-                                Ti verrà assegnato un Codice di Recupero.{"\n"}Non perderlo, o perdi tutto.
+                                {t('login_disclaimer')}
                             </Text>
-                        </Animated.View>
-                    ) : (
-                        <Animated.View
-                            key="recover"
-                            entering={SlideInRight.duration(300)}
-                            exiting={SlideOutRight.duration(300)}
-                            style={styles.formSlide}
-                        >
-                            <Text style={styles.subtitle}>Riprenditi ciò che è tuo.</Text>
-                            <Text style={styles.desc}>Usa il codice segreto per trasferire il tuo profilo su questo dispositivo.</Text>
+                        </View>
+
+                        {/* SLIDE 2: RECOVER */}
+                        <View style={styles.formSlide}>
+                            <Text style={styles.subtitle}>{t('login_recover_subtitle')}</Text>
+                            <Text style={styles.desc}>{t('login_recover_desc')}</Text>
 
                             <View style={styles.inputContainer}>
-                                <Text style={styles.label}>ALIAS</Text>
+                                <Text style={styles.label}>{t('login_alias_label')}</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Il tuo vecchio nome"
+                                    placeholder={t('login_old_alias_placeholder')}
                                     placeholderTextColor="#666"
                                     value={recoverUsername}
                                     onChangeText={setRecoverUsername}
@@ -192,10 +219,10 @@ export default function LoginScreen() {
                             </View>
 
                             <View style={styles.inputContainer}>
-                                <Text style={styles.label}>CODICE SEGRETO</Text>
+                                <Text style={styles.label}>{t('login_secret_code_label')}</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="XXX-XXXX"
+                                    placeholder={t('login_secret_code_placeholder')}
                                     placeholderTextColor="#666"
                                     value={recoveryCode}
                                     onChangeText={(text) => {
@@ -225,13 +252,14 @@ export default function LoginScreen() {
                                     end={{ x: 1, y: 0 }}
                                 >
                                     <Text style={[styles.buttonText, { color: '#fff' }]}>
-                                        {loading ? "VERIFICA..." : "RIPRISTINA"}
+                                        {loading ? t('login_btn_verifying') : t('login_btn_recover')}
                                     </Text>
                                 </LinearGradient>
                             </TouchableOpacity>
-                        </Animated.View>
-                    )}
-                </Animated.View>
+                        </View>
+
+                    </Animated.View>
+                </View>
 
             </Animated.View>
 
@@ -241,22 +269,11 @@ export default function LoginScreen() {
                 message={modal.message}
                 onClose={() => setModal({ ...modal, visible: false })}
                 singleButton={true}
-                confirmText="OK"
+                confirmText={t('ok_btn')}
                 onConfirm={() => setModal({ ...modal, visible: false })}
             />
 
-            {/* Debug Button */}
-            <TouchableOpacity
-                onPress={async () => {
-                    await signOut(auth);
-                    if (Platform.OS === 'web') window.location.reload();
-                }}
-                style={{ marginTop: 20, opacity: 0.4 }}
-            >
-                <Text style={{ color: '#aaa', fontSize: 10, textAlign: 'center', fontFamily: 'Outfit' }}>
-                    Problemi con il database? Clicca qui per resettare la sessione
-                </Text>
-            </TouchableOpacity>
+
         </View>
     );
 
@@ -347,12 +364,18 @@ const styles = StyleSheet.create({
     activeTabText: {
         color: '#FFD700',
     },
-    formArea: {
+    carouselContainer: {
         width: '100%',
         minHeight: 250,
+        overflow: 'hidden', // Essential for masking the off-screen slide
+    },
+    carouselTrack: {
+        width: '200%', // 2 slides side-by-side
+        flexDirection: 'row',
     },
     formSlide: {
-        width: '100%'
+        width: '50%', // Each slide takes half of the 200% width (so 100% of container)
+        paddingHorizontal: 12, // Small padding to prevent text hitting edges
     },
     subtitle: {
         fontFamily: 'Cinzel-Bold',

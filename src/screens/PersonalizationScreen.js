@@ -66,74 +66,72 @@ const PersonalizationScreen = () => {
     }));
 
     return (
-        <View style={{ flex: 1 }}>
-            <PremiumBackground>
-                {/* Header Title */}
-                <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
-                    {t('inventory_title')}
-                </Text>
+        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+            {/* Header Title */}
+            <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
+                {t('inventory_title')}
+            </Text>
 
-                <View style={{ flex: 1, paddingHorizontal: 20 }}>
-                    {/* Tab Bar */}
-                    <View
-                        style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 15 }}
-                        onLayout={(e) => {
-                            tabBarWidth.value = e.nativeEvent.layout.width;
-                        }}
-                    >
-                        <Animated.View style={[
-                            {
-                                position: 'absolute',
-                                top: 4, bottom: 4, left: 4,
-                                backgroundColor: theme.colors.accent,
-                                borderRadius: 8,
-                            },
-                            indicatorStyle
-                        ]} />
+            <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                {/* Tab Bar */}
+                <View
+                    style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 15 }}
+                    onLayout={(e) => {
+                        tabBarWidth.value = e.nativeEvent.layout.width;
+                    }}
+                >
+                    <Animated.View style={[
+                        {
+                            position: 'absolute',
+                            top: 4, bottom: 4, left: 4,
+                            backgroundColor: theme.colors.accent,
+                            borderRadius: 8,
+                        },
+                        indicatorStyle
+                    ]} />
 
-                        {tabs.map((tab, index) => {
-                            const isActive = activeTab === index;
-                            return (
-                                <Pressable
-                                    key={index} // Use index key as names change with language
-                                    onPress={() => handleTabPress(index)}
-                                    style={{
-                                        flex: 1,
-                                        paddingVertical: 8,
-                                        alignItems: 'center',
-                                        borderRadius: 8,
-                                        zIndex: 1
-                                    }}
-                                >
-                                    <Text style={{
-                                        color: isActive ? '#000' : theme.colors.textPrimary,
-                                        fontFamily: 'Outfit-Bold',
-                                        fontSize: 13,
-                                        includeFontPadding: false
-                                    }}>
-                                        {tab}
-                                    </Text>
-                                </Pressable>
-                            );
-                        })}
-                    </View>
-
-                    <View style={{ flex: 1 }}>
-                        {activeTab === 0 && <ThemeSelectionModal onBack={() => { }} hideBackButton={true} />}
-                        {activeTab === 1 && <SkinSelectionModal onBack={() => { }} hideBackButton={true} />}
-                        {activeTab === 2 && <FrameSelectionModal onBack={() => { }} hideBackButton={true} />}
-                    </View>
+                    {tabs.map((tab, index) => {
+                        const isActive = activeTab === index;
+                        return (
+                            <Pressable
+                                key={index} // Use index key as names change with language
+                                onPress={() => handleTabPress(index)}
+                                style={{
+                                    flex: 1,
+                                    paddingVertical: 8,
+                                    alignItems: 'center',
+                                    borderRadius: 8,
+                                    zIndex: 1
+                                }}
+                            >
+                                <Text style={{
+                                    color: isActive ? '#000' : theme.colors.textPrimary,
+                                    fontFamily: 'Outfit-Bold',
+                                    fontSize: 13,
+                                    includeFontPadding: false
+                                }}>
+                                    {tab}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
                 </View>
 
-                <ConfirmationModal
-                    visible={showExitModal}
-                    onClose={() => setShowExitModal(false)}
-                    title={t('exit_app_title')}
-                    message={t('exit_app_msg')}
-                    confirmText={t('exit_btn_small')}
-                    onConfirm={() => BackHandler.exitApp()}
-                />
-            </PremiumBackground>
+                <View style={{ flex: 1 }}>
+                    {activeTab === 0 && <ThemeSelectionModal onBack={() => { }} hideBackButton={true} />}
+                    {activeTab === 1 && <SkinSelectionModal onBack={() => { }} hideBackButton={true} />}
+                    {activeTab === 2 && <FrameSelectionModal onBack={() => { }} hideBackButton={true} />}
+                </View>
+            </View>
+
+            <ConfirmationModal
+                visible={showExitModal}
+                onClose={() => setShowExitModal(false)}
+                title={t('exit_app_title')}
+                message={t('exit_app_msg')}
+                confirmText={t('exit_btn_small')}
+                onConfirm={() => BackHandler.exitApp()}
+            />
         </View>
     );
 };

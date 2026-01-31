@@ -64,6 +64,7 @@ const SectionHeader = ({ title }) => (
 const MinimalPackCard = ({ label, type, selected, onPress, owned = true }) => {
     const isDark = type === 'dark';
     const baseColor = isDark ? '#ef4444' : '#FDB931';
+    const { t } = useLanguage();
 
     return (
         <PremiumPressable
@@ -118,7 +119,7 @@ const MinimalPackCard = ({ label, type, selected, onPress, owned = true }) => {
                         {label}
                     </Text>
                     <Text style={{ fontFamily: 'Outfit', fontSize: 8, color: '#444' }}>
-                        {isDark ? 'Contenuti Adulti' : 'Starter Set'}
+                        {isDark ? t('adult_content') : t('starter_set')}
                     </Text>
                 </View>
 
@@ -619,7 +620,7 @@ const GameScreen = ({ onStartLoading }) => {
                 <View style={[styles.premiumBox, { marginTop: 0, paddingVertical: 10 }]}>
 
                     {/* 1. LINGUA (Stile Lingotto) */}
-                    <SectionHeader title={t('select_language')} />
+                    <SectionHeader title={t('room_language_label')} />
                     <View style={{
                         flexDirection: 'row', backgroundColor: '#000', borderRadius: 20, padding: 3,
                         borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
@@ -647,7 +648,7 @@ const GameScreen = ({ onStartLoading }) => {
                                         textAlign: 'center',
                                         includeFontPadding: false
                                     }}>
-                                        {lang === 'it' ? 'ITA 🇮🇹' : 'EN 🇬🇧'}
+                                        {lang === 'it' ? 'ITA' : 'EN'}
                                     </Text>
                                 </PremiumPressable>
                             );
@@ -689,33 +690,36 @@ const GameScreen = ({ onStartLoading }) => {
                                     }}
                                     scaleDown={0.9}
                                     style={{
-                                        width: 50, height: 60, borderRadius: 12,
+                                        width: 50, height: 62, borderRadius: 12,
                                         borderWidth: 1,
                                         borderColor: isActive ? '#d4af37' : 'rgba(255,255,255,0.1)',
                                         backgroundColor: isActive ? 'rgba(212, 175, 55, 0.1)' : '#0a0a0a',
-                                        justifyContent: 'center', alignItems: 'center',
+                                        alignItems: 'center',
                                         // Ancoraggio senza glow
                                         borderBottomWidth: isActive ? 4 : 1,
                                         borderBottomColor: isActive ? '#d4af37' : 'rgba(255,255,255,0.02)',
                                         shadowColor: 'transparent', shadowOpacity: 0, elevation: 0
                                     }}
                                     pressableStyle={{ height: '100%' }}
-                                    contentContainerStyle={{ height: '100%', alignItems: 'center', justifyContent: 'center' }} // Targeted fix for points height
+                                    contentContainerStyle={{ height: '100%', alignItems: 'center', justifyContent: 'space-evenly', paddingVertical: 2 }}
                                 >
                                     <Text style={{
                                         fontFamily: 'Cinzel-Bold',
                                         color: isActive ? '#d4af37' : '#444',
                                         fontSize: 20,
-                                        textAlign: 'center'
+                                        textAlign: 'center',
+                                        marginBottom: -4,
+                                        includeFontPadding: false
                                     }}>
                                         {points}
                                     </Text>
                                     <Text style={{
-                                        fontFamily: 'Outfit', fontSize: 7,
+                                        fontFamily: 'Outfit', fontSize: 8,
                                         color: isActive ? '#d4af37' : '#333', opacity: 0.7,
-                                        textAlign: 'center'
+                                        textAlign: 'center',
+                                        includeFontPadding: false
                                     }}>
-                                        PUNTI
+                                        {t('points_label').toUpperCase()}
                                     </Text>
                                 </PremiumPressable>
                             );

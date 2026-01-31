@@ -90,168 +90,166 @@ const FriendsScreen = () => {
     );
 
     return (
-        <View style={{ flex: 1 }}>
-            <PremiumBackground>
-                {/* Main Content Container with conditional opacity */}
-                <View style={{ flex: 1, opacity: friendToDelete ? 0.1 : 1 }} pointerEvents={friendToDelete ? 'none' : 'auto'}>
-                    {/* Header Title */}
-                    <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
-                        {t('friends_title')}
-                    </Text>
+        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+            {/* Main Content Container with conditional opacity */}
+            <View style={{ flex: 1, opacity: friendToDelete ? 0.1 : 1 }} pointerEvents={friendToDelete ? 'none' : 'auto'}>
+                {/* Header Title */}
+                <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
+                    {t('friends_title')}
+                </Text>
 
-                    <View style={{ flex: 1, paddingHorizontal: 20, paddingBottom: 20 }}>
-                        {/* My ID Section */}
-                        <View style={styles.idContainer}>
-                            <View>
-                                <Text style={[styles.label, { color: '#888' }]}>{t('your_id')}</Text>
-                                <Text style={[styles.myId, { color: theme.colors.accent, fontSize: 20, marginTop: 4 }]}>{myUsername}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', gap: 8 }}>
-                                <PremiumIconButton
-                                    icon={<LinkIcon size={18} color="#000" />}
-                                    onPress={copyMyId}
-                                    size={40}
-                                    style={{ backgroundColor: theme.colors.accent, borderRadius: 12 }}
-                                />
-                                <PremiumIconButton
-                                    icon={<ShareIcon size={18} color="#fff" />}
-                                    onPress={shareMyId}
-                                    size={40}
-                                    style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}
-                                />
-                            </View>
+                <View style={{ flex: 1, paddingHorizontal: 20, paddingBottom: 20 }}>
+                    {/* My ID Section */}
+                    <View style={styles.idContainer}>
+                        <View>
+                            <Text style={[styles.label, { color: '#888' }]}>{t('your_id')}</Text>
+                            <Text style={[styles.myId, { color: theme.colors.accent, fontSize: 20, marginTop: 4 }]}>{myUsername}</Text>
                         </View>
-
-                        {/* Add Friend Request Section */}
-                        <View style={styles.addSection}>
-                            <PremiumInput
-                                value={friendInput}
-                                onChangeText={setFriendInput}
-                                label={t('friend_id_label')}
-                                style={{ flex: 1, marginBottom: 0 }}
-                                containerStyle={{ marginBottom: 0 }}
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <PremiumIconButton
+                                icon={<LinkIcon size={18} color="#000" />}
+                                onPress={copyMyId}
+                                size={40}
+                                style={{ backgroundColor: theme.colors.accent, borderRadius: 12 }}
                             />
-                            <PremiumButton
-                                title={t('send_btn')}
-                                onPress={handleSend}
-                                disabled={loading || !friendInput.trim()}
-                                style={{ width: 80, marginLeft: 10, height: 50, backgroundColor: theme.colors.accent, marginVertical: 0, marginTop: 10 }}
-                                textStyle={{ color: '#000', fontSize: 12, fontFamily: 'Cinzel-Bold' }}
+                            <PremiumIconButton
+                                icon={<ShareIcon size={18} color="#fff" />}
+                                onPress={shareMyId}
+                                size={40}
+                                style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}
                             />
                         </View>
+                    </View>
 
-                        <ScrollView style={styles.list} contentContainerStyle={{ gap: 15, paddingBottom: 80 + insets.bottom }} showsVerticalScrollIndicator={false}>
+                    {/* Add Friend Request Section */}
+                    <View style={styles.addSection}>
+                        <PremiumInput
+                            value={friendInput}
+                            onChangeText={setFriendInput}
+                            label={t('friend_id_label')}
+                            style={{ flex: 1, marginBottom: 0 }}
+                            containerStyle={{ marginBottom: 0 }}
+                        />
+                        <PremiumButton
+                            title={t('send_btn')}
+                            onPress={handleSend}
+                            disabled={loading || !friendInput.trim()}
+                            style={{ width: 80, marginLeft: 10, height: 50, backgroundColor: theme.colors.accent, marginVertical: 0, marginTop: 10 }}
+                            textStyle={{ color: '#000', fontSize: 12, fontFamily: 'Cinzel-Bold' }}
+                        />
+                    </View>
 
-                            {/* INCOMING REQUESTS */}
-                            {requestList.length > 0 && (
-                                <View>
-                                    <Text style={[styles.sectionHeader, { color: theme.colors.accent }]}>
-                                        {t('incoming_requests')} ({requestList.length})
-                                    </Text>
-                                    <View style={{ gap: 10 }}>
-                                        {requestList.map(reqName => (
-                                            <View key={reqName} style={[styles.friendRow, { borderColor: theme.colors.accent }]}>
-                                                <Text style={[styles.friendName, { color: '#fff' }]}>{reqName}</Text>
-                                                <View style={{ flexDirection: 'row', gap: 5 }}>
-                                                    <PremiumIconButton
-                                                        icon={<CheckIcon size={16} color="#4ade80" />}
-                                                        onPress={() => acceptFriendRequest(reqName)}
-                                                        size={32}
-                                                        style={{ backgroundColor: 'rgba(74, 222, 128, 0.1)', borderRadius: 32 }}
-                                                    />
-                                                    <PremiumIconButton
-                                                        icon={<CrossIcon size={16} color="#ef4444" />}
-                                                        onPress={() => rejectFriendRequest(reqName)}
-                                                        size={32}
-                                                        style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: 32 }}
-                                                    />
-                                                </View>
-                                            </View>
-                                        ))}
-                                    </View>
-                                    <View style={{ height: 1, backgroundColor: '#333', marginVertical: 15 }} />
-                                </View>
-                            )}
+                    <ScrollView style={styles.list} contentContainerStyle={{ gap: 15, paddingBottom: 80 + insets.bottom }} showsVerticalScrollIndicator={false}>
 
-                            {/* FRIENDS LIST */}
+                        {/* INCOMING REQUESTS */}
+                        {requestList.length > 0 && (
                             <View>
-                                <Text style={[styles.sectionHeader, { color: '#666' }]}>
-                                    {t('your_friends')} ({friendList.length})
+                                <Text style={[styles.sectionHeader, { color: theme.colors.accent }]}>
+                                    {t('incoming_requests')} ({requestList.length})
                                 </Text>
-
-                                {friendList.length === 0 ? (
-                                    <Text style={styles.emptyText}>{t('no_friends_msg')}</Text>
-                                ) : (
-                                    <View style={{ gap: 10 }}>
-                                        {friendList.map(friendName => (
-                                            <View key={friendName} style={styles.friendRow}>
-                                                <Text style={styles.friendName}>{friendName}</Text>
+                                <View style={{ gap: 10 }}>
+                                    {requestList.map(reqName => (
+                                        <View key={reqName} style={[styles.friendRow, { borderColor: theme.colors.accent }]}>
+                                            <Text style={[styles.friendName, { color: '#fff' }]}>{reqName}</Text>
+                                            <View style={{ flexDirection: 'row', gap: 5 }}>
                                                 <PremiumIconButton
-                                                    icon={<TrashIcon size={18} color="#ef4444" />}
-                                                    onPress={() => setFriendToDelete(friendName)}
-                                                    size={36}
+                                                    icon={<CheckIcon size={16} color="#4ade80" />}
+                                                    onPress={() => acceptFriendRequest(reqName)}
+                                                    size={32}
+                                                    style={{ backgroundColor: 'rgba(74, 222, 128, 0.1)', borderRadius: 32 }}
+                                                />
+                                                <PremiumIconButton
+                                                    icon={<CrossIcon size={16} color="#ef4444" />}
+                                                    onPress={() => rejectFriendRequest(reqName)}
+                                                    size={32}
                                                     style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: 32 }}
                                                 />
                                             </View>
-                                        ))}
-                                    </View>
-                                )}
+                                        </View>
+                                    ))}
+                                </View>
+                                <View style={{ height: 1, backgroundColor: '#333', marginVertical: 15 }} />
                             </View>
-                        </ScrollView>
+                        )}
+
+                        {/* FRIENDS LIST */}
+                        <View>
+                            <Text style={[styles.sectionHeader, { color: '#666' }]}>
+                                {t('your_friends')} ({friendList.length})
+                            </Text>
+
+                            {friendList.length === 0 ? (
+                                <Text style={styles.emptyText}>{t('no_friends_msg')}</Text>
+                            ) : (
+                                <View style={{ gap: 10 }}>
+                                    {friendList.map(friendName => (
+                                        <View key={friendName} style={styles.friendRow}>
+                                            <Text style={styles.friendName}>{friendName}</Text>
+                                            <PremiumIconButton
+                                                icon={<TrashIcon size={18} color="#ef4444" />}
+                                                onPress={() => setFriendToDelete(friendName)}
+                                                size={36}
+                                                style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: 32 }}
+                                            />
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+                        </View>
+                    </ScrollView>
+                </View>
+            </View>
+
+            {/* DELETE CONFIRMATION OVERLAY (Absolute - covers the whole area) */}
+            {friendToDelete && (
+                <View style={StyleSheet.absoluteFill}>
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+                        <Animated.View
+                            style={styles.confirmBox}
+                            entering={ZoomIn.duration(300)}
+                            exiting={ZoomOut.duration(200)}
+                        >
+                            <Text style={styles.confirmTitle}>{t('confirm_delete_title')}</Text>
+                            <Text style={styles.confirmText}>{t('confirm_delete_msg')}</Text>
+                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 20, width: '100%' }}>
+                                <PremiumButton
+                                    title={t('cancel_btn')}
+                                    variant="ghost"
+                                    onPress={() => setFriendToDelete(null)}
+                                    style={{ flex: 1, height: 45 }}
+                                />
+                                <PremiumButton
+                                    title={t('farewell_btn')}
+                                    variant="danger"
+                                    onPress={() => {
+                                        removeFriend(friendToDelete);
+                                        setFriendToDelete(null);
+                                    }}
+                                    style={{ flex: 1, height: 45 }}
+                                />
+                            </View>
+                        </Animated.View>
                     </View>
                 </View>
+            )}
 
-                {/* DELETE CONFIRMATION OVERLAY (Absolute - covers the whole PremiumBackground area) */}
-                {friendToDelete && (
-                    <View style={StyleSheet.absoluteFill}>
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }}>
-                            <Animated.View
-                                style={styles.confirmBox}
-                                entering={ZoomIn.duration(300)}
-                                exiting={ZoomOut.duration(200)}
-                            >
-                                <Text style={styles.confirmTitle}>{t('confirm_delete_title')}</Text>
-                                <Text style={styles.confirmText}>{t('confirm_delete_msg')}</Text>
-                                <View style={{ flexDirection: 'row', gap: 10, marginTop: 20, width: '100%' }}>
-                                    <PremiumButton
-                                        title={t('cancel_btn')}
-                                        variant="ghost"
-                                        onPress={() => setFriendToDelete(null)}
-                                        style={{ flex: 1, height: 45 }}
-                                    />
-                                    <PremiumButton
-                                        title={t('farewell_btn')}
-                                        variant="danger"
-                                        onPress={() => {
-                                            removeFriend(friendToDelete);
-                                            setFriendToDelete(null);
-                                        }}
-                                        style={{ flex: 1, height: 45 }}
-                                    />
-                                </View>
-                            </Animated.View>
-                        </View>
-                    </View>
-                )}
+            <ConfirmationModal
+                visible={showExitModal}
+                onClose={() => setShowExitModal(false)}
+                title={t('exit_app_title')}
+                message={t('exit_app_msg')}
+                confirmText={t('exit_btn_small')}
+                onConfirm={() => BackHandler.exitApp()}
+            />
 
-                <ConfirmationModal
-                    visible={showExitModal}
-                    onClose={() => setShowExitModal(false)}
-                    title={t('exit_app_title')}
-                    message={t('exit_app_msg')}
-                    confirmText={t('exit_btn_small')}
-                    onConfirm={() => BackHandler.exitApp()}
-                />
-
-                <ToastNotification
-                    visible={toast.visible}
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(prev => ({ ...prev, visible: false }))}
-                    duration={2000}
-                    style={{ bottom: 100 }} // Higher to not overlap navigation
-                />
-            </PremiumBackground>
+            <ToastNotification
+                visible={toast.visible}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+                duration={2000}
+                style={{ bottom: 100 }} // Higher to not overlap navigation
+            />
         </View>
     );
 };

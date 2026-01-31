@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScaleIcon, PaletteIcon, PlayIcon, PeopleIcon, SettingsIcon } from '../../components/Icons';
 import EfficientBlurView from '../EfficientBlurView';
 
-export default function PremiumTabBar({ state, descriptors, navigation }) {
+const PremiumTabBar = ({ state, descriptors, navigation }) => {
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
     const { width } = Dimensions.get('window');
@@ -102,6 +102,8 @@ export default function PremiumTabBar({ state, descriptors, navigation }) {
         </View>
     );
 }
+
+export default React.memo(PremiumTabBar);
 
 const styles = StyleSheet.create({
     container: {

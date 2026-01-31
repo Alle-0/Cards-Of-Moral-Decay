@@ -35,11 +35,21 @@ import GameDataService from './src/services/GameDataService';
 import UpdateOverlay from './src/components/UpdateOverlay';
 import { APP_VERSION } from './src/constants/Config';
 import PaymentResultModal from './src/components/PaymentResultModal'; // [NEW] Global Feedback
+import PwaInstallPrompt from './src/components/PwaInstallPrompt'; // [NEW] PWA Install Prompt
 import { useLanguage } from './src/context/LanguageContext';
 import { Platform } from 'react-native';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+
+// [NEW] Transparent Theme to allow global gradient to show through
+const TransparentTheme = {
+    ...DarkTheme,
+    colors: {
+        ...DarkTheme.colors,
+        background: 'transparent',
+    },
+};
 
 export default function App() {
     const [appIsReady, setAppIsReady] = useState(false);
@@ -86,7 +96,12 @@ export default function App() {
                                             <ElegantSplashScreen onFinish={() => setSplashAnimationFinished(true)} />
                                         </Animated.View>
                                     ) : (
-                                        <NavigationContainer theme={DarkTheme}>
+                                        <NavigationContainer
+                                            theme={TransparentTheme} // [FIX] Use TransparentTheme
+                                            documentTitle={{
+                                                formatter: (options, route) => "Cards of Moral Decay"
+                                            }}
+                                        >
                                             <AppContent />
                                         </NavigationContainer>
                                     )}
@@ -112,7 +127,9 @@ const AppContent = () => {
     const [paymentResult, setPaymentResult] = useState({ visible: false, result: null });
 
     useEffect(() => {
-        if (Platform.OS === 'web' && user) {
+        if (Platform.OS === 'web') {
+            document.title = "Cards of Moral Decay";
+
             const params = new URLSearchParams(window.location.search);
             const paymentStatus = params.get('payment');
 
@@ -198,6 +215,9 @@ const AppContent = () => {
                     <UpdateOverlay downloadUrl={GameDataService.getDownloadUrl()} />
                 </View>
             )}
+
+            {/* [NEW] PWA Install Prompt (Web Only) */}
+            <PwaInstallPrompt />
 
             {/* [NEW] Global Payment Feedback Modal */}
             <PaymentResultModal

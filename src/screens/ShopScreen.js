@@ -60,25 +60,18 @@ export default function ShopScreen() {
     // [REMOVED URL POLLING] Moved to App.js to ensure visibility on redirects to home screen.
 
     const buyItem = async (type) => {
-        console.log('[ShopScreen] buyItem initiated for:', type);
         SoundService.play('tap');
         setBuyingId(type); // [FIX] Set buyingId to show spinner/disable button
         const result = await stripeBuyItem(type);
         setBuyingId(null); // [FIX] Reset buyingId
-        console.log('[ShopScreen] buyItem result:', result);
 
         if (result) {
-            console.log('[ShopScreen] Setting paymentResult:', { visible: true, result });
             setPaymentResult({ visible: true, result });
             if (result.success) {
-                console.log('[ShopScreen] Playing success sound');
                 SoundService.play('purchase');
             } else {
-                console.log('[ShopScreen] Playing error sound');
                 SoundService.play('error');
             }
-        } else {
-            console.log('[ShopScreen] No result returned from stripeBuyItem');
         }
     };
 
@@ -573,13 +566,8 @@ export default function ShopScreen() {
     };
 
     return (
-        <LinearGradient
-            colors={theme.colors.background}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={{ flex: 1 }}
-        >
-            <ThemeBackground />
+        // [MODIFIED] Removed LinearGradient/ThemeBackground - Now handled globally in AppNavigator
+        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
             {/* Header */}
             <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
                 {t('shop_title')}
@@ -889,7 +877,7 @@ export default function ShopScreen() {
             />
 
 
-        </LinearGradient >
+        </View>
     );
 }
 
