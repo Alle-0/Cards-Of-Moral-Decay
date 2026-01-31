@@ -1,104 +1,76 @@
 <div align="center">
 
-# 🃏 Cards of Moral Decay
+# Cards of Moral Decay
+### *Discover the hidden depths of your moral compass.*
 
 <br/>
 
-<img src="https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?label=VERSION&color=ffd700&style=flat-square" />
-<img src="https://img.shields.io/badge/Platform-Android_&_Web-3DDC84?style=social&logo=android" />
+[![Version](https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?label=LATEST%20RELEASE&color=ffd700&style=for-the-badge)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
+[![Platform](https://img.shields.io/badge/Platform-Android_&_Web-3DDC84?style=for-the-badge&logo=android)](https://carte-vs-umani.web.app)
+<br/>
+<img src="https://img.shields.io/badge/RATING-18%2B-red?style=for-the-badge" height="30" />
 
 <br/><br/>
 
-<h3>
-  🌍 NOW AVAILABLE IN:
-  <br/>
-  🇬🇧 ENGLISH &nbsp;&nbsp;|&nbsp;&nbsp; 🇮🇹 ITALIANO
-</h3>
+> CAUTION!
+> ### 🔞 MATURE CONTENT
+> This experience explores dark humor, social taboos, and moral decadence.  
+> **Strictly for adults. Play responsibly.**
 
 <br/>
 
-<img src="https://img.shields.io/badge/RATING-18%2B-red?style=for-the-badge" height="30" />
+## 🎮 PLAY NOW
 
-<p>
-  ⚠️ <strong>STRICTLY FOR ADULTS</strong> ⚠️<br/>
-  Contains strong language, blasphemy, and offensive humor.<br/>
-  If you are easily offended or under 18, <strong>close this page immediately.</strong>
-</p>
-
-<br/>
-
-<h2>🚀 CHOOSE HOW TO PLAY</h2>
-
-<a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest">
-  <img src="https://img.shields.io/badge/⬇_Download_Android_APK-333333?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=222222" height="55" style="border-radius: 10px; margin: 10px;" />
+<a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/download/v3.5.0/CardsOfMoralDecay-v3.5.0.apk">
+  <img src="https://img.shields.io/badge/⬇_Download_Android_APK-333333?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=222222" height="60" />
 </a>
-
 &nbsp;&nbsp;
-
 <a href="https://carte-vs-umani.web.app">
-  <img src="https://img.shields.io/badge/🌐_Play_Online_Now-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white&labelColor=0d47a1" height="55" style="border-radius: 10px; margin: 10px;" />
+  <img src="https://img.shields.io/badge/🌐_Launch_Web_App-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white&labelColor=0d47a1" height="60" />
 </a>
 
-<p>
-  ⚠️ <strong>MOBILE FIRST:</strong> The Web version is optimized for <strong>Smartphones</strong>.<br/>
-  It is <u>not designed</u> for Desktop/PC use.
+<p align="center">
+  <i>(Web version optimized for <strong>Mobile Devices</strong>)</i>
 </p>
 
-<br/>
-
 ---
-
-## ✨ PREMIUM EXPERIENCE
 
 </div>
 
-<div align="center">
+## 💎 THE EXPERIENCE
 
-A real-time multiplayer experience designed to bring out the worst in you.
-<br/>
-<strong>Fully localized in English 🇬🇧 and Italian 🇮🇹.</strong>
+### 🌑 A Journey into Decadence
+A real-time multiplayer card game for those who aren't afraid to laugh at the darkest sides of humanity. No filters, no limits.
 
-<br/>
+### 🌐 Dual Language Support
+Fully localized in **English 🇬🇧** and **Italian 🇮🇹**. The interface and the cards adapt to your language, keeping the wit sharp and the humor biting.
 
-🤝 **Bring Your Own Victims**
-<br/>
-Strictly <strong>Private Lobbies</strong>. Share the Room Code with friends. Insulting strangers is fine, but ruining real friendships is better. No global matchmaking (yet).
+### 🤝 Private Lobbies
+Created for friends. No random matchmaking, just private rooms where you can be yourself (or your worst version) with people you trust.
 
-🎱 **Instant Multiplayer**
-<br/>
-Zero latency. Immediate regrets. Powered by Firebase.
-
-🎨 **Polished Aesthetics**
-<br/>
-Dynamic themes, unlockable Card Skins, and Avatar Frames.
-
-🏆 **Leaderboards**
-<br/>
-Scientifically determine who is the worst friend.
-
-</div>
-
-<br/>
-
-<div align="center">
+### 🎭 Shop & Aesthetics
+Collect **Dirty Cash** and redefine your style. Unlock:
+- 🌌 **Immersive Themes** (Tokyo, Lucifer, Matrix, and more)
+- 🎴 **Custom Card Skins**  
+- 🖼️ **Avatar Frames**
 
 ---
-
-### 🛍️ SHOP & CUSTOMIZATION
-
-Winning isn't enough, you have to do it with style.
-Spend your **Dirty Cash** to unlock themes like *Lucifer*, *Tokyo*, or *Asylum*.
-
-<br/>
 
 <details>
-<summary>🛠️ <strong>TECHNICAL AREA (Click to expand)</strong></summary>
+<summary>🛠️ <strong>TECHNICAL STACK</strong></summary>
 
 <br/>
 
-Are you a developer? Here is what's under the hood.
+* **Framework:** React Native + Expo (v54.0.31)
+* **Real-time:** Firebase Realtime Database
+* **Animations:** Reanimated 2 (Fluid 60 FPS)
+* **Design:** Custom HSL-based palette & Glassmorphism
+</details>
 
-* **Core:** React Native + Expo
-* **Backend:** Firebase Realtime Database
-* **Animations:** Reanimated 2
-* **Audio:** Expo AV
+<br/>
+
+<div align="center">
+
+*Designed by Alle-0*
+
+</div>
