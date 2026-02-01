@@ -89,13 +89,13 @@ export const THEMES = {
         id: 'ghiaccio',
         label: 'Ghiaccio',
         colors: {
-            accent: '#abd9f8ff',
+            accent: '#abd9f8',
             accentWeak: 'rgba(224, 242, 254, 0.25)',
-            background: ['#2d667eff', '#09374eff', '#05283aff'],
+            background: ['#2d667e', '#09374e', '#05283a'],
             cardBg: 'rgba(224, 242, 254, 0.1)',
             cardBorder: 'rgba(224, 242, 254, 0.5)',
-            textPrimary: '#a6c9dfff',
-            particle: '#9cc3dbff',
+            textPrimary: '#a6c9df',
+            particle: '#9cc3db',
             particleEmoji: '❄️',
         },
         particleConfig: null,
@@ -251,7 +251,7 @@ export const THEMES = {
         colors: {
             accent: '#14b8a6', // Turchese chirurgico
             accentWeak: 'rgba(20, 184, 166, 0.15)',
-            background: ['#abababff', '#afaeaeff', '#777777ff'], // Grigio imbottito
+            background: ['#ababab', '#afaeae', '#777777'], // Grigio imbottito
             cardBg: 'rgba(20, 184, 166, 0.08)',
             cardBorder: 'rgba(20, 184, 166, 0.5)',
             textPrimary: '#0f766e', // Testo scuro per contrasto su background chiaro
@@ -479,11 +479,10 @@ export const AVATAR_FRAMES = {
 };
 
 export const ThemeProvider = ({ children }) => {
-    const [currentTheme, setCurrentTheme] = useState(THEMES.default); // Default
-    const [animationsEnabled, setAnimationsEnabled] = useState(true); // [NEW] Animation Toggle
-
     // [NEW] Web-specific theme overrides for better visibility
-    const getThemeWithOverrides = (theme) => {
+    const getThemeWithOverrides = (inputTheme) => {
+        if (!inputTheme) return THEMES.default;
+
         if (Platform.OS === 'web') {
             const webOverrides = {
                 default: { background: ['#231d16', '#1a1815', '#141210'] }, // Lightened
@@ -491,25 +490,28 @@ export const ThemeProvider = ({ children }) => {
                 lucifero: { background: ['#1a0c04', '#3d1a08', '#5a0e0e'] },
                 leviatano: { background: ['#0a1229', '#1e3a8a', '#2e2a6e'] },
                 assenzio: { background: ['#0a1f1a', '#064e3b', '#1a633a'] },
-                ghiaccio: { background: ['#2d667eff', '#09374eff', '#05283aff'] },
+                ghiaccio: { background: ['#2d667e', '#09374e', '#05283a'] },
                 matrix: { background: ['#050a06', '#0a2a0e', '#050a06'] },
                 abisso: { background: ['#01030e', '#090d1a', '#000000'] },
                 cioccolato: { background: ['#381502', '#5f2b0c', '#1a0b05'] },
             };
 
-            const override = webOverrides[theme.id];
+            const override = webOverrides[inputTheme.id];
             if (override) {
                 return {
-                    ...theme,
+                    ...inputTheme,
                     colors: {
-                        ...theme.colors,
-                        ...override
+                        ...inputTheme.colors,
+                        ...override,
                     }
                 };
             }
         }
-        return theme;
+        return inputTheme;
     };
+
+    const [currentTheme, setCurrentTheme] = useState(() => getThemeWithOverrides(THEMES.default)); // [FIX] Immediate web override
+    const [animationsEnabled, setAnimationsEnabled] = useState(true); // [NEW] Animation Toggle
 
 
     useEffect(() => {

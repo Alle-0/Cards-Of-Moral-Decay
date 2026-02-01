@@ -94,10 +94,13 @@ export const translations = {
         cancel_btn: "ANNULLA",
         farewell_btn: "ADDIO",
         toast_req_sent: "Richiesta inviata!",
-        toast_req_sent: "Richiesta inviata!",
         toast_id_copied: "ID copiato!",
-        share_btn: "CONDIVIDI", // [NEW]
-        share_msg: "Unisciti a me su Cards of Moral Decay! Il mio ID amico è: %{id}\nEntra online: https://cards-of-moral-decay.web.app", // [NEW]
+        share_btn: "CONDIVIDI",
+        share_msg: "Unisciti a me su Cards of Moral Decay! Il mio ID amico è: %{id}\nEntra online: https://carte-vs-umani.web.app/?invite=%{id}",
+        share_room_msg: "Unisciti alla mia partita su Cards of Moral Decay!\nCodice: %{code}\nEntra subito: https://carte-vs-umani.web.app/?room=%{code}&invite=%{id}",
+        toast_room_link_copied: "Link stanza copiato!",
+        room_joined_success: "Ti sei unito alla partita!",
+        toast_auto_friend: "Ti sei unito alla banda di %{name}!",
 
         // LOBBY / IDENTITY
         who_are_you: "CHI SEI?",
@@ -233,6 +236,7 @@ export const translations = {
         select_x_cards: "SELEZIONA %{count} CARTE",
         final_leaderboard: "CLASSIFICA FINALE",
         winner_summary: "Ha dominato la partita con %{points} punti.",
+        no_other_players: "Nessun altro giocatore",
         waiting_restart_msg: "In attesa che il creatore inizi una nuova partita...",
         dominus_label: "Dominus:",
         select_card_placeholder: "Scegli una carta...",
@@ -256,7 +260,7 @@ export const translations = {
         logout_btn: "Disconnetti",
         rules_cat: "REGOLE",
         manual_sub: "Manuale",
-        copy_code_action: "COPIA CODICE",
+        copy_code_action: "CONDIVIDI LINK",
         leave_room_action: "ABBANDONA STANZA",
         info_privacy_link: "Info, Privacy & Donazioni",
         version_label: "Versione",
@@ -284,6 +288,7 @@ export const translations = {
         joker_desc: "Ti verrà data una delle carte migliori per questo turno e verrà posizionata come ultima nella tua mano.",
         joker_warning: "La prima carta della tua mano verrà eliminata.",
         joker_confirm_btn: "CONFERMA",
+        joker_not_found: "Il Robot non ha trovato risposte migliori per questa carta.",
 
         // BRIBE
         bribe_title: "CORRUZIONE",
@@ -544,10 +549,13 @@ export const translations = {
         cancel_btn: "CANCEL",
         farewell_btn: "FAREWELL",
         toast_req_sent: "Request sent!",
-        toast_req_sent: "Request sent!",
         toast_id_copied: "ID copied!",
-        share_btn: "SHARE", // [NEW]
-        share_msg: "Join me on Cards of Moral Decay! My Friend ID is: %{id}\nOnline here: https://cards-of-moral-decay.web.app", // [NEW]
+        share_btn: "SHARE",
+        share_msg: "Join me on Cards of Moral Decay! My Friend ID is: %{id}\nOnline here: https://carte-vs-umani.web.app/?invite=%{id}",
+        share_room_msg: "Join my game on Cards of Moral Decay!\nCode: %{code}\nJoin now: https://carte-vs-umani.web.app/?room=%{code}&invite=%{id}",
+        toast_room_link_copied: "Room link copied!",
+        room_joined_success: "You joined the game!",
+        toast_auto_friend: "You joined %{name}'s gang!",
 
         // LOBBY / IDENTITY
         who_are_you: "WHO ARE YOU?",
@@ -683,6 +691,7 @@ export const translations = {
         select_x_cards: "SELECT %{count} CARDS",
         final_leaderboard: "FINAL LEADERBOARD",
         winner_summary: "Dominated the match with %{points} points.",
+        no_other_players: "No other players",
         waiting_restart_msg: "Waiting for the creator to start a new game...",
         dominus_label: "Dominus:",
         select_card_placeholder: "Pick a card...",
@@ -706,7 +715,7 @@ export const translations = {
         logout_btn: "Logout",
         rules_cat: "RULES",
         manual_sub: "Manual",
-        copy_code_action: "COPY CODE",
+        copy_code_action: "SHARE LINK",
         leave_room_action: "LEAVE ROOM",
         info_privacy_link: "Info, Privacy & Donations",
         version_label: "Version",
@@ -734,6 +743,7 @@ export const translations = {
         joker_desc: "You will be given one of the best cards for this turn and it will be placed at the end of your hand.",
         joker_warning: "The first card of your hand will be removed.",
         joker_confirm_btn: "CONFIRM",
+        joker_not_found: "The Robot didn't find any best answers for this card.",
 
         // BRIBE
         bribe_title: "BRIBE",

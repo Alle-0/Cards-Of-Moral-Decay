@@ -135,7 +135,10 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
             )}
 
 
-            <Animated.View style={[styles.drawer, animatedStyle]}>
+            <Animated.View
+                style={[styles.drawer, animatedStyle]}
+                pointerEvents={visible ? 'auto' : 'none'}
+            >
                 <View style={styles.header}>
                     <Text style={[styles.title, { color: theme.colors.accent, fontFamily: 'Cinzel-Bold' }]}>
                         {t('leaderboard_title')}

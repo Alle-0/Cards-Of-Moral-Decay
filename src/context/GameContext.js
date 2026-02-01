@@ -497,12 +497,21 @@ export const GameProvider = ({ children }) => {
                     const oldLang = GameDataService.language;
                     if (forcedLang) GameDataService.setLanguage(forcedLang);
 
-                    const cardsInHand = new Set();
+                    const excludedCards = new Set();
+                    // 1. Hands
                     Object.values(room.giocatori || {}).forEach(p => {
-                        (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) cardsInHand.add(text); });
+                        (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
                     });
+                    // 2. Currently in deck
+                    (room.whiteDeck || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
+                    // 3. Played cards
+                    Object.values(room.carteGiocate || {}).forEach(cards => {
+                        const arr = Array.isArray(cards) ? cards : [cards];
+                        arr.forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
+                    });
+
                     const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }).carteBianche;
-                    const availableCards = allWhite.filter(c => !cardsInHand.has(c));
+                    const availableCards = allWhite.filter(c => !excludedCards.has(c.trim()));
                     room.whiteDeck = [...(room.whiteDeck || []), ...shuffleArray(availableCards)];
 
                     if (forcedLang) GameDataService.setLanguage(oldLang);
@@ -536,10 +545,16 @@ export const GameProvider = ({ children }) => {
                 const index = (player.carte || []).findIndex(c => (typeof c === 'string' ? c : c?.testo || '').trim() === (cardText || '').trim());
                 if (index > -1) { player.carte.splice(index, 1); player.hasDiscarded = true; }
                 if (!room.whiteDeck || room.whiteDeck.length === 0) {
-                    const cardsInHand = new Set();
-                    Object.values(room.giocatori || {}).forEach(p => { (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) cardsInHand.add(text); }); });
-                    const availableCards = GameDataService.getCarteBianche().filter(c => !cardsInHand.has(c));
-                    room.whiteDeck = [...(room.whiteDeck || []), ...shuffleArray(availableCards)];
+                    const excludedCards = new Set();
+                    Object.values(room.giocatori || {}).forEach(p => { (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); }); });
+                    Object.values(room.carteGiocate || {}).forEach(cards => {
+                        const arr = Array.isArray(cards) ? cards : [cards];
+                        arr.forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
+                    });
+
+                    const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }).carteBianche;
+                    const availableCards = allWhite.filter(c => !excludedCards.has(c.trim()));
+                    room.whiteDeck = shuffleArray(availableCards);
                 }
                 while ((player.carte || []).length < 10 && room.whiteDeck && room.whiteDeck.length > 0) { player.carte.push(room.whiteDeck.pop()); }
                 return dehydrateRoom(room);
@@ -548,46 +563,66 @@ export const GameProvider = ({ children }) => {
     };
 
     const useAIJoker = async () => {
-        if (!roomCode || !user || !roomData) return;
+        if (!roomCode || !user || !roomData) return false;
         try {
+            let success = false;
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
                 const player = room.giocatori[user.name];
                 if (!player || (player.jokers || 0) <= 0) return dehydrateRoom(room);
-                if (player.carte && player.carte.length > 0) player.carte.shift();
+
+                const excludedCards = new Set();
+                // - Hands
+                Object.values(room.giocatori || {}).forEach(p => {
+                    (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
+                });
+                // - Played cards
+                Object.values(room.carteGiocate || {}).forEach(cards => {
+                    const arr = Array.isArray(cards) ? cards : [cards];
+                    arr.forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
+                });
+
                 const blackCard = room.cartaNera;
+                let newCard = null;
+
+                // 2. Try best answers ONLY [STRICT MODE]
                 if (blackCard && blackCard.bestAnswers && blackCard.bestAnswers.length > 0) {
-                    const cardsInHand = new Set();
-                    Object.values(room.giocatori || {}).forEach(p => { (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) cardsInHand.add(text); }); });
-                    const availableBestAnswers = blackCard.bestAnswers.filter(ans => !cardsInHand.has(ans));
-                    let newCard;
+                    const availableBestAnswers = blackCard.bestAnswers.filter(ans => !excludedCards.has(ans.trim()));
                     if (availableBestAnswers.length > 0) {
                         newCard = availableBestAnswers[Math.floor(Math.random() * availableBestAnswers.length)];
-                        if (room.whiteDeck) room.whiteDeck = room.whiteDeck.filter(c => (typeof c === 'string' ? c : c?.testo) !== newCard);
+                        // Remove from deck if it was there
+                        if (room.whiteDeck) {
+                            room.whiteDeck = room.whiteDeck.filter(c => {
+                                const text = typeof c === 'string' ? c : c?.testo;
+                                return text?.trim() !== newCard?.trim();
+                            });
+                        }
                     }
-                    if (!newCard && (!room.whiteDeck || room.whiteDeck.length === 0)) {
-                        const anyAvailable = GameDataService.getCarteBianche().filter(c => !cardsInHand.has(c));
-                        if (anyAvailable.length > 0) newCard = anyAvailable[Math.floor(Math.random() * anyAvailable.length)];
-                    } else if (!newCard && room.whiteDeck && room.whiteDeck.length > 0) {
-                        newCard = room.whiteDeck.pop();
-                    }
-                    if (newCard) { player.carte.push(newCard); player.jokers = (player.jokers || 0) - 1; }
-                } else {
-                    let fallbackCard;
-                    if (room.whiteDeck && room.whiteDeck.length > 0) fallbackCard = room.whiteDeck.pop();
-                    else {
-                        const cardsInHand = new Set();
-                        Object.values(room.giocatori || {}).forEach(p => { (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) cardsInHand.add(text); }); });
-                        const anyAvailable = GameDataService.getCarteBianche().filter(c => !cardsInHand.has(c));
-                        if (anyAvailable.length > 0) fallbackCard = anyAvailable[Math.floor(Math.random() * anyAvailable.length)];
-                    }
-                    if (fallbackCard) { player.carte.push(fallbackCard); player.jokers = (player.jokers || 0) - 1; }
                 }
-                while ((player.carte || []).length < 10 && room.whiteDeck && room.whiteDeck.length > 0) { player.carte.push(room.whiteDeck.pop()); }
+
+                // 3. Apply changes ONLY if a best answer was found
+                if (newCard) {
+                    // Remove the first card (shifting) only on success
+                    if (player.carte && player.carte.length > 0) player.carte.shift();
+
+                    player.carte.push(newCard);
+                    player.jokers = (player.jokers || 0) - 1;
+
+                    // Keep hand full
+                    while ((player.carte || []).length < 10 && room.whiteDeck && room.whiteDeck.length > 0) {
+                        player.carte.push(room.whiteDeck.pop());
+                    }
+                    success = true;
+                }
+
                 return dehydrateRoom(room);
             });
-        } catch (e) { console.error(e); }
+            return success;
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
     };
 
     const forceReveal = async () => {

@@ -46,16 +46,16 @@ const PaymentResultModal = ({ visible, result, onClose }) => {
 
                     {/* TITOLO */}
                     <Text style={[styles.title, { color: isSuccess ? '#d4af37' : '#ef4444' }]}>
-                        {isSuccess ? t('payment_success_title') : t('payment_failed_title')}
+                        {result.title || (isSuccess ? t('payment_success_title') : t('payment_failed_title'))}
                     </Text>
 
                     {/* DESCRIZIONE */}
                     <Text style={[styles.message, { color: theme.colors.textPrimary }]}>
-                        {isSuccess
+                        {result.message || (isSuccess
                             ? (result.type === 'dark_pack'
                                 ? t('payment_dark_pack_msg')
                                 : t('payment_dc_msg', { amount: result.amount }))
-                            : `${t('payment_error')} ${result.error}`
+                            : `${t('payment_error')} ${result.error}`)
                         }
                     </Text>
 

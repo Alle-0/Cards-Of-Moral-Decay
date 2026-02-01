@@ -27,15 +27,17 @@ const RoomItem = ({ roomName, playerCount, state, onJoin, creatorName }) => {
         >
             <View style={styles.leftContent}>
                 <View style={{ marginRight: 8 }}>
-                    <DoorClosedIcon size={28} color="#e69d65" />
+                    <DoorClosedIcon size={20} color="#e69d65" />
                 </View>
                 <Text style={styles.code}>{displayCode}</Text>
-                <View style={{ width: 15 }} />
+                <View style={{ width: 12 }} />
 
                 <View style={{ marginRight: 5 }}>
-                    <PeopleIcon size={20} color="#7a76e3" />
+                    <PeopleIcon size={16} color="#7a76e3" />
                 </View>
-                <Text style={styles.playerCount}>{playerCount} • {creatorName}</Text>
+                <Text style={[styles.playerCount, { flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">
+                    {playerCount} • {creatorName}
+                </Text>
             </View>
 
             <View style={[styles.badge, { backgroundColor: badgeBg }]}>
@@ -61,6 +63,8 @@ const styles = StyleSheet.create({
     leftContent: {
         flexDirection: 'row',
         alignItems: 'center',
+        flex: 1,
+        marginRight: 10,
     },
     code: {
         fontFamily: 'Outfit',
@@ -75,13 +79,14 @@ const styles = StyleSheet.create({
         color: '#ccc',
     },
     badge: {
-        paddingHorizontal: 14,
-        paddingVertical: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
         borderRadius: 20,
+        marginLeft: 4,
     },
     badgeText: {
         fontFamily: 'Outfit',
-        fontSize: 13,
+        fontSize: 11,
         fontWeight: 'bold',
         textTransform: 'none',
     }

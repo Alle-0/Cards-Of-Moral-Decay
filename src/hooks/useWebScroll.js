@@ -20,6 +20,7 @@ export const useWebScroll = (horizontal = false) => {
         let startY;
         let scrollLeft;
         let scrollTop;
+        let observer = null;
 
         const handleMouseDown = (e) => {
             if (!scrollEl) return;
@@ -31,11 +32,15 @@ export const useWebScroll = (horizontal = false) => {
             scrollTop = scrollEl.scrollTop;
             scrollEl.style.cursor = 'grabbing';
             document.body.style.userSelect = 'none'; // Lock globally
+            document.body.style.cursor = 'grabbing';
         };
 
         const handleMouseUp = () => {
             isDown = false;
-            if (scrollEl) scrollEl.style.cursor = 'grab';
+            if (scrollEl) {
+                scrollEl.classList.remove('active');
+                scrollEl.style.cursor = 'grab';
+            }
             document.body.style.userSelect = '';
             document.body.style.cursor = '';
         };
@@ -56,14 +61,35 @@ export const useWebScroll = (horizontal = false) => {
         };
 
         const cleanup = () => {
+            if (observer) {
+                observer.disconnect();
+            }
             if (scrollEl) {
                 scrollEl.removeEventListener('mousedown', handleMouseDown);
                 scrollEl.style.cursor = '';
-                scrollEl.style.overflow = '';
+                // Don't clear overflow here as it might be needed by the component
             }
             // Cleanup global listeners
             document.removeEventListener('mouseup', handleMouseUp);
             document.removeEventListener('mousemove', handleMouseMove);
+        };
+
+        const maintainStyles = (el) => {
+            if (!el) return;
+            const targetOverflow = horizontal ? 'auto' : 'hidden'; // Basic overflow logic
+            const targetOverflowY = horizontal ? 'hidden' : 'auto';
+
+            // Use a more specific check to avoid infinite loop with observer
+            const currentStyle = el.style.overflow;
+            if (horizontal && el.style.overflowX !== 'auto') {
+                el.style.overflowX = 'auto';
+            }
+            if (!horizontal && el.style.overflowY !== 'auto') {
+                el.style.overflowY = 'auto';
+            }
+            if (el.style.cursor !== (isDown ? 'grabbing' : 'grab')) {
+                el.style.cursor = isDown ? 'grabbing' : 'grab';
+            }
         };
 
         const attachListeners = () => {
@@ -73,6 +99,8 @@ export const useWebScroll = (horizontal = false) => {
             let el = node;
             if (node.getScrollableNode) {
                 el = node.getScrollableNode();
+            } else if (node.getInnerViewNode) {
+                el = node.getInnerViewNode();
             } else if (node instanceof HTMLElement) {
                 el = node;
             }
@@ -81,9 +109,18 @@ export const useWebScroll = (horizontal = false) => {
 
             scrollEl = el;
 
-            // Critical
-            scrollEl.style.overflow = horizontal ? 'auto hidden' : 'hidden auto';
-            scrollEl.style.cursor = 'grab';
+            // Maintain styles immediately
+            maintainStyles(scrollEl);
+
+            // [NEW] Use MutationObserver to protect styles against external overwrites
+            observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        maintainStyles(scrollEl);
+                    }
+                });
+            });
+            observer.observe(scrollEl, { attributes: true });
 
             scrollEl.addEventListener('mousedown', handleMouseDown);
 
@@ -98,7 +135,7 @@ export const useWebScroll = (horizontal = false) => {
         let retries = 0;
         const attempt = () => {
             if (attachListeners()) return;
-            if (retries < 5) {
+            if (retries < 10) { // Increased retries
                 retries++;
                 setTimeout(attempt, 200);
             }

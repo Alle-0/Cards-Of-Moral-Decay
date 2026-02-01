@@ -339,7 +339,7 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
     );
 });
 
-const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled, onPlay, jokers = 0, onAIJoker, onDiscard, isPlaying, hasDiscarded, onBackgroundPress, onBribe, skin, balance = 0 }) => { // [NEW] balance
+const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled, onPlay, jokers = 0, onAIJoker, onDiscard, isPlaying, hasDiscarded, onBackgroundPress, onBribe, skin, balance = 0, isSmallScreen }) => { // [NEW] balance, isSmallScreen
     const { theme } = useTheme();
     const { t } = useLanguage();
     const scrollRef = useWebScroll(false); // Vertical drag
@@ -377,22 +377,27 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
 
     return (
         <Animated.View
-            style={[styles.container, handAnimatedStyle, { overflow: isPlaying ? 'visible' : 'hidden' }]}
+            style={[styles.container, handAnimatedStyle]}
             onLayout={onLayout}
         >
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <CardsIcon size={34} color={theme.colors.textPrimary || '#fff'} />
+                    <CardsIcon size={isSmallScreen ? 28 : 34} color={theme.colors.textPrimary || '#fff'} />
                     <View style={{ width: 10 }} />
                     <View>
-                        <Text style={[styles.label, { color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', marginBottom: 0 }]}>
+                        <Text style={[styles.label, {
+                            color: theme.colors.textPrimary,
+                            fontFamily: 'Cinzel-Bold',
+                            marginBottom: 0,
+                            fontSize: isSmallScreen ? 12 : 14
+                        }]}>
                             {t('hand_label', { defaultValue: 'La Tua Mano' })}
                         </Text>
                         {maxSelection > 1 && (
                             <Text style={{
                                 color: theme.colors.accent,
                                 fontFamily: 'Outfit-Bold',
-                                fontSize: 10,
+                                fontSize: isSmallScreen ? 8 : 10,
                                 marginTop: 2,
                                 letterSpacing: 0.5
                             }}>
@@ -407,27 +412,26 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
                 {/* [NEW] Action Buttons Container */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, position: 'absolute', right: 20 }}>
 
-
                     {/* Bribe Button */}
                     {onBribe && (
                         <PremiumIconButton
-                            icon={<DirtyCashIcon size={30} color="#FFD700" />}
+                            icon={<DirtyCashIcon size={isSmallScreen ? 24 : 30} color="#FFD700" />}
                             onPress={onBribe}
                             style={{ backgroundColor: 'transparent', opacity: disabled ? 0.4 : 1 }}
                             disabled={disabled}
-                            size={40}
+                            size={isSmallScreen ? 34 : 40}
                         />
                     )}
 
                     {/* AI Joker Button */}
                     <PremiumIconButton
-                        icon={<RobotIcon size={30} color="#FFD700" />}
+                        icon={<RobotIcon size={isSmallScreen ? 24 : 30} color="#FFD700" />}
                         onPress={onAIJoker}
                         badge={jokers > 0 ? jokers : null}
                         badgeStyle={{ backgroundColor: '#FFD700', borderColor: '#000', borderWidth: 1.5 }}
                         disabled={disabled || jokers === 0}
                         style={{ opacity: disabled ? 0.4 : 1 }}
-                        size={40}
+                        size={isSmallScreen ? 34 : 40}
                     />
                 </View>
 
@@ -441,7 +445,7 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
                     ref={scrollRef}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={[styles.scrollContent, { flexGrow: 1 }]}
-                    style={{ flex: 1, overflow: isPlaying ? 'visible' : 'hidden' }}
+                    style={{ flex: 1 }}
                 >
                     <TouchableWithoutFeedback onPress={() => onBackgroundPress && onBackgroundPress()}>
                         <View
@@ -462,7 +466,7 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
                                         <Animated.View
                                             key={`${card}-${index}`}
                                             layout={LinearTransition.duration(200)}
-                                            style={{ width: '48%', height: 140 }}
+                                            style={{ width: '48%', height: isSmallScreen ? 120 : 140 }}
                                         >
                                             <CardItem
                                                 text={card}
@@ -536,7 +540,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 20,
-        marginBottom: 15,
+        marginBottom: 8, // was 15
     },
     label: {
         fontSize: 14,
@@ -596,7 +600,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        rowGap: 35, // Increased logic gap for pills
+        rowGap: 30, // was 35
         columnGap: 10,
     },
     cardWrapper: {

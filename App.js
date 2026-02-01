@@ -37,7 +37,7 @@ import { APP_VERSION } from './src/constants/Config';
 import PaymentResultModal from './src/components/PaymentResultModal'; // [NEW] Global Feedback
 import PwaInstallPrompt from './src/components/PwaInstallPrompt'; // [NEW] PWA Install Prompt
 import { useLanguage } from './src/context/LanguageContext';
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -123,16 +123,46 @@ const AppContent = () => {
     const [isFastSplash, setIsFastSplash] = useState(false);
     const [needsUpdate, setNeedsUpdate] = useState(false);
 
-    // [NEW] Global Stripe Feedback
+    // [NEW] Referral / Invite / Room Join logic
+    const { addFriendDirectly } = useAuth();
+    const { joinRoom } = useGame();
+    const [pendingInvite, setPendingInvite] = useState(null);
+    const [pendingRoom, setPendingRoom] = useState(null);
+    const [linkProcessed, setLinkProcessed] = useState(false);
     const [paymentResult, setPaymentResult] = useState({ visible: false, result: null });
 
     useEffect(() => {
+        const handleUrl = (url) => {
+            if (!url) return;
+            try {
+                // 1. Friend Invite Param
+                const inviteParam = url.split('invite=')[1]?.split('&')[0];
+                if (inviteParam) {
+                    const decoded = decodeURIComponent(inviteParam);
+                    console.log(`[DEEP LINK] Found invite from: ${decoded}`);
+                    setPendingInvite(decoded);
+                }
+
+                // 2. Room Join Param
+                const roomParam = url.split('room=')[1]?.split('&')[0];
+                if (roomParam) {
+                    const decodedRoom = decodeURIComponent(roomParam);
+                    console.log(`[DEEP LINK] Found room code: ${decodedRoom}`);
+                    setPendingRoom(decodedRoom);
+                }
+            } catch (e) {
+                console.error("Link parsing error", e);
+            }
+        };
+
         if (Platform.OS === 'web') {
             document.title = "Cards of Moral Decay";
 
+            // Web: Check initial URL
+            handleUrl(window.location.href);
+
             const params = new URLSearchParams(window.location.search);
             const paymentStatus = params.get('payment');
-
             if (paymentStatus === 'success') {
                 const type = params.get('type');
                 const amount = params.get('amount');
@@ -154,11 +184,57 @@ const AppContent = () => {
                     result: { success: false, error: t('payment_cancelled') }
                 });
                 SoundService.play('error');
-                // Clean URL
                 window.history.replaceState({}, '', window.location.origin + window.location.pathname);
             }
+        } else {
+            // Native: Check initial URL and listen for changes
+            Linking.getInitialURL().then(handleUrl);
+            const subscription = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+            return () => subscription.remove();
         }
-    }, [user]);
+    }, [t]);
+
+    // Process deep links (Invite/Room) once user is ready
+    useEffect(() => {
+        if (user && (pendingInvite || pendingRoom) && !linkProcessed) {
+            const processDeepLink = async () => {
+                setLinkProcessed(true); // Prevent multi-trigger
+                let message = "";
+
+                try {
+                    // 1. Join Room if present
+                    if (pendingRoom) {
+                        console.log(`[DEEP LINK] Auto-joining room: ${pendingRoom}`);
+                        await joinRoom(pendingRoom);
+                    }
+
+                    // 2. Add Friend if present
+                    if (pendingInvite) {
+                        console.log(`[DEEP LINK] Adding friend: ${pendingInvite}`);
+                        const success = await addFriendDirectly(pendingInvite);
+                        if (success) {
+                            message = t('toast_auto_friend', { name: pendingInvite });
+                        }
+                    }
+
+                    if (message || pendingRoom) {
+                        setPaymentResult({
+                            visible: true,
+                            result: {
+                                success: true,
+                                title: t('welcome_title'),
+                                message: message || (pendingRoom ? t('room_joined_success', { defaultValue: "Sei entrato nella stanza!" }) : "")
+                            }
+                        });
+                        SoundService.play('success');
+                    }
+                } catch (e) {
+                    console.error("Deep link processing failed", e);
+                }
+            };
+            processDeepLink();
+        }
+    }, [user, pendingInvite, pendingRoom, linkProcessed]);
 
     useEffect(() => {
         // Check versioning

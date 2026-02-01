@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler } from 'react-native';
+import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler, Share } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { ZoomIn, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut, withRepeat, interpolate } from 'react-native-reanimated';
 
@@ -28,6 +28,8 @@ import AvatarWithFrame from '../components/AvatarWithFrame'; // [NEW]
 import RoundWinnerModal from '../components/RoundWinnerModal'; // [NEW]
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService'; // [FIX] Import added
+import * as Clipboard from 'expo-clipboard';
+import ToastNotification from '../components/ToastNotification';
 import EfficientBlurView from '../components/EfficientBlurView'; // [NEW]
 import { CardsIcon, CheckIcon, ThornsIcon, LockIcon, RankIcon, SettingsIcon, RobotIcon, DirtyCashIcon, ScaleIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon } from '../components/Icons';
 import ShopScreen from './ShopScreen'; // [NEW]
@@ -144,6 +146,8 @@ const GameScreen = ({ onStartLoading }) => {
     const { theme } = useTheme();
     const { bribe: payBribe, awardMoney, logout, user: authUser } = useAuth(); // [NEW] get authUser for skins
     const { t } = useLanguage(); // [NEW]
+    const { height: screenHeight } = useWindowDimensions();
+    const isSmallScreen = screenHeight < 700;
 
 
 
@@ -165,6 +169,7 @@ const GameScreen = ({ onStartLoading }) => {
     const [isAnimatingPlay, setIsAnimatingPlay] = useState(false);
     const [optimisticWinner, setOptimisticWinner] = useState(null); // [NEW] Optimistic UI
     const [tempPlayedText, setTempPlayedText] = useState(null);
+    const [toast, setToast] = useState({ visible: false, message: '', type: 'success' }); // [NEW]
 
     // [NEW] Screen Shake Animation
     const shakeTranslateX = useSharedValue(0);
@@ -528,6 +533,27 @@ const GameScreen = ({ onStartLoading }) => {
         }
     };
 
+    // [NEW] Share Room Logic
+    const handleShareRoom = async () => {
+        const shareUrl = `https://carte-vs-umani.web.app/?room=${roomCode}&invite=${user?.username}`;
+        const message = t('share_room_msg', { code: roomCode, id: user?.username });
+
+        if (Platform.OS === 'web') {
+            await Clipboard.setStringAsync(shareUrl);
+            setToast({ visible: true, message: t('toast_room_link_copied'), type: 'success' });
+            SoundService.play('success');
+        } else {
+            try {
+                await Share.share({
+                    message: message,
+                    url: shareUrl, // iOS support
+                });
+            } catch (error) {
+                console.error("Share error", error);
+            }
+        }
+    };
+
     // Prepare Player List for Drawer
     const playersList = Object.keys(roomData?.giocatori || {}).map(name => ({
         name,
@@ -541,31 +567,40 @@ const GameScreen = ({ onStartLoading }) => {
 
     // --- RENDER HELPERS ---
     const renderHeader = () => (
-        <View style={styles.header} pointerEvents="box-none">
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Text style={[styles.headerLogo, { color: theme.colors.accent }]}>MORAL DECAY</Text>
-                <View style={styles.codePill}>
-                    <Text style={styles.codeText}>#{roomCode}</Text>
-                </View>
+        <View style={[styles.header, {
+            paddingTop: isSmallScreen ? (Platform.OS === 'ios' ? 35 : 10) : 50
+        }]} pointerEvents="box-none">
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: isSmallScreen ? 6 : 10 }}>
+                <Text style={[styles.headerLogo, {
+                    color: theme.colors?.accent || '#ffce6a',
+                    fontSize: isSmallScreen ? 14 : 16
+                }]}>MORAL DECAY</Text>
+                <PremiumPressable
+                    onPress={handleShareRoom}
+                    style={[styles.codePill, isSmallScreen && { paddingVertical: 3, paddingHorizontal: 6 }]}
+                    rippleColor="rgba(255,255,255,0.1)"
+                >
+                    <Text style={[styles.codeText, isSmallScreen && { fontSize: 10 }]}>#{roomCode}</Text>
+                </PremiumPressable>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: isSmallScreen ? 5 : 15 }}>
 
                 <PremiumIconButton
                     icon={
-                        <RankIcon size={24} color={theme.colors.accent} />
+                        <RankIcon size={isSmallScreen ? 20 : 24} color={theme.colors?.accent || '#ffce6a'} />
                     }
                     onPress={() => setShowLeaderboard(true)}
                     badge={playersList.length > 0 ? playersList.length : null}
-                    size={48}
+                    size={isSmallScreen ? 40 : 48}
                     hitSlop={30}
                 />
 
                 <PremiumIconButton
                     icon={
-                        <SettingsIcon size={26} color={theme.colors.accent} />
+                        <SettingsIcon size={isSmallScreen ? 22 : 26} color={theme.colors?.accent || '#ffce6a'} />
                     }
                     onPress={handleSettingsPress}
-                    size={48}
+                    size={isSmallScreen ? 40 : 48}
                     hitSlop={30}
                 />
             </View>
@@ -574,7 +609,7 @@ const GameScreen = ({ onStartLoading }) => {
 
     const renderLobbyContent = () => (
         <View style={styles.lobbyCenter}>
-            <Animated.Text style={[styles.lobbyTitle, { color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold' }, pulsatingStyle]}>
+            <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'Cinzel-Bold' }, pulsatingStyle]}>
                 {t('waiting_title')}
             </Animated.Text>
 
@@ -767,8 +802,9 @@ const GameScreen = ({ onStartLoading }) => {
                 playerCount={playersList.length}
                 players={roomData?.giocatori} // [NEW] Pass players for skins
                 optimisticWinner={optimisticWinner} // [NEW]
+                isSmallScreen={isSmallScreen}
                 style={[
-                    !isDominus ? { flex: 0.7, maxHeight: '45%' } : { flex: 1 },
+                    !isDominus ? { flex: isSmallScreen ? 0.6 : 0.7, maxHeight: isSmallScreen ? '40%' : '45%' } : { flex: 1 },
                     Platform.OS === 'web' && !isDominus ? { maxHeight: '40%' } : {}
                 ]}
             />
@@ -877,16 +913,21 @@ const GameScreen = ({ onStartLoading }) => {
                                             );
                                         })()}
 
-                                        <Text style={{
-                                            color: skin ? skin.styles.text : '#222',
-                                            fontFamily: skin?.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') :
-                                                skin?.id === 'omissis' ? (Platform.OS === 'ios' ? 'Courier-Bold' : 'serif') : 'Outfit',
-                                            fontWeight: skin?.id === 'mida' ? 'bold' : 'bold',
-                                            fontSize: 18,
-                                            textAlign: 'left',
-                                            width: '100%',
-                                            lineHeight: 24
-                                        }}>
+                                        <Text
+                                            style={{
+                                                color: skin ? skin.styles.text : '#222',
+                                                fontFamily: skin?.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') :
+                                                    skin?.id === 'omissis' ? (Platform.OS === 'ios' ? 'Courier-Bold' : 'serif') : 'Outfit',
+                                                fontWeight: 'bold',
+                                                fontSize: 18,
+                                                textAlign: 'left',
+                                                width: '100%',
+                                                // lineHeight: 24 // Removed for auto-scaling
+                                            }}
+                                            numberOfLines={10}
+                                            adjustsFontSizeToFit={true}
+                                            minimumFontScale={0.4}
+                                        >
                                             {playedText}
                                         </Text>
 
@@ -921,7 +962,7 @@ const GameScreen = ({ onStartLoading }) => {
 
 
             {!isDominus && (
-                <View style={[styles.footer, { flex: 1.3 }]}>
+                <View style={[styles.footer, { flex: isSmallScreen ? 1.4 : 1.3 }]}>
                     <PlayerHand
                         hand={myHand}
                         selectedCards={selectedCards}
@@ -942,6 +983,7 @@ const GameScreen = ({ onStartLoading }) => {
                         hasDiscarded={!!roomData?.giocatori?.[user.name]?.hasDiscarded}
                         skin={CARD_SKINS[authUser?.activeCardSkin || 'classic'] || CARD_SKINS.classic}
                         balance={authUser?.balance || 0}
+                        isSmallScreen={isSmallScreen}
                     />
                 </View>
             )}
@@ -1166,13 +1208,30 @@ const GameScreen = ({ onStartLoading }) => {
                 {/* [NEW] AI Joker Animation Overlay */}
                 <JokerOverlay
                     visible={isAnimatingJoker}
-                    onFinish={() => {
+                    onFinish={async () => {
                         setIsAnimatingJoker(false);
-                        useAIJoker(); // Trigger logic after animation
+                        const success = await useAIJoker(); // Trigger logic after animation
+
+                        if (!success) {
+                            SoundService.play('error');
+                            HapticsService.trigger('error');
+                            setModalConfig({
+                                visible: true,
+                                title: t('robot_icon_label') || "AI",
+                                message: t('joker_not_found'),
+                                singleButton: true,
+                                confirmText: t('default_confirm')
+                            });
+                        }
                     }}
                 />
 
-                {/* [FIX] Dominus Overlay moved here to cover full screen (including Header) */}
+                <ToastNotification
+                    visible={toast.visible}
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+                />
 
             </PremiumBackground>
         </Animated.View>

@@ -124,15 +124,34 @@ const VictoryScreen = ({ winnerName }) => {
                 {/* Leaderboard Section */}
                 <Animated.View entering={FadeIn.delay(1200)} style={styles.leaderboardContainer}>
                     <Text style={[styles.leaderboardTitle, { color: '#888' }]}>{t('final_leaderboard')}</Text>
-                    {Object.entries(roomData?.punti || {})
-                        .sort(([, scoreA], [, scoreB]) => scoreB - scoreA)
-                        .filter(([name]) => name !== winnerName && roomData?.giocatori?.[name])
-                        .map(([name, score], index) => {
+                    {(() => {
+                        const sortedPlayers = Object.entries(roomData?.punti || {})
+                            .filter(([name]) => roomData?.giocatori?.[name])
+                            .sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
+
+                        // [NEW] Filter out the absolute winner and the absolute loser
+                        const middlePlayers = sortedPlayers.filter(([name]) => name !== winnerName && name !== loserName);
+
+                        // [NEW] Take only the first 3 (which are positions 2, 3, 4)
+                        const displayedMiddle = middlePlayers.slice(0, 3);
+
+                        if (displayedMiddle.length === 0) {
+                            return (
+                                <View style={{ paddingVertical: 10, alignItems: 'center' }}>
+                                    <Text style={{ color: '#555', fontFamily: 'Outfit', fontSize: 12 }}>{t('no_other_players') || 'Nessun altro grado criminale assegnato'}</Text>
+                                </View>
+                            );
+                        }
+
+                        return displayedMiddle.map(([name, score]) => {
                             const player = roomData?.giocatori?.[name];
+                            // Re-calculate rank index based on original sorted list
+                            const originalIndex = sortedPlayers.findIndex(([pName]) => pName === name);
+
                             return (
                                 <View key={name} style={styles.playerRow}>
                                     <View style={styles.rankBadge}>
-                                        <Text style={styles.rankText}>#{index + 2}</Text>
+                                        <Text style={styles.rankText}>#{originalIndex + 1}</Text>
                                     </View>
                                     <View style={styles.smallAvatar}>
                                         <LocalAvatar
@@ -149,7 +168,8 @@ const VictoryScreen = ({ winnerName }) => {
                                     <Text style={[styles.playerScore, { color: theme.colors.accent }]}>{score} {t('points_short')}</Text>
                                 </View>
                             );
-                        })}
+                        });
+                    })()}
                 </Animated.View>
 
                 {/* [REDESIGNED] Award della Vergogna Section */}

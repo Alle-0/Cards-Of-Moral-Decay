@@ -73,7 +73,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
                 >
                     <Text style={{
                         fontFamily: 'Cinzel-Bold',
-                        color: theme.colors.accent,
+                        color: theme.colors?.accent || '#ffce6a',
                         fontSize: 26,
                         textAlign: 'center'
                     }}>
@@ -81,7 +81,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
                     </Text>
                     <Text style={{
                         fontFamily: 'Cinzel-Bold',
-                        color: theme.colors.accent,
+                        color: theme.colors?.accent || '#ffce6a',
                         fontSize: 16,
                         textAlign: 'center',
                         opacity: 0.7,
@@ -129,7 +129,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
                 >
                     <Text style={{
                         fontFamily: 'Cinzel-Bold',
-                        color: theme.colors.accent,
+                        color: theme.colors?.accent || '#ffce6a',
                         fontSize: 24,
                         textAlign: 'center',
                         letterSpacing: 1,
@@ -170,13 +170,18 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
                         <Text style={{ fontSize: 9, fontFamily: 'Cinzel-Bold', color: '#000' }}>{t('dominus_choice_label')}</Text>
                     </View>
 
-                    <Text style={{
-                        color: '#111',
-                        fontFamily: 'Outfit-Bold',
-                        fontSize: 24,
-                        textAlign: 'center',
-                        lineHeight: 34
-                    }}>
+                    <Text
+                        style={{
+                            color: '#111',
+                            fontFamily: 'Outfit-Bold',
+                            fontSize: 24,
+                            textAlign: 'center',
+                            // lineHeight: 34 // Removed for auto-scaling
+                        }}
+                        numberOfLines={8}
+                        adjustsFontSizeToFit={true}
+                        minimumFontScale={0.5}
+                    >
                         {getWinningCardsText()}
                     </Text>
 

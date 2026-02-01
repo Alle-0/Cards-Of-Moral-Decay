@@ -480,6 +480,30 @@ export const AuthProvider = ({ children }) => {
         await update(ref(db), updates);
     }, [user]);
 
+    const addFriendDirectly = useCallback(async (friendUsername) => {
+        if (!user || !user.username) return false;
+        const target = friendUsername.trim();
+        if (target === user.username) return false;
+
+        // Check if target exists
+        const targetRef = ref(db, `users/${target}`);
+        const snapshot = await get(targetRef);
+        if (!snapshot.exists()) return false;
+
+        // Check if already friends
+        if (user.friends && user.friends[target]) return true;
+
+        // Atomic update: Mutual friendship
+        const updates = {};
+        updates[`users/${user.username}/friends/${target}`] = true;
+        updates[`users/${target}/friends/${user.username}`] = true;
+        // Also clear any pending request if it existed
+        updates[`users/${user.username}/friendRequests/${target}`] = null;
+
+        await update(ref(db), updates);
+        return true;
+    }, [user]);
+
     // Memoize the context value to avoid re-rendering consumers unless necessary
     const value = React.useMemo(() => ({
         user,
@@ -503,7 +527,8 @@ export const AuthProvider = ({ children }) => {
         sendFriendRequest,
         acceptFriendRequest,
         rejectFriendRequest,
-        removeFriend
+        removeFriend,
+        addFriendDirectly
     }), [
         user,
         loading,
@@ -526,7 +551,8 @@ export const AuthProvider = ({ children }) => {
         sendFriendRequest,
         acceptFriendRequest,
         rejectFriendRequest,
-        removeFriend
+        removeFriend,
+        addFriendDirectly
     ]);
 
     return (

@@ -2,7 +2,8 @@
   "expo": {
     "name": "Cards of Moral Decay",
     "slug": "cards-of-moral-decay",
-    "version": "3.5.0",
+    "scheme": "comd",
+    "version": "3.6.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +16,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.cardsofmoraldecay"
     },
     "android": {
       "hardwareAccelerated": true,
@@ -24,7 +26,24 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.cardsofmoraldecay",
-      "versionCode": 9
+      "versionCode": 10,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "carte-vs-umani.web.app",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",

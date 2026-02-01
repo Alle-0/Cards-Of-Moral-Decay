@@ -10,18 +10,25 @@ import { CrownIcon } from './Icons';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers, t }) => (
-    <View style={styles.blackCard}>
+const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers, t, isSmallScreen }) => (
+    <View style={[styles.blackCard, isSmallScreen && { paddingHorizontal: 5 }]}>
         {/* Texture removed per user request "solo sulle bianche" */}
         <Text style={styles.headerTitle}>{t('black_card_label')}</Text>
         <View style={styles.cardInternal}>
-            <Text style={styles.blackCardText}>{text}</Text>
+            <Text
+                style={[styles.blackCardText, isSmallScreen && { fontSize: 18 }]}
+                numberOfLines={isSmallScreen ? 6 : 10}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.5}
+            >
+                {text}
+            </Text>
 
-            <View style={styles.cardFooter}>
+            <View style={[styles.cardFooter, isSmallScreen && { marginTop: 10 }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <CrownIcon size={24} color="#ffd36a" />
+                    <CrownIcon size={isSmallScreen ? 18 : 24} color="#ffd36a" />
                     <View style={{ width: 6 }} />
-                    <Text style={styles.footerText}>{t('dominus_label')} <Text style={{ color: '#ffd36a' }}>{dominusName || '?'}</Text></Text>
+                    <Text style={[styles.footerText, isSmallScreen && { fontSize: 10 }]}>{t('dominus_label')} <Text style={{ color: '#ffd36a' }}>{dominusName || '?'}</Text></Text>
                 </View>
                 {answerCount < totalAnswers && (
                     <Text style={styles.footerText}>{t('answers_label')} <Text style={{ color: '#ffd36a' }}>{answerCount}/{totalAnswers}</Text></Text>
@@ -144,7 +151,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                         padding: 15,
                         justifyContent: 'center',
                         alignItems: 'center',
-                        backgroundColor: skin ? skin.styles.bg : '#d1d1d1ff',
+                        backgroundColor: skin?.styles?.bg ? skin.styles.bg : '#d1d1d1',
                         borderRadius: 15,
                         overflow: 'hidden' // [NEW] Ensure texture stays inside
                     }}>
@@ -178,7 +185,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                         <Text
                             style={[
                                 styles.whiteCardText,
-                                skin ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {}
+                                skin?.styles?.text ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {}
                             ]}
                             numberOfLines={10}
                             adjustsFontSizeToFit={true}
@@ -218,7 +225,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
     );
 });
 
-const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnswers, t }) => {
+const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnswers, t, isSmallScreen }) => {
     // Local state for the card content being currently displayed
     const [displayedCard, setDisplayedCard] = useState(blackCard);
     const rotateX = useSharedValue(0);
@@ -253,19 +260,20 @@ const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnsw
     }));
 
     return (
-        <Animated.View style={[{ width: '100%', alignItems: 'center', marginBottom: 20, zIndex: 10 }, animatedStyle]}>
+        <Animated.View style={[{ width: '100%', alignItems: 'center', marginBottom: isSmallScreen ? 10 : 20, zIndex: 10 }, animatedStyle]}>
             <BlackCard
-                text={displayedCard?.testo || displayedCard || t('select_card_placeholder')}
+                text={displayedCard?.testo || displayedCard || t?.('select_card_placeholder') || 'Seleziona una carta'}
                 dominusName={dominusName}
                 answerCount={answerCount}
                 totalAnswers={totalAnswers}
                 t={t}
+                isSmallScreen={isSmallScreen}
             />
         </Animated.View>
     );
 });
 
-const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, status, dominusName, playerCount, onSkip, onReveal, showPlayedArea = true, style, players, optimisticWinner }) => { // [NEW] optimisticWinner
+const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, status, dominusName, playerCount, onSkip, onReveal, showPlayedArea = true, style, players, optimisticWinner, isSmallScreen }) => { // [NEW] optimisticWinner, isSmallScreen
     const { theme } = useTheme();
     const { t } = useLanguage();
     const { user } = useAuth(); // [NEW] Get user for skins
@@ -295,6 +303,7 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
                 answerCount={answerCount}
                 totalAnswers={totalAnswers}
                 t={t}
+                isSmallScreen={isSmallScreen}
             />
 
             <ScrollView
@@ -329,7 +338,7 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
                                         onSelect={() => setSelectedCandidate(prev => prev === player ? null : player)}
                                         onPickWinner={() => onSelectWinner(player)}
                                         // [FIX] Personal Skins: Always use MY skin, not the player's skin
-                                        skin={CARD_SKINS[user?.activeCardSkin] || null}
+                                        skin={user?.activeCardSkin ? (CARD_SKINS[user.activeCardSkin] || CARD_SKINS.classic) : CARD_SKINS.classic}
                                         t={t}
                                     />
                                 ))}
@@ -374,14 +383,14 @@ const styles = StyleSheet.create({
     headerTitle: {
         color: '#ccc',
         fontFamily: 'Cinzel-Bold', // or Outfit
-        marginTop: 30,
-        marginBottom: 10,
-        fontSize: 14,
+        marginTop: 10, // Adjusted globally, was 30
+        marginBottom: 8,
+        fontSize: 12,
         letterSpacing: 1
     },
     cardInternal: {
         width: '100%', // Fits within parent padding (20px each side)
-        minHeight: 220, // Slightly taller for better aspect
+        minHeight: 180, // Reduced from 220
         backgroundColor: '#1a1a1a',
         borderRadius: 20,
         padding: 20,
@@ -482,7 +491,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textAlign: 'center', // Center text
         fontFamily: 'Outfit', // Use theme font
-        lineHeight: 26
+        // lineHeight: 26 // Removed to allow auto-scaling without cutoff
     },
     dominusBtn: {
         flexDirection: 'row',
