@@ -8,9 +8,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/icon.png",
+      "image": null,
       "resizeMode": "contain",
-      "backgroundColor": "#1a1510"
+      "backgroundColor": "#ffce6a"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -55,7 +55,7 @@
       "shortName": "Cards of Moral Decay",
       "splash": {
         "image": null,
-        "backgroundColor": "#1a1510",
+        "backgroundColor": "#ffce6a",
         "resizeMode": "contain"
       }
     },
