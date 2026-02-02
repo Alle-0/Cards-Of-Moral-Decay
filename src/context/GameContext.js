@@ -84,18 +84,35 @@ export const GameProvider = ({ children }) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 const now = Date.now();
-                const STALE_MS = 12 * 60 * 60 * 1000;
+                const STALE_MS = 8 * 60 * 60 * 1000; // 8 Hours
 
                 const roomList = Object.keys(data).map(key => {
-                    // [NEW] Cleanup stale rooms (> 12h)
-                    const roomTs = data[key].timestamp || 0;
-                    if (roomTs > 0 && now - roomTs > STALE_MS) {
-                        console.log(`[CLEANUP] Deleting stale room ${key}`);
-                        set(ref(db, `stanze/${key}`), null);
-                        return null;
+                    const room = data[key];
+                    const players = Object.values(room.giocatori || {});
+
+                    if (players.length > 0) {
+                        const isAnyoneOnline = players.some(p => p.online === true);
+                        if (!isAnyoneOnline) {
+                            // Find the most recent activity among all players
+                            const lastSeenTimes = players.map(p => p.lastSeen || 0);
+                            const mostRecentActivity = Math.max(...lastSeenTimes, room.timestamp || 0);
+
+                            if (now - mostRecentActivity > STALE_MS) {
+                                console.log(`[CLEANUP] Deleting offline room ${key}`);
+                                set(ref(db, `stanze/${key}`), null);
+                                return null;
+                            }
+                        }
+                    } else {
+                        // Empty rooms are deleted based on creation timestamp
+                        const roomTs = room.timestamp || 0;
+                        if (now - roomTs > STALE_MS) {
+                            set(ref(db, `stanze/${key}`), null);
+                            return null;
+                        }
                     }
 
-                    const hydrated = hydrateRoom(data[key]);
+                    const hydrated = hydrateRoom(room);
                     return {
                         id: key,
                         ...hydrated

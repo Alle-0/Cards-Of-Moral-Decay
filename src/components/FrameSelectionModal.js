@@ -78,64 +78,66 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                     }}
                 >
                     {/* ... mapped items ... */}
-                    {Object.values(AVATAR_FRAMES).map((frame, index) => {
-                        const isSelected = (user?.activeFrame || 'basic') === frame.id;
-                        const isUnlocked = frame.id === 'basic' || user?.unlockedFrames?.[frame.id] || parseFloat(frame.price) === 0;
+                    {Object.values(AVATAR_FRAMES)
+                        .filter(frame => frame.id !== 'capo' || user?.username === 'Alle')
+                        .map((frame, index) => {
+                            const isSelected = (user?.activeFrame || 'basic') === frame.id;
+                            const isUnlocked = frame.id === 'basic' || user?.unlockedFrames?.[frame.id] || parseFloat(frame.price) === 0;
 
-                        return (
-                            <Animated.View
-                                key={frame.id}
-                                entering={FadeInDown.delay(index * 50).springify()}
-                                style={{ width: itemWidth }}
-                            >
-                                <PremiumPressable
-                                    onPress={isUnlocked ? () => handleEquip(frame.id) : null}
-                                    disabled={!isUnlocked}
-                                    enableSound={isUnlocked}
-                                    scaleDown={isUnlocked ? 0.95 : 1}
-                                    style={[
-                                        styles.frameCard,
-                                        {
-                                            paddingVertical: 15,
-                                            backgroundColor: 'rgba(255,255,255,0.03)',
-                                            borderColor: isSelected ? theme.colors.accent : (isUnlocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)'),
-                                            borderWidth: isSelected ? 2 : 1,
-                                            opacity: isUnlocked ? 1 : 0.5
-                                        }
-                                    ]}
-                                    contentContainerStyle={{
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        width: '100%',
-                                    }}
+                            return (
+                                <Animated.View
+                                    key={frame.id}
+                                    entering={FadeInDown.delay(index * 50).springify()}
+                                    style={{ width: itemWidth }}
                                 >
-                                    {/* Frame Preview using standardized component */}
-                                    <AvatarWithFrame
-                                        avatar={user?.avatar || 'user'}
-                                        frameId={frame.id}
-                                        size={60}
-                                        style={{ marginBottom: 10 }}
-                                    />
-
-                                    <Text
-                                        numberOfLines={1}
+                                    <PremiumPressable
+                                        onPress={isUnlocked ? () => handleEquip(frame.id) : null}
+                                        disabled={!isUnlocked}
+                                        enableSound={isUnlocked}
+                                        scaleDown={isUnlocked ? 0.95 : 1}
                                         style={[
-                                            styles.frameLabel,
-                                            { color: isSelected ? theme.colors.accent : '#a1a1aa' }
+                                            styles.frameCard,
+                                            {
+                                                paddingVertical: 15,
+                                                backgroundColor: 'rgba(255,255,255,0.03)',
+                                                borderColor: isSelected ? theme.colors.accent : (isUnlocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)'),
+                                                borderWidth: isSelected ? 2 : 1,
+                                                opacity: isUnlocked ? 1 : 0.5
+                                            }
                                         ]}
+                                        contentContainerStyle={{
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: '100%',
+                                        }}
                                     >
-                                        {t('frame_' + frame.id, frame.label)}
-                                    </Text>
+                                        {/* Frame Preview using standardized component */}
+                                        <AvatarWithFrame
+                                            avatar={user?.avatar || 'user'}
+                                            frameId={frame.id}
+                                            size={60}
+                                            style={{ marginBottom: 10 }}
+                                        />
 
-                                    {!isUnlocked && (
-                                        <View style={{ position: 'absolute', top: 5, right: 5 }}>
-                                            <LockIcon size={12} color="#666" />
-                                        </View>
-                                    )}
-                                </PremiumPressable>
-                            </Animated.View>
-                        );
-                    })}
+                                        <Text
+                                            numberOfLines={1}
+                                            style={[
+                                                styles.frameLabel,
+                                                { color: isSelected ? theme.colors.accent : '#a1a1aa' }
+                                            ]}
+                                        >
+                                            {t('frame_' + frame.id, frame.label)}
+                                        </Text>
+
+                                        {!isUnlocked && (
+                                            <View style={{ position: 'absolute', top: 5, right: 5 }}>
+                                                <LockIcon size={12} color="#666" />
+                                            </View>
+                                        )}
+                                    </PremiumPressable>
+                                </Animated.View>
+                            );
+                        })}
                 </Pressable>
             </ScrollView>
 

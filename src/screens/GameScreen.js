@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler, Share } from 'react-native';
+import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler, Share, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut, withRepeat, interpolate, withSequence } from 'react-native-reanimated';
 
@@ -798,6 +798,13 @@ const GameScreen = ({ onStartLoading }) => {
                         title={t('start_game_btn')}
                         haptic="heavy"
                         onPress={() => {
+                            if (playersList.length < 3) {
+                                Alert.alert(
+                                    t('attention') || 'ATTENZIONE',
+                                    t('min_players_error')
+                                );
+                                return;
+                            }
                             AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
                             startGame(targetPoints);
                         }}

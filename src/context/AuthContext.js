@@ -45,8 +45,8 @@ export const AuthProvider = ({ children }) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
 
-                // [NEW] Special override for Alle
-                if (user?.username?.toLowerCase() === 'alle') {
+                // [NEW] Special override for Alle (Case-Sensitive)
+                if (user?.username === 'Alle') {
                     data.rank = "Capo supremo";
                     data.unlockedFrames = { ...data.unlockedFrames, capo: true };
                     // Force equip the exclusive frame if no frame is active or it's the basic one

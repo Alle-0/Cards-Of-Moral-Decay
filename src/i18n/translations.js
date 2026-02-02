@@ -60,7 +60,7 @@ export const translations = {
         rule_dynamics_2: "I partecipanti giocano una Carta Bianca dalla propria mano per completare il testo.",
         rule_dynamics_3: "Le proposte vengono mostrate al Dominus in forma anonima.",
         rule_dynamics_4: "Il Dominus valuta e decreta la combinazione vincente.",
-        rule_dynamics_5: "Il vincitore riceve un punto e diventa il nuovo Dominus.",
+        rule_dynamics_5: "Il vincitore riceve un punto e il ruolo di Dominus passa al giocatore successivo.",
         rule_ranks_title: "GRADI CRIMINALI",
         rule_economy_title: "ECONOMIA (DC)",
         rule_economy_1: "• Vittoria Round: +50 DC",
@@ -229,7 +229,9 @@ export const translations = {
 
         // GAME LOBBY
         waiting_host_msg: "In attesa che l'host inizi la partita...",
-        select_points_title: "SELEZIONA I PUNTI PER VINCERE",
+        min_players_error: "Servono almeno 3 giocatori per iniziare!",
+
+        // MODALSselect_points_title: "SELEZIONA I PUNTI PER VINCERE",
         points_label: "Punti",
         start_game_btn: "INIZIA PARTITA",
         waiting_title: "IN ATTESA...",
@@ -521,7 +523,7 @@ export const translations = {
         rule_dynamics_2: "Participants play a White Card from their hand to complete the text.",
         rule_dynamics_3: "Proposals are shown to the Dominus anonymously.",
         rule_dynamics_4: "The Dominus evaluates and decrees the winning combination.",
-        rule_dynamics_5: "The winner receives a point and becomes the new Dominus.",
+        rule_dynamics_5: "The winner receives a point and the Dominus role passes to the next player.",
         rule_ranks_title: "CRIMINAL RANKS",
         rule_economy_title: "ECONOMY (DC)",
         rule_economy_1: "• Round Win: +50 DC",
@@ -690,6 +692,7 @@ export const translations = {
 
         // GAME LOBBY
         waiting_host_msg: "Waiting for host to start the game...",
+        min_players_error: "Need at least 3 players to start!",
         select_points_title: "SELECT POINTS TO WIN",
         points_label: "Points",
         start_game_btn: "START GAME",
