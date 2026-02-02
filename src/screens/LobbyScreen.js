@@ -12,7 +12,8 @@ import Animated, {
     Easing
 } from 'react-native-reanimated';
 import { useGame } from '../context/GameContext';
-import { useAuth, RANK_COLORS } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { RANK_COLORS, RANK_THRESHOLDS } from '../constants/Ranks';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import SoundService from '../services/SoundService';
@@ -62,9 +63,8 @@ const LobbyScreen = ({ onStartLoading }) => {
     const [roomToJoin, setRoomToJoin] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // [NEW] Local State for Identity (un-synced until "Avanti")
     const [localPlayerName, setLocalPlayerName] = useState(authUser?.nickname || authUser?.username || '');
-    const [localAvatar, setLocalAvatar] = useState(authUser?.avatar || 'User');
+    const [localAvatar, setLocalAvatar] = useState(authUser?.avatar || authUser?.avatar || MYSTERY_AVATAR);
 
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
@@ -73,21 +73,44 @@ const LobbyScreen = ({ onStartLoading }) => {
     const [showExitModal, setShowExitModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-    // [NEW] Filter rooms: My rooms OR Friends' rooms
+    // [NEW] Filter rooms: My rooms, Friends' rooms, OR Public Lobbies
     const validRooms = (availableRooms || []).filter(room => {
-        // [FIX] Use username for creation check - Match against canonical ID
-        const isMyRoom = (room.creatorUsername && room.creatorUsername === authUser?.username) || room.creatore === authUser?.username;
+        if (!room) return false;
 
-        // [FIX] Checks if the room creator (by Username ID) is in my friends list
-        // Fallback to 'creatore' (nickname) only if creatorUsername is missing (legacy rooms)
-        // This ensures friendship works even if user changes nickname, provided new rooms use creatorUsername
-        const creatorId = room.creatorUsername || room.creatore;
-        const isFriendRoom = authUser?.friends && (
-            authUser.friends[creatorId] ||
-            authUser.friends[creatorId?.replace(/\./g, '_')]
+        const myUsername = (authUser?.username || '').toLowerCase().trim();
+        const myNickname = (authUser?.nickname || '').toLowerCase().trim();
+
+        const roomCreatorId = (room.creatorUsername || '').toLowerCase().trim();
+        const roomCreatore = (room.creatore || '').toLowerCase().trim();
+
+        // 1. Is it mine?
+        const isMyRoom =
+            (roomCreatorId !== '' && (roomCreatorId === myUsername || roomCreatorId === myNickname)) ||
+            (roomCreatore !== '' && (roomCreatore === myUsername || roomCreatore === myNickname));
+
+        // 2. Is it a friend's?
+        const creatorId = (roomCreatorId || roomCreatore).toLowerCase();
+        const friendsList = authUser?.friends || {};
+        const myFriendsKeys = Object.keys(friendsList).map(k => k.toLowerCase());
+
+        const isFriendRoom = creatorId !== '' && (
+            myFriendsKeys.includes(creatorId) ||
+            myFriendsKeys.includes(creatorId.replace(/\./g, '_'))
         );
 
-        return isMyRoom || isFriendRoom;
+        // 3. Am I already a participant?
+        const participants = room.giocatori ? Object.keys(room.giocatori).map(p => p.toLowerCase()) : [];
+        const amIIn = participants.includes(myUsername) || participants.includes(myNickname);
+
+        // 4. Fallback: If it's a LOBBY, let's keep it visible for now to avoid "ghosting" 
+        // especially during testing or if friending is one-way/pending.
+        const isPublicLobby = room.statoPartita === 'LOBBY';
+
+        const keep = isMyRoom || isFriendRoom || amIIn;
+
+
+
+        return keep;
     });
 
     // Custom Back Handler
@@ -231,19 +254,50 @@ const LobbyScreen = ({ onStartLoading }) => {
                     <StatusBar hidden={true} />
 
                     {/* [NEW] Rank Badge Top-Left (Ultra Clean Version) */}
-                    {authUser?.rank && (
-                        <Animated.View
-                            entering={FadeIn.delay(500)}
-                            style={styles.rankBadgeContainer}
-                        >
-                            <View style={[styles.rankBadgeGradient, { borderColor: (RANK_COLORS[authUser.rank] || '#888') + '66', borderWidth: 1 }]}>
-                                <View style={[styles.rankVerticalBar, { backgroundColor: RANK_COLORS[authUser.rank] || '#888' }]} />
-                                <Text style={[styles.rankTextLabel, { color: (RANK_COLORS[authUser.rank] || '#888') }]}>
-                                    {t(getRankKey(authUser.rank))}
-                                </Text>
-                            </View>
-                        </Animated.View>
-                    )}
+                    {authUser?.rank && (() => {
+                        const score = authUser.totalScore || 0;
+                        const currentRankIdx = RANK_THRESHOLDS.findIndex(r => r.name === authUser.rank);
+                        const nextRank = currentRankIdx !== -1 && currentRankIdx < RANK_THRESHOLDS.length - 1 ? RANK_THRESHOLDS[currentRankIdx + 1] : null;
+                        const currentRankMin = RANK_THRESHOLDS[currentRankIdx]?.min || 0;
+
+                        let progress = 0;
+                        let pointsLeft = 0;
+                        if (nextRank) {
+                            const range = nextRank.min - currentRankMin;
+                            const relativeScore = score - currentRankMin;
+                            progress = Math.min(Math.max(relativeScore / range, 0), 1);
+                            pointsLeft = Math.max(nextRank.min - score, 0);
+                        }
+
+                        return (
+                            <Animated.View
+                                entering={FadeIn.delay(500)}
+                                style={styles.rankBadgeContainer}
+                            >
+                                <View style={[styles.rankBadgeGradient, { borderColor: (RANK_COLORS[authUser.rank] || '#888') + '44', borderWidth: 1 }]}>
+                                    <View style={[styles.rankVerticalBar, { backgroundColor: RANK_COLORS[authUser.rank] || '#888' }]} />
+                                    <View>
+                                        <Text style={[styles.rankTextLabel, { color: (RANK_COLORS[authUser.rank] || '#888') }]}>
+                                            {t(getRankKey(authUser.rank))}
+                                        </Text>
+
+                                        {nextRank && (
+                                            <View style={{ marginTop: 4 }}>
+                                                {/* Global Progress Bar Background */}
+                                                <View style={{ height: 3, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden', width: '80%' }}>
+                                                    {/* Active Progress */}
+                                                    <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: RANK_COLORS[authUser.rank] || '#888', borderRadius: 2 }} />
+                                                </View>
+                                                <Text style={{ fontSize: 8, color: '#666', marginTop: 2, fontFamily: 'Outfit', includeFontPadding: false }}>
+                                                    {t('next_rank_points', { points: pointsLeft.toLocaleString(), rank: t(getRankKey(nextRank.name)) })}
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                            </Animated.View>
+                        );
+                    })()}
 
                     <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 100 + insets.bottom }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                         {currentStep === STEPS.IDENTITY && (
@@ -441,7 +495,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                     />
                 </View>
             </PremiumModal>
-        </View >
+        </View>
     );
 };
 
@@ -503,6 +557,8 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 2,
         textShadowOffset: { width: 0, height: 0 },
+        includeFontPadding: false,
+        textAlignVertical: 'center',
     }
 });
 

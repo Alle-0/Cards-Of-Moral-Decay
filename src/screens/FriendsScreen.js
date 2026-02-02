@@ -15,6 +15,8 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { BASE_URL } from '../constants/Config';
+import NotificationService from '../services/NotificationService';
 
 const FriendsScreen = () => {
     const { theme } = useTheme();
@@ -38,6 +40,29 @@ const FriendsScreen = () => {
     const friendRequests = authUser?.friendRequests || {};
     const myUsername = authUser?.username;
 
+    // [NEW] Notification Listeners
+    useEffect(() => {
+        // Handle foreground notifications
+        const notificationListener = NotificationService.Notifications.addNotificationReceivedListener(notification => {
+            console.log("Notification Received!", notification);
+            // Optionally refresh or show specific toast
+            const title = notification.request.content.title;
+            const body = notification.request.content.body;
+            setToast({ visible: true, message: `${title}: ${body}`, type: 'info' });
+        });
+
+        // Handle interaction (tap)
+        const responseListener = NotificationService.Notifications.addNotificationResponseReceivedListener(response => {
+            console.log("Notification Tapped!", response);
+            // Verify if we are already here, maybe scroll to request section?
+        });
+
+        return () => {
+            notificationListener.remove();
+            responseListener.remove();
+        };
+    }, []);
+
     const handleSend = async () => {
         if (!friendInput.trim()) return;
         setLoading(true);
@@ -60,7 +85,7 @@ const FriendsScreen = () => {
     const shareMyId = async () => {
         try {
             await Share.share({
-                message: t('share_msg', { id: myUsername }),
+                message: t('share_msg', { id: myUsername, url: BASE_URL }),
             });
         } catch (error) {
             console.log(error);

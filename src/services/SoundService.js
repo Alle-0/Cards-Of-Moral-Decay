@@ -120,7 +120,6 @@ class SoundService {
             // but we can release them if needed. Usually, for simple sounds, 
             // letting them be GC'd is fine, or we can use a listener.
         } catch (error) {
-            console.log(`[SoundService] Could not play '${name}':`, error.message);
         }
     }
 

@@ -1,27 +1,34 @@
-import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Image, BackHandler } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View, Text, Image, BackHandler, ScrollView } from 'react-native';
 import Animated, { FadeIn, ZoomIn, SlideInDown } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth, RANK_COLORS } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { RANK_COLORS } from '../constants/Ranks';
 import { useGame } from '../context/GameContext';
 import PremiumButton from '../components/PremiumButton';
 import ConfettiSystem from '../components/ConfettiSystem';
 import SoundService from '../services/SoundService';
 import ElegantSplashScreen from '../components/ElegantSplashScreen';
 import LocalAvatar from '../components/LocalAvatar';
+import RewardPopup from '../components/RewardPopup';
 import { useLanguage } from '../context/LanguageContext';
 
 import * as Haptics from 'expo-haptics'; // [NEW]
 import { TrashIcon } from '../components/Icons';
 import AnalyticsService from '../services/AnalyticsService';
 
-const VictoryScreen = ({ winnerName }) => {
-    const { theme } = useTheme();
+const VictoryScreen = ({ winnerName, onExit }) => {
     const { user, awardMoney } = useAuth();
     const { roomData, isCreator, startGame, leaveRoom } = useGame();
     const { t } = useLanguage();
-    const [exiting, setExiting] = React.useState(false);
-    const confettiRef = useRef();
+    const { theme } = useTheme();
+
+    const [exiting, setExiting] = useState(false);
+    const [showRankUp, setShowRankUp] = useState(false);
+    const [initialRank, setInitialRank] = useState(user?.rank);
+    const [rewardAmount, setRewardAmount] = useState(0);
+    const [showReward, setShowReward] = useState(false);
+    const confettiRef = useRef(null);
 
     const winner = roomData?.giocatori?.[winnerName];
 
@@ -31,7 +38,14 @@ const VictoryScreen = ({ winnerName }) => {
         .sort(([, a], [, b]) => a - b);
 
     const potentialLosers = allScores.filter(([name]) => name !== winnerName);
-    const loser = potentialLosers.length > 0 ? potentialLosers[0] : null;
+
+    // [NEW] Better Tie-Handling: award ALL players with the minimum score
+    const minScore = potentialLosers.length > 0 ? potentialLosers[0][1] : 0;
+    const tiedLosers = potentialLosers.filter(([_, score]) => score === minScore);
+    const isPlayerAmongLosers = tiedLosers.some(([name]) => name === user?.username);
+
+    // Use the first one for representative UI display
+    const loser = tiedLosers.length > 0 ? tiedLosers[0] : null;
     const loserName = loser?.[0];
     const loserData = roomData?.giocatori?.[loserName];
 
@@ -46,7 +60,7 @@ const VictoryScreen = ({ winnerName }) => {
         }, 500);
 
         const timerShame = setTimeout(() => {
-            if (loserName) {
+            if (isPlayerAmongLosers) {
                 SoundService.play('pop'); // Extra punch for the shame award
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             }
@@ -54,19 +68,50 @@ const VictoryScreen = ({ winnerName }) => {
 
         // [LEGACY] Track winner event
         AnalyticsService.logGameWin(winnerName, roomData?.punti?.[winnerName] || 0);
+        const myUsername = user?.username || user?.name;
 
-        if (winnerName === user.name) {
-            awardMoney(250);
-        } else if (loserName === user.name) {
+        if (winnerName === myUsername) {
             awardMoney(150);
+            const timerReward = setTimeout(() => {
+                setRewardAmount(150);
+                setShowReward(true);
+            }, 800);
+            return () => {
+                clearTimeout(timer1);
+                clearTimeout(timerShame);
+                clearTimeout(timerReward);
+            };
+        } else if (isPlayerAmongLosers) {
+            awardMoney(100);
+            const timerReward = setTimeout(() => {
+                setRewardAmount(100);
+                setShowReward(true);
+            }, 2300); // Appear with the shame award zoom
+            return () => {
+                clearTimeout(timer1);
+                clearTimeout(timerShame);
+                clearTimeout(timerReward);
+            };
         }
 
         return () => {
             clearTimeout(timer1);
             clearTimeout(timerShame);
         };
-    }, [winnerName, loserName, user?.name]);
+    }, [winnerName, isPlayerAmongLosers, user?.name]);
 
+
+    useEffect(() => {
+        if (initialRank && user?.rank && user.rank !== initialRank && user.username.toLowerCase() !== 'alle') {
+            setShowRankUp(true);
+            SoundService.play('success');
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+    }, [user?.rank, initialRank]);
+
+    const handleRankUpClose = () => {
+        setShowRankUp(false);
+    };
 
     const handleRestart = () => {
         if (isCreator) {
@@ -86,161 +131,190 @@ const VictoryScreen = ({ winnerName }) => {
         <View style={styles.container}>
             <ConfettiSystem ref={confettiRef} />
 
-            <Animated.View
-                entering={FadeIn.delay(200).duration(800)}
-                style={styles.content}
+            <ScrollView
+                style={{ width: '100%' }}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
             >
-                <Animated.Text
-                    entering={SlideInDown.springify()}
-                    style={[styles.title, { color: theme.colors.accent }]}
-                >
-                    {t('winner_match')}
-                </Animated.Text>
-
                 <Animated.View
-                    entering={ZoomIn.delay(500).springify()}
-                    style={[styles.avatarContainer, { borderColor: theme.colors.accent }]}
+                    entering={FadeIn.delay(200).duration(800)}
+                    style={styles.content}
                 >
-                    <LocalAvatar
-                        size={138}
-                        seed={winner?.avatar?.startsWith('http') ? winner.avatar : (winner?.avatar || 'Winner')}
-                    />
-                </Animated.View>
+                    <Animated.Text
+                        entering={SlideInDown.springify()}
+                        style={[styles.title, { color: theme.colors.accent }]}
+                    >
+                        {t('winner_match')}
+                    </Animated.Text>
 
-                <Animated.Text
-                    entering={FadeIn.delay(800)}
-                    style={[styles.winnerName, { color: theme.colors.textPrimary }]}
-                >
-                    {winnerName}
-                </Animated.Text>
+                    <Animated.View
+                        entering={ZoomIn.delay(500).springify()}
+                        style={[styles.avatarContainer, { borderColor: theme.colors.accent }]}
+                    >
+                        <LocalAvatar
+                            size={138}
+                            seed={winner?.avatar?.startsWith('http') ? winner.avatar : (winner?.avatar || 'Winner')}
+                        />
+                    </Animated.View>
 
-                <Animated.Text
-                    entering={FadeIn.delay(1000)}
-                    style={styles.subtitle}
-                >
-                    {t('winner_summary', { points: roomData?.punti?.[winnerName] })}
-                </Animated.Text>
+                    <Animated.Text
+                        entering={FadeIn.delay(800)}
+                        style={[styles.winnerName, { color: theme.colors.textPrimary }]}
+                    >
+                        {winnerName}
+                    </Animated.Text>
 
-                {/* Leaderboard Section */}
-                <Animated.View entering={FadeIn.delay(1200)} style={styles.leaderboardContainer}>
-                    <Text style={[styles.leaderboardTitle, { color: '#888' }]}>{t('final_leaderboard')}</Text>
-                    {(() => {
-                        const sortedPlayers = Object.entries(roomData?.punti || {})
-                            .filter(([name]) => roomData?.giocatori?.[name])
-                            .sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
+                    <Animated.Text
+                        entering={FadeIn.delay(1000)}
+                        style={styles.subtitle}
+                    >
+                        {t('winner_summary', { points: roomData?.punti?.[winnerName] })}
+                    </Animated.Text>
 
-                        // [NEW] Filter out the absolute winner and the absolute loser
-                        const middlePlayers = sortedPlayers.filter(([name]) => name !== winnerName && name !== loserName);
+                    {/* Leaderboard Section */}
+                    <Animated.View entering={FadeIn.delay(1200)} style={styles.leaderboardContainer}>
+                        <Text style={[styles.leaderboardTitle, { color: '#888' }]}>{t('final_leaderboard')}</Text>
+                        {(() => {
+                            const sortedPlayers = Object.entries(roomData?.punti || {})
+                                .filter(([name]) => roomData?.giocatori?.[name])
+                                .sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
 
-                        // [NEW] Take only the first 3 (which are positions 2, 3, 4)
-                        const displayedMiddle = middlePlayers.slice(0, 3);
+                            // [NEW] Filter out the absolute winner and the absolute loser
+                            const middlePlayers = sortedPlayers.filter(([name]) => name !== winnerName && name !== loserName);
 
-                        if (displayedMiddle.length === 0) {
-                            return (
-                                <View style={{ paddingVertical: 10, alignItems: 'center' }}>
-                                    <Text style={{ color: '#555', fontFamily: 'Outfit', fontSize: 12 }}>{t('no_other_players') || 'Nessun altro grado criminale assegnato'}</Text>
-                                </View>
-                            );
-                        }
+                            // [NEW] Take only the first 3 (which are positions 2, 3, 4)
+                            const displayedMiddle = middlePlayers.slice(0, 3);
 
-                        return displayedMiddle.map(([name, score]) => {
-                            const player = roomData?.giocatori?.[name];
-                            // Re-calculate rank index based on original sorted list
-                            const originalIndex = sortedPlayers.findIndex(([pName]) => pName === name);
-
-                            return (
-                                <View key={name} style={styles.playerRow}>
-                                    <View style={styles.rankBadge}>
-                                        <Text style={styles.rankText}>#{originalIndex + 1}</Text>
+                            if (displayedMiddle.length === 0) {
+                                return (
+                                    <View style={{ paddingVertical: 10, alignItems: 'center' }}>
+                                        <Text style={{ color: '#555', fontFamily: 'Outfit', fontSize: 12 }}>{t('no_other_players') || 'Nessun altro grado criminale assegnato'}</Text>
                                     </View>
-                                    <View style={styles.smallAvatar}>
+                                );
+                            }
+
+                            return displayedMiddle.map(([name, score]) => {
+                                const player = roomData?.giocatori?.[name];
+                                // Re-calculate rank index based on original sorted list
+                                const originalIndex = sortedPlayers.findIndex(([pName]) => pName === name);
+
+                                return (
+                                    <View key={name} style={styles.playerRow}>
+                                        <View style={styles.rankBadge}>
+                                            <Text style={styles.rankText}>#{originalIndex + 1}</Text>
+                                        </View>
+                                        <View style={styles.smallAvatar}>
+                                            <LocalAvatar
+                                                size={30}
+                                                seed={player?.avatar?.startsWith('http') ? player.avatar : (player?.avatar || 'User')}
+                                            />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={[styles.playerName, { color: theme.colors.textPrimary }]}>{name}</Text>
+                                            <Text style={{ fontSize: 9, color: RANK_COLORS[player?.rank || 'Anima Candida'] || '#888', fontWeight: 'bold' }}>
+                                                {player?.rank ? t(`rank_${player.rank.toLowerCase().replace(/ /g, '_')}`, { defaultValue: player.rank }) : t('rank_anima_candida')}
+                                            </Text>
+                                        </View>
+                                        <Text style={[styles.playerScore, { color: theme.colors.accent }]}>{score} {t('points_short')}</Text>
+                                    </View>
+                                );
+                            });
+                        })()}
+                    </Animated.View>
+
+                    {/* [REDESIGNED] Award della Vergogna Section */}
+                    {loserName && (
+                        <Animated.View
+                            entering={ZoomIn.delay(2200).duration(600).springify()}
+                            style={[styles.shameContainer, { borderColor: '#d97706' }]}
+                        >
+                            <Text style={[styles.shameTitle, { color: '#d97706' }]}>🏆 {t('shame_award')}</Text>
+                            <View style={styles.shameRow}>
+                                <View style={{ marginRight: 20, position: 'relative' }}>
+                                    <View style={[styles.shameAvatarContainer, { borderColor: '#d97706', backgroundColor: '#1a1a1a' }]}>
                                         <LocalAvatar
-                                            size={30}
-                                            seed={player?.avatar?.startsWith('http') ? player.avatar : (player?.avatar || 'User')}
+                                            size={40}
+                                            seed={loserData?.avatar?.startsWith('http') ? loserData.avatar : (loserData?.avatar || 'Loser')}
                                         />
                                     </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={[styles.playerName, { color: theme.colors.textPrimary }]}>{name}</Text>
-                                        <Text style={{ fontSize: 9, color: RANK_COLORS[player?.rank || 'Anima Candida'] || '#888', fontWeight: 'bold' }}>
-                                            {player?.rank ? t(`rank_${player.rank.toLowerCase().replace(/ /g, '_')}`, { defaultValue: player.rank }) : t('rank_anima_candida')}
-                                        </Text>
-                                    </View>
-                                    <Text style={[styles.playerScore, { color: theme.colors.accent }]}>{score} {t('points_short')}</Text>
-                                </View>
-                            );
-                        });
-                    })()}
-                </Animated.View>
-
-                {/* [REDESIGNED] Award della Vergogna Section */}
-                {loserName && (
-                    <Animated.View
-                        entering={ZoomIn.delay(2200).duration(600).springify()}
-                        style={[styles.shameContainer, { borderColor: '#d97706' }]}
-                    >
-                        <Text style={[styles.shameTitle, { color: '#d97706' }]}>🏆 {t('shame_award')}</Text>
-                        <View style={styles.shameRow}>
-                            <View style={{ marginRight: 20, position: 'relative' }}>
-                                <View style={[styles.shameAvatarContainer, { borderColor: '#d97706', backgroundColor: '#1a1a1a' }]}>
-                                    <LocalAvatar
-                                        size={40}
-                                        seed={loserData?.avatar?.startsWith('http') ? loserData.avatar : (loserData?.avatar || 'Loser')}
-                                    />
-                                </View>
-                                {/* Trash icon badge over avatar */}
-                                <View style={[styles.shameIcon, { borderColor: '#d97706', width: 22, height: 22, borderRadius: 11, padding: 3 }]}>
-                                    <View style={{ transform: [{ rotate: '15deg' }] }}>
-                                        <TrashIcon size={14} color="#d97706" />
+                                    {/* Trash icon badge over avatar */}
+                                    <View style={[styles.shameIcon, { borderColor: '#d97706', width: 22, height: 22, borderRadius: 11, padding: 3 }]}>
+                                        <View style={{ transform: [{ rotate: '15deg' }] }}>
+                                            <TrashIcon size={14} color="#d97706" />
+                                        </View>
                                     </View>
                                 </View>
+                                <View style={styles.shameTextContainer}>
+                                    <Text style={[styles.loserName, { color: '#fff' }]}>{loserName}</Text>
+                                    <Text style={[styles.loserPoints, { color: '#d97706', opacity: 0.9 }]}>
+                                        {t('shame_award')} {t('shame_award_msg', { points: loser?.[1] })}
+                                    </Text>
+                                </View>
                             </View>
-                            <View style={styles.shameTextContainer}>
-                                <Text style={[styles.loserName, { color: '#fff' }]}>{loserName}</Text>
-                                <Text style={[styles.loserPoints, { color: '#d97706', opacity: 0.9 }]}>
-                                    {t('shame_award')} {t('shame_award_msg', { points: loser?.[1] })}
-                                </Text>
-                            </View>
-                        </View>
-                    </Animated.View>
-                )}
+                        </Animated.View>
+                    )}
 
-                {isCreator ? (
-                    <Animated.View entering={FadeIn.delay(1500)} style={{ width: '80%', marginTop: 10, gap: 10 }}>
-                        <PremiumButton
-                            title={t('play_again')}
-                            onPress={handleRestart}
-                        />
-                        <PremiumButton
-                            title={t('back_home')}
-                            variant="outline"
-                            enableSound={false}
-                            onPress={handleExit}
-                        />
-                    </Animated.View>
-                ) : (
-                    <Animated.View entering={FadeIn.delay(1500)} style={{ width: '80%', marginTop: 10, alignItems: 'center', gap: 20 }}>
-                        <Text style={[styles.waitingText, { color: '#e0e0e0', marginTop: 0, fontStyle: 'normal', textAlign: 'center' }]}>
-                            {t('waiting_restart_msg')}
-                        </Text>
-
-                        <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginVertical: 15 }}>
-                            <View style={{ flex: 1, height: 1, backgroundColor: '#444' }} />
-                            <Text style={{ marginHorizontal: 10, color: '#666', fontFamily: 'Outfit', fontSize: 12, textTransform: 'uppercase' }}>
-                                {t('or_divider')}
+                    {isCreator ? (
+                        <Animated.View entering={FadeIn.delay(1500)} style={{ width: '80%', marginTop: 20, gap: 10, paddingBottom: 40 }}>
+                            <PremiumButton
+                                title={t('play_again')}
+                                onPress={handleRestart}
+                            />
+                            <PremiumButton
+                                title={t('back_home')}
+                                variant="outline"
+                                enableSound={false}
+                                onPress={handleExit}
+                            />
+                        </Animated.View>
+                    ) : (
+                        <Animated.View entering={FadeIn.delay(1500)} style={{ width: '80%', marginTop: 20, alignItems: 'center', gap: 20, paddingBottom: 40 }}>
+                            <Text style={[styles.waitingText, { color: '#e0e0e0', marginTop: 0, fontStyle: 'normal', textAlign: 'center' }]}>
+                                {t('waiting_restart_msg')}
                             </Text>
-                            <View style={{ flex: 1, height: 1, backgroundColor: '#444' }} />
-                        </View>
 
+                            <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginVertical: 15 }}>
+                                <View style={{ flex: 1, height: 1, backgroundColor: '#444' }} />
+                                <Text style={{ marginHorizontal: 10, color: '#666', fontFamily: 'Outfit', fontSize: 12, textTransform: 'uppercase' }}>
+                                    {t('or_divider')}
+                                </Text>
+                                <View style={{ flex: 1, height: 1, backgroundColor: '#444' }} />
+                            </View>
+
+                            <PremiumButton
+                                title={t('back_home')}
+                                variant="outline"
+                                onPress={handleExit}
+                                enableSound={false}
+                                style={{ width: '100%' }}
+                            />
+                        </Animated.View>
+                    )}
+                </Animated.View>
+            </ScrollView>
+            {/* [NEW] Rank Up Celebration Overlay */}
+            {showRankUp && (
+                <View style={[StyleSheet.absoluteFill, { zIndex: 10000, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }]}>
+                    <Animated.View
+                        entering={ZoomIn.duration(800).springify()}
+                        style={{ alignItems: 'center' }}
+                    >
+                        <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 14, letterSpacing: 2 }}>{t('new_rank_title') || "NUOVO GRADO RAGGIUNTO"}</Text>
+                        <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 42, textAlign: 'center', marginVertical: 20 }}>{user.rank}</Text>
                         <PremiumButton
-                            title={t('back_home')}
-                            variant="outline"
-                            onPress={handleExit}
-                            enableSound={false}
-                            style={{ width: '100%' }}
+                            title={t('awesome_btn') || "ECCELLENTE"}
+                            onPress={handleRankUpClose}
+                            style={{ width: 220, height: 60 }}
                         />
                     </Animated.View>
-                )}
-            </Animated.View>
+                </View>
+            )}
+
+            <RewardPopup
+                amount={rewardAmount}
+                visible={showReward}
+                onFinish={() => setShowReward(false)}
+            />
         </View>
     );
 };
@@ -253,11 +327,15 @@ const styles = StyleSheet.create({
         zIndex: 100,
         backgroundColor: 'rgba(0,0,0,0.9)', // Slightly darker background
     },
+    scrollContent: {
+        flexGrow: 1,
+        alignItems: 'center',
+        paddingVertical: 20,
+    },
     content: {
         alignItems: 'center',
         width: '100%',
         paddingHorizontal: 20,
-        marginVertical: 40,
     },
     title: {
         fontFamily: 'Cinzel-Bold',

@@ -8,10 +8,15 @@ import AvatarWithFrame from './AvatarWithFrame';
 import EfficientBlurView from './EfficientBlurView';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import RewardPopup from './RewardPopup';
+import { useState } from 'react';
 
 const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
+    const { user } = useAuth();
+    const [showReward, setShowReward] = useState(false);
 
     useEffect(() => {
         if (visible) {
@@ -19,31 +24,42 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
             try {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } catch (error) {
-                console.log('Haptics failed', error);
             }
+
+            // Show reward animation if user is the winner
+            if (winnerInfo?.name === user?.username) {
+                const timer = setTimeout(() => setShowReward(true), 1500); // Appear with the card slam
+                return () => clearTimeout(timer);
+            }
+        } else {
+            setShowReward(false);
         }
-    }, [visible]);
+    }, [visible, winnerInfo?.name, user?.name]);
 
     if (!winnerInfo) return null;
 
     // Logic to extract winning cards text
     const getWinningCardsText = () => {
         const winningCards = winnerInfo.winningCards;
-        if (!winningCards) return "Carta non trovata";
+        if (!winningCards) return t('card_not_found') || "Carta non trovata";
 
-        if (Array.isArray(winningCards)) {
-            return winningCards.join(' / ');
+        // Filter out nulls if it's an array
+        const safeCards = Array.isArray(winningCards) ? winningCards.filter(Boolean) : winningCards;
+        if (Array.isArray(safeCards) && safeCards.length === 0) return t('card_not_found') || "Carta non trovata";
+
+        if (Array.isArray(safeCards)) {
+            return safeCards.join(' / ');
         }
 
-        if (typeof winningCards === 'object') {
-            return winningCards.text || Object.values(winningCards).join(' / ');
+        if (typeof safeCards === 'object') {
+            return safeCards.text || Object.values(safeCards).join(' / ');
         }
 
-        if (typeof winningCards === 'string') {
-            return winningCards;
+        if (typeof safeCards === 'string') {
+            return safeCards;
         }
 
-        return "Carta non trovata";
+        return t('card_not_found') || "Carta non trovata";
     };
 
     const winnerPlayer = playersList.find(p => p.name === winnerInfo.name);
@@ -174,13 +190,12 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
                         style={{
                             color: '#111',
                             fontFamily: 'Outfit-Bold',
-                            fontSize: 24,
+                            fontSize: getWinningCardsText().length > 60 ? 18 : (getWinningCardsText().length > 30 ? 22 : 28),
                             textAlign: 'center',
-                            // lineHeight: 34 // Removed for auto-scaling
+                            width: '100%',
+                            paddingHorizontal: 5
                         }}
-                        numberOfLines={8}
-                        adjustsFontSizeToFit={true}
-                        minimumFontScale={0.5}
+                        numberOfLines={10}
                     >
                         {getWinningCardsText()}
                     </Text>
@@ -198,6 +213,12 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
                     {t('thinking_round_msg')}
                 </Animated.Text>
             </View>
+
+            <RewardPopup
+                amount={50}
+                visible={showReward}
+                onFinish={() => setShowReward(false)}
+            />
         </PremiumModal>
     );
 };

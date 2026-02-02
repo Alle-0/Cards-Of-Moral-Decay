@@ -12,6 +12,9 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from '
 import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { RANK_COLORS, RANK_THRESHOLDS } from '../constants/Ranks';
+import LocalAvatar from '../components/LocalAvatar';
 
 const PersonalizationScreen = () => {
     const { theme } = useTheme();
@@ -19,6 +22,8 @@ const PersonalizationScreen = () => {
     const [activeTab, setActiveTab] = useState(0);
     const insets = useSafeAreaInsets();
     const [showExitModal, setShowExitModal] = useState(false);
+
+    const { user } = useAuth();
 
     const tabBarWidth = useSharedValue(0);
     const tabIndicatorX = useSharedValue(0);
@@ -71,6 +76,7 @@ const PersonalizationScreen = () => {
             <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
                 {t('inventory_title')}
             </Text>
+
 
             <View style={{ flex: 1, paddingHorizontal: 20 }}>
                 {/* Tab Bar */}

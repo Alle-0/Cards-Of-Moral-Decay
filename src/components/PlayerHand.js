@@ -228,7 +228,7 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
                     {/* [NEW] TEXTURE LAYER */}
                     {skin?.styles?.texture && TEXTURES[skin.styles.texture] && (() => {
                         // Simple deterministic pseudo-random based on text hash
-                        const hash = text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                        const hash = (text || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                         const rotations = [0, 90, 180, 270];
                         const rotation = rotations[hash % 4];
                         const baseScale = 1.3;
@@ -256,13 +256,12 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
                     <Text
                         style={[
                             styles.cardText,
-                            skin ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {}
+                            skin ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {},
+                            { fontSize: (text?.length || 0) > 50 ? 14 : ((text?.length || 0) > 30 ? 16 : 18) }
                         ]}
                         numberOfLines={10}
-                        adjustsFontSizeToFit={true}
-                        minimumFontScale={0.4}
                     >
-                        {text}
+                        {text || ''}
                     </Text>
                 </Animated.View>
 
@@ -339,7 +338,25 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
     );
 });
 
-const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled, onPlay, jokers = 0, onAIJoker, onDiscard, isPlaying, hasDiscarded, onBackgroundPress, onBribe, skin, balance = 0, isSmallScreen }) => { // [NEW] balance, isSmallScreen
+const PlayerHand = ({
+    hand,
+    selectedCards,
+    onSelectCard,
+    maxSelection,
+    disabled,
+    isPlaying,
+    onPlay,
+    jokers = 0,
+    onAIJoker,
+    onDiscard,
+    onBribe,
+    bribes = 0,
+    hasDiscarded,
+    skin,
+    balance,
+    isSmallScreen,
+    onBackgroundPress,
+}) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
     const scrollRef = useWebScroll(false); // Vertical drag
@@ -417,8 +434,10 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
                         <PremiumIconButton
                             icon={<DirtyCashIcon size={isSmallScreen ? 24 : 30} color="#FFD700" />}
                             onPress={onBribe}
-                            style={{ backgroundColor: 'transparent', opacity: disabled ? 0.4 : 1 }}
-                            disabled={disabled}
+                            badge={bribes > 0 ? bribes : null}
+                            badgeStyle={bribes <= 0 ? { backgroundColor: '#ef4444', borderColor: '#000', borderWidth: 1.5 } : { backgroundColor: '#FFD700', borderColor: '#000', borderWidth: 1.5 }}
+                            style={{ opacity: (disabled || bribes <= 0) ? 0.4 : 1 }}
+                            disabled={disabled || bribes <= 0}
                             size={isSmallScreen ? 34 : 40}
                         />
                     )}
@@ -430,7 +449,7 @@ const PlayerHand = ({ hand, selectedCards, onSelectCard, maxSelection, disabled,
                         badge={jokers > 0 ? jokers : null}
                         badgeStyle={{ backgroundColor: '#FFD700', borderColor: '#000', borderWidth: 1.5 }}
                         disabled={disabled || jokers === 0}
-                        style={{ opacity: disabled ? 0.4 : 1 }}
+                        style={{ opacity: (disabled || jokers === 0) ? 0.4 : 1 }}
                         size={isSmallScreen ? 34 : 40}
                     />
                 </View>

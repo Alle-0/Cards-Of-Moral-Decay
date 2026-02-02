@@ -3,17 +3,9 @@ import { ref, get, set, child, update, increment, onValue, off, query, orderByCh
 import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from '../services/firebase';
 
-// [NEW] Rank Style Config
-export const RANK_COLORS = {
-    "Capo supremo": "#ff00ff", // Magenta for the boss
-    "Entità Apocalittica": "#ef4444", // Red
-    "Eminenza Grigia": "#8b5cf6", // Purple
-    "Architetto del Caos": "#f97316", // Orange
-    "Socio del Vizio": "#eab308", // Yellow
-    "Corrotto": "#22c55e", // Green
-    "Innocente": "#3b82f6", // Blue
-    "Anima Candida": "#94a3b8"  // Gray
-};
+import { RANK_COLORS, RANK_THRESHOLDS } from '../constants/Ranks';
+import NotificationService from '../services/NotificationService';
+export { RANK_COLORS, RANK_THRESHOLDS };
 
 const AuthContext = createContext();
 
@@ -28,8 +20,6 @@ export const AuthProvider = ({ children }) => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 // User is authenticated in Firebase Auth
-                await loadUserByUid(currentUser.uid);
-
                 await loadUserByUid(currentUser.uid);
             } else {
                 // [NEW] If no user, sign in anonymously for global rule access
@@ -76,6 +66,29 @@ export const AuthProvider = ({ children }) => {
         });
 
         return () => unsubscribe();
+    }, [user?.username]);
+
+    // [NEW] Push Notifications Token Sync
+    useEffect(() => {
+        const registerPushToken = async () => {
+            if (!user?.username) return;
+
+            try {
+                const token = await NotificationService.registerForPushNotificationsAsync();
+                if (token && user.pushToken !== token) {
+                    await update(ref(db, `users/${user.username}`), {
+                        pushToken: token
+                    });
+                    console.log(`[PUSH] Token updated for ${user.username}`);
+                }
+            } catch (error) {
+                console.error("[PUSH] Error registering token:", error);
+            }
+        };
+
+        if (user?.username) {
+            registerPushToken();
+        }
     }, [user?.username]);
 
     // 3. RevenueCat Customer Info Listener

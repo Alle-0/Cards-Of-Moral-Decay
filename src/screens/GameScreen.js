@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler, Share } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { ZoomIn, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut, withRepeat, interpolate } from 'react-native-reanimated';
+import Animated, { ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut, withRepeat, interpolate, withSequence } from 'react-native-reanimated';
 
 import { useGame } from '../context/GameContext';
 import { useAuth, RANK_COLORS } from '../context/AuthContext';
@@ -141,7 +141,7 @@ const GameScreen = ({ onStartLoading }) => {
         isCreator, isDominus, myHand,
         leaveRoom, startGame, playCards, confirmDominusSelection, nextRound,
         discardCard, useAIJoker, forceReveal, kickPlayer, bribeHand,
-        updateRoomSettings
+        updateRoomSettings, roomPlayerName
     } = useGame();
     const { theme } = useTheme();
     const { bribe: payBribe, awardMoney, logout, user: authUser } = useAuth(); // [NEW] get authUser for skins
@@ -170,6 +170,7 @@ const GameScreen = ({ onStartLoading }) => {
     const [optimisticWinner, setOptimisticWinner] = useState(null); // [NEW] Optimistic UI
     const [tempPlayedText, setTempPlayedText] = useState(null);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'success' }); // [NEW]
+    const [showDominusAlert, setShowDominusAlert] = useState(false); // [NEW] Dominus Alert
 
     // [NEW] Screen Shake Animation
     const shakeTranslateX = useSharedValue(0);
@@ -219,13 +220,27 @@ const GameScreen = ({ onStartLoading }) => {
         }
     }, [roomData?.vincitoreTurno, roomData?.statoTurno, roomData?.statoPartita]);
 
+    // [NEW] Dominus Detection Alert
+    useEffect(() => {
+        if (roomData?.dominus === user?.name && roomData?.statoTurno === 'WAITING_CARDS' && roomData?.statoPartita !== 'GAME_OVER') {
+            setShowDominusAlert(true);
+            SoundService.play('success'); // Play a sound for prominence
+            const timer = setTimeout(() => {
+                setShowDominusAlert(false);
+            }, 3000);
+            return () => clearTimeout(timer);
+        } else {
+            setShowDominusAlert(false);
+        }
+    }, [roomData?.dominus, user?.name, roomData?.statoTurno]);
+
     // [NEW] Economy Integration
     const [lastPaidTurn, setLastPaidTurn] = useState(null);
 
     useEffect(() => {
-        if (roomData?.statoTurno === 'SHOWING_WINNER' && roomData?.vincitoreTurno === user.name) {
+        if (roomData?.statoTurno === 'SHOWING_WINNER' && roomData?.vincitoreTurno === (roomPlayerName || user.name)) {
             if (!lastPaidTurn) {
-                awardMoney(100);
+                awardMoney(50);
                 setLastPaidTurn("PAID");
             }
         } else if (roomData?.statoTurno !== 'SHOWING_WINNER') {
@@ -244,6 +259,10 @@ const GameScreen = ({ onStartLoading }) => {
             if (JSON.stringify(roomData.allowedPackages) !== JSON.stringify(allowedPackages)) {
                 setAllowedPackages(roomData.allowedPackages);
             }
+        }
+        // [NEW] Clear selection state when a new round starts
+        if (roomData?.statoTurno === 'WAITING_CARDS') {
+            setOptimisticWinner(null);
         }
     }, [roomData?.statoTurno, roomData?.vincitoreTurno, user?.name, roomData?.puntiPerVincere, roomData?.roomLanguage, roomData?.allowedPackages]);
 
@@ -374,31 +393,34 @@ const GameScreen = ({ onStartLoading }) => {
         setShowSettingsModal(false);
     };
 
-    const handleBribe = () => {
+    // Bribe Logic
+    const handleBribePress = () => {
         setShowBribeConfirm(true);
     };
 
-    const confirmBribe = async () => {
-        setShowBribeConfirm(false);
-        const paid = await payBribe(async () => {
-            await bribeHand();
-            SoundService.play('money');
+    const handleConfirmBribe = async () => {
+        setShowBribeConfirm(false); // Close modal first
+        const cost = 100;
+        if (authUser?.balance < cost) {
+            setToast({ visible: true, message: t('not_enough_money'), type: 'error' });
+            SoundService.play('error');
+            HapticsService.trigger('error');
+            triggerShake();
+            return;
+        }
+
+        const success = await payBribe(async () => {
+            const ok = await bribeHand();
+            if (ok) {
+                SoundService.play('success');
+                HapticsService.trigger('success');
+            }
         });
 
-        if (paid) {
-            HapticsService.trigger('success');
-            AnalyticsService.logBribeUsed(user.name, 100); // 100 DC is the default cost
-        } else {
-            // Show error if failed (e.g. not enough money)
-            triggerShake(); // [NEW] Shake on error
-            setModalConfig({
-                visible: true,
-                title: t('denied_title'),
-                message: t('bribe_refused_msg'),
-                singleButton: true,
-                confirmText: t('too_bad_btn'),
-                onConfirm: () => setModalConfig(prev => ({ ...prev, visible: false }))
-            });
+        if (!success) {
+            SoundService.play('error');
+            HapticsService.trigger('error');
+            triggerShake();
         }
     };
 
@@ -535,8 +557,12 @@ const GameScreen = ({ onStartLoading }) => {
 
     // [NEW] Share Room Logic
     const handleShareRoom = async () => {
-        const shareUrl = `https://carte-vs-umani.web.app/?room=${roomCode}&invite=${user?.username}`;
-        const message = t('share_room_msg', { code: roomCode, id: user?.username });
+        const message = t('share_room_msg', {
+            code: roomCode,
+            id: user?.username,
+            url: BASE_URL
+        });
+        const shareUrl = `${BASE_URL}/?room=${roomCode}&invite=${user?.username}`;
 
         if (Platform.OS === 'web') {
             await Clipboard.setStringAsync(shareUrl);
@@ -577,7 +603,10 @@ const GameScreen = ({ onStartLoading }) => {
                 }]}>MORAL DECAY</Text>
                 <PremiumPressable
                     onPress={handleShareRoom}
-                    style={[styles.codePill, isSmallScreen && { paddingVertical: 3, paddingHorizontal: 6 }]}
+                    style={[
+                        styles.codePill,
+                        isSmallScreen && { paddingVertical: 2, paddingHorizontal: 6, height: 'auto' } // Use padding for small screens/web
+                    ]}
                     rippleColor="rgba(255,255,255,0.1)"
                 >
                     <Text style={[styles.codeText, isSmallScreen && { fontSize: 10 }]}>#{roomCode}</Text>
@@ -875,20 +904,22 @@ const GameScreen = ({ onStartLoading }) => {
                                     </View>
 
                                     <View style={{
-                                        width: 140, height: 190,
+                                        width: 140, height: 195, // [FIX] Slightly more height
                                         backgroundColor: skin ? skin.styles.bg : 'white',
-                                        borderRadius: 14, padding: 15,
-                                        justifyContent: 'center', alignItems: 'center',
-                                        shadowColor: "#000", shadowOffset: { width: 0, height: 3 },
-                                        shadowOpacity: 0.2, shadowRadius: 4, elevation: 5,
+                                        borderRadius: 16,
+                                        padding: 12, // [FIX] Uniform padding
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
+                                        shadowOpacity: 0.25, shadowRadius: 5, elevation: 6,
                                         transform: [{ rotate: '-2deg' }],
-                                        overflow: 'hidden', // [NEW] Ensure texture stays inside
-                                        borderWidth: 1,
+                                        overflow: 'hidden',
+                                        borderWidth: 1.5,
                                         borderColor: skin ? skin.styles.border : 'rgba(0,0,0,0.1)'
                                     }}>
                                         {/* [NEW] TEXTURE LAYER */}
                                         {skin?.styles?.texture && TEXTURES[skin.styles.texture] && (() => {
-                                            const hash = playedText.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                                            const hash = (playedText || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                                             const rotations = [0, 90, 180, 270];
                                             const rotation = rotations[hash % 4];
                                             const baseScale = skin.id === 'omissis' ? 0.7 : 1.3;
@@ -913,23 +944,34 @@ const GameScreen = ({ onStartLoading }) => {
                                             );
                                         })()}
 
-                                        <Text
-                                            style={{
-                                                color: skin ? skin.styles.text : '#222',
-                                                fontFamily: skin?.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') :
-                                                    skin?.id === 'omissis' ? (Platform.OS === 'ios' ? 'Courier-Bold' : 'serif') : 'Outfit',
-                                                fontWeight: 'bold',
-                                                fontSize: 18,
-                                                textAlign: 'left',
-                                                width: '100%',
-                                                // lineHeight: 24 // Removed for auto-scaling
-                                            }}
-                                            numberOfLines={10}
-                                            adjustsFontSizeToFit={true}
-                                            minimumFontScale={0.4}
-                                        >
-                                            {playedText}
-                                        </Text>
+                                        <View style={{
+                                            height: 145, // [FIX] More room for the scale-to-fit box
+                                            width: '100%',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            paddingTop: 5, // [FIX] Balance centering
+                                        }}>
+                                            <Text
+                                                style={{
+                                                    color: skin ? skin.styles.text : '#222',
+                                                    fontFamily: skin?.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') :
+                                                        skin?.id === 'omissis' ? (Platform.OS === 'ios' ? 'Courier-Bold' : 'serif') : 'Outfit',
+                                                    fontWeight: 'bold',
+                                                    fontSize: 16,
+                                                    textAlign: 'center',
+                                                    width: '100%',
+                                                    lineHeight: 18, // [FIX] Tighter line height to prevent vertical clipping
+                                                }}
+                                                numberOfLines={10}
+                                                adjustsFontSizeToFit={true}
+                                                minimumFontScale={0.4} // [FIX] More freedom to scale down
+                                            >
+                                                {playedText}
+                                            </Text>
+                                        </View>
+
+                                        {/* Reserved space at the bottom for the absolutely positioned lock */}
+                                        <View style={{ height: 20 }} />
 
                                         {/* [NEW] CENSOR BAR LAYER FOR OMISSIS */}
                                         {skin?.id === 'omissis' && (
@@ -947,8 +989,8 @@ const GameScreen = ({ onStartLoading }) => {
                                             />
                                         )}
 
-                                        <View style={{ position: 'absolute', bottom: 10, left: 10, flexDirection: 'row', alignItems: 'center' }}>
-                                            <LockIcon size={22} color={skin ? skin.styles.text : "#222"} />
+                                        <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
+                                            <LockIcon size={16} color={skin ? skin.styles.text : "#222"} />
                                         </View>
                                     </View>
                                 </Animated.View>
@@ -968,10 +1010,10 @@ const GameScreen = ({ onStartLoading }) => {
                         selectedCards={selectedCards}
                         onSelectCard={handleSelectCard}
                         maxSelection={roomData?.cartaNera?.blanks || 1}
-                        disabled={!!roomData?.carteGiocate?.[user.name]}
+                        disabled={!!roomData?.carteGiocate?.[roomPlayerName || user.name]}
                         isPlaying={isAnimatingPlay}
                         onPlay={handlePlay}
-                        jokers={roomData?.giocatori?.[user.name]?.jokers || 0}
+                        jokers={roomData?.giocatori?.[roomPlayerName || user.name]?.jokers || 0}
                         onAIJoker={handleJokerPress}
                         onDiscard={(card) => {
                             discardCard(card);
@@ -979,11 +1021,13 @@ const GameScreen = ({ onStartLoading }) => {
                                 setSelectedCards(prev => prev.filter(c => c !== card));
                             }
                         }}
-                        onBribe={!isDominus ? handleBribe : null}
-                        hasDiscarded={!!roomData?.giocatori?.[user.name]?.hasDiscarded}
+                        onBribe={!isDominus ? handleBribePress : null}
+                        bribes={roomData?.giocatori?.[roomPlayerName || user.name]?.bribes !== undefined ? roomData.giocatori[roomPlayerName || user.name].bribes : Math.max(0, 5 - (roomData?.giocatori?.[roomPlayerName || user.name]?.bribeCount || 0))}
+                        hasDiscarded={!!roomData?.giocatori?.[roomPlayerName || user.name]?.hasDiscarded}
                         skin={CARD_SKINS[authUser?.activeCardSkin || 'classic'] || CARD_SKINS.classic}
                         balance={authUser?.balance || 0}
                         isSmallScreen={isSmallScreen}
+                        onBackgroundPress={() => setSelectedCards([])}
                     />
                 </View>
             )}
@@ -1049,23 +1093,12 @@ const GameScreen = ({ onStartLoading }) => {
                             <RobotIcon size={64} color={theme.colors.textPrimary} />
                         </View>
                         <View style={{ gap: 10, width: '100%' }}>
-                            <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16, marginBottom: 20 }}>
+                            <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16 }}>
                                 {t('joker_desc')}
                             </Text>
-                            <View style={{
-                                backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                                paddingVertical: 10,
-                                paddingHorizontal: 20,
-                                borderRadius: 12,
-                                borderWidth: 1,
-                                borderColor: 'rgba(239, 68, 68, 0.15)',
-                                marginBottom: 15,
-                                alignSelf: 'center',
-                                width: '90%'
-                            }}>
-                                <Text style={{ color: '#ef4444', textAlign: 'center', fontFamily: 'Cinzel-Bold', fontSize: 11, letterSpacing: 1.5 }}>{t('attention')}</Text>
-                                <Text style={{ color: '#aaa', textAlign: 'center', fontFamily: 'Outfit', fontSize: 13, marginTop: 2 }}>{t('joker_warning')}</Text>
-                            </View>
+                            <Text style={{ color: '#ef4444', textAlign: 'center', fontFamily: 'Outfit-Bold', fontSize: 14, marginBottom: 15 }}>
+                                {t('joker_warning')}
+                            </Text>
                         </View>
                         <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginTop: 10 }}>
                             <PremiumButton
@@ -1096,38 +1129,21 @@ const GameScreen = ({ onStartLoading }) => {
                         <View style={{ marginBottom: 15 }}>
                             <DirtyCashIcon size={64} color="#10b981" />
                         </View>
-                        <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16, marginBottom: 20 }}>
+                        <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16, marginBottom: 15 }}>
                             {t('bribe_desc')}
                         </Text>
 
                         <View style={{
                             backgroundColor: 'rgba(16, 185, 129, 0.05)',
-                            paddingVertical: 8,
-                            paddingHorizontal: 20,
+                            paddingVertical: 12,
+                            paddingHorizontal: 24,
                             borderRadius: 12,
                             borderWidth: 1,
                             borderColor: 'rgba(16, 185, 129, 0.15)',
-                            marginBottom: 15,
-                            width: '85%',
-                            alignSelf: 'center'
-                        }}>
-                            <Text style={{ color: '#10b981', textAlign: 'center', fontFamily: 'Cinzel-Bold', fontSize: 15, letterSpacing: 1 }}>{t('bribe_cost_label')}</Text>
-                        </View>
-
-                        <View style={{
-                            backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                            paddingVertical: 10,
-                            paddingHorizontal: 20,
-                            borderRadius: 12,
-                            borderWidth: 1,
-                            borderColor: 'rgba(239, 68, 68, 0.15)',
                             marginBottom: 20,
-                            width: '90%',
                             alignSelf: 'center'
                         }}>
-                            <Text style={{ color: '#fca5a5', textAlign: 'center', fontFamily: 'Outfit', fontSize: 13, lineHeight: 18 }}>
-                                {t('bribe_warning')}
-                            </Text>
+                            <Text style={{ color: '#10b981', textAlign: 'center', fontFamily: 'Cinzel-Bold', fontSize: 18, letterSpacing: 1 }}>{t('bribe_cost_label')}</Text>
                         </View>
 
                         <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
@@ -1142,7 +1158,7 @@ const GameScreen = ({ onStartLoading }) => {
                             <PremiumButton
                                 title={t('bribe_pay_btn')}
                                 enableSound={false}
-                                onPress={confirmBribe}
+                                onPress={handleConfirmBribe}
                                 style={{ flex: 1 }}
                                 textStyle={{ fontSize: 13, fontFamily: 'Cinzel-Bold' }}
                             />
@@ -1210,21 +1226,117 @@ const GameScreen = ({ onStartLoading }) => {
                     visible={isAnimatingJoker}
                     onFinish={async () => {
                         setIsAnimatingJoker(false);
-                        const success = await useAIJoker(); // Trigger logic after animation
+                        try {
+                            const success = await useAIJoker(); // Trigger logic after animation
 
-                        if (!success) {
-                            SoundService.play('error');
-                            HapticsService.trigger('error');
-                            setModalConfig({
-                                visible: true,
-                                title: t('robot_icon_label') || "AI",
-                                message: t('joker_not_found'),
-                                singleButton: true,
-                                confirmText: t('default_confirm')
-                            });
+                            if (!success) {
+                                SoundService.play('error');
+                                HapticsService.trigger('error');
+                                setModalConfig({
+                                    visible: true,
+                                    title: t('robot_icon_label') || "AI",
+                                    message: t('joker_not_found'),
+                                    singleButton: true,
+                                    confirmText: t('default_confirm')
+                                });
+                            } else {
+                                SoundService.play('success');
+                                HapticsService.trigger('success');
+                            }
+                        } catch (e) {
+                            setIsAnimatingJoker(false);
+                            if (e.message !== "JOKER_LIMIT") {
+                                SoundService.play('error');
+                                HapticsService.trigger('error');
+                                triggerShake();
+                                setToast({ visible: true, message: e.message, type: 'error' });
+                            }
                         }
                     }}
                 />
+
+                {/* [NEW] Dominus Alert Overlay */}
+                {showDominusAlert && (
+                    <View style={[StyleSheet.absoluteFill, { zIndex: 9999, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }]} pointerEvents="none">
+                        <Animated.View
+                            entering={ZoomIn.duration(600).springify()}
+                            exiting={ZoomOut.duration(400)}
+                            style={{
+                                alignItems: 'center',
+                                paddingVertical: 20,
+                                paddingHorizontal: 30,
+                                borderRadius: 20,
+                                borderWidth: 1.5,
+                                borderColor: '#ffd700',
+                                shadowColor: '#ffd700',
+                                shadowOffset: { width: 0, height: 6 },
+                                shadowOpacity: 0.6,
+                                shadowRadius: 15,
+                                elevation: 15,
+                                overflow: 'hidden'
+                            }}
+                        >
+                            {/* Gradient Background */}
+                            <LinearGradient
+                                colors={['#1a1a1a', '#2a2a2a', '#1a1a1a']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={StyleSheet.absoluteFill}
+                            />
+
+                            {/* Gold Glow Overlay */}
+                            <View style={{
+                                ...StyleSheet.absoluteFillObject,
+                                backgroundColor: '#ffd70015',
+                                borderRadius: 24,
+                            }} />
+
+                            {/* Crown Icon */}
+                            <View style={{
+                                marginBottom: 12,
+                                padding: 10,
+                                borderRadius: 30,
+                                backgroundColor: '#ffd70020',
+                                borderWidth: 1,
+                                borderColor: '#ffd700',
+                                shadowColor: '#ffd700',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.4,
+                                shadowRadius: 6,
+                                elevation: 4
+                            }}>
+                                <CrownIcon size={24} color="#ffd700" />
+                            </View>
+
+                            {/* Title */}
+                            <Text style={{
+                                color: '#ffd700',
+                                fontFamily: 'Cinzel-Bold',
+                                fontSize: 22,
+                                textAlign: 'center',
+                                letterSpacing: 1.5,
+                                textTransform: 'uppercase',
+                                textShadowColor: '#ffd700',
+                                textShadowOffset: { width: 0, height: 0 },
+                                textShadowRadius: 10,
+                                marginBottom: 2
+                            }}>
+                                {t('you_are_dominus')}
+                            </Text>
+
+                            {/* Subtitle */}
+                            <Text style={{
+                                color: '#ccc',
+                                fontFamily: 'Outfit',
+                                fontSize: 13,
+                                textAlign: 'center',
+                                letterSpacing: 0.8
+                            }}>
+                                {t('dominus_subtitle', { defaultValue: 'Scegli il vincitore del round' })}
+                            </Text>
+                        </Animated.View>
+                    </View>
+                )}
 
                 <ToastNotification
                     visible={toast.visible}
@@ -1258,18 +1370,24 @@ const styles = StyleSheet.create({
     },
     codePill: {
         backgroundColor: '#1c1c1e',
-        paddingVertical: 5,
-        paddingHorizontal: 10,
+        paddingVertical: Platform.OS === 'web' ? 4 : 0, // [FIX] Use padding for web, height for native
+        height: Platform.OS === 'web' ? 'auto' : 22,
+        paddingHorizontal: 8,
         borderRadius: 8,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     codeText: {
         color: '#888',
-        fontSize: 12,
-        fontFamily: 'System', // Monospace feel
+        fontSize: 11,
+        fontFamily: 'System',
         fontWeight: 'bold',
         letterSpacing: 0.5,
+        lineHeight: 14, // [FIX] Help vertical centering
+        includeFontPadding: false,
+        textAlignVertical: 'center',
     },
     badge: {
         position: 'absolute',

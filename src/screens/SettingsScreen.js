@@ -15,7 +15,7 @@ import ToastNotification from '../components/ToastNotification';
 import AvatarWithFrame from '../components/AvatarWithFrame'; // [NEW] // [NEW]
 
 import { useTheme } from '../context/ThemeContext';
-import { useAuth, RANK_COLORS } from '../context/AuthContext';
+import { useAuth, RANK_COLORS, RANK_THRESHOLDS } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService';
@@ -396,6 +396,74 @@ const SettingsScreen = ({ navigation }) => {
                             }}>
                                 {authUser?.username || "Incognito"}
                             </Text>
+
+                            {/* Rank Display */}
+                            {(() => {
+                                const score = authUser?.totalScore || 0;
+                                const currentRankIdx = RANK_THRESHOLDS.findIndex(r => r.name === authUser?.rank);
+                                const nextRank = currentRankIdx !== -1 && currentRankIdx < RANK_THRESHOLDS.length - 1 ? RANK_THRESHOLDS[currentRankIdx + 1] : null;
+                                const currentRankMin = RANK_THRESHOLDS[currentRankIdx]?.min || 0;
+
+                                let progress = 0;
+                                let pointsLeft = 0;
+                                if (nextRank) {
+                                    const range = nextRank.min - currentRankMin;
+                                    const relativeScore = score - currentRankMin;
+                                    progress = Math.min(Math.max(relativeScore / range, 0), 1);
+                                    pointsLeft = Math.max(nextRank.min - score, 0);
+                                }
+
+                                return (
+                                    <View style={{ marginTop: 15, width: '100%', paddingHorizontal: 20, alignItems: 'center' }}>
+                                        <View style={{
+                                            backgroundColor: 'rgba(255,255,255,0.03)',
+                                            borderRadius: 16,
+                                            padding: 8,
+                                            width: '90%',
+                                            borderWidth: 1,
+                                            borderColor: (RANK_COLORS[authUser?.rank] || '#888') + '33'
+                                        }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 6 }}>
+                                                <View style={{
+                                                    width: 3,
+                                                    height: 12,
+                                                    borderRadius: 1.5,
+                                                    backgroundColor: RANK_COLORS[authUser?.rank] || '#888'
+                                                }} />
+                                                <Text style={{
+                                                    color: RANK_COLORS[authUser?.rank] || '#888',
+                                                    fontFamily: 'Cinzel-Bold',
+                                                    fontSize: 12,
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: 1,
+                                                    includeFontPadding: false
+                                                }}>
+                                                    {authUser?.rank}
+                                                </Text>
+                                            </View>
+
+                                            <Text style={{ color: '#888', fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', marginBottom: 6 }}>
+                                                {score.toLocaleString()} DC
+                                            </Text>
+
+                                            {nextRank ? (
+                                                <View style={{ width: '100%' }}>
+                                                    <View style={{ height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%' }}>
+                                                        <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: RANK_COLORS[authUser?.rank] || '#888', borderRadius: 2 }} />
+                                                    </View>
+                                                    <Text style={{ fontSize: 9, color: '#666', marginTop: 4, fontFamily: 'Outfit', textAlign: 'center' }}>
+                                                        {t('next_rank_points', { points: pointsLeft.toLocaleString(), rank: nextRank.name })}
+                                                    </Text>
+                                                </View>
+                                            ) : (
+                                                <Text style={{ fontSize: 10, color: '#ffd700', marginTop: 4, fontFamily: 'Outfit', textAlign: 'center' }}>
+                                                    Rank Massimo Raggiunto!
+                                                </Text>
+                                            )}
+                                        </View>
+                                    </View>
+                                );
+                            })()}
                         </View>
 
                         {authUser?.recoveryCode && (

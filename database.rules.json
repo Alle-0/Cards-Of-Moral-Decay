@@ -13,6 +13,12 @@
             ],
             "$username": {
                 ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid || (data.child('recoveryCode').val() === newData.child('recoveryProof').val()))",
+                "balance": {
+                    ".validate": "newData.isNumber()"
+                },
+                "totalScore": {
+                    ".validate": "newData.isNumber()"
+                },
                 "friendRequests": {
                     "$requester": {
                         ".write": "auth != null && root.child('uids').child(auth.uid).val() === $requester"

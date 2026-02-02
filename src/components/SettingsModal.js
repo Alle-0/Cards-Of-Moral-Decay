@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService';
-import { APP_VERSION } from '../constants/Config';
+import { APP_VERSION, BASE_URL } from '../constants/Config';
 import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutRight, SlideInLeft, SlideOutLeft, Easing, useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 
 import { RulesIcon, PaletteIcon, SettingsIcon, LinkIcon, OpenDoorIcon, CardsIcon, EyeIcon, EyeOffIcon } from './Icons'; // [NEW] EyeOffIcon
@@ -107,8 +107,12 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
             return;
         }
 
-        const shareUrl = `https://carte-vs-umani.web.app/?room=${roomCode}&invite=${authUser?.username}`;
-        const message = t('share_room_msg', { code: roomCode, id: authUser?.username });
+        const message = t('share_room_msg', {
+            code: roomCode,
+            id: authUser?.username,
+            url: BASE_URL
+        });
+        const shareUrl = `${BASE_URL}/?room=${roomCode}&invite=${authUser?.username}`;
 
         if (Platform.OS === 'web') {
             await Clipboard.setStringAsync(shareUrl);

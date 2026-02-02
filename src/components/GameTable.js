@@ -16,12 +16,10 @@ const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers, t, isSma
         <Text style={styles.headerTitle}>{t('black_card_label')}</Text>
         <View style={styles.cardInternal}>
             <Text
-                style={[styles.blackCardText, isSmallScreen && { fontSize: 18 }]}
+                style={[styles.blackCardText, isSmallScreen && { fontSize: 18 }, { fontSize: (text?.length || 0) > 60 ? 14 : ((text?.length || 0) > 30 ? 16 : 20) }]}
                 numberOfLines={isSmallScreen ? 6 : 10}
-                adjustsFontSizeToFit={true}
-                minimumFontScale={0.5}
             >
-                {text}
+                {text || ''}
             </Text>
 
             <View style={[styles.cardFooter, isSmallScreen && { marginTop: 10 }]}>
@@ -50,37 +48,44 @@ const FaceDownCard = memo(() => (
 const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed, isSelected, isWinning, onSelect, skin, t }) => { // [NEW] isWinning
     const aniValue = useSharedValue(0);
 
+    const handlePress = () => {
+        if (!isDominus) return;
+        if (onSelect) onSelect();
+    };
+
     useEffect(() => {
         aniValue.value = withTiming(isSelected ? 1 : 0, {
-            duration: 50,
+            duration: 150,
             easing: Easing.out(Easing.exp)
         });
     }, [isSelected]);
 
-    const cardAnimatedStyle = useAnimatedStyle(() => ({
-        transform: [{
-            scale: interpolate(aniValue.value, [0, 1], [1, 1.03])
-        }],
-    }));
+    const cardAnimatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [{ scale: interpolate(aniValue.value, [0, 1], [1, 1.03]) }],
+        };
+    });
 
-    // Selection Overlay (Opacity is native-driven, BorderColor is not)
-    const overlayStyle = useAnimatedStyle(() => ({
-        opacity: aniValue.value,
-    }));
+    const overlayStyle = useAnimatedStyle(() => {
+        return {
+            opacity: aniValue.value,
+        };
+    });
 
-    const btnAnimatedStyle = useAnimatedStyle(() => ({
-        opacity: isWinning ? 0 : aniValue.value, // Hide if winning, else follow selection
-        transform: [{
-            translateY: interpolate(aniValue.value, [0, 1], [30, 0])
-        }]
-    }));
+    const btnAnimatedStyle = useAnimatedStyle(() => {
+        return {
+            opacity: isWinning ? 0 : aniValue.value,
+            transform: [{ translateY: interpolate(aniValue.value, [0, 1], [30, 0]) }]
+        };
+    });
 
-    // [NEW] Winning Animation Style
-    const winningStyle = useAnimatedStyle(() => ({
-        borderColor: withTiming(isWinning ? '#10b981' : '#ffd700', { duration: 300 }),
-        backgroundColor: withTiming(isWinning ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 215, 0, 0.05)', { duration: 300 }),
-        transform: [{ scale: withSpring(isWinning ? 1.1 : (1 + aniValue.value * 0.03)) }] // Sync scale
-    }));
+    const winningStyle = useAnimatedStyle(() => {
+        return {
+            borderColor: withTiming(isWinning ? '#10b981' : '#ffd700', { duration: 300 }),
+            backgroundColor: withTiming(isWinning ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 215, 0, 0.05)', { duration: 300 }),
+            transform: [{ scale: withSpring(isWinning ? 1.1 : (1 + aniValue.value * 0.03)) }]
+        };
+    });
 
     // Safety check for cards array
     let validCards = [];
@@ -92,12 +97,10 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
         validCards = Object.values(cards);
     }
 
-    // Fix for nested arrays (recieved as [["A", "B"]])
     if (validCards.length === 1 && Array.isArray(validCards[0])) {
         validCards = validCards[0];
     }
 
-    // Empty state
     if (validCards.length === 0) {
         return (
             <View style={styles.playedCardGroup}>
@@ -108,15 +111,9 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
         );
     }
 
-    // Combine text for "Pick 2+" scenarios to match "1) ... 2) ..." format
     const combinedText = validCards.length > 1
         ? validCards.map((t, i) => `${i + 1}) ${t}`).join(' ')
         : validCards[0];
-
-    const handlePress = () => {
-        if (!isDominus || !revealed) return;
-        if (onSelect) onSelect();
-    };
 
     return (
         <View style={[styles.playedCardGroup, { zIndex: isSelected ? 999 : 1 }]}>
@@ -157,7 +154,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                     }}>
                         {/* [NEW] TEXTURE LAYER */}
                         {skin?.styles?.texture && TEXTURES[skin.styles.texture] && (() => {
-                            const hash = combinedText.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                            const hash = (combinedText || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                             const rotations = [0, 90, 180, 270];
                             const rotation = rotations[hash % 4];
                             const baseScale = 1.3;
@@ -187,9 +184,9 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                                 styles.whiteCardText,
                                 skin?.styles?.text ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {}
                             ]}
-                            numberOfLines={10}
+                            numberOfLines={12}
                             adjustsFontSizeToFit={true}
-                            minimumFontScale={0.4}
+                            minimumFontScale={0.5}
                         >
                             {combinedText}
                         </Text>
@@ -279,6 +276,12 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
     const { user } = useAuth(); // [NEW] Get user for skins
     const [selectedCandidate, setSelectedCandidate] = useState(null);
 
+    // [FIX] Reset selection when a new round starts or status changes
+    useEffect(() => {
+        const blackCardText = (blackCard?.testo || blackCard || '').toString();
+        setSelectedCandidate(null);
+    }, [blackCard?.testo || blackCard, status]);
+
     // Filter out empty entries
     const validPlayedCards = useMemo(() => Object.entries(playedCards).filter(([_, cards]) => {
         if (!cards) return false;
@@ -326,22 +329,31 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
                                     </View>
                                 )}
 
-                                {validPlayedCards.map(([player, cards]) => (
-                                    <PlayedCard
-                                        key={`${player}-${cardsRevealed ? 'rev' : 'hid'}`} // Force remount on reveal
-                                        cards={cards} // Assuming cards are stable
-                                        playerName={player}
-                                        isDominus={isDominus}
-                                        revealed={cardsRevealed}
-                                        isSelected={selectedCandidate === player}
-                                        isWinning={optimisticWinner === player} // [NEW] Optimistic visual feedback
-                                        onSelect={() => setSelectedCandidate(prev => prev === player ? null : player)}
-                                        onPickWinner={() => onSelectWinner(player)}
-                                        // [FIX] Personal Skins: Always use MY skin, not the player's skin
-                                        skin={user?.activeCardSkin ? (CARD_SKINS[user.activeCardSkin] || CARD_SKINS.classic) : CARD_SKINS.classic}
-                                        t={t}
-                                    />
-                                ))}
+                                {validPlayedCards.map(([player, cards]) => {
+                                    const isSelected = (selectedCandidate || '').toString().trim().toLowerCase() === (player || '').toString().trim().toLowerCase();
+                                    const isWinning = (optimisticWinner || '').toString().trim().toLowerCase() === (player || '').toString().trim().toLowerCase();
+                                    const sanitizedPlayerName = (player || '').toString().trim().toLowerCase();
+
+                                    return (
+                                        <PlayedCard
+                                            key={`${sanitizedPlayerName}-${cardsRevealed ? 'rev' : 'hid'}`}
+                                            cards={cards}
+                                            playerName={player}
+                                            isDominus={isDominus}
+                                            revealed={cardsRevealed}
+                                            isSelected={isSelected}
+                                            isWinning={isWinning}
+                                            onSelect={() => setSelectedCandidate(prev => {
+                                                const p = (player || '').toString().trim().toLowerCase();
+                                                const current = (prev || '').toString().trim().toLowerCase();
+                                                return current === p ? null : player;
+                                            })}
+                                            onPickWinner={() => onSelectWinner(player)}
+                                            skin={user?.activeCardSkin ? (CARD_SKINS[user.activeCardSkin] || CARD_SKINS.classic) : CARD_SKINS.classic}
+                                            t={t}
+                                        />
+                                    );
+                                })}
 
                                 { /* Placeholder slots for remaining players (Visible only if Dominus) */}
                                 {isDominus && Array.from({ length: Math.max(0, (playerCount - 1) - validPlayedCards.length) }).map((_, i) => (

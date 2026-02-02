@@ -53,6 +53,22 @@ export const GameProvider = ({ children }) => {
         // as it's handled by AuthContext (Firebase + Anonymous session)
     }, []);
 
+    // [NEW] Persistent Room Recovery
+    useEffect(() => {
+        const recoverRoom = async () => {
+            try {
+                const storedCode = await AsyncStorage.getItem('lastRoomCode');
+                const storedName = await AsyncStorage.getItem('lastRoomPlayerName');
+                if (storedCode && storedName) {
+                    setRoomCode(storedCode);
+                    setRoomPlayerName(storedName);
+                    subscribeToRoom(storedCode);
+                }
+            } catch (e) { console.warn("Room recovery failed", e); }
+        };
+        recoverRoom();
+    }, []);
+
     // Cleanup
     useEffect(() => {
         return () => {
@@ -67,13 +83,24 @@ export const GameProvider = ({ children }) => {
         const unsub = onValue(roomsRef, (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
+                const now = Date.now();
+                const STALE_MS = 12 * 60 * 60 * 1000;
+
                 const roomList = Object.keys(data).map(key => {
+                    // [NEW] Cleanup stale rooms (> 12h)
+                    const roomTs = data[key].timestamp || 0;
+                    if (roomTs > 0 && now - roomTs > STALE_MS) {
+                        console.log(`[CLEANUP] Deleting stale room ${key}`);
+                        set(ref(db, `stanze/${key}`), null);
+                        return null;
+                    }
+
                     const hydrated = hydrateRoom(data[key]);
                     return {
                         id: key,
                         ...hydrated
                     };
-                });
+                }).filter(r => r !== null);
                 roomList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 setAvailableRooms(roomList);
             } else {
@@ -278,6 +305,7 @@ export const GameProvider = ({ children }) => {
                     [currentName]: {
                         carte: [],
                         jokers: 3,
+                        bribes: 5,
                         avatar: initialAvatar,
                         color: pickColor(new Set()),
                         online: true,
@@ -293,6 +321,8 @@ export const GameProvider = ({ children }) => {
             await setPresence(code, currentName);
             setRoomCode(code);
             setRoomPlayerName(currentName);
+            AsyncStorage.setItem('lastRoomCode', code);
+            AsyncStorage.setItem('lastRoomPlayerName', currentName || '');
             subscribeToRoom(code);
             return code;
         } catch (e) {
@@ -336,7 +366,7 @@ export const GameProvider = ({ children }) => {
                     for (let i = 0; i < 10; i++) { if (room.whiteDeck.length > 0) hand.push(room.whiteDeck.pop()); }
                     room.giocatori = room.giocatori || {};
                     room.giocatori[currentName] = {
-                        carte: hand, jokers: 3, avatar: avatarToUse, color: pickColor(usedColors),
+                        carte: hand, jokers: 3, bribes: 5, avatar: avatarToUse, color: pickColor(usedColors),
                         online: true, lastSeen: Date.now(), joinedAt: Date.now(), hasDiscarded: false,
                         activeFrame: extraData.activeFrame || 'basic', rank: extraData.rank || 'Anima Candida'
                     };
@@ -345,17 +375,28 @@ export const GameProvider = ({ children }) => {
                     return dehydrateRoom(room);
                 });
             } else {
-                await set(ref(db, `stanze/${code}/giocatori/${currentName}`), {
-                    carte: [], jokers: 3, avatar: avatarToUse, color: pickColor(usedColors),
-                    online: true, lastSeen: Date.now(), joinedAt: Date.now(), hasDiscarded: false,
-                    activeFrame: extraData.activeFrame || 'basic', rank: extraData.rank || 'Anima Candida'
-                });
+                const playerObj = {
+                    carte: [],
+                    jokers: 3,
+                    bribes: 5,
+                    avatar: avatarToUse,
+                    color: pickColor(usedColors),
+                    online: true,
+                    lastSeen: Date.now(),
+                    joinedAt: Date.now(),
+                    hasDiscarded: false,
+                    activeFrame: extraData.activeFrame || 'basic',
+                    rank: extraData.rank || 'Anima Candida'
+                };
+                await set(ref(db, `stanze/${code}/giocatori/${currentName}`), playerObj);
                 await set(ref(db, `stanze/${code}/punti/${currentName}`), 0);
             }
 
             await setPresence(code, currentName);
             setRoomCode(code);
             setRoomPlayerName(currentName);
+            AsyncStorage.setItem('lastRoomCode', code);
+            AsyncStorage.setItem('lastRoomPlayerName', currentName || '');
             subscribeToRoom(code);
             return code;
         } catch (e) {
@@ -376,15 +417,18 @@ export const GameProvider = ({ children }) => {
             if (roomUnsubscribe.current) roomUnsubscribe.current();
             setRoomCode(null);
             setRoomData(null);
+            setRoomPlayerName(null);
+            AsyncStorage.removeItem('lastRoomCode');
+            AsyncStorage.removeItem('lastRoomPlayerName');
         }
     };
 
     // Auto-Eject if kicked
     useEffect(() => {
         if (roomCode && roomData && user && !loading) {
-            if (roomData.giocatori && !roomData.giocatori[user.name]) { leaveRoom(); }
+            if (roomData.giocatori && !roomData.giocatori[roomPlayerName || user.name]) { leaveRoom(); }
         }
-    }, [roomData, user, roomCode, loading]);
+    }, [roomData, user, roomCode, loading, roomPlayerName]);
 
     const startGame = async (targetPoints = 7) => {
         if (!roomCode || !roomData) return;
@@ -429,6 +473,10 @@ export const GameProvider = ({ children }) => {
                 const hand = [];
                 for (let i = 0; i < 10; i++) { if (room.whiteDeck.length) hand.push(room.whiteDeck.pop()); }
                 room.giocatori[pName].carte = hand;
+                // [NEW] Reset resources for new game
+                room.giocatori[pName].jokers = 3;
+                room.giocatori[pName].bribes = 5;
+                room.giocatori[pName].bribeCount = 0;
             });
             room.cartaNera = room.blackDeck.pop();
             room.statoTurno = "WAITING_CARDS";
@@ -443,11 +491,12 @@ export const GameProvider = ({ children }) => {
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
-                if (!room.giocatori || !room.giocatori[user.name]) return dehydrateRoom(room);
+                if (!room.giocatori || !room.giocatori[roomPlayerName || user.name]) return dehydrateRoom(room);
+                const pName = roomPlayerName || user.name;
                 room.carteGiocate = room.carteGiocate || {};
-                room.carteGiocate[user.name] = selectedCards;
-                const currentHand = room.giocatori[user.name].carte || [];
-                room.giocatori[user.name].carte = currentHand.filter(c => {
+                room.carteGiocate[pName] = selectedCards;
+                const currentHand = room.giocatori[pName].carte || [];
+                room.giocatori[pName].carte = currentHand.filter(c => {
                     const cardText = typeof c === 'string' ? c : c?.testo;
                     return !selectedCards.some(sc => (typeof sc === 'string' ? sc : sc?.testo) === cardText);
                 });
@@ -540,7 +589,8 @@ export const GameProvider = ({ children }) => {
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
-                const player = room.giocatori[user.name];
+                const pName = roomPlayerName || user.name;
+                const player = room.giocatori[pName];
                 if (!player || player.hasDiscarded) return dehydrateRoom(room);
                 const index = (player.carte || []).findIndex(c => (typeof c === 'string' ? c : c?.testo || '').trim() === (cardText || '').trim());
                 if (index > -1) { player.carte.splice(index, 1); player.hasDiscarded = true; }
@@ -569,8 +619,16 @@ export const GameProvider = ({ children }) => {
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
-                const player = room.giocatori[user.name];
-                if (!player || (player.jokers || 0) <= 0) return dehydrateRoom(room);
+                const pName = roomPlayerName || user.name;
+                const player = room.giocatori[pName];
+                if (!player || (player.jokers || 0) <= 0) {
+                    throw new Error("JOKER_LIMIT");
+                }
+
+                // [NEW] Self-Healing: remove null/undefined cards from hand first
+                if (player.carte) {
+                    player.carte = player.carte.filter(c => c !== null && c !== undefined);
+                }
 
                 const excludedCards = new Set();
                 // - Hands
@@ -586,25 +644,37 @@ export const GameProvider = ({ children }) => {
                 const blackCard = room.cartaNera;
                 let newCard = null;
 
-                // 2. Try best answers ONLY [STRICT MODE]
+                // 2. Try best answers VALIDATED [USER REQUEST: NO FALLBACK]
                 if (blackCard && blackCard.bestAnswers && blackCard.bestAnswers.length > 0) {
-                    const availableBestAnswers = blackCard.bestAnswers.filter(ans => !excludedCards.has(ans.trim()));
+                    const availableBestAnswers = blackCard.bestAnswers.filter(ans => {
+                        if (!ans || ans.trim().length === 0) return false;
+                        if (excludedCards.has(ans.trim())) return false;
+                        // Verify it actually exists in the pool to get a valid index
+                        return GameDataService.getWhiteCardIndex(ans, room.roomLanguage) !== -1;
+                    });
+
                     if (availableBestAnswers.length > 0) {
-                        newCard = availableBestAnswers[Math.floor(Math.random() * availableBestAnswers.length)];
-                        // Remove from deck if it was there
-                        if (room.whiteDeck) {
+                        const pickedRaw = availableBestAnswers[Math.floor(Math.random() * availableBestAnswers.length)];
+                        // Use canonical version from pool to ensure perfect matching
+                        const poolIdx = GameDataService.getWhiteCardIndex(pickedRaw, room.roomLanguage);
+                        newCard = GameDataService.getWhiteCardByIndex(poolIdx, room.roomLanguage);
+
+                        // Remove from deck if it was there (to avoid duplicates)
+                        if (room.whiteDeck && newCard) {
                             room.whiteDeck = room.whiteDeck.filter(c => {
-                                const text = typeof c === 'string' ? c : c?.testo;
+                                const text = typeof c === 'string' ? c : (c?.testo || c?.text);
                                 return text?.trim() !== newCard?.trim();
                             });
                         }
                     }
                 }
 
-                // 3. Apply changes ONLY if a best answer was found
-                if (newCard) {
-                    // Remove the first card (shifting) only on success
-                    if (player.carte && player.carte.length > 0) player.carte.shift();
+                // 3. Apply changes ONLY if a valid card was found
+                if (newCard && newCard.trim().length > 0) {
+                    // Remove the current card that's being replaced to keep hand size
+                    if (player.carte && player.carte.length >= 10) {
+                        player.carte.shift();
+                    }
 
                     player.carte.push(newCard);
                     player.jokers = (player.jokers || 0) - 1;
@@ -640,19 +710,40 @@ export const GameProvider = ({ children }) => {
     const bribeHand = async () => {
         if (!roomCode || !user) return;
         try {
+            let success = false;
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
-                const player = room.giocatori[user.name];
+                const pName = roomPlayerName || user.name;
+                const player = room.giocatori[pName];
                 if (!player) return dehydrateRoom(room);
+
+                // [NEW] Use 'bribes' as stock (remaining)
+                const currentBribes = player.bribes !== undefined ? player.bribes : Math.max(0, 5 - (player.bribeCount || 0));
+                if (currentBribes <= 0) {
+                    throw new Error("BRIBE_LIMIT");
+                }
+
                 if (!room.whiteDeck) room.whiteDeck = [];
                 if (player.carte && player.carte.length > 0) room.whiteDeck.push(...player.carte);
                 room.whiteDeck = shuffleArray(room.whiteDeck);
                 player.carte = [];
                 while (player.carte.length < 10 && room.whiteDeck.length > 0) player.carte.push(room.whiteDeck.pop());
+
+                // Decrement stock
+                player.bribes = currentBribes - 1;
+                player.bribeCount = (player.bribeCount || 0) + 1; // Keep for legacy/analytics if needed
+                success = true;
                 return dehydrateRoom(room);
             });
-        } catch (e) { console.error("Bribe error", e); }
+            return success;
+        } catch (e) {
+            console.error("Bribe error", e);
+            if (e.message === "BRIBE_LIMIT") {
+                throw new Error(translations[GameDataService.language]?.bribe_limit_reached || "Limite mazzette raggiunto");
+            }
+            return false;
+        }
     };
 
     const isCreator = useMemo(() => !!(roomPlayerName && roomData && roomData.creatore === roomPlayerName), [roomPlayerName, roomData?.creatore]);

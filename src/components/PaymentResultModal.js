@@ -28,7 +28,6 @@ const PaymentResultModal = ({ visible, result, onClose }) => {
 
     const isSuccess = result.success;
 
-    console.log('[PaymentResultModal] Render. Visible:', visible, 'Result:', result);
 
     return (
         <Modal transparent visible={visible} animationType="fade">
