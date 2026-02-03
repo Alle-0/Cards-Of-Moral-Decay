@@ -3,7 +3,7 @@
     "name": "Cards of Moral Decay",
     "slug": "cards-of-moral-decay",
     "scheme": "comd",
-    "version": "3.7.5",
+    "version": "3.8.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -26,7 +26,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.anonymous.cardsofmoraldecay",
-      "versionCode": 15,
+      "versionCode": 16,
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
@@ -37,6 +37,10 @@
               "scheme": "https",
               "host": "carte-vs-umani.web.app",
               "pathPrefix": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "carte-vs-umani.web.app"
             },
             {
               "scheme": "comd",

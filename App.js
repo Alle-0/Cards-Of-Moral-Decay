@@ -39,6 +39,8 @@ import PwaInstallPrompt from './src/components/PwaInstallPrompt'; // [NEW] PWA I
 import { useLanguage } from './src/context/LanguageContext';
 import ConnectivityOverlay from './src/components/ConnectivityOverlay';
 import { Platform, Linking } from 'react-native';
+import { db } from './src/services/firebase';
+import { ref, onValue } from 'firebase/database';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -238,23 +240,39 @@ const AppContent = () => {
     }, [user, pendingInvite, pendingRoom, linkProcessed]);
 
     useEffect(() => {
-        // Check versioning
-        const checkVersion = () => {
-            const minVer = GameDataService.getMinVersion();
-            if (minVer && APP_VERSION) {
-                // Simple semantic version check (could be more robust, but for 2.0.0 vs 2.0.1 it works)
-                if (minVer > APP_VERSION) {
-                    setNeedsUpdate(true);
+        // [FIX] Real-time Version Check (Robust & Semantic)
+        const versionRef = ref(db, 'game_data/min_version');
+        const unsub = onValue(versionRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const minVer = snapshot.val();
+                if (minVer && APP_VERSION) {
+                    // Robust Semantic Version Comparison
+                    const v1Parts = minVer.split('.').map(Number);
+                    const v2Parts = APP_VERSION.split('.').map(Number);
+
+                    let needsUpdateCheck = false;
+                    for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+                        const v1 = v1Parts[i] || 0;
+                        const v2 = v2Parts[i] || 0;
+                        if (v1 > v2) {
+                            needsUpdateCheck = true;
+                            break;
+                        } else if (v1 < v2) {
+                            break;
+                        }
+                    }
+
+                    if (needsUpdateCheck) {
+                        console.log(`[UPDATE] New version required: ${minVer} (Current: ${APP_VERSION})`);
+                        setNeedsUpdate(true);
+                    } else {
+                        setNeedsUpdate(false);
+                    }
                 }
             }
-        };
+        });
 
-        // Initial check
-        checkVersion();
-
-        // Check again after a few seconds when Firebase data might have settled
-        const timer = setTimeout(checkVersion, 3000);
-        return () => clearTimeout(timer);
+        return () => unsub();
     }, []);
 
     const handleStartLoading = (fast = false) => {

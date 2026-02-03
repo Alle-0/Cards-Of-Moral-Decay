@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler, Share, Alert } from 'react-native';
+import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler, Share, Alert, Modal, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut, withRepeat, interpolate, withSequence } from 'react-native-reanimated';
 
@@ -31,9 +31,13 @@ import HapticsService from '../services/HapticsService'; // [FIX] Import added
 import * as Clipboard from 'expo-clipboard';
 import ToastNotification from '../components/ToastNotification';
 import EfficientBlurView from '../components/EfficientBlurView'; // [NEW]
-import { CardsIcon, CheckIcon, ThornsIcon, LockIcon, RankIcon, SettingsIcon, RobotIcon, DirtyCashIcon, ScaleIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon } from '../components/Icons';
+import { CardsIcon, CheckIcon, ThornsIcon, LockIcon, RankIcon, SettingsIcon, RobotIcon, DirtyCashIcon, ScaleIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ShareIcon, EyeIcon } from '../components/Icons';
 import ShopScreen from './ShopScreen'; // [NEW]
 import AnalyticsService from '../services/AnalyticsService';
+import { BASE_URL } from '../constants/Config';
+import { DARK_PACK_PREVIEW, BASE_PACK_PREVIEW } from '../constants/PreviewData';
+import CensoredText from '../components/CensoredText'; // [NEW]
+
 
 // --- NUOVI COMPONENTI GRAFICI (Mettili prima di GameScreen o in fondo) ---
 
@@ -63,75 +67,99 @@ const SectionHeader = ({ title }) => (
 );
 
 // 2. Card Pacchetto Minimale (Sostituisce le scatole 3D)
-const MinimalPackCard = ({ label, type, selected, onPress, owned = true }) => {
+// 2. Card Pacchetto Minimale (Sostituisce le scatole 3D)
+const MinimalPackCard = ({ label, type, selected, onPress, owned = true, onPreview }) => {
     const isDark = type === 'dark';
     const baseColor = isDark ? '#ef4444' : '#FDB931';
     const { t } = useLanguage();
 
     return (
-        <PremiumPressable
-            onPress={onPress}
-            disabled={!owned}
-            scaleDown={0.97}
-            style={{
-                width: '100%',
-                height: 52,
-                marginBottom: 6,
-                opacity: owned ? 1 : 0.5
-            }}
-            contentContainerStyle={{ height: '100%' }} // Targeted fix for lobby card height
-        >
-            <View style={{
-                flex: 1,
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: selected ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.4)',
-                borderRadius: 12,
-                paddingHorizontal: 12,
-                borderWidth: 1,
-                borderColor: selected ? baseColor : 'rgba(255,255,255,0.05)',
-                height: '100%' // Ensure it fills parent
-            }}>
-                {/* Icona Sinistra - Cerchio Standardizzato */}
+        <View style={{ width: '100%', height: 52, marginBottom: 6 }}>
+            {/* 1. Main Interaction Layer (Background + Click) */}
+            <PremiumPressable
+                onPress={owned ? onPress : null}
+                scaleDown={0.97}
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    opacity: owned ? 1 : 0.6
+                }}
+                contentContainerStyle={{ height: '100%' }}
+            >
                 <View style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    backgroundColor: selected ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.02)',
-                    justifyContent: 'center',
+                    flex: 1,
+                    flexDirection: 'row',
                     alignItems: 'center',
-                    overflow: 'hidden',
-                    borderWidth: selected ? 1 : 0,
-                    borderColor: 'rgba(255,255,255,0.05)'
+                    backgroundColor: selected ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.4)',
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    borderWidth: 1,
+                    borderColor: selected ? baseColor : 'rgba(255,255,255,0.05)',
+                    height: '100%',
+                    paddingRight: 60 // Make room for floating elements
                 }}>
-                    {isDark ?
-                        <ThornsIcon size={20} color={selected ? baseColor : '#555'} /> :
-                        <CardsIcon size={20} color={selected ? baseColor : '#555'} />
-                    }
-                </View>
-
-                {/* Testo Centrale */}
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={{
-                        fontFamily: 'Cinzel-Bold',
-                        color: selected ? baseColor : '#888',
-                        fontSize: 12,
-                        letterSpacing: 0.5
+                    {/* Icona Sinistra */}
+                    <View style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 17,
+                        backgroundColor: selected ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.02)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        overflow: 'hidden',
+                        borderWidth: selected ? 1 : 0,
+                        borderColor: 'rgba(255,255,255,0.05)'
                     }}>
-                        {label}
-                    </Text>
-                    <Text style={{ fontFamily: 'Outfit', fontSize: 8, color: '#444' }}>
-                        {isDark ? t('adult_content') : t('starter_set')}
-                    </Text>
-                </View>
+                        {isDark ?
+                            <ThornsIcon size={20} color={selected ? baseColor : '#555'} /> :
+                            <CardsIcon size={20} color={selected ? baseColor : '#555'} />
+                        }
+                    </View>
 
-                {/* Status Destra */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    {!owned && <LockIcon size={14} color="#444" />}
-                    {owned && selected && <CheckIcon size={14} color={baseColor} />}
+                    {/* Testo Centrale */}
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={{
+                            fontFamily: 'Cinzel-Bold',
+                            color: selected ? baseColor : '#888',
+                            fontSize: 12,
+                            letterSpacing: 0.5
+                        }}>
+                            {label}
+                        </Text>
+                        <Text style={{ fontFamily: 'Outfit', fontSize: 8, color: '#444' }}>
+                            {isDark ? t('adult_content') : t('starter_set')}
+                        </Text>
+                    </View>
                 </View>
+            </PremiumPressable>
+
+            {/* 2. Floating Action Layer (Sibling to Pressable) */}
+            <View
+                style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingRight: 12,
+                    gap: 10
+                }}
+                pointerEvents="box-none"
+            >
+                {onPreview && (
+                    <TouchableOpacity
+                        onPress={onPreview}
+                        style={{ padding: 8 }}
+                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                    >
+                        <EyeIcon size={20} color="#d4af37" />
+                    </TouchableOpacity>
+                )}
+                {!owned && <LockIcon size={14} color="#444" />}
+                {owned && selected && <CheckIcon size={14} color={baseColor} />}
             </View>
-        </PremiumPressable>
+        </View>
     );
 };
 
@@ -146,15 +174,26 @@ const GameScreen = ({ onStartLoading }) => {
     const { theme } = useTheme();
     const { bribe: payBribe, awardMoney, logout, user: authUser } = useAuth(); // [NEW] get authUser for skins
     const { t } = useLanguage(); // [NEW]
-    const { height: screenHeight } = useWindowDimensions();
+    const { height: screenHeight, width: screenWidth } = useWindowDimensions();
     const isSmallScreen = screenHeight < 700;
 
 
 
     const [selectedCards, setSelectedCards] = useState([]);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
+    const [previewPack, setPreviewPack] = useState(null); // [NEW] Preview Config
 
-    // [FIX] Persistent state for Winner Modal to allow exit animation
+    const handlePreviewPack = (packId) => {
+        SoundService.play('tap');
+        setPreviewPack(packId);
+    };
+
+    const handleClosePreview = () => {
+        SoundService.play('tap');
+        setPreviewPack(null);
+    };
+
+    // --- GAME LOGIC ---X] Persistent state for Winner Modal to allow exit animation
     const [persistedWinnerInfo, setPersistedWinnerInfo] = useState(null);
     const [showWinnerModal, setShowWinnerModal] = useState(false);
 
@@ -171,6 +210,7 @@ const GameScreen = ({ onStartLoading }) => {
     const [tempPlayedText, setTempPlayedText] = useState(null);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'success' }); // [NEW]
     const [showDominusAlert, setShowDominusAlert] = useState(false); // [NEW] Dominus Alert
+    const [hasAutoShared, setHasAutoShared] = useState(false); // [NEW] Auto-share state
 
     // [NEW] Screen Shake Animation
     const shakeTranslateX = useSharedValue(0);
@@ -233,6 +273,8 @@ const GameScreen = ({ onStartLoading }) => {
             setShowDominusAlert(false);
         }
     }, [roomData?.dominus, user?.name, roomData?.statoTurno]);
+
+
 
     // [NEW] Economy Integration
     const [lastPaidTurn, setLastPaidTurn] = useState(null);
@@ -556,18 +598,31 @@ const GameScreen = ({ onStartLoading }) => {
     };
 
     // [NEW] Share Room Logic
+    // [NEW] Share Room Logic
     const handleShareRoom = async () => {
         const message = t('share_room_msg', {
             code: roomCode,
             id: user?.username,
             url: BASE_URL
         });
-        const shareUrl = `${BASE_URL}/?room=${roomCode}&invite=${user?.username}`;
+        const shareUrl = `${BASE_URL}/?room=${roomCode}&invite=${encodeURIComponent(user?.username)}`;
 
         if (Platform.OS === 'web') {
-            await Clipboard.setStringAsync(shareUrl);
-            setToast({ visible: true, message: t('toast_room_link_copied'), type: 'success' });
-            SoundService.play('success');
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Cards of Moral Decay',
+                        text: message,
+                        url: shareUrl,
+                    });
+                } catch (error) {
+                    console.log('Error sharing:', error);
+                }
+            } else {
+                await Clipboard.setStringAsync(shareUrl);
+                setToast({ visible: true, message: t('toast_room_link_copied'), type: 'success' });
+                SoundService.play('success');
+            }
         } else {
             try {
                 await Share.share({
@@ -679,6 +734,45 @@ const GameScreen = ({ onStartLoading }) => {
                 ))}
             </View>
 
+            {/* --- INVITA AMICI (Nuova Sezione Richiesta) --- */}
+            {/* --- INVITA AMICI (Condizionale < 3 giocatori) --- */}
+            {playersList.length < 3 && (
+                <View style={{ width: '100%', alignItems: 'center', marginBottom: 20 }}>
+                    <PremiumPressable
+                        onPress={handleShareRoom}
+                        style={{
+                            paddingVertical: 8,
+                            paddingHorizontal: 16,
+                            borderRadius: 20,
+                            backgroundColor: 'rgba(212, 175, 55, 0.05)',
+                            borderWidth: 1,
+                            borderColor: 'rgba(212, 175, 55, 0.2)'
+                        }}
+                        rippleColor="rgba(212, 175, 55, 0.1)"
+                    >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <ShareIcon size={12} color="#d4af37" />
+                            <Text style={{
+                                fontFamily: 'Cinzel-Bold',
+                                fontSize: 11,
+                                color: '#d4af37',
+                                letterSpacing: 1
+                            }}>
+                                {t('invite_friends_btn', { defaultValue: "INVITA" })}
+                            </Text>
+                        </View>
+                    </PremiumPressable>
+                    <Text style={{
+                        fontFamily: 'Outfit',
+                        fontSize: 10,
+                        color: 'rgba(255,255,255,0.4)',
+                        marginTop: 6
+                    }}>
+                        {t('min_players_hint', { defaultValue: "Serve almeno 2 amici." })}
+                    </Text>
+                </View>
+            )}
+
             {/* --- IMPOSTAZIONI DEL CREATORE --- */}
             {isCreator && (
                 <View style={[styles.premiumBox, { marginTop: 0, paddingVertical: 10 }]}>
@@ -726,6 +820,7 @@ const GameScreen = ({ onStartLoading }) => {
                             label={t('base_pack')}
                             type="base"
                             selected={true}
+                            onPreview={() => handlePreviewPack('base')}
                         />
                         <MinimalPackCard
                             label={t('dark_pack')}
@@ -737,6 +832,7 @@ const GameScreen = ({ onStartLoading }) => {
                                 setAllowedPackages({ ...allowedPackages, dark: newVal });
                                 updateRoomSettings({ allowedPackages: { ...allowedPackages, dark: newVal } });
                             }}
+                            onPreview={() => handlePreviewPack('dark')}
                         />
                     </View>
 
@@ -797,21 +893,19 @@ const GameScreen = ({ onStartLoading }) => {
                     <PremiumButton
                         title={t('start_game_btn')}
                         haptic="heavy"
+                        disabled={playersList.length < 3 && !__DEV__} // [FIX] Disabled state
                         onPress={() => {
-                            if (playersList.length < 3 && !__DEV__) {
-                                setModalConfig({
-                                    visible: true,
-                                    title: t('attention') || 'ATTENZIONE',
-                                    message: t('min_players_error'),
-                                    singleButton: true,
-                                    confirmText: t('default_confirm') || 'OK'
-                                });
-                                return;
-                            }
+                            // Double check just in case, though disabled prop prevents this
+                            if (playersList.length < 3 && !__DEV__) return;
                             AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
                             startGame(targetPoints);
                         }}
-                        style={{ minWidth: 240, height: 54, borderRadius: 27 }}
+                        style={{
+                            minWidth: 240,
+                            height: 54,
+                            borderRadius: 27,
+                            opacity: (playersList.length < 3 && !__DEV__) ? 0.5 : 1 // [FIX] Visual feedback
+                        }}
                     />
                 ) : (
                     <View style={styles.guestSettingsView}>
@@ -1354,6 +1448,132 @@ const GameScreen = ({ onStartLoading }) => {
                     type={toast.type}
                     onClose={() => setToast(prev => ({ ...prev, visible: false }))}
                 />
+
+
+                {/* Package Preview Modal */}
+                <Modal
+                    transparent={true}
+                    visible={!!previewPack}
+                    animationType="fade"
+                    onRequestClose={handleClosePreview}
+                    statusBarTranslucent={true}
+                    hardwareAccelerated={true}
+                >
+                    {previewPack && (
+                        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' }}>
+                            <TouchableWithoutFeedback onPress={handleClosePreview}>
+                                <View style={StyleSheet.absoluteFill} />
+                            </TouchableWithoutFeedback>
+
+                            <Animated.View
+                                entering={ZoomIn.duration(300)}
+                                exiting={ZoomOut.duration(200)}
+                                style={{
+                                    width: '90%',
+                                    maxWidth: 400,
+                                    backgroundColor: '#1a1a1a',
+                                    borderRadius: 24,
+                                    borderWidth: 1,
+                                    borderColor: theme.colors.accent,
+                                    padding: 20,
+                                    alignItems: 'center',
+                                    shadowColor: theme.colors.accent,
+                                    shadowOffset: { width: 0, height: 0 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 20,
+                                    elevation: 10
+                                }}
+                            >
+                                <Text style={{
+                                    fontFamily: 'Cinzel-Bold',
+                                    fontSize: 18,
+                                    color: theme.colors.accent,
+                                    marginBottom: 4,
+                                    textAlign: 'center'
+                                }}>
+                                    {previewPack === 'dark' ? "DARK PACK" : "BASE PACK"}
+                                </Text>
+                                <Text style={{
+                                    fontFamily: 'Outfit',
+                                    fontSize: 12,
+                                    color: '#888',
+                                    marginBottom: 20,
+                                    textAlign: 'center'
+                                }}>
+                                    {previewPack === 'dark' ? t('adult_content') : t('starter_set')}
+                                </Text>
+
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+                                    {(previewPack === 'dark' ? (DARK_PACK_PREVIEW[roomLanguage] || DARK_PACK_PREVIEW['en']) : (BASE_PACK_PREVIEW[roomLanguage] || BASE_PACK_PREVIEW['en'])).map((text, index) => {
+                                        // Extract censored words for Dark pack
+                                        const censoredMatches = previewPack === 'dark' ? (text.match(/\{[^}]+\}/g) || []) : [];
+
+                                        return (
+                                            <View key={index} style={{
+                                                backgroundColor: '#f5f5f5',
+                                                borderColor: '#ddd',
+                                                borderWidth: 1,
+                                                width: (Math.min(screenWidth * 0.9, 400) - 60) / 2,
+                                                height: ((Math.min(screenWidth * 0.9, 400) - 60) / 2) * 1.4,
+                                                padding: 8,
+                                                borderRadius: 8
+                                            }}>
+                                                <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 4 }}>
+                                                    {previewPack === 'dark' ? (
+                                                        <CensoredText
+                                                            text={text}
+                                                            censoredWords={censoredMatches}
+                                                            style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}
+                                                            textStyle={{
+                                                                color: '#000',
+                                                                fontFamily: 'Outfit',
+                                                                fontSize: 13,
+                                                                fontWeight: '600',
+                                                                lineHeight: 18,
+                                                                textAlign: 'center'
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <Text style={{
+                                                            color: '#000',
+                                                            fontFamily: 'Outfit',
+                                                            fontSize: 13,
+                                                            fontWeight: '600',
+                                                            lineHeight: 18,
+                                                            textAlign: 'center'
+                                                        }}>
+                                                            {text}
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                                <View style={{ paddingBottom: 6, paddingLeft: 8, opacity: 0.8 }}>
+                                                    <Text style={{ fontSize: 5, color: '#000', opacity: 0.8, fontFamily: 'Outfit-Bold' }}>
+                                                        MORAL DECAY
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+
+                                <TouchableOpacity
+                                    onPress={handleClosePreview}
+                                    style={{
+                                        marginTop: 25,
+                                        paddingVertical: 10,
+                                        paddingHorizontal: 30,
+                                        backgroundColor: 'rgba(255,255,255,0.1)',
+                                        borderRadius: 20
+                                    }}
+                                >
+                                    <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 12 }}>
+                                        {t('close_btn', { defaultValue: 'CHIUDI' })}
+                                    </Text>
+                                </TouchableOpacity>
+                            </Animated.View>
+                        </View>
+                    )}
+                </Modal>
 
             </PremiumBackground>
         </Animated.View>

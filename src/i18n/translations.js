@@ -80,6 +80,7 @@ export const translations = {
 
         ok_btn: "OK",
         back_btn: "INDIETRO",
+        close_btn: "CHIUDI",
         cancel_btn: "ANNULLA",
         exit_btn_small: "ESCI",
         copied_toast_title: "COPIATO!",
@@ -232,6 +233,8 @@ export const translations = {
         min_players_error: "Servono almeno 3 giocatori per iniziare!",
         offline_title: "CONNESSIONE ASSENTE",
         offline_msg: "Stai giocando in modalità offline. Alcune funzionalità potrebbero essere limitate.",
+        invite_friends_btn: "INVITA AMICI",
+        min_players_hint: "Serve avere almeno 2 amici per giocare.",
         // MODALSselect_points_title: "SELEZIONA I PUNTI PER VINCERE",
         points_label: "Punti",
         start_game_btn: "INIZIA PARTITA",
@@ -544,6 +547,7 @@ export const translations = {
 
         ok_btn: "OK",
         back_btn: "BACK",
+        close_btn: "CLOSE",
         cancel_btn: "CANCEL",
         exit_btn_small: "EXIT",
         copied_toast_title: "COPIED!",
@@ -696,6 +700,8 @@ export const translations = {
         min_players_error: "At least 3 players are required to start!",
         offline_title: "NO CONNECTION",
         offline_msg: "You are playing in offline mode. Some features may be limited.",
+        invite_friends_btn: "INVITE FRIENDS",
+        min_players_hint: "You need at least 2 friends to play.",
         select_points_title: "SELECT POINTS TO WIN",
         points_label: "Points",
         start_game_btn: "START GAME",

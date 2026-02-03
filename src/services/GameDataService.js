@@ -23,7 +23,7 @@ class GameDataService {
         this.darkPack = { nere: [], bianche: [] };
 
         this.isLoaded = false;
-        this.minVersion = "3.7.5";
+        this.minVersion = "3.8.0";
         this.downloadUrl = null;
     }
 
