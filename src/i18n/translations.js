@@ -230,7 +230,8 @@ export const translations = {
         // GAME LOBBY
         waiting_host_msg: "In attesa che l'host inizi la partita...",
         min_players_error: "Servono almeno 3 giocatori per iniziare!",
-
+        offline_title: "CONNESSIONE ASSENTE",
+        offline_msg: "Stai giocando in modalità offline. Alcune funzionalità potrebbero essere limitate.",
         // MODALSselect_points_title: "SELEZIONA I PUNTI PER VINCERE",
         points_label: "Punti",
         start_game_btn: "INIZIA PARTITA",
@@ -438,7 +439,7 @@ export const translations = {
         login_enter_chaos: "Entra nel caos.",
         login_no_password: "Nessuna email. Nessuna password. Solo il tuo nome.",
         login_alias_label: "ALIAS",
-        login_alias_placeholder: "Come vuoi farti salvare?",
+        login_alias_placeholder: "Nome...",
         login_btn_create: "ENTRA",
         login_btn_creating: "CREAZIONE...",
         login_disclaimer: "Ti verrà assegnato un Codice di Recupero.\nNon perderlo, o perdi tutto.",
@@ -692,7 +693,9 @@ export const translations = {
 
         // GAME LOBBY
         waiting_host_msg: "Waiting for host to start the game...",
-        min_players_error: "Need at least 3 players to start!",
+        min_players_error: "At least 3 players are required to start!",
+        offline_title: "NO CONNECTION",
+        offline_msg: "You are playing in offline mode. Some features may be limited.",
         select_points_title: "SELECT POINTS TO WIN",
         points_label: "Points",
         start_game_btn: "START GAME",

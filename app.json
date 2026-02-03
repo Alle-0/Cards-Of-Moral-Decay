@@ -3,29 +3,30 @@
     "name": "Cards of Moral Decay",
     "slug": "cards-of-moral-decay",
     "scheme": "comd",
-    "version": "3.7.2",
+    "version": "3.7.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
     "splash": {
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffce6a"
+      "backgroundColor": "#000000"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.cardsofmoraldecay"
+      "supportsTablet": true
     },
     "android": {
       "hardwareAccelerated": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#000000"
       },
       "package": "com.anonymous.cardsofmoraldecay",
-      "versionCode": 13,
+      "versionCode": 15,
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
@@ -36,6 +37,10 @@
               "scheme": "https",
               "host": "carte-vs-umani.web.app",
               "pathPrefix": "/"
+            },
+            {
+              "scheme": "comd",
+              "host": "invite"
             }
           ],
           "category": [

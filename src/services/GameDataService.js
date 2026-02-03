@@ -23,7 +23,7 @@ class GameDataService {
         this.darkPack = { nere: [], bianche: [] };
 
         this.isLoaded = false;
-        this.minVersion = "3.7.2";
+        this.minVersion = "3.7.5";
         this.downloadUrl = null;
     }
 
@@ -113,7 +113,7 @@ class GameDataService {
                     this.darkPackEN = { nere: [], bianche: [] };
                 }
 
-                console.log('Packs (IT/EN) synced from Firebase.');
+                // console.log('Packs (IT/EN) synced from Firebase.');
 
                 // Update active packs based on current language
                 this.updateActivePacks();
@@ -162,7 +162,7 @@ class GameDataService {
     setLanguage(lang) {
         this.language = lang;
         this.updateActivePacks();
-        console.log(`[GameDataService] Language set to ${lang}`);
+        // console.log(`[GameDataService] Language set to ${lang}`);
     }
 
     // --- NANO DATA UTILITIES (Operates on Base + Loaded Dark) ---

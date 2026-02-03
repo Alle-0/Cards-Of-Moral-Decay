@@ -1,4 +1,4 @@
-import { logEvent } from 'firebase/analytics';
+import { logEvent, setUserId, setUserProperties } from 'firebase/analytics';
 import { analytics } from './firebase';
 
 /**
@@ -8,6 +8,34 @@ import { analytics } from './firebase';
 const eventQueue = [];
 
 const AnalyticsService = {
+    /**
+     * Set the global User ID for all subsequent events.
+     * @param {string} userId - The unique identifier for the user (e.g. username).
+     */
+    identifyUser: (userId) => {
+        if (!analytics) return;
+        try {
+            setUserId(analytics, userId);
+            if (__DEV__) console.log(`[Analytics] User identified: ${userId}`);
+        } catch (error) {
+            console.warn('[Analytics] Error setting User ID:', error);
+        }
+    },
+
+    /**
+     * Set custom user properties (dimensions).
+     * @param {Object} properties - Key-value pairs of properties.
+     */
+    setUserProperties: (properties) => {
+        if (!analytics) return;
+        try {
+            setUserProperties(analytics, properties);
+            if (__DEV__) console.log('[Analytics] User properties set:', properties);
+        } catch (error) {
+            console.warn('[Analytics] Error setting User properties:', error);
+        }
+    },
+
     log: (eventName, params = {}) => {
         if (!analytics) {
             if (__DEV__) {

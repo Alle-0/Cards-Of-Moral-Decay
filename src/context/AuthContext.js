@@ -7,6 +7,9 @@ import { RANK_COLORS, RANK_THRESHOLDS } from '../constants/Ranks';
 import NotificationService from '../services/NotificationService';
 export { RANK_COLORS, RANK_THRESHOLDS };
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AnalyticsService from '../services/AnalyticsService';
+
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -14,9 +17,28 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isConnected, setIsConnected] = useState(true); // Default to true to avoid flash
+
+    const USER_CACHE_KEY = 'cached_user_profile';
 
     // 1. Auto-Login (Init)
     useEffect(() => {
+        // A. Load from Cache First (Offline Support)
+        const loadCache = async () => {
+            try {
+                const cached = await AsyncStorage.getItem(USER_CACHE_KEY);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    // console.log(`[AUTH] Loaded cached user: ${parsed.username}`);
+                    setUser(parsed);
+                    // [OFFLINE SAFETY] Force stop loading after 5s if we have cache
+                    setTimeout(() => setLoading(false), 5000);
+                }
+            } catch (e) { console.warn("[AUTH] Cache load failed", e); }
+        };
+        loadCache();
+
+        // B. Firebase Auth State
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 // User is authenticated in Firebase Auth
@@ -24,16 +46,31 @@ export const AuthProvider = ({ children }) => {
             } else {
                 // [NEW] If no user, sign in anonymously for global rule access
                 try {
-                    console.log("No session found, signing in anonymously...");
+                    // console.log("No session found, signing in anonymously...");
                     await signInAnonymously(auth);
                 } catch (e) {
                     console.error("Early Anonymous Login failed", e);
-                    setUser(null);
+                    // Don't reset user if we have a cache
                     setLoading(false);
                 }
             }
         });
         return () => unsubscribe();
+    }, []);
+
+    // 1.5. Connectivity Listener
+    useEffect(() => {
+        const connectedRef = ref(db, ".info/connected");
+        const unsub = onValue(connectedRef, (snap) => {
+            if (snap.val() === true) {
+                setIsConnected(true);
+                // console.log("[FIREBASE] Connected ✅");
+            } else {
+                setIsConnected(false);
+                // console.log("[FIREBASE] Disconnected ❌");
+            }
+        });
+        return () => unsub();
     }, []);
 
     // 2. Realtime Database Sync (Once user is loaded and has a username)
@@ -56,17 +93,33 @@ export const AuthProvider = ({ children }) => {
                 }
 
                 // Merge to update local state with latest DB data, handling deleted nodes
-                setUser(prev => ({
-                    ...prev,
-                    ...data,
-                    friends: data.friends || {},
-                    friendRequests: data.friendRequests || {}
-                }));
+                setUser(prev => {
+                    const next = {
+                        ...prev,
+                        ...data,
+                        friends: data.friends || {},
+                        friendRequests: data.friendRequests || {}
+                    };
+
+                    // Cache the merged result
+                    AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(next));
+                    return next;
+                });
             }
         });
 
         return () => unsubscribe();
     }, [user?.username]);
+
+    // [NEW] Sync Analytics with User Data
+    useEffect(() => {
+        if (user?.username) {
+            AnalyticsService.identifyUser(user.username);
+            if (user.rank) {
+                AnalyticsService.setUserProperties({ rank: user.rank });
+            }
+        }
+    }, [user?.username, user?.rank]);
 
     // [NEW] Push Notifications Token Sync
     useEffect(() => {
@@ -79,7 +132,7 @@ export const AuthProvider = ({ children }) => {
                     await update(ref(db, `users/${user.username}`), {
                         pushToken: token
                     });
-                    console.log(`[PUSH] Token updated for ${user.username}`);
+                    // console.log(`[PUSH] Token updated for ${user.username}`);
                 }
             } catch (error) {
                 console.error("[PUSH] Error registering token:", error);
@@ -137,7 +190,9 @@ export const AuthProvider = ({ children }) => {
                         }
                     }
 
-                    setUser({ username, ...userData });
+                    const finalUser = { username, ...userData };
+                    setUser(finalUser);
+                    AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(finalUser));
                     return;
                 }
             }
@@ -158,16 +213,16 @@ export const AuthProvider = ({ children }) => {
         // [MODIFIED] Re-use current anonymous session if available to avoid races
         let currentUser = auth.currentUser;
         if (!currentUser) {
-            console.log("[DEBUG] No current user, signing in anonymously...");
+            // console.log("[DEBUG] No current user, signing in anonymously...");
             const authResult = await signInAnonymously(auth);
             currentUser = authResult.user;
         }
 
         const uid = currentUser.uid;
-        console.log(`[DEBUG] Authenticated as UID: ${uid}`);
+        // console.log(`[DEBUG] Authenticated as UID: ${uid}`);
 
         // 2. Check Uniqueness (Optimized for Rules)
-        console.log(`[DEBUG] Checking uniqueness for: ${username}`);
+        // console.log(`[DEBUG] Checking uniqueness for: ${username}`);
         const userRef = ref(db, `users/${username}`);
         const snapshot = await get(userRef);
         if (snapshot.exists()) {
@@ -205,13 +260,13 @@ export const AuthProvider = ({ children }) => {
         };
 
         // Create UID mapping first, then the user profile (Sequential to satisfy Rules)
-        console.log(`[DEBUG] Step 1: Writing to uids/${uid}...`);
+        // console.log(`[DEBUG] Step 1: Writing to uids/${uid}...`);
         await set(ref(db, `uids/${uid}`), username);
 
-        console.log(`[DEBUG] Step 2: Writing to users/${username}...`);
+        // console.log(`[DEBUG] Step 2: Writing to users/${username}...`);
         await set(ref(db, `users/${username}`), newUser);
 
-        console.log(`[DEBUG] Success! Account created for ${username}`);
+        // console.log(`[DEBUG] Success! Account created for ${username}`);
 
         // [NEW] Manually update state to jumpstart the UI with isNew flag
         setUser({ username, ...newUser, isNew: true });
@@ -232,12 +287,12 @@ export const AuthProvider = ({ children }) => {
         // [MODIFIED] Re-use current anonymous session if available
         let currentUser = auth.currentUser;
         if (!currentUser) {
-            console.log("[DEBUG] No current user for recovery, signing in anonymously...");
+            // console.log("[DEBUG] No current user for recovery, signing in anonymously...");
             const authResult = await signInAnonymously(auth);
             currentUser = authResult.user;
         }
         const newUid = currentUser.uid;
-        console.log(`[DEBUG] Attempting recovery for ${username} with UID: ${newUid}`);
+        // console.log(`[DEBUG] Attempting recovery for ${username} with UID: ${newUid}`);
 
         // 2. Direct Path Lookup
         const userRef = ref(db, `users/${username}`);
@@ -316,6 +371,8 @@ export const AuthProvider = ({ children }) => {
 
         if (newRank !== data.rank) {
             await update(userRef, { rank: newRank });
+            // [NEW] Track rank update in Analytics
+            AnalyticsService.setUserProperties({ rank: newRank });
         }
     };
 
@@ -521,6 +578,7 @@ export const AuthProvider = ({ children }) => {
     const value = React.useMemo(() => ({
         user,
         loading,
+        isConnected, // [NEW] Exposed for UI usage
         signUp,
         recoverAccount,
         logout,
@@ -565,7 +623,8 @@ export const AuthProvider = ({ children }) => {
         acceptFriendRequest,
         rejectFriendRequest,
         removeFriend,
-        addFriendDirectly
+        addFriendDirectly,
+        isConnected
     ]);
 
     return (

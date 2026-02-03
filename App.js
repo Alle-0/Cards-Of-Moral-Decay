@@ -37,6 +37,7 @@ import { APP_VERSION } from './src/constants/Config';
 import PaymentResultModal from './src/components/PaymentResultModal'; // [NEW] Global Feedback
 import PwaInstallPrompt from './src/components/PwaInstallPrompt'; // [NEW] PWA Install Prompt
 import { useLanguage } from './src/context/LanguageContext';
+import ConnectivityOverlay from './src/components/ConnectivityOverlay';
 import { Platform, Linking } from 'react-native';
 
 // Keep the splash screen visible while we fetch resources
@@ -117,7 +118,7 @@ export default function App() {
 
 const AppContent = () => {
     const { roomCode } = useGame();
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, isConnected } = useAuth();
     const { t } = useLanguage(); // [NEW]
     const [showGameSplash, setShowGameSplash] = useState(false);
     const [isFastSplash, setIsFastSplash] = useState(false);
@@ -301,6 +302,8 @@ const AppContent = () => {
                 result={paymentResult.result}
                 onClose={() => setPaymentResult({ visible: false, result: null })}
             />
+
+            <ConnectivityOverlay isConnected={isConnected} />
         </View>
     );
 };

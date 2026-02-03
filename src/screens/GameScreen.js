@@ -798,11 +798,14 @@ const GameScreen = ({ onStartLoading }) => {
                         title={t('start_game_btn')}
                         haptic="heavy"
                         onPress={() => {
-                            if (playersList.length < 3) {
-                                Alert.alert(
-                                    t('attention') || 'ATTENZIONE',
-                                    t('min_players_error')
-                                );
+                            if (playersList.length < 3 && !__DEV__) {
+                                setModalConfig({
+                                    visible: true,
+                                    title: t('attention') || 'ATTENZIONE',
+                                    message: t('min_players_error'),
+                                    singleButton: true,
+                                    confirmText: t('default_confirm') || 'OK'
+                                });
                                 return;
                             }
                             AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
