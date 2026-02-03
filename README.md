@@ -1,36 +1,39 @@
 <div align="center">
 
-# Cards of Moral Decay
-### *Discover the hidden depths of your moral compass.*
-
-<br/>
-
-[![Version](https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?label=LATEST%20RELEASE&color=ffd700&style=for-the-badge)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
-[![Platform](https://img.shields.io/badge/Platform-Android_&_Web-3DDC84?style=for-the-badge&logo=android)](https://carte-vs-umani.web.app)
-<br/>
-<img src="https://img.shields.io/badge/RATING-18%2B-red?style=for-the-badge" height="30" />
+<img src="https://carte-vs-umani.web.app/og-image.png" alt="Cards of Moral Decay Banner">
 
 <br/><br/>
 
-> CAUTION!
+# CARDS OF MORAL DECAY
+### *An elegant interface for disgraceful thoughts.*
+
+<br/>
+
+[![Version](https://img.shields.io/badge/VERSION-v3.8.1-D4AF37?style=for-the-badge&labelColor=000000)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
+[![Platform](https://img.shields.io/badge/PLATFORM-ANDROID_%26_WEB-D4AF37?style=for-the-badge&labelColor=000000&logo=android&logoColor=D4AF37)](https://carte-vs-umani.web.app)
+[![License](https://img.shields.io/badge/RATING-18%2B-D4AF37?style=for-the-badge&labelColor=000000)](https://github.com/Alle-0/Cards-Of-Moral-Decay)
+
+<br/><br/>
+
+> [!WARNING]
 > ### 🔞 MATURE CONTENT
-> This experience explores dark humor, social taboos, and moral decadence.  
+> This experience explores dark humor, social taboos, and moral decadence.
 > **Strictly for adults. Play responsibly.**
 
 <br/>
 
-## 🎮 PLAY NOW
+## 🚀 JOIN THE DECAY
 
-<a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/download/v3.5.0/CardsOfMoralDecay-v3.5.0.apk">
-  <img src="https://img.shields.io/badge/⬇_Download_Android_APK-333333?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=222222" height="60" />
-</a>
-&nbsp;&nbsp;
 <a href="https://carte-vs-umani.web.app">
-  <img src="https://img.shields.io/badge/🌐_Launch_Web_App-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white&labelColor=0d47a1" height="60" />
+  <img src="https://img.shields.io/badge/🌐_LAUNCH_WEB_APP-E6C25D?style=for-the-badge&logo=google-chrome&logoColor=black&labelColor=000000" height="50" />
+</a>
+
+<a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/download/v3.8.1/CardsOfMoralDecay-v3.8.1.apk">
+  <img src="https://img.shields.io/badge/⬇_DOWNLOAD_APK_(v3.8.1)-D4AF37?style=for-the-badge&logo=android&logoColor=black&labelColor=000000" height="50" />
 </a>
 
 <p align="center">
-  <i>(Web version optimized for <strong>Mobile Devices</strong>)</i>
+  <i>(The Web version is optimized for Mobile Devices)</i>
 </p>
 
 ---
@@ -50,9 +53,20 @@ Created for friends. No random matchmaking, just private rooms where you can be 
 
 ### 🎭 Shop & Aesthetics
 Collect **Dirty Cash** and redefine your style. Unlock:
-- 🌌 **Immersive Themes** (Tokyo, Lucifer, Matrix, and more)
-- 🎴 **Custom Card Skins**  
-- 🖼️ **Avatar Frames**
+- 🌌 **Immersive Themes** (Tokyo, Lucifer, Matrix, Asylum)
+- 🎴 **Custom Card Skins** - 🖼️ **Avatar Frames**
+
+---
+
+## 📸 SCREENSHOTS
+
+<div align="center">
+  <img src="https://img.itch.zone/aW1hZ2UvNDIzOTUzMy8yNTI2ODI1NC5wbmc=/original/hbnTFa.png" height="400" />
+  &nbsp;&nbsp;
+  <img src="https://img.itch.zone/aW1hZ2UvNDIzOTUzMy8yNTM3MTE4Ni5wbmc=/original/%2FhwoE4.png" height="400" />
+  &nbsp;&nbsp;
+  <img src="https://img.itch.zone/aW1hZ2UvNDIzOTUzMy8yNTM3MTE4OC5wbmc=/original/AcTJLt.png" height="400" />
+</div>
 
 ---
 
@@ -71,6 +85,6 @@ Collect **Dirty Cash** and redefine your style. Unlock:
 
 <div align="center">
 
-*Designed by Alle-0*
+*Developed by Alle-0*
 
 </div>
