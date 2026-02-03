@@ -517,8 +517,32 @@ export default function ShopScreen() {
             <Animated.View
                 key={bundle.id}
                 entering={FadeIn.delay((index % 6) * 50).duration(400)}
-                style={[styles.card, { marginBottom: 10, padding: 0, overflow: 'hidden' }]} // Remove default padding for full control
+                style={[
+                    styles.card,
+                    {
+                        marginBottom: 10,
+                        padding: 0,
+                        overflow: 'hidden',
+                        borderColor: bundle.bestValue ? '#d4af37' : 'rgba(255, 255, 255, 0.05)',
+                        borderWidth: bundle.bestValue ? 2 : 1
+                    }
+                ]} // Remove default padding for full control
             >
+                {/* Best Value Badge */}
+                {bundle.bestValue && (
+                    <View style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        backgroundColor: '#d4af37',
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderBottomLeftRadius: 8,
+                        zIndex: 10
+                    }}>
+                        <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 10, color: '#000' }}>BEST VALUE</Text>
+                    </View>
+                )}
                 <LinearGradient
                     colors={['#2c2c2c', '#1a1a1a']}
                     start={{ x: 0, y: 0 }}
@@ -663,9 +687,9 @@ export default function ShopScreen() {
                                     {t('tab_dc')}
                                 </Text>
                                 {[
-                                    { id: 'dc_500', amount: 500, price: 1.99, priceLabel: '1.99€' },
-                                    { id: 'dc_1500', amount: 1500, price: 4.99, priceLabel: '4.99€' },
-                                    { id: 'dc_5000', amount: 5000, price: 14.99, priceLabel: '14.99€' }
+                                    { id: 'dc_500', amount: 500, price: 0.99, priceLabel: '0.99€' },
+                                    { id: 'dc_3000', amount: 3000, price: 4.99, priceLabel: '4.99€' },
+                                    { id: 'dc_12000', amount: 12000, price: 14.99, priceLabel: '14.99€', bestValue: true }
                                 ].map((bundle, index) => renderDCBundle(bundle, index))}
                             </View>
                         )}

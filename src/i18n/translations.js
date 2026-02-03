@@ -103,8 +103,8 @@ export const translations = {
         toast_req_sent: "Richiesta inviata!",
         toast_id_copied: "ID copiato!",
         share_btn: "CONDIVIDI",
-        share_msg: "Sfidami su 🃏 Cards of Moral Decay! Aggiungimi come complice usando il mio ID: %{id}\n\nEntra nel giro: %{url}?invite=%{id}",
-        share_room_msg: "🃏 CARDS OF MORAL DECAY 🃏\nLa stanza è pronta, manchi solo tu! \n\nCodice Stanza: %{code}\nEntra subito qui: %{url}?room=%{code}&invite=%{id}",
+        share_msg: "Sfidami su 🃏 Cards of Moral Decay! Aggiungimi come complice usando il mio ID: %{id}\n\nEntra nel giro: %{url}/?invite=%{id}",
+        share_room_msg: "🃏 CARDS OF MORAL DECAY 🃏\nLa stanza è pronta, manchi solo tu! \n\nCodice Stanza: %{code}\nEntra subito qui: %{url}/?room=%{code}&invite=%{id}",
         toast_room_link_copied: "Link stanza copiato!",
         room_joined_success: "Ti sei unito alla partita!",
         toast_auto_friend: "Ti sei unito alla banda di %{name}!",
@@ -383,8 +383,9 @@ export const translations = {
         skin_holo: "Olografica Rara",
         skin_pelle: "Necronomicon",
         skin_marmo: "Marmo di Carrara",
-
-        // SHOP - OTHER
+        missing_permissions: "Permessi mancanti",
+        cannot_be_friend_self: "Non puoi essere amico di te stesso (triste).",
+        // AUTHOP - OTHER
         flavor_corruption: "La corruzione è l'unica via per la salvezza.",
         preview_subtitle_theme: "TEMA",
         preview_subtitle_skin: "SKIN",
@@ -570,8 +571,8 @@ export const translations = {
         toast_req_sent: "Request sent!",
         toast_id_copied: "ID copied!",
         share_btn: "SHARE",
-        share_msg: "Challenge me on 🃏 Cards of Moral Decay! Add me as an accomplice using my ID: %{id}\n\nJoin the circle: %{url}?invite=%{id}",
-        share_room_msg: "🃏 CARDS OF MORAL DECAY 🃏\nThe room is ready, we're just waiting for you! \n\nRoom Code: %{code}\nJoin now: %{url}?room=%{code}&invite=%{id}",
+        share_msg: "Challenge me on 🃏 Cards of Moral Decay! Add me as an accomplice using my ID: %{id}\n\nJoin the circle: %{url}/?invite=%{id}",
+        share_room_msg: "🃏 CARDS OF MORAL DECAY 🃏\nThe room is ready, we're just waiting for you! \n\nRoom Code: %{code}\nJoin now: %{url}/?room=%{code}&invite=%{id}",
         toast_room_link_copied: "Room link copied!",
         room_joined_success: "You joined the game!",
         toast_auto_friend: "You joined %{name}'s gang!",

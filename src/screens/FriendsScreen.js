@@ -65,6 +65,13 @@ const FriendsScreen = () => {
 
     const handleSend = async () => {
         if (!friendInput.trim()) return;
+
+        // [NEW] Self-friend check with translation
+        if (friendInput.trim() === myUsername) {
+            setToast({ visible: true, message: t('cannot_be_friend_self'), type: 'error' });
+            return;
+        }
+
         setLoading(true);
         try {
             await sendFriendRequest(friendInput);
