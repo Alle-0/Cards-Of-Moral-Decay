@@ -9,7 +9,7 @@
 
 <br/>
 
-[![Version](https://img.shields.io/badge/VERSION-v3.8.1-D4AF37?style=for-the-badge&labelColor=000000)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
+[![Version](https://img.shields.io/badge/VERSION-v3.8.2-D4AF37?style=for-the-badge&labelColor=000000)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
 [![Platform](https://img.shields.io/badge/PLATFORM-ANDROID_%26_WEB-D4AF37?style=for-the-badge&labelColor=000000&logo=android&logoColor=D4AF37)](https://carte-vs-umani.web.app)
 [![License](https://img.shields.io/badge/RATING-18%2B-D4AF37?style=for-the-badge&labelColor=000000)](https://github.com/Alle-0/Cards-Of-Moral-Decay)
 
@@ -28,8 +28,8 @@
   <img src="https://img.shields.io/badge/🌐_LAUNCH_WEB_APP-E6C25D?style=for-the-badge&logo=google-chrome&logoColor=black&labelColor=000000" height="50" />
 </a>
 
-<a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/download/v3.8.1/CardsOfMoralDecay-v3.8.1.apk">
-  <img src="https://img.shields.io/badge/⬇_DOWNLOAD_APK_(v3.8.1)-D4AF37?style=for-the-badge&logo=android&logoColor=black&labelColor=000000" height="50" />
+<a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/download/v3.8.2/CardsOfMoralDecay-v3.8.2.apk">
+  <img src="https://img.shields.io/badge/⬇_DOWNLOAD_APK_(v3.8.2)-D4AF37?style=for-the-badge&logo=android&logoColor=black&labelColor=000000" height="50" />
 </a>
 
 <p align="center">
