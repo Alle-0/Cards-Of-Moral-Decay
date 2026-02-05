@@ -7,6 +7,7 @@ import { PLAYER_AVATARS, PLAYER_COLORS, shuffleArray, pickColor } from '../utils
 import SoundService from '../services/SoundService';
 import GameDataService from '../services/GameDataService';
 import { useAuth } from './AuthContext';
+import AnalyticsService from '../services/AnalyticsService'; // [NEW]
 
 // Context
 const GameContext = createContext();
@@ -534,9 +535,20 @@ export const GameProvider = ({ children }) => {
                 const newScore = (room.punti[winnerName] || 0) + 1;
                 room.punti[winnerName] = newScore;
                 room.vincitoreTurno = winnerName;
+
+                // [NEW] Analytics for Round Win
+                // We can approximate round number by the number of turns played if we tracked it, 
+                // or just log the event.
+                if (AnalyticsService) {
+                    AnalyticsService.logRoundComplete(roomCode, winnerName, (room.turnoCorrente || 0) + 1);
+                }
+
                 if (newScore >= (room.puntiPerVincere || 7)) {
                     room.statoPartita = "GAME_OVER";
                     room.vincitorePartita = winnerName;
+                    if (AnalyticsService) {
+                        AnalyticsService.logGameWin(winnerName, newScore);
+                    }
                 }
                 room.statoTurno = "SHOWING_WINNER";
                 return dehydrateRoom(room);

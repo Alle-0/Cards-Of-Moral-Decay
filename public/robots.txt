@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_expo/
+
+Sitemap: https://carte-vs-umani.web.app/sitemap.xml

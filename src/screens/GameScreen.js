@@ -615,6 +615,7 @@ const GameScreen = ({ onStartLoading }) => {
                         text: message,
                         url: shareUrl,
                     });
+                    AnalyticsService.logShareApp('web_navigator'); // [NEW]
                 } catch (error) {
                     console.log('Error sharing:', error);
                 }
@@ -622,13 +623,17 @@ const GameScreen = ({ onStartLoading }) => {
                 await Clipboard.setStringAsync(shareUrl);
                 setToast({ visible: true, message: t('toast_room_link_copied'), type: 'success' });
                 SoundService.play('success');
+                AnalyticsService.logShareApp('clipboard'); // [NEW]
             }
         } else {
             try {
-                await Share.share({
+                const result = await Share.share({
                     message: message,
                     url: shareUrl, // iOS support
                 });
+                if (result.action === Share.sharedAction) {
+                    AnalyticsService.logShareApp('native_share'); // [NEW]
+                }
             } catch (error) {
                 console.error("Share error", error);
             }

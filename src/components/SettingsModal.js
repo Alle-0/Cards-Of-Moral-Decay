@@ -13,6 +13,7 @@ import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAudio } from '../context/AudioContext'; // [NEW]
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService';
 import { APP_VERSION, BASE_URL } from '../constants/Config';
@@ -23,6 +24,7 @@ import FrameSelectionModal from './FrameSelectionModal'; // [NEW]
 
 const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLogoutRequest, onOpenInfo = () => { } }) => { // [NEW] onLogoutRequest/onOpenInfo
     const { theme, themes, setTheme, animationsEnabled, toggleAnimations } = useTheme(); // [NEW] anims
+    const { isPlaying, toggleMusic } = useAudio(); // [NEW] Music Control
     const { leaveRoom, roomCode } = useGame(); // Get game info
     const { logout, user: authUser } = useAuth(); // [FIX] Use Auth user for recovery code
     const { t, language, setLanguage } = useLanguage();
@@ -64,30 +66,31 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
 
     const loadSettings = async () => {
         try {
-            const sound = await AsyncStorage.getItem('cah_sound');
+            // [FIX] Sound Source of Truth: SoundService
+            setSoundEnabled(!SoundService.isMuted());
+
             const vibes = await AsyncStorage.getItem('cah_haptics');
-
-            const isSoundOn = sound !== 'false';
             const isVibesOn = vibes !== 'false';
-
-            setSoundEnabled(isSoundOn);
             setHapticsEnabled(isVibesOn);
-
-            SoundService.setMuted(!isSoundOn);
             HapticsService.setEnabled(isVibesOn);
         } catch (e) { console.warn(e); }
     };
 
     const toggleSound = async (val) => {
-        setSoundEnabled(val);
-        SoundService.setMuted(!val);
-        await AsyncStorage.setItem('cah_sound', val.toString());
+        try {
+            setSoundEnabled(val);
+            await SoundService.setMuted(!val);
+        } catch (error) {
+            console.warn("Error toggling sound", error);
+            setSoundEnabled(!val);
+        }
     };
 
     const toggleHaptics = async (val) => {
         setHapticsEnabled(val);
         HapticsService.setEnabled(val);
         await AsyncStorage.setItem('cah_haptics', val.toString());
+        if (val) HapticsService.trigger('light');
     };
 
     const showModal = (title, message, singleButton = true, onConfirm = null, confirmText = "OK") => {
@@ -414,6 +417,18 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                 <PremiumToggle
                                     value={soundEnabled}
                                     onValueChange={toggleSound}
+                                />
+                            </View>
+
+                            {/* [NEW] Music Toggle */}
+                            <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
+                                <View>
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('music_label').toUpperCase()} / {t('music_label') === 'Musica' ? 'MUSIC' : 'MUSICA'}</Text>
+                                    <Text style={styles.rowSub}>{t('music_sub')}</Text>
+                                </View>
+                                <PremiumToggle
+                                    value={isPlaying}
+                                    onValueChange={toggleMusic}
                                 />
                             </View>
                         </View>

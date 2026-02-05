@@ -3,7 +3,7 @@
     "name": "Cards of Moral Decay",
     "slug": "cards-of-moral-decay",
     "scheme": "comd",
-    "version": "3.8.1",
+    "version": "3.8.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -26,7 +26,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.anonymous.cardsofmoraldecay",
-      "versionCode": 17,
+      "versionCode": 18,
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
@@ -84,7 +84,8 @@
           "merchantIdentifier": "merchant.com.cardsofmoraldecay",
           "enableGooglePay": true
         }
-      ]
+      ],
+      "expo-localization"
     ]
   }
 }

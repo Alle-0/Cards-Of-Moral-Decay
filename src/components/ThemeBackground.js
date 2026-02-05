@@ -556,14 +556,30 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
         opacity: containerOpacity.value
     }));
 
+    // [FIX] Global Opacity for smooth toggle
+    const particlesOpacity = useSharedValue(animationsEnabled ? 1 : 0);
+
     useEffect(() => {
+        particlesOpacity.value = withTiming(animationsEnabled ? 1 : 0, { duration: 800 });
+
+        if (!animationsEnabled) {
+            // Wait for fade out before clearing logic (cleanup)
+            const timer = setTimeout(() => setElements([]), 800);
+            return () => clearTimeout(timer);
+        }
+    }, [animationsEnabled]);
+
+    const particlesStyle = useAnimatedStyle(() => ({
+        opacity: particlesOpacity.value
+    }));
+
+    useEffect(() => {
+        if (!animationsEnabled) return; // Logic handled above for exit
+
         setElements([]); // Clear on theme change
 
-        // [FIX] If animations are disabled, do NOT spawn any particles
-        if (!animationsEnabled) return;
-
         if (['matrix', 'pulsar', 'wallstreet'].includes(theme.id)) {
-            const intervalTime = theme.id === 'matrix' ? 12000 : (theme.id === 'wallstreet' ? 10000 : 18000); // Increased wait
+            const intervalTime = theme.id === 'matrix' ? 12000 : (theme.id === 'wallstreet' ? 10000 : 18000);
             const maxElements = theme.id === 'matrix' ? 3 : (theme.id === 'wallstreet' ? 4 : 2);
 
             const interval = setInterval(() => {
@@ -574,7 +590,6 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
             }, intervalTime);
             return () => clearInterval(interval);
         } else {
-            // Static quantity for particles (ULTRA MINIMAL)
             const count = theme.particleConfig === 'dust' ? 4 :
                 theme.particleConfig === 'ash' ? 3 :
                     theme.particleConfig === 'bubble' || theme.particleConfig === 'toxicBubble' ? 3 :
@@ -586,7 +601,7 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
                 setElements(Array.from({ length: count }).map((_, i) => ({ id: i })));
             }
         }
-    }, [theme.id, theme.particleConfig]);
+    }, [theme.id, theme.particleConfig, animationsEnabled]);
 
     const renderStaticTexture = () => {
         if (theme.id === 'carbonio') {
@@ -596,19 +611,33 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
     };
 
     const renderEffects = () => {
-        switch (theme.particleConfig) {
-            case 'dust': return elements.map(e => <DustParticle key={e.id} color={theme.colors.particle} />);
-            case 'ash': return elements.map(e => <AshParticle key={e.id} color={theme.colors.particle} />);
-            case 'bubble': return elements.map(e => <BubbleParticle key={e.id} color={theme.colors.particle} />);
-            case 'toxicBubble': return elements.map(e => <BubbleParticle key={e.id} color={theme.colors.particle} />);
-            case 'snow': return elements.map(e => <SnowParticle key={e.id} colorEmoji={theme.colors.particleEmoji} theme={theme} />);
-            case 'lightSweep': return <LightSweep />;
-            case 'smoke': return elements.map(e => <SmokePuff key={e.id} />);
-            case 'neonPulse': return <PulsarRipple color={theme.colors.accent} />;
-            case 'policeLights': return <PoliceLights />;
-            case 'voidFloat': return elements.map(e => <VoidFloatParticle key={e.id} color={theme.colors.particle} />);
-            default: return null;
+        let content = null;
+
+        if (theme.id === 'manicomio') {
+            content = elements.map(el => (
+                <Scratches key={el.id} />
+            ));
+        } else {
+            switch (theme.particleConfig) {
+                case 'dust': content = elements.map(e => <DustParticle key={e.id} color={theme.colors.particle} />); break;
+                case 'ash': content = elements.map(e => <AshParticle key={e.id} color={theme.colors.particle} />); break;
+                case 'bubble': content = elements.map(e => <BubbleParticle key={e.id} color={theme.colors.particle} />); break;
+                case 'toxicBubble': content = elements.map(e => <BubbleParticle key={e.id} color={theme.colors.particle} />); break;
+                case 'snow': content = elements.map(e => <SnowParticle key={e.id} colorEmoji={theme.colors.particleEmoji} theme={theme} />); break;
+                case 'lightSweep': content = <LightSweep />; break;
+                case 'smoke': content = elements.map(e => <SmokePuff key={e.id} />); break;
+                case 'neonPulse': content = <PulsarRipple color={theme.colors.accent} />; break;
+                case 'policeLights': content = <PoliceLights />; break;
+                case 'voidFloat': content = elements.map(e => <VoidFloatParticle key={e.id} color={theme.colors.particle} />); break;
+                default: content = null;
+            }
         }
+
+        return (
+            <Animated.View style={[StyleSheet.absoluteFill, particlesStyle]} pointerEvents="none">
+                {content}
+            </Animated.View>
+        );
     };
 
     const renderIntervalEffects = () => {
@@ -623,7 +652,10 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
     return (
         <Animated.View style={[styles.container, containerStyle]} pointerEvents="none">
             {renderStaticTexture()}
-            {isParticleSystem ? renderEffects() : renderIntervalEffects()}
+            <Animated.View style={[StyleSheet.absoluteFill, particlesStyle]} pointerEvents="none">
+                {isParticleSystem ? null : renderIntervalEffects()}
+            </Animated.View>
+            {isParticleSystem ? renderEffects() : null}
         </Animated.View>
     );
 };

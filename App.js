@@ -23,6 +23,7 @@ import { GameProvider, useGame } from './src/context/GameContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LanguageProvider } from './src/context/LanguageContext'; // [NEW]
+import { AudioProvider } from './src/context/AudioContext'; // [NEW] Global Music
 
 import AppNavigator from './src/navigation/AppNavigator'; // [NEW] Bottom Tabs
 import GameScreen from './src/screens/GameScreen';
@@ -94,20 +95,50 @@ export default function App() {
                         <ThemeProvider>
                             <LanguageProvider>
                                 <GameProvider>
-                                    {!splashAnimationFinished ? (
-                                        <Animated.View style={{ flex: 1 }} exiting={FadeOut.duration(500)}>
-                                            <ElegantSplashScreen onFinish={() => setSplashAnimationFinished(true)} />
-                                        </Animated.View>
-                                    ) : (
-                                        <NavigationContainer
-                                            theme={TransparentTheme} // [FIX] Use TransparentTheme
-                                            documentTitle={{
-                                                formatter: (options, route) => "Cards of Moral Decay"
-                                            }}
-                                        >
-                                            <AppContent />
-                                        </NavigationContainer>
-                                    )}
+                                    <AudioProvider>
+                                        {!splashAnimationFinished ? (
+                                            <Animated.View style={{ flex: 1 }} exiting={FadeOut.duration(500)}>
+                                                <ElegantSplashScreen onFinish={() => setSplashAnimationFinished(true)} />
+                                            </Animated.View>
+                                        ) : (
+                                            <NavigationContainer
+                                                theme={TransparentTheme}
+                                                documentTitle={{
+                                                    formatter: (options, route) => "Cards of Moral Decay"
+                                                }}
+                                                onReady={() => {
+                                                    // Log initial screen
+                                                    const currentRouteName = "Home"; // Default or logic to get it
+                                                    // We'll rely on onStateChange mostly, or setup a ref if we want perfect initial load tracking.
+                                                    // For simplicity, we just enable the listener.
+                                                }}
+                                                onStateChange={(state) => {
+                                                    const getActiveRouteName = (navigationState) => {
+                                                        if (!navigationState) return null;
+                                                        const route = navigationState.routes[navigationState.index];
+                                                        if (route.state) {
+                                                            return getActiveRouteName(route.state);
+                                                        }
+                                                        return route.name;
+                                                    };
+
+                                                    const currentRouteName = getActiveRouteName(state);
+
+                                                    if (currentRouteName) {
+                                                        // console.log("[Analytics] Screen View:", currentRouteName);
+                                                        import('./src/services/AnalyticsService').then(({ default: Analytics }) => {
+                                                            Analytics.log('screen_view', {
+                                                                screen_name: currentRouteName,
+                                                                screen_class: currentRouteName
+                                                            });
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                <AppContent />
+                                            </NavigationContainer>
+                                        )}
+                                    </AudioProvider>
                                 </GameProvider>
                             </LanguageProvider>
                         </ThemeProvider>

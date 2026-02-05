@@ -2,6 +2,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { translations } from '../i18n/translations';
 import GameDataService from '../services/GameDataService';
+import * as Localization from 'expo-localization'; // [NEW]
 
 const LanguageContext = createContext();
 
@@ -10,7 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const LANGUAGE_KEY = 'user_language_preference';
 
 export const LanguageProvider = ({ children }) => {
-    const [language, setLanguageState] = useState('en'); // Default EN
+    const [language, setLanguageState] = useState('en'); // Default fallback
     const [isLoaded, setIsLoaded] = useState(false);
 
     // Wrapper to update Service when state changes
@@ -41,12 +42,20 @@ export const LanguageProvider = ({ children }) => {
         const loadLanguage = async () => {
             try {
                 const savedLanguage = await AsyncStorage.getItem(LANGUAGE_KEY);
+
                 if (savedLanguage) {
                     setLanguageState(savedLanguage);
                     GameDataService.setLanguage(savedLanguage);
                     console.log(`[LanguageContext] Loaded saved language: ${savedLanguage}`);
                 } else {
-                    GameDataService.setLanguage(language);
+                    // [NEW] Auto-detect language
+                    const locales = Localization.getLocales();
+                    const deviceLanguage = locales[0]?.languageCode === 'it' ? 'it' : 'en';
+
+                    console.log(`[LanguageContext] No saved language. Auto-detected: ${deviceLanguage} (Device: ${locales[0]?.languageCode})`);
+
+                    setLanguageState(deviceLanguage);
+                    GameDataService.setLanguage(deviceLanguage);
                 }
             } catch (e) {
                 console.error('Failed to load language preference', e);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, View, Text, ScrollView, BackHandler, Platform } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, BackHandler, Platform, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
@@ -17,6 +17,7 @@ import AvatarWithFrame from '../components/AvatarWithFrame'; // [NEW] // [NEW]
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, RANK_COLORS, RANK_THRESHOLDS } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAudio } from '../context/AudioContext'; // [NEW]
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService';
 import { APP_VERSION } from '../constants/Config';
@@ -27,6 +28,7 @@ import InfoScreen from './InfoScreen';
 
 const SettingsScreen = ({ navigation }) => {
     const { theme, animationsEnabled, toggleAnimations } = useTheme();
+    const { isPlaying, toggleMusic } = useAudio(); // [NEW] Music Control
     const { leaveRoom, roomCode } = useGame();
     const { t, language, setLanguage } = useLanguage();
     const { logout, user: authUser } = useAuth();
@@ -57,24 +59,26 @@ const SettingsScreen = ({ navigation }) => {
 
     const loadSettings = async () => {
         try {
-            const sound = await AsyncStorage.getItem('cah_sound');
+            // [FIX] Sound Source of Truth: SoundService (initialized in App.js)
+            setSoundEnabled(!SoundService.isMuted());
+
+            // Haptics handled locally/HapticsService
             const vibes = await AsyncStorage.getItem('cah_haptics');
-
-            const isSoundOn = sound !== 'false';
             const isVibesOn = vibes !== 'false';
-
-            setSoundEnabled(isSoundOn);
             setHapticsEnabled(isVibesOn);
-
-            SoundService.setMuted(!isSoundOn);
             HapticsService.setEnabled(isVibesOn);
         } catch (e) { console.warn(e); }
     };
 
     const toggleSound = async (val) => {
-        setSoundEnabled(val);
-        SoundService.setMuted(!val);
-        await AsyncStorage.setItem('cah_sound', val.toString());
+        try {
+            setSoundEnabled(val);
+            // [FIX] Delegate persistence to Service
+            await SoundService.setMuted(!val);
+        } catch (error) {
+            console.warn("Error toggling sound", error);
+            setSoundEnabled(!val);
+        }
     };
 
     const toggleHaptics = async (val) => {
@@ -280,52 +284,41 @@ const SettingsScreen = ({ navigation }) => {
                         style={{ flex: 1, width: '100%', paddingTop: 50, gap: 15, paddingBottom: 80 + insets.bottom }}
                     >
                         <View style={[styles.settingsGroup, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+
                             {/* LANGUAGE TOGGLE */}
                             <View style={styles.row}>
                                 <View>
                                     <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('select_language')}</Text>
                                     <Text style={styles.rowSub}>{language === 'it' ? 'Italiano' : 'English'}</Text>
                                 </View>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <PremiumPressable
-                                        onPress={() => setLanguage('it')}
-                                        enableSound={true}
-                                        hitSlop={10}
-                                        style={{ padding: 4 }}
-                                    >
-                                        <Text style={{
-                                            color: language === 'it' ? theme.colors.accent : '#666',
-                                            fontFamily: 'Cinzel-Bold',
-                                            fontSize: 14,
-                                            lineHeight: 18,
-                                            includeFontPadding: false,
-                                            textAlignVertical: 'center',
-                                            textShadowColor: 'transparent',
-                                            textShadowRadius: 0
-                                        }}>IT</Text>
-                                    </PremiumPressable>
-
-                                    <View style={{ width: 1, height: 14, backgroundColor: 'rgba(255,255,255,0.1)', marginHorizontal: 12 }} />
-
-                                    <PremiumPressable
-                                        onPress={() => setLanguage('en')}
-                                        enableSound={true}
-                                        hitSlop={10}
-                                        style={{ padding: 4 }}
-                                    >
-                                        <Text style={{
-                                            color: language === 'en' ? theme.colors.accent : '#666',
-                                            fontFamily: 'Cinzel-Bold',
-                                            fontSize: 14,
-                                            lineHeight: 18,
-                                            includeFontPadding: false,
-                                            textAlignVertical: 'center',
-                                            textShadowColor: 'transparent',
-                                            textShadowRadius: 0
-                                        }}>EN</Text>
-                                    </PremiumPressable>
+                                <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 3, width: 110 }}>
+                                    {['it', 'en'].map(lang => (
+                                        <Pressable
+                                            key={lang}
+                                            onPress={() => setLanguage(lang)}
+                                            android_disableSound={true}
+                                            style={({ pressed }) => ({
+                                                flex: 1,
+                                                paddingVertical: 5,
+                                                borderRadius: 6,
+                                                backgroundColor: language === lang ? '#d4af37' : 'transparent',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                opacity: pressed ? 0.8 : 1
+                                            })}
+                                        >
+                                            <Text style={{
+                                                fontFamily: 'Cinzel-Bold',
+                                                fontSize: 10,
+                                                color: language === lang ? '#000' : 'rgba(255,255,255,0.5)'
+                                            }}>
+                                                {lang.toUpperCase()}
+                                            </Text>
+                                        </Pressable>
+                                    ))}
                                 </View>
                             </View>
+
                             <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 8 }} />
 
                             <View style={styles.row}>
@@ -358,7 +351,18 @@ const SettingsScreen = ({ navigation }) => {
                                     onValueChange={toggleSound}
                                 />
                             </View>
-                        </View>
+
+                            <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
+                                <View>
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('music_label').toUpperCase()} / {t('music_label') === 'Musica' ? 'MUSIC' : 'MUSICA'}</Text>
+                                    <Text style={styles.rowSub}>{t('music_sub')}</Text>
+                                </View>
+                                <PremiumToggle
+                                    value={isPlaying}
+                                    onValueChange={toggleMusic}
+                                />
+                            </View>
+                        </View >
 
                         <PremiumPressable
                             onPress={handleBack}
@@ -369,7 +373,7 @@ const SettingsScreen = ({ navigation }) => {
                         >
                             <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back')}</Text>
                         </PremiumPressable>
-                    </Animated.View>
+                    </Animated.View >
                 ) : showAccount ? (
                     <Animated.View
                         key="account"
@@ -623,12 +627,14 @@ const SettingsScreen = ({ navigation }) => {
                     onConfirm={() => BackHandler.exitApp()}
                 />
 
-                {showInfo && (
-                    <View style={StyleSheet.absoluteFill}>
-                        <InfoScreen onClose={() => setShowInfo(false)} />
-                    </View>
-                )}
-            </View>
+                {
+                    showInfo && (
+                        <View style={StyleSheet.absoluteFill}>
+                            <InfoScreen onClose={() => setShowInfo(false)} />
+                        </View>
+                    )
+                }
+            </View >
         </View >
     );
 };

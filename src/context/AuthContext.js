@@ -112,12 +112,15 @@ export const AuthProvider = ({ children }) => {
     }, [user?.username]);
 
     // [NEW] Sync Analytics with User Data
+    // [NEW] Sync Analytics with User Data
     useEffect(() => {
         if (user?.username) {
             AnalyticsService.identifyUser(user.username);
-            if (user.rank) {
-                AnalyticsService.setUserProperties({ rank: user.rank });
-            }
+            // Also set as property for easier filtering/reporting if UserID view is tricky
+            AnalyticsService.setUserProperties({
+                rank: user.rank,
+                username: user.username
+            });
         }
     }, [user?.username, user?.rank]);
 
@@ -519,6 +522,8 @@ export const AuthProvider = ({ children }) => {
             [user.username]: true
         });
 
+        AnalyticsService.logSocialInteraction('send_request', target); // [NEW]
+
         return true;
     }, [user]);
 
@@ -532,11 +537,13 @@ export const AuthProvider = ({ children }) => {
         updates[`users/${requesterUsername}/friends/${user.username}`] = true;
 
         await update(ref(db), updates);
+        AnalyticsService.logSocialInteraction('accept_request', requesterUsername); // [NEW]
     }, [user]);
 
     const rejectFriendRequest = useCallback(async (requesterUsername) => {
         if (!user || !user.username) return;
         await set(ref(db, `users/${user.username}/friendRequests/${requesterUsername}`), null);
+        AnalyticsService.logSocialInteraction('reject_request', requesterUsername); // [NEW]
     }, [user]);
 
     const removeFriend = useCallback(async (friendUsername) => {
@@ -548,6 +555,7 @@ export const AuthProvider = ({ children }) => {
         updates[`users/${friendUsername}/friends/${user.username}`] = null;
 
         await update(ref(db), updates);
+        AnalyticsService.logSocialInteraction('remove_friend', friendUsername); // [NEW]
     }, [user]);
 
     const addFriendDirectly = useCallback(async (friendUsername) => {
@@ -571,6 +579,7 @@ export const AuthProvider = ({ children }) => {
         updates[`users/${user.username}/friendRequests/${target}`] = null;
 
         await update(ref(db), updates);
+        AnalyticsService.logSocialInteraction('add_friend_direct', target); // [NEW]
         return true;
     }, [user]);
 

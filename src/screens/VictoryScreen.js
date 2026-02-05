@@ -13,7 +13,7 @@ import LocalAvatar from '../components/LocalAvatar';
 import RewardPopup from '../components/RewardPopup';
 import { useLanguage } from '../context/LanguageContext';
 
-import * as Haptics from 'expo-haptics'; // [NEW]
+import HapticsService from '../services/HapticsService'; // [REF]
 import { TrashIcon } from '../components/Icons';
 import AnalyticsService from '../services/AnalyticsService';
 
@@ -56,13 +56,13 @@ const VictoryScreen = ({ winnerName, onExit }) => {
         }
 
         const timer1 = setTimeout(() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            HapticsService.trigger('heavy');
         }, 500);
 
         const timerShame = setTimeout(() => {
             if (isPlayerAmongLosers) {
                 SoundService.play('pop'); // Extra punch for the shame award
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                HapticsService.trigger('warning');
             }
         }, 2200);
 
@@ -105,7 +105,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
         if (initialRank && user?.rank && user.rank !== initialRank && user.username.toLowerCase() !== 'alle') {
             setShowRankUp(true);
             SoundService.play('success');
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            HapticsService.trigger('success');
         }
     }, [user?.rank, initialRank]);
 

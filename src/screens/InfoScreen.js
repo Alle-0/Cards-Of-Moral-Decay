@@ -15,7 +15,7 @@ import {
 } from '../components/Icons';
 import PremiumBackground from '../components/PremiumBackground';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import HapticsService from '../services/HapticsService';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -96,14 +96,14 @@ const InfoScreen = ({ onClose }) => {
     ];
 
     const toggleSection = (id) => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        HapticsService.trigger('light');
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setExpandedId(expandedId === id ? null : id);
     };
 
     const handleLink = (url) => {
         if (url) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            HapticsService.trigger('success');
 
             // [NEW] Track donation intent
             if (url.includes('paypal.me')) {

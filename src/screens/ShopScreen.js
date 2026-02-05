@@ -16,7 +16,7 @@ import AvatarWithFrame from '../components/AvatarWithFrame';
 import SoundService from '../services/SoundService';
 import AnalyticsService from '../services/AnalyticsService';
 import { useStripePayment } from '../services/StripeService';
-import * as Haptics from 'expo-haptics';
+import HapticsService from '../services/HapticsService';
 import PaymentResultModal from '../components/PaymentResultModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 
@@ -151,7 +151,7 @@ export default function ShopScreen() {
 
     const handleTabPress = (index) => {
         if (activeTab !== index) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            HapticsService.trigger('light');
             setActiveTab(index);
         }
     };
@@ -166,11 +166,11 @@ export default function ShopScreen() {
         const result = await buyTheme(themeId, price);
         setBuyingId(null);
         if (result.success) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            HapticsService.trigger('success');
             setToast({ visible: true, message: `${t('toast_theme_bought')} ${themeName}.`, type: 'success' });
             AnalyticsService.logPurchase(themeId, price, 'COINS');
         } else {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            HapticsService.trigger('error');
             setToast({ visible: true, message: result.message, type: 'error' });
         }
     };
@@ -184,18 +184,18 @@ export default function ShopScreen() {
         const result = await buySkin(skinId, price);
         setBuyingId(null);
         if (result.success) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            HapticsService.trigger('success');
             setToast({ visible: true, message: `${t('toast_skin_bought')} ${skinName}.`, type: 'success' });
             AnalyticsService.logPurchase(skinId, price, 'COINS');
         } else {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            HapticsService.trigger('error');
             setToast({ visible: true, message: result.message, type: 'error' });
         }
     };
 
     const handleBuyFrame = async (frameId, price, frameName) => {
         if (user.balance < price) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            HapticsService.trigger('error');
             setToast({ visible: true, message: t('toast_no_money'), type: 'error' });
             return;
         }
@@ -203,18 +203,18 @@ export default function ShopScreen() {
         const result = await buyFrame(frameId, price);
         setBuyingId(null);
         if (result.success) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            HapticsService.trigger('success');
             setToast({ visible: true, message: `${t('toast_frame_bought')} ${frameName}.`, type: 'success' });
             AnalyticsService.logPurchase(frameId, price, 'COINS');
         } else {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            HapticsService.trigger('error');
             setToast({ visible: true, message: result.message, type: 'error' });
         }
     };
 
     const handleBuyPack = async (packId, price, packName) => {
         if (user.balance < price) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            HapticsService.trigger('error');
             setToast({ visible: true, message: t('toast_no_money'), type: 'error' });
             return;
         }
@@ -222,11 +222,11 @@ export default function ShopScreen() {
         const result = await buyPack(packId, price);
         setBuyingId(null);
         if (result.success) {
-            Haptics.notificationAsync(Haptics.notificationFeedbackType.Success);
+            HapticsService.trigger('success');
             setToast({ visible: true, message: `${t('toast_pack_bought')} ${packName}.`, type: 'success' });
             AnalyticsService.logPurchase(packId, price, 'COINS');
         } else {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            HapticsService.trigger('error');
             setToast({ visible: true, message: result.message, type: 'error' });
         }
     };

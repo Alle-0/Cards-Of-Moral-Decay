@@ -123,6 +123,29 @@ const AnalyticsService = {
         AnalyticsService.log('donation_intent', {
             player_name: playerName
         });
+    },
+
+    // [NEW] Enhanced Game Tracking
+    logRoundComplete: (roomCode, winnerName, roundNumber) => {
+        AnalyticsService.log('round_complete', {
+            room_code: roomCode,
+            winner_name: winnerName,
+            round_number: roundNumber
+        });
+    },
+
+    // [NEW] Social Tracking
+    logSocialInteraction: (type, targetName) => {
+        AnalyticsService.log('social_interaction', {
+            interaction_type: type, // 'add_friend', 'invite', 'remove_friend'
+            target_name: targetName
+        });
+    },
+
+    logShareApp: (method) => {
+        AnalyticsService.log('share_app', {
+            method: method // 'whatsapp', 'copy_link', etc.
+        });
     }
 };
 

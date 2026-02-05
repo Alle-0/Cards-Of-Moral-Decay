@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import HapticsService from '../services/HapticsService';
 import Animated, { FadeIn, ZoomIn, SlideInUp, FadeInDown } from 'react-native-reanimated';
 import PremiumModal from './PremiumModal';
 import AvatarWithFrame from './AvatarWithFrame';
@@ -22,7 +22,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
         if (visible) {
             // Initial haptic feedback
             try {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                HapticsService.trigger('success');
             } catch (error) {
             }
 

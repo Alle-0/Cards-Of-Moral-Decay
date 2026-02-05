@@ -44,6 +44,7 @@ class SoundService {
                     try {
                         // In expo-audio, createPlayer is synchronous but the resource might load async
                         const player = createAudioPlayer(source);
+                        player.volume = 0.7; // [FIX] Increased effects volume
                         this.preloadedSounds[name] = player;
                     } catch (preloadError) {
                         console.warn(`[SoundService] Failed to preload '${name}'`, preloadError);
@@ -114,6 +115,7 @@ class SoundService {
 
         try {
             const player = createAudioPlayer(soundSource);
+            player.volume = 0.3; // [FIX] Lower effects volume
             player.play();
 
             // expo-audio players don't have a direct 'unload' like expo-av, 

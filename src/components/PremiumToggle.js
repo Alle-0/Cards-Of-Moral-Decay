@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, interpolateColor } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import HapticsService from '../services/HapticsService';
 import { useTheme } from '../context/ThemeContext';
 
 const PremiumToggle = ({ value, onValueChange, size = 28 }) => {
@@ -19,7 +19,7 @@ const PremiumToggle = ({ value, onValueChange, size = 28 }) => {
     }, [value]);
 
     const handlePress = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        HapticsService.trigger('light');
         onValueChange(!value);
     };
 
@@ -40,7 +40,7 @@ const PremiumToggle = ({ value, onValueChange, size = 28 }) => {
     });
 
     return (
-        <Pressable onPress={handlePress} activeOpacity={0.8} hitSlop={10}>
+        <Pressable onPress={handlePress} activeOpacity={0.8} hitSlop={10} android_disableSound={true}>
             <Animated.View style={[
                 styles.track,
                 { width: trackWidth, height: trackHeight, borderRadius: trackHeight / 2, padding },
