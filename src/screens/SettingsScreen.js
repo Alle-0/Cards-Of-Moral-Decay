@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, View, Text, ScrollView, BackHandler, Platform, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, BackHandler, Platform, TouchableOpacity, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';

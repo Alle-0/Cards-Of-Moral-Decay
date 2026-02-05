@@ -23,7 +23,7 @@ import { GameProvider, useGame } from './src/context/GameContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LanguageProvider } from './src/context/LanguageContext'; // [NEW]
-import { AudioProvider } from './src/context/AudioContext'; // [NEW] Global Music
+import { AudioProvider, useAudio } from './src/context/AudioContext'; // [NEW] Global Music
 
 import AppNavigator from './src/navigation/AppNavigator'; // [NEW] Bottom Tabs
 import GameScreen from './src/screens/GameScreen';
@@ -152,10 +152,16 @@ export default function App() {
 const AppContent = () => {
     const { roomCode } = useGame();
     const { user, loading: authLoading, isConnected } = useAuth();
-    const { t } = useLanguage(); // [NEW]
+    const { playMusic } = useAudio(); // [NEW]
+    const { t } = useLanguage();
     const [showGameSplash, setShowGameSplash] = useState(false);
     const [isFastSplash, setIsFastSplash] = useState(false);
     const [needsUpdate, setNeedsUpdate] = useState(false);
+
+    // [NEW] Start Music on Mount (Entry to App)
+    useEffect(() => {
+        playMusic({ fade: true });
+    }, []);
 
     // [NEW] Referral / Invite / Room Join logic
     const { addFriendDirectly } = useAuth();

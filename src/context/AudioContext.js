@@ -7,6 +7,10 @@ const AudioContext = createContext();
 
 export const useAudio = () => useContext(AudioContext);
 
+const FADE_DURATION = 2000; // 2 seconds
+const FADE_STEPS = 20; // Number of volume steps
+
+
 export const AudioProvider = ({ children }) => {
     const [sound, setSound] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -49,38 +53,17 @@ export const AudioProvider = ({ children }) => {
                 // Initialize Player with expo-audio
                 const player = createAudioPlayer(audioFile);
                 player.loop = true;
-                player.volume = 0.4; // [FIX] Increased volume (was 0.25)
+                player.volume = 0.4;
 
-                // Load preference
-                const savedSetting = await AsyncStorage.getItem('cah_music_enabled');
-                const shouldPlay = savedSetting !== 'false'; // Default true if null
+                // [MODIFIED] Removed Auto-Play logic. 
+                // Music is now started explicitly by App.js via playMusic()
 
-                if (shouldPlay) {
-                    try {
-                        player.play();
-                    } catch (err) {
-                        console.warn("[AudioContext] Autoplay blocked, waiting for interaction...", err);
-
-                        if (Platform.OS === 'web') {
-                            const resumeAudio = () => {
-                                player.play();
-                                window.removeEventListener('click', resumeAudio);
-                                window.removeEventListener('touchstart', resumeAudio);
-                                window.removeEventListener('keydown', resumeAudio);
-                            };
-                            window.addEventListener('click', resumeAudio);
-                            window.addEventListener('touchstart', resumeAudio);
-                            window.addEventListener('keydown', resumeAudio);
-                        }
-                    }
-                }
-
-                console.log("[AudioContext] Player initialized. AutoPlay:", shouldPlay);
+                console.log("[AudioContext] Player initialized. Waiting for explicit start.");
 
                 if (isMounted) {
                     soundRef.current = player;
                     setSound(player);
-                    setIsPlaying(shouldPlay);
+                    // setIsPlaying(shouldPlay); // Don't set playing yet
                 }
             } catch (error) {
                 console.warn("[AudioContext] Failed to load background music:", error);
@@ -92,11 +75,57 @@ export const AudioProvider = ({ children }) => {
 
         return () => {
             isMounted = false;
+            // Don't stop on unmount to keep bg music alive if needed, or handle cleanup
             if (soundRef.current) {
-                soundRef.current.pause();
+                // soundRef.current.pause(); 
             }
         };
     }, []);
+
+    const playMusic = async ({ fade = false } = {}) => {
+        if (!soundRef.current) {
+            console.warn("[AudioContext] Cannot play, sound not loaded");
+            return;
+        }
+
+        try {
+            const savedSetting = await AsyncStorage.getItem('cah_music_enabled');
+            if (savedSetting === 'false') {
+                console.log("[AudioContext] Music disabled by user pref.");
+                setIsPlaying(false);
+                return;
+            }
+
+            if (fade) {
+                console.log("[AudioContext] Starting music with fade-in...");
+                soundRef.current.volume = 0;
+                soundRef.current.play();
+
+                let step = 0;
+                const interval = setInterval(() => {
+                    step++;
+                    const progress = step / FADE_STEPS; // 0 to 1
+                    // Ease out quadratic for smoother entry
+                    const vol = progress * (2 - progress) * 0.4;
+
+                    if (soundRef.current) {
+                        soundRef.current.volume = Math.min(vol, 0.4);
+                    }
+
+                    if (step >= FADE_STEPS) {
+                        clearInterval(interval);
+                        if (soundRef.current) soundRef.current.volume = 0.4;
+                    }
+                }, FADE_DURATION / FADE_STEPS);
+            } else {
+                soundRef.current.volume = 0.4;
+                soundRef.current.play();
+            }
+            setIsPlaying(true);
+        } catch (e) {
+            console.warn("[AudioContext] Play error", e);
+        }
+    };
 
     const toggleMusic = async (val) => {
         try {
@@ -132,7 +161,7 @@ export const AudioProvider = ({ children }) => {
     };
 
     return (
-        <AudioContext.Provider value={{ isPlaying, toggleMusic, setVolume }}>
+        <AudioContext.Provider value={{ isPlaying, toggleMusic, setVolume, playMusic }}>
             {children}
         </AudioContext.Provider>
     );
