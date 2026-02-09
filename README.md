@@ -82,8 +82,10 @@ Only have one friend? Don't worry, Rando Bot has your back. He automatically joi
 
 <br/>
 
-* **Framework:** React Native + Expo (v54.0.31)
+* **Framework:** React Native + Expo (v54)
 * **Real-time:** Firebase Realtime Database
+* **Audio:** Expo AV (Sound Design)
+* **UX:** Auto-Session Recovery & Deep Linking
 * **Animations:** Reanimated 2 (Fluid 60 FPS)
 * **Design:** Custom HSL-based palette & Glassmorphism
 </details>
