@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler, Share, Alert, Modal, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut, withRepeat, interpolate, withSequence } from 'react-native-reanimated';
@@ -22,7 +22,6 @@ import InfoScreen from './InfoScreen'; // [NEW]
 import ConfettiSystem from '../components/ConfettiSystem';
 import PremiumIconButton from '../components/PremiumIconButton';
 import PremiumPressable from '../components/PremiumPressable';
-import { SvgUri } from 'react-native-svg';
 import LocalAvatar from '../components/LocalAvatar';
 import AvatarWithFrame from '../components/AvatarWithFrame'; // [NEW]
 import RoundWinnerModal from '../components/RoundWinnerModal'; // [NEW]
@@ -31,13 +30,45 @@ import HapticsService from '../services/HapticsService'; // [FIX] Import added
 import * as Clipboard from 'expo-clipboard';
 import ToastNotification from '../components/ToastNotification';
 import EfficientBlurView from '../components/EfficientBlurView'; // [NEW]
-import { CardsIcon, CheckIcon, ThornsIcon, LockIcon, RankIcon, SettingsIcon, RobotIcon, DirtyCashIcon, ScaleIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ShareIcon, EyeIcon } from '../components/Icons';
+import { CardsIcon, CheckIcon, ThornsIcon, LockIcon, RankIcon, SettingsIcon, RobotIcon, DirtyCashIcon, ScaleIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ShareIcon, EyeIcon, EyeOffIcon, InfoIcon } from '../components/Icons';
 import ShopScreen from './ShopScreen'; // [NEW]
 import AnalyticsService from '../services/AnalyticsService';
 import { BASE_URL } from '../constants/Config';
 import { DARK_PACK_PREVIEW, BASE_PACK_PREVIEW } from '../constants/PreviewData';
 import CensoredText from '../components/CensoredText'; // [NEW]
+import { CHAOS_EVENTS, CHAOS_EVENT_DETAILS } from '../constants/ChaosEvents'; // [NEW]
 
+
+
+const CHILL_PACK_PREVIEW = {
+    it: [
+        "Un piccione con autostima",
+        "Indossare le crocs al matrimonio",
+        "L'ansia sociale a comando",
+        "Un abbraccio non richiesto"
+    ],
+    en: [
+        "A pigeon with self-esteem",
+        "Wearing crocs at a wedding",
+        "Social anxiety on command",
+        "An unsolicited hug"
+    ]
+};
+
+const SPICY_PACK_PREVIEW = {
+    it: [
+        "Un {dildo} nero venoso di 30cm",
+        "Leccare l'{ano} di un senzatetto",
+        "Un'{orgia} in una casa di riposo",
+        "Il sapore dello {sperma} di tuo padre"
+    ],
+    en: [
+        "A 12-inch veinous black {dildo}",
+        "Licking a homeless person's {anus}",
+        "An {orgy} in a retirement home",
+        "The taste of your dad's {cum}"
+    ]
+};
 
 // --- NUOVI COMPONENTI GRAFICI (Mettili prima di GameScreen o in fondo) ---
 
@@ -68,13 +99,22 @@ const SectionHeader = ({ title }) => (
 
 // 2. Card Pacchetto Minimale (Sostituisce le scatole 3D)
 // 2. Card Pacchetto Minimale (Sostituisce le scatole 3D)
-const MinimalPackCard = ({ label, type, selected, onPress, owned = true, onPreview }) => {
+const MinimalPackCard = ({ label, type, selected, onPress, owned = true, onPreview, style }) => {
     const isDark = type === 'dark';
-    const baseColor = isDark ? '#ef4444' : '#FDB931';
+    const isChill = type === 'chill'; // [NEW]
+    const isSpicy = type === 'spicy'; // [NEW]
+
+    // Safety Fallback for HornsIcon (Hot-reload fix)
+    const SpicyIcon = HornsIcon || (() => <View style={{ width: 16, height: 16, backgroundColor: 'purple' }} />);
+
+    let baseColor = '#FDB931'; // Default Gold (Base)
+    if (isDark) baseColor = '#ef4444';
+    if (isChill) baseColor = '#38bdf8';
+    if (isSpicy) baseColor = '#d946ef';
     const { t } = useLanguage();
 
     return (
-        <View style={{ width: '100%', height: 52, marginBottom: 6 }}>
+        <View style={[{ height: 50, marginBottom: 0 }, style]}>
             {/* 1. Main Interaction Layer (Background + Click) */}
             <PremiumPressable
                 onPress={owned ? onPress : null}
@@ -92,17 +132,17 @@ const MinimalPackCard = ({ label, type, selected, onPress, owned = true, onPrevi
                     alignItems: 'center',
                     backgroundColor: selected ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.4)',
                     borderRadius: 12,
-                    paddingHorizontal: 12,
+                    paddingHorizontal: 8, // Reduced padding
                     borderWidth: 1,
                     borderColor: selected ? baseColor : 'rgba(255,255,255,0.05)',
                     height: '100%',
-                    paddingRight: 60 // Make room for floating elements
+                    paddingRight: 35 // Reduced space for floating elements
                 }}>
                     {/* Icona Sinistra */}
                     <View style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 17,
+                        width: 28, // Reduced size
+                        height: 28, // Reduced size
+                        borderRadius: 14,
                         backgroundColor: selected ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.02)',
                         justifyContent: 'center',
                         alignItems: 'center',
@@ -110,24 +150,25 @@ const MinimalPackCard = ({ label, type, selected, onPress, owned = true, onPrevi
                         borderWidth: selected ? 1 : 0,
                         borderColor: 'rgba(255,255,255,0.05)'
                     }}>
-                        {isDark ?
-                            <ThornsIcon size={20} color={selected ? baseColor : '#555'} /> :
-                            <CardsIcon size={20} color={selected ? baseColor : '#555'} />
+                        {isDark ? <ThornsIcon size={16} color={selected ? baseColor : '#555'} /> :
+                            (isChill ? <View style={{ transform: [{ scale: 0.8 }] }}><CardsIcon size={16} color={selected ? baseColor : '#555'} /></View> :
+                                (isSpicy ? <SpicyIcon size={16} color={selected ? baseColor : '#555'} /> :
+                                    <CardsIcon size={16} color={selected ? baseColor : '#555'} />))
                         }
                     </View>
 
                     {/* Testo Centrale */}
-                    <View style={{ flex: 1, marginLeft: 12 }}>
+                    <View style={{ flex: 1, marginLeft: 8 }}>
                         <Text style={{
                             fontFamily: 'Cinzel-Bold',
                             color: selected ? baseColor : '#888',
-                            fontSize: 12,
+                            fontSize: 10, // Smaller font
                             letterSpacing: 0.5
-                        }}>
+                        }} numberOfLines={1}>
                             {label}
                         </Text>
-                        <Text style={{ fontFamily: 'Outfit', fontSize: 8, color: '#444' }}>
-                            {isDark ? t('adult_content') : t('starter_set')}
+                        <Text style={{ fontFamily: 'Outfit', fontSize: 7, color: '#444' }} numberOfLines={1}>
+                            {isDark ? t('adult_content') : (isChill ? t('chill_content') : (isSpicy ? t('spicy_content') : t('starter_set')))}
                         </Text>
                     </View>
                 </View>
@@ -137,29 +178,66 @@ const MinimalPackCard = ({ label, type, selected, onPress, owned = true, onPrevi
             <View
                 style={{
                     position: 'absolute',
-                    right: 0,
+                    right: 4,
                     top: 0,
                     bottom: 0,
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingRight: 12,
-                    gap: 10
+                    gap: 6,
+                    pointerEvents: 'box-none'
                 }}
-                pointerEvents="box-none"
             >
                 {onPreview && (
                     <TouchableOpacity
                         onPress={onPreview}
-                        style={{ padding: 8 }}
+                        style={{ padding: 4 }}
                         hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                     >
-                        <EyeIcon size={20} color="#d4af37" />
+                        <EyeIcon size={16} color="#d4af37" />
                     </TouchableOpacity>
                 )}
-                {!owned && <LockIcon size={14} color="#444" />}
-                {owned && selected && <CheckIcon size={14} color={baseColor} />}
+                {!owned && <LockIcon size={12} color="#444" />}
+                {owned && selected && <CheckIcon size={12} color={baseColor} />}
             </View>
-        </View>
+        </View >
+    );
+};
+// 3. Chaos Event Banner (Moved outside to prevent re-renders)
+const ChaosBanner = ({ event, roomData, t }) => {
+    if (!event || !roomData?.chaosMode) return null;
+
+    const details = CHAOS_EVENT_DETAILS[event];
+    if (!details) return null;
+
+    // Dynamically get the icon (safe for web/hot-reload)
+    const Icons = require('../components/Icons');
+    const Icon = Icons[details.icon] || Icons.CardsIcon;
+
+    return (
+        <Animated.View
+            entering={FadeIn.duration(500)}
+            style={{
+                backgroundColor: details.color,
+                paddingVertical: 6,
+                paddingHorizontal: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                width: '100%',
+                shadowColor: details.color,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.5,
+                shadowRadius: 5,
+                elevation: 5,
+                zIndex: 100
+            }}
+        >
+            <Icon size={16} color="#fff" />
+            <Text style={{ fontFamily: 'Cinzel-Bold', color: '#fff', fontSize: 10, letterSpacing: 1.5 }}>
+                {t(details.titleKey).toUpperCase()}
+            </Text>
+        </Animated.View>
     );
 };
 
@@ -168,7 +246,7 @@ const GameScreen = ({ onStartLoading }) => {
         user, roomCode, roomData,
         isCreator, isDominus, myHand,
         leaveRoom, startGame, playCards, confirmDominusSelection, nextRound,
-        discardCard, useAIJoker, forceReveal, kickPlayer, bribeHand,
+        discardCard, useAIJoker, forceReveal, kickPlayer, bribeHand, dominusDiscardPlayerHand, // [NEW]
         updateRoomSettings, roomPlayerName
     } = useGame();
     const { theme } = useTheme();
@@ -182,6 +260,17 @@ const GameScreen = ({ onStartLoading }) => {
     const [selectedCards, setSelectedCards] = useState([]);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [previewPack, setPreviewPack] = useState(null); // [NEW] Preview Config
+
+    // [NEW] Safety Check: Clear validation if hand changes (Dictatorship Purge)
+    useEffect(() => {
+        if (selectedCards.length > 0) {
+            const currentHandIds = myHand.map(c => typeof c === 'string' ? c : c.id);
+            const valid = selectedCards.every(c => currentHandIds.includes(typeof c === 'string' ? c : c.id));
+            if (!valid) {
+                setSelectedCards([]);
+            }
+        }
+    }, [myHand, selectedCards]);
 
     const handlePreviewPack = (packId) => {
         SoundService.play('tap');
@@ -199,7 +288,7 @@ const GameScreen = ({ onStartLoading }) => {
 
     const [targetPoints, setTargetPoints] = useState(roomData?.puntiPerVincere || 7);
     const [roomLanguage, setRoomLanguage] = useState(roomData?.roomLanguage || 'it');
-    const [allowedPackages, setAllowedPackages] = useState(roomData?.allowedPackages || { base: true, dark: false });
+    const [allowedPackages, setAllowedPackages] = useState(roomData?.allowedPackages || { base: true, dark: false, chill: false, spicy: false });
     const [showJokerConfirm, setShowJokerConfirm] = useState(false);
     const [showBribeConfirm, setShowBribeConfirm] = useState(false); // [NEW] Bribe Modal State
     const [showInfo, setShowInfo] = useState(false); // [NEW]
@@ -209,6 +298,7 @@ const GameScreen = ({ onStartLoading }) => {
     const [optimisticWinner, setOptimisticWinner] = useState(null); // [NEW] Optimistic UI
     const [tempPlayedText, setTempPlayedText] = useState(null);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'success' }); // [NEW]
+    const [showRoomCode, setShowRoomCode] = useState(false); // [NEW] Hidden room code
     const [showDominusAlert, setShowDominusAlert] = useState(false); // [NEW] Dominus Alert
     const [hasAutoShared, setHasAutoShared] = useState(false); // [NEW] Auto-share state
 
@@ -249,10 +339,21 @@ const GameScreen = ({ onStartLoading }) => {
         }
 
         if (roomData?.vincitoreTurno && roomData?.statoTurno === 'SHOWING_WINNER') {
+            const isRando = roomData.vincitoreTurno === 'Rando';
+            const swapDetails = roomData.chaosSwapDetails;
+
+            // [FIX] If a swap happened (Robin Hood/Identity Swap), and the NEW winner didn't play any cards (like Rando)
+            // or we just want to show the original "winning" cards chosen by Dominus:
+            const winningCardsSource = (swapDetails && roomData.carteGiocate?.[swapDetails.original])
+                ? roomData.carteGiocate[swapDetails.original]
+                : roomData.carteGiocate?.[roomData.vincitoreTurno];
+
             setPersistedWinnerInfo({
                 name: roomData.vincitoreTurno,
-                avatar: roomData.giocatori?.[roomData.vincitoreTurno]?.avatar,
-                winningCards: roomData.carteGiocate?.[roomData.vincitoreTurno]
+                avatar: isRando
+                    ? 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando'
+                    : roomData.giocatori?.[roomData.vincitoreTurno]?.avatar,
+                winningCards: winningCardsSource
             });
             setShowWinnerModal(true);
         } else {
@@ -278,6 +379,40 @@ const GameScreen = ({ onStartLoading }) => {
 
     // [NEW] Economy Integration
     const [lastPaidTurn, setLastPaidTurn] = useState(null);
+
+    // [NEW] CHAOS ENGINE LOGIC
+    const [showDictatorshipModal, setShowDictatorshipModal] = useState(false);
+    const [dictatorshipDismissed, setDictatorshipDismissed] = useState(false); // [NEW] Local skip
+
+    // Check for Dictatorship Event for Dominus
+    useEffect(() => {
+        if (roomData?.activeChaosEvent === CHAOS_EVENTS.DICTATORSHIP && isDominus && roomData?.statoTurno === 'WAITING_CARDS') {
+            if (!dictatorshipDismissed) {
+                setShowDictatorshipModal(true);
+            }
+        } else {
+            setShowDictatorshipModal(false);
+            setDictatorshipDismissed(false); // Reset as soon as event/state changes
+        }
+    }, [roomData?.activeChaosEvent, isDominus, roomData?.statoTurno, dictatorshipDismissed]);
+
+    const handleDictatorPurge = async (targetName) => {
+        try {
+            // Optimistic close
+            setShowDictatorshipModal(false);
+
+            // Use the already destructured function from context
+            if (dominusDiscardPlayerHand) {
+                await dominusDiscardPlayerHand(targetName);
+            }
+
+            SoundService.play('break'); // Break sound
+            HapticsService.trigger('heavy');
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
 
     useEffect(() => {
         if (roomData?.statoTurno === 'SHOWING_WINNER' && roomData?.vincitoreTurno === (roomPlayerName || user.name)) {
@@ -324,7 +459,8 @@ const GameScreen = ({ onStartLoading }) => {
         return () => window.removeEventListener('popstate', handlePopState);
     }, [roomData?.statoPartita]);
 
-    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
+    const [settingsView, setSettingsView] = useState(null); // [NEW] Control initial view of settings modal
     // [FIX] Generic Modal Config
     const [modalConfig, setModalConfig] = useState({
         visible: false,
@@ -428,11 +564,12 @@ const GameScreen = ({ onStartLoading }) => {
     }));
 
     const handleSettingsPress = () => {
-        setShowSettingsModal(true);
+        setSettingsView(null); // Reset view
+        setShowSettings(true);
     };
 
     const closeSettings = () => {
-        setShowSettingsModal(false);
+        setShowSettings(false);
     };
 
     // Bribe Logic
@@ -641,35 +778,102 @@ const GameScreen = ({ onStartLoading }) => {
     };
 
     // Prepare Player List for Drawer
-    const playersList = Object.keys(roomData?.giocatori || {}).map(name => ({
-        name,
-        points: roomData?.punti?.[name] || 0,
-        // Robust check for Dominus
-        isDominus: (roomData?.dominus || '').trim() === name.trim(),
-        avatar: roomData?.giocatori?.[name]?.avatar,
-        activeFrame: roomData?.giocatori?.[name]?.activeFrame, // [NEW] Read frame
-        rank: roomData?.giocatori?.[name]?.rank // [NEW] Read rank from room
-    })).sort((a, b) => b.points - a.points);
+    const playersList = useMemo(() => {
+        const rawList = Object.keys(roomData?.giocatori || {}).map(rawName => {
+            const name = rawName.trim();
+            const isRando = name === 'Rando';
+            return {
+                name,
+                points: roomData?.punti?.[rawName] || 0,
+                isDominus: (roomData?.dominus || '').trim() === name,
+                avatar: isRando ? 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando' : roomData?.giocatori?.[rawName]?.avatar,
+                activeFrame: isRando ? 'glitch' : roomData?.giocatori?.[rawName]?.activeFrame,
+                rank: isRando ? 'rank_bot' : roomData?.giocatori?.[rawName]?.rank
+            };
+        });
+
+        // [FIX] RANDO INJECTION & REMOVAL
+        // Filter out Rando first to get clean human count
+        let list = rawList.filter(p => p.name !== 'Rando');
+        const humanPlayersCount = list.length;
+
+        // Condition: Inject Rando ONLY if humans are fewer than 3 AND (it has points OR we are exactly 2 humans waiting for a 1st play)
+        // This ensures that as soon as a 3rd human joins, Rando is not added.
+        const shouldHaveRando = humanPlayersCount < 3 && (roomData?.randoPoints > 0 || (humanPlayersCount === 2 && list.some(p => p.isDominus)));
+
+        if (shouldHaveRando) {
+            list.push({
+                name: 'Rando',
+                points: roomData?.randoPoints || 0,
+                isDominus: false, // Rando is never Dominus
+                avatar: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando', // Bot Avatar
+                activeFrame: 'glitch', // Special cosmetic for Bot
+                rank: 'rank_bot' // Use key for translation
+            });
+        }
+
+        return list.sort((a, b) => b.points - a.points);
+    }, [roomData]);
 
     // --- RENDER HELPERS ---
     const renderHeader = () => (
-        <View style={[styles.header, {
-            paddingTop: isSmallScreen ? (Platform.OS === 'ios' ? 35 : 10) : 50
-        }]} pointerEvents="box-none">
+        <View
+            pointerEvents="box-none"
+            style={[styles.header, {
+                paddingTop: isSmallScreen ? (Platform.OS === 'ios' ? 35 : 10) : (Platform.OS === 'web' ? 20 : 50)
+            }]}
+        >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: isSmallScreen ? 6 : 10 }}>
-                <Text style={[styles.headerLogo, {
-                    color: theme.colors?.accent || '#ffce6a',
-                    fontSize: isSmallScreen ? 14 : 16
-                }]}>MORAL DECAY</Text>
+                <View style={{ flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={[styles.headerLogo, {
+                        fontSize: isSmallScreen ? 9 : 11,
+                        color: theme.colors?.accent || '#ffce6a',
+                        marginBottom: isSmallScreen ? -8 : -6,
+                        letterSpacing: isSmallScreen ? 2 : 4,
+                        opacity: 0.8
+                    }]}>CARDS OF</Text>
+                    <Text style={[styles.headerLogo, {
+                        color: theme.colors?.accent || '#ffce6a',
+                        fontSize: isSmallScreen ? 14 : 17
+                    }]}>MORAL DECAY</Text>
+                </View>
                 <PremiumPressable
-                    onPress={handleShareRoom}
+                    onPress={() => {
+                        setShowRoomCode(!showRoomCode);
+                        SoundService.play('tap');
+                    }}
+                    onLongPress={() => {
+                        if (!showRoomCode) setShowRoomCode(true);
+                        handleShareRoom();
+                    }}
+                    delayLongPress={500}
                     style={[
                         styles.codePill,
-                        isSmallScreen && { paddingVertical: 2, paddingHorizontal: 6, height: 'auto' } // Use padding for small screens/web
+                        isSmallScreen && { paddingVertical: 2, paddingHorizontal: 6, height: 'auto' },
+                        !showRoomCode && { paddingHorizontal: 8, borderColor: 'rgba(212, 175, 55, 0.2)' } // Tighter padding
                     ]}
                     rippleColor="rgba(255,255,255,0.1)"
                 >
-                    <Text style={[styles.codeText, isSmallScreen && { fontSize: 10 }]}>#{roomCode}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        {showRoomCode ? (
+                            <EyeIcon
+                                size={isSmallScreen ? 10 : 12}
+                                color={theme.colors?.accent || '#ffce6a'}
+                            />
+                        ) : (
+                            <EyeOffIcon
+                                size={isSmallScreen ? 10 : 12}
+                                color={'#666'}
+                            />
+                        )}
+                        <Text style={[
+                            styles.codeText,
+                            isSmallScreen && { fontSize: 9 },
+                            showRoomCode && { color: '#fff' }
+                        ]}>
+                            {showRoomCode ? `${roomCode}` : 'CODE'}
+                        </Text>
+                    </View>
                 </PremiumPressable>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: isSmallScreen ? 5 : 15 }}>
@@ -696,13 +900,76 @@ const GameScreen = ({ onStartLoading }) => {
         </View>
     );
 
+    const renderGuestSettingsSummary = () => {
+        const activePacks = [];
+        activePacks.push(t('base_pack'));
+        if (allowedPackages?.dark) activePacks.push("DARK");
+        if (allowedPackages?.chill) activePacks.push("CHILL");
+        if (allowedPackages?.spicy) activePacks.push("SPICY");
+
+        return (
+            <View style={{ alignItems: 'center', marginTop: 15 }}>
+                <Text style={{
+                    color: 'rgba(255,255,255,0.4)',
+                    fontFamily: 'Outfit',
+                    fontSize: 11,
+                    marginBottom: 10,
+                    letterSpacing: 0.5
+                }}>
+                    {t('waiting_host_msg')}
+                </Text>
+
+                <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    paddingVertical: 8,
+                    paddingHorizontal: 15,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.05)',
+                    gap: 10
+                }}>
+                    <Text style={{
+                        fontFamily: 'Cinzel-Bold',
+                        fontSize: 10,
+                        color: '#d4af37',
+                        letterSpacing: 1
+                    }}>
+                        {roomLanguage?.toUpperCase()} <Text style={{ color: 'rgba(255,255,255,0.1)' }}>•</Text> {targetPoints} {t('points_label').toUpperCase()}
+                    </Text>
+
+                    <Text style={{ color: 'rgba(255,255,255,0.1)', fontSize: 10 }}>•</Text>
+
+                    <Text style={{
+                        fontFamily: 'Outfit-Bold',
+                        fontSize: 10,
+                        color: '#888',
+                        letterSpacing: 0.5
+                    }}>
+                        {activePacks.join(' + ')}
+                    </Text>
+
+                    {roomData?.chaosMode && (
+                        <>
+                            <Text style={{ color: 'rgba(255,255,255,0.1)', fontSize: 10 }}>•</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <ThornsIcon size={10} color="#ef4444" />
+                                <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 9, color: '#ef4444' }}>CHAOS</Text>
+                            </View>
+                        </>
+                    )}
+                </View>
+            </View>
+        );
+    };
+
     const renderLobbyContent = () => (
         <View style={styles.lobbyCenter}>
             <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'Cinzel-Bold' }, pulsatingStyle]}>
                 {t('waiting_title')}
             </Animated.Text>
 
-            {/* --- QUESTA PARTE DEGLI AVATAR È RIMASTA INTATTA --- */}
             <View style={{
                 flexDirection: 'row',
                 flexWrap: 'wrap',
@@ -735,13 +1002,25 @@ const GameScreen = ({ onStartLoading }) => {
                         }} numberOfLines={1}>
                             {p.name}
                         </Text>
+                        {/* [NEW] Rank Display below name */}
+                        {p.rank && (
+                            <Text style={{
+                                color: p.name === 'Rando' ? '#ef4444' : '#888', // Red for Rando
+                                fontFamily: 'Outfit',
+                                fontSize: 9,
+                                textAlign: 'center',
+                                maxWidth: 80,
+                                marginTop: 2
+                            }} numberOfLines={1}>
+                                {p.rank.startsWith('rank_') ? t(p.rank, { defaultValue: p.rank }) : p.rank}
+                            </Text>
+                        )}
                     </Animated.View>
                 ))}
             </View>
 
-            {/* --- INVITA AMICI (Nuova Sezione Richiesta) --- */}
             {/* --- INVITA AMICI (Condizionale < 3 giocatori) --- */}
-            {playersList.length < 3 && (
+            {playersList.length < 2 && (
                 <View style={{ width: '100%', alignItems: 'center', marginBottom: 20 }}>
                     <PremiumPressable
                         onPress={handleShareRoom}
@@ -773,7 +1052,7 @@ const GameScreen = ({ onStartLoading }) => {
                         color: 'rgba(255,255,255,0.4)',
                         marginTop: 6
                     }}>
-                        {t('min_players_hint', { defaultValue: "Serve almeno 2 amici." })}
+                        {t('min_players_hint', { defaultValue: "Serve almeno 1 amico." })}
                     </Text>
                 </View>
             )}
@@ -818,90 +1097,177 @@ const GameScreen = ({ onStartLoading }) => {
                         })}
                     </View>
 
-                    {/* 2. PACCHETTI (Stile Minimale) */}
+                    {/* 2. PACCHETTI (Stile Grid 2-col) */}
                     <SectionHeader title={t('select_packages')} />
-                    <View style={{ width: '100%' }}>
+                    <View style={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 }}>
                         <MinimalPackCard
                             label={t('base_pack')}
                             type="base"
                             selected={true}
                             onPreview={() => handlePreviewPack('base')}
+                            style={{ width: '48%' }}
                         />
                         <MinimalPackCard
                             label={t('dark_pack')}
                             type="dark"
                             selected={allowedPackages.dark}
-                            owned={authUser?.unlockedPacks?.dark}
+                            owned={!!authUser?.unlockedPacks?.dark}
                             onPress={() => {
                                 const newVal = !allowedPackages.dark;
                                 setAllowedPackages({ ...allowedPackages, dark: newVal });
                                 updateRoomSettings({ allowedPackages: { ...allowedPackages, dark: newVal } });
                             }}
                             onPreview={() => handlePreviewPack('dark')}
+                            style={{ width: '48%' }}
+                        />
+                        <MinimalPackCard
+                            label={t('chill_pack')}
+                            type="chill"
+                            selected={allowedPackages.chill}
+                            owned={!!authUser?.unlockedPacks?.chill}
+                            onPress={() => {
+                                const newVal = !allowedPackages.chill;
+                                setAllowedPackages({ ...allowedPackages, chill: newVal });
+                                updateRoomSettings({ allowedPackages: { ...allowedPackages, chill: newVal } });
+                            }}
+                            onPreview={() => handlePreviewPack('chill')}
+                            style={{ width: '48%' }}
+                        />
+                        <MinimalPackCard
+                            label={t('spicy_pack')}
+                            type="spicy"
+                            selected={allowedPackages.spicy}
+                            owned={!!authUser?.unlockedPacks?.spicy}
+                            onPress={() => {
+                                const newVal = !allowedPackages.spicy;
+                                setAllowedPackages({ ...allowedPackages, spicy: newVal });
+                                updateRoomSettings({ allowedPackages: { ...allowedPackages, spicy: newVal } });
+                            }}
+                            onPreview={() => handlePreviewPack('spicy')}
+                            style={{ width: '48%' }}
                         />
                     </View>
 
                     {/* 3. PUNTI (Stile Monoliti Ancorati) */}
                     <SectionHeader title={t('select_points_title')} />
-                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 10 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 10, paddingVertical: 10 }}>
                         {[3, 5, 7, 10].map(points => {
                             const isActive = targetPoints === points;
                             return (
-                                <PremiumPressable
+                                <TouchableOpacity
                                     key={points}
                                     onPress={() => {
                                         setTargetPoints(points);
                                         updateRoomSettings({ puntiPerVincere: points });
                                     }}
-                                    scaleDown={0.9}
+                                    activeOpacity={0.8}
                                     style={{
-                                        width: 50, height: 62, borderRadius: 12,
+                                        width: 50,
+                                        height: 52, // [FIX] Very compact
+                                        borderRadius: 10,
                                         borderWidth: 1,
                                         borderColor: isActive ? '#d4af37' : 'rgba(255,255,255,0.1)',
                                         backgroundColor: isActive ? 'rgba(212, 175, 55, 0.1)' : '#0a0a0a',
                                         alignItems: 'center',
+                                        justifyContent: 'flex-start', // [FIX] Align top to avoid bottom clip
+                                        paddingTop: 6,
+                                        marginVertical: 2, // [FIX] Safety margin
                                         // Ancoraggio senza glow
                                         borderBottomWidth: isActive ? 4 : 1,
-                                        borderBottomColor: isActive ? '#d4af37' : 'rgba(255,255,255,0.02)',
-                                        shadowColor: 'transparent', shadowOpacity: 0, elevation: 0
+                                        borderBottomColor: isActive ? '#d4af37' : 'rgba(255,255,255,0.1)', // [FIX] Now visible
+                                        shadowColor: 'transparent', shadowOpacity: 0, elevation: 0,
+                                        overflow: 'visible'
                                     }}
-                                    pressableStyle={{ height: '100%' }}
-                                    contentContainerStyle={{ height: '100%', alignItems: 'center', justifyContent: 'space-evenly', paddingVertical: 2 }}
                                 >
-                                    <Text style={{
-                                        fontFamily: 'Cinzel-Bold',
-                                        color: isActive ? '#d4af37' : '#444',
-                                        fontSize: 20,
-                                        textAlign: 'center',
-                                        marginBottom: -4,
-                                        includeFontPadding: false
-                                    }}>
-                                        {points}
-                                    </Text>
-                                    <Text style={{
-                                        fontFamily: 'Outfit', fontSize: 8,
-                                        color: isActive ? '#d4af37' : '#333', opacity: 0.7,
-                                        textAlign: 'center',
-                                        includeFontPadding: false
-                                    }}>
-                                        {t('points_label').toUpperCase()}
-                                    </Text>
-                                </PremiumPressable>
+                                    <View style={{ alignItems: 'center' }}>
+                                        <Text style={{
+                                            fontFamily: 'Cinzel-Bold',
+                                            color: isActive ? '#d4af37' : '#444',
+                                            fontSize: 20,
+                                            textAlign: 'center',
+                                            includeFontPadding: false,
+                                            marginBottom: -2
+                                        }}>
+                                            {points}
+                                        </Text>
+                                        <Text style={{
+                                            fontFamily: 'Outfit', fontSize: 8,
+                                            color: isActive ? '#d4af37' : '#333', opacity: 0.7,
+                                            textAlign: 'center',
+                                            includeFontPadding: false
+                                        }}>
+                                            {t('points_label').toUpperCase()}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
                             );
                         })}
                     </View>
+
+                    {/* 4. CHAOS ENGINE (Minimal Pill) */}
+                    <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                const newVal = !roomData.chaosMode;
+                                updateRoomSettings({ chaosMode: newVal });
+                            }}
+                            activeOpacity={0.8}
+                            style={{
+                                flexDirection: 'row', alignItems: 'center',
+                                backgroundColor: roomData.chaosMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.05)',
+                                paddingVertical: 4, paddingHorizontal: 10, borderRadius: 16,
+                                borderWidth: 1, borderColor: roomData.chaosMode ? '#ef4444' : 'rgba(255,255,255,0.1)',
+                                alignSelf: 'center'
+                            }}
+                        >
+                            <ThornsIcon size={12} color={roomData.chaosMode ? '#ef4444' : '#666'} />
+                            <Text style={{
+                                fontFamily: 'Cinzel-Bold', fontSize: 9, // Smaller font
+                                color: roomData.chaosMode ? '#ef4444' : '#666',
+                                marginLeft: 5, marginRight: 5
+                            }}>
+                                CHAOS
+                            </Text>
+                            <View style={{
+                                width: 20, height: 10, borderRadius: 5,
+                                backgroundColor: '#222', // Dark track
+                                justifyContent: 'center',
+                                alignItems: roomData.chaosMode ? 'flex-end' : 'flex-start',
+                                paddingHorizontal: 1
+                            }}>
+                                <View style={{
+                                    width: 8, height: 8, borderRadius: 4,
+                                    backgroundColor: roomData.chaosMode ? '#ef4444' : '#555' // Toggle dot
+                                }} />
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => {
+                                setSettingsView('rules_chaos');
+                                setShowSettings(true);
+                            }}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            style={{ padding: 4 }}
+                        >
+                            <InfoIcon size={14} color="#666" />
+                        </TouchableOpacity>
+                    </View>
+
                 </View>
             )}
 
+            {/* Pulsante Avvio */}
             <View style={{ marginTop: 10 }}>
                 {isCreator ? (
                     <PremiumButton
-                        title={t('start_game_btn')}
+                        title={(playersList.length === 2 || (playersList.length === 3 && playersList.some(p => p.name === 'Rando')))
+                            ? t('start_game_bot_btn', { defaultValue: 'AVVIA PARTITA CON 2 + BOT' })
+                            : t('start_game_btn')}
                         haptic="heavy"
-                        disabled={playersList.length < 3 && !__DEV__} // [FIX] Disabled state
+                        disabled={playersList.length < 2 && !playersList.some(p => p.name === 'Rando' && playersList.length === 3)}
                         onPress={() => {
-                            // Double check just in case, though disabled prop prevents this
-                            if (playersList.length < 3 && !__DEV__) return;
+                            if (playersList.length < 2) return; // Should be handled by disabled but safety first
                             AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
                             startGame(targetPoints);
                         }}
@@ -909,23 +1275,24 @@ const GameScreen = ({ onStartLoading }) => {
                             minWidth: 240,
                             height: 54,
                             borderRadius: 27,
-                            opacity: (playersList.length < 3 && !__DEV__) ? 0.5 : 1 // [FIX] Visual feedback
+                            shadowColor: theme.colors?.accent || '#ffce6a',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 10,
+                            elevation: 8
+                        }}
+                        textStyle={{
+                            fontSize: 14,
+                            letterSpacing: 1.5
                         }}
                     />
                 ) : (
-                    <View style={styles.guestSettingsView}>
-                        <Text style={styles.waitingHostText}>{t('waiting_host_msg')}</Text>
-                        {/* Pillole riassuntive per gli ospiti */}
-                        <View style={styles.guestSettingsPills}>
-                            <View style={styles.settingPill}><Text style={styles.pillText}>{roomLanguage.toUpperCase()}</Text></View>
-                            <View style={styles.settingPill}><Text style={styles.pillText}>{targetPoints} PTS</Text></View>
-                            <View style={styles.settingPill}><Text style={styles.pillText}>{allowedPackages.dark ? 'BASE+DARK' : 'BASE'}</Text></View>
-                        </View>
-                    </View>
+                    renderGuestSettingsSummary()
                 )}
             </View>
         </View>
     );
+
 
     const renderGameContent = () => (
         <>
@@ -1137,6 +1504,7 @@ const GameScreen = ({ onStartLoading }) => {
                         balance={authUser?.balance || 0}
                         isSmallScreen={isSmallScreen}
                         onBackgroundPress={() => setSelectedCards([])}
+                        isBlackout={roomData?.activeChaosEvent === CHAOS_EVENTS.BLACKOUT} // [NEW]
                     />
                 </View>
             )}
@@ -1162,6 +1530,7 @@ const GameScreen = ({ onStartLoading }) => {
                     ) : (
                         <>
                             {renderHeader()}
+                            <ChaosBanner event={roomData?.activeChaosEvent} roomData={roomData} t={t} />
                             {roomData.statoPartita === 'LOBBY' ? (
                                 <Animated.View key="lobby" entering={FadeIn.duration(800)} style={{ flex: 1, width: '100%' }}>
                                     {renderLobbyContent()}
@@ -1186,10 +1555,39 @@ const GameScreen = ({ onStartLoading }) => {
                     />
                 )}
 
+                {/* [NEW] Dictatorship Modal */}
+                <PremiumModal
+                    visible={showDictatorshipModal}
+                    title={t('chaos_event_dictatorship_title') || "DITTATURA"}
+                    onClose={() => setDictatorshipDismissed(true)}
+                    showClose={true}
+                >
+                    <View style={{ width: '100%', alignItems: 'center', paddingBottom: 20 }}>
+                        <Text style={{ color: '#ccc', textAlign: 'center', fontFamily: 'Outfit', marginBottom: 25, paddingHorizontal: 10 }}>
+                            {t('chaos_event_dictatorship_desc') || "Scegli chi punire scartando la sua mano."}
+                        </Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 20 }}>
+                            {playersList.filter(p => !p.isDominus && p.name !== 'Rando').map(p => (
+                                <TouchableOpacity
+                                    key={p.name}
+                                    onPress={() => handleDictatorPurge(p.name)}
+                                    style={{ alignItems: 'center', width: 70 }}
+                                >
+                                    <AvatarWithFrame avatar={p.avatar} frameId={p.activeFrame} size={54} />
+                                    <Text style={{ color: 'white', fontFamily: 'Cinzel-Bold', marginTop: 8, fontSize: 10 }} numberOfLines={1}>{p.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                </PremiumModal>
+
                 <RoundWinnerModal
                     visible={showWinnerModal}
                     winnerInfo={persistedWinnerInfo}
                     playersList={playersList}
+                    swapDetails={roomData?.chaosSwapDetails} // [NEW]
+                    activeChaosEvent={roomData?.activeChaosEvent} // [NEW]
+                    chaosReward={roomData?.chaosReward} // [NEW]
                 />
 
                 <PremiumModal
@@ -1290,14 +1688,15 @@ const GameScreen = ({ onStartLoading }) => {
                 />
 
                 <SettingsModal
-                    visible={showSettingsModal}
-                    onClose={closeSettings}
+                    visible={showSettings}
+                    onClose={() => setShowSettings(false)}
+                    initialView={settingsView}
                     onStartLoading={onStartLoading} // Pass the splash trigger
                     onLeaveRequest={showLeaveConfirmation} // [FIX] Trigger generic function
                     onLogoutRequest={handleLogoutRequest} // [NEW]
                     onOpenInfo={() => {
-                        setShowInfo(true);
-                        setShowSettingsModal(false);
+                        setShowSettings(false);
+                        setTimeout(() => setShowInfo(true), 300);
                     }}
                 />
 
@@ -1366,7 +1765,7 @@ const GameScreen = ({ onStartLoading }) => {
 
                 {/* [NEW] Dominus Alert Overlay */}
                 {showDominusAlert && (
-                    <View style={[StyleSheet.absoluteFill, { zIndex: 9999, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }]} pointerEvents="none">
+                    <View style={[StyleSheet.absoluteFill, { zIndex: 9999, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)', pointerEvents: 'none' }]}>
                         <Animated.View
                             entering={ZoomIn.duration(600).springify()}
                             exiting={ZoomOut.duration(400)}
@@ -1496,7 +1895,9 @@ const GameScreen = ({ onStartLoading }) => {
                                     marginBottom: 4,
                                     textAlign: 'center'
                                 }}>
-                                    {previewPack === 'dark' ? "DARK PACK" : "BASE PACK"}
+                                    {previewPack === 'dark' ? "DARK PACK" :
+                                        (previewPack === 'chill' ? t('pack_chill', 'CHILL PACK').toUpperCase() :
+                                            (previewPack === 'spicy' ? t('pack_spicy', 'SPICY PACK').toUpperCase() : "BASE PACK"))}
                                 </Text>
                                 <Text style={{
                                     fontFamily: 'Outfit',
@@ -1505,60 +1906,65 @@ const GameScreen = ({ onStartLoading }) => {
                                     marginBottom: 20,
                                     textAlign: 'center'
                                 }}>
-                                    {previewPack === 'dark' ? t('adult_content') : t('starter_set')}
+                                    {previewPack === 'dark' ? t('adult_content') :
+                                        (previewPack === 'chill' ? t('chill_content') :
+                                            (previewPack === 'spicy' ? t('spicy_content') : t('starter_set')))}
                                 </Text>
 
                                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-                                    {(previewPack === 'dark' ? (DARK_PACK_PREVIEW[roomLanguage] || DARK_PACK_PREVIEW['en']) : (BASE_PACK_PREVIEW[roomLanguage] || BASE_PACK_PREVIEW['en'])).map((text, index) => {
-                                        // Extract censored words for Dark pack
-                                        const censoredMatches = previewPack === 'dark' ? (text.match(/\{[^}]+\}/g) || []) : [];
+                                    {((previewPack === 'dark' ? (DARK_PACK_PREVIEW[roomLanguage] || DARK_PACK_PREVIEW['en']) :
+                                        (previewPack === 'chill' ? (CHILL_PACK_PREVIEW[roomLanguage] || CHILL_PACK_PREVIEW['en']) :
+                                            (previewPack === 'spicy' ? (SPICY_PACK_PREVIEW[roomLanguage] || SPICY_PACK_PREVIEW['en']) :
+                                                (BASE_PACK_PREVIEW[roomLanguage] || BASE_PACK_PREVIEW['en']))))).map((text, index) => {
+                                                    // Extract censored words for Dark/Spicy pack
+                                                    const censoredMatches = (previewPack === 'dark' || previewPack === 'spicy') ? (text.match(/\{[^}]+\}/g) || []) : [];
 
-                                        return (
-                                            <View key={index} style={{
-                                                backgroundColor: '#f5f5f5',
-                                                borderColor: '#ddd',
-                                                borderWidth: 1,
-                                                width: (Math.min(screenWidth * 0.9, 400) - 60) / 2,
-                                                height: ((Math.min(screenWidth * 0.9, 400) - 60) / 2) * 1.4,
-                                                padding: 8,
-                                                borderRadius: 8
-                                            }}>
-                                                <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 4 }}>
-                                                    {previewPack === 'dark' ? (
-                                                        <CensoredText
-                                                            text={text}
-                                                            censoredWords={censoredMatches}
-                                                            style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}
-                                                            textStyle={{
-                                                                color: '#000',
-                                                                fontFamily: 'Outfit',
-                                                                fontSize: 13,
-                                                                fontWeight: '600',
-                                                                lineHeight: 18,
-                                                                textAlign: 'center'
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <Text style={{
-                                                            color: '#000',
-                                                            fontFamily: 'Outfit',
-                                                            fontSize: 13,
-                                                            fontWeight: '600',
-                                                            lineHeight: 18,
-                                                            textAlign: 'center'
+                                                    return (
+                                                        <View key={index} style={{
+                                                            backgroundColor: '#f5f5f5',
+                                                            borderColor: '#ddd',
+                                                            borderWidth: 1,
+                                                            width: (Math.min(screenWidth * 0.9, 400) - 60) / 2,
+                                                            height: ((Math.min(screenWidth * 0.9, 400) - 60) / 2) * 1.4,
+                                                            padding: 8,
+                                                            borderRadius: 8
                                                         }}>
-                                                            {text}
-                                                        </Text>
-                                                    )}
-                                                </View>
-                                                <View style={{ paddingBottom: 6, paddingLeft: 8, opacity: 0.8 }}>
-                                                    <Text style={{ fontSize: 5, color: '#000', opacity: 0.8, fontFamily: 'Outfit-Bold' }}>
-                                                        MORAL DECAY
-                                                    </Text>
-                                                </View>
-                                            </View>
-                                        );
-                                    })}
+                                                            <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 4 }}>
+                                                                {(previewPack === 'dark' || previewPack === 'spicy') ? (
+                                                                    <CensoredText
+                                                                        text={text}
+                                                                        censoredWords={censoredMatches}
+                                                                        style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}
+                                                                        textStyle={{
+                                                                            color: '#000',
+                                                                            fontFamily: 'Outfit',
+                                                                            fontSize: 13,
+                                                                            fontWeight: '600',
+                                                                            lineHeight: 18,
+                                                                            textAlign: 'center'
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <Text style={{
+                                                                        color: '#000',
+                                                                        fontFamily: 'Outfit',
+                                                                        fontSize: 13,
+                                                                        fontWeight: '600',
+                                                                        lineHeight: 18,
+                                                                        textAlign: 'center'
+                                                                    }}>
+                                                                        {text}
+                                                                    </Text>
+                                                                )}
+                                                            </View>
+                                                            <View style={{ paddingBottom: 6, paddingLeft: 8, opacity: 0.8 }}>
+                                                                <Text style={{ fontSize: 5, color: '#000', opacity: 0.8, fontFamily: 'Outfit-Bold' }}>
+                                                                    MORAL DECAY
+                                                                </Text>
+                                                            </View>
+                                                        </View>
+                                                    );
+                                                })}
                                 </View>
 
                                 <TouchableOpacity
@@ -1670,7 +2076,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         alignItems: 'center',
         alignSelf: 'center',
-        overflow: 'hidden', // Required for BlurView
+        // overflow: 'hidden', // [DEBUG] Removed to check if this fixes clipping
     },
     settingsSection: {
         width: '100%',

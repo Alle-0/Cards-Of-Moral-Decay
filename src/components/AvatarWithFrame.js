@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Platform, Image, Text } from 'react-native';
 import Svg, { Defs, RadialGradient, Stop, Circle, Path, Ellipse } from 'react-native-svg';
 import LocalAvatar from './LocalAvatar';
-import { CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, CatIcon } from './Icons';
+import { CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, CatIcon, SnowflakeIcon } from './Icons';
 
 // Reusable component for Avatar + Frame + Glows
 const AvatarWithFrame = ({
@@ -22,7 +22,7 @@ const AvatarWithFrame = ({
 
             {/* GLOW LAYER (Background) */}
             {Platform.OS === 'android' && (
-                <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]} pointerEvents="none">
+                <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }]}>
                     {frameId === 'neon' && (
                         <Svg height="150%" width="150%" viewBox="0 0 100 100">
                             <Defs>
@@ -89,12 +89,12 @@ const AvatarWithFrame = ({
 
                 {/* GLITCH */}
                 {frameId === 'glitch' && (
-                    <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#00ff00', borderStyle: 'dashed' }]} pointerEvents="none" />
+                    <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#00ff00', borderStyle: 'dashed', pointerEvents: 'none' }]} />
                 )}
 
                 {/* NEON */}
                 {frameId === 'neon' && (
-                    <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#06b6d4', shadowColor: '#06b6d4', shadowOpacity: 1, shadowRadius: 10, elevation: Platform.OS === 'android' ? 0 : 6 }]} pointerEvents="none" />
+                    <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#06b6d4', shadowColor: '#06b6d4', shadowOpacity: 1, shadowRadius: 10, elevation: Platform.OS === 'android' ? 0 : 6, pointerEvents: 'none' }]} />
                 )}
 
                 {/* ANGEL */}
@@ -109,7 +109,7 @@ const AvatarWithFrame = ({
 
                 {/* DEMON */}
                 {frameId === 'demon' && (
-                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: '#7f1d1d', shadowColor: '#ef4444', shadowOpacity: 0.8, shadowRadius: 8, elevation: Platform.OS === 'android' ? 0 : 6 }]} />
                         <View style={{ position: 'absolute', top: -18 * scale, width: '100%', alignItems: 'center' }}>
                             <HornsIcon size={30 * scale} color="#ef4444" />
@@ -119,12 +119,12 @@ const AvatarWithFrame = ({
 
                 {/* PIXEL */}
                 {frameId === 'pixel' && (
-                    <View style={[StyleSheet.absoluteFill, { borderRadius: 4 * scale, borderWidth: 4 * scale, borderColor: '#ec4899', borderStyle: 'dotted' }]} pointerEvents="none" />
+                    <View style={[StyleSheet.absoluteFill, { borderRadius: 4 * scale, borderWidth: 4 * scale, borderColor: '#ec4899', borderStyle: 'dotted', pointerEvents: 'none' }]} />
                 )}
 
                 {/* LOVE */}
                 {frameId === 'love' && (
-                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#f472b6' }]} />
                         <View style={{ position: 'absolute', bottom: -12 * scale, width: '100%', alignItems: 'center' }}>
                             <HeartIcon size={24 * scale} color="#f472b6" />
@@ -134,7 +134,7 @@ const AvatarWithFrame = ({
 
                 {/* RICH */}
                 {frameId === 'rich' && (
-                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: '#10b981' }]} />
                         <View style={{ position: 'absolute', top: -15 * scale, width: '100%', alignItems: 'center' }}>
                             <MoneyIcon size={28 * scale} color="#10b981" />
@@ -144,7 +144,7 @@ const AvatarWithFrame = ({
 
                 {/* CAPO */}
                 {frameId === 'capo' && (
-                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
                         {/* Glow Layer */}
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 6 * scale, borderColor: '#ff00ff', opacity: 0.5 }]} />
                         {/* Main Gold Frame */}
@@ -160,7 +160,7 @@ const AvatarWithFrame = ({
 
                 {/* WANTED */}
                 {frameId === 'wanted' && (
-                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: 4 * scale, borderWidth: 8 * scale, borderColor: '#78350f', backgroundColor: 'transparent' }]} />
                         <View style={[StyleSheet.absoluteFill, { borderRadius: 2 * scale, borderWidth: 2 * scale, borderColor: '#d97706', margin: 2 * scale }]} />
                         <View style={{ position: 'absolute', top: 2 * scale, width: '100%', alignItems: 'center' }}>
@@ -171,7 +171,7 @@ const AvatarWithFrame = ({
 
                 {/* TOILET */}
                 {frameId === 'toilet' && (
-                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 6 * scale, borderColor: '#f1f5f9' }]} />
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#cbd5e1', margin: 4 * scale }]} />
                         <View style={{ position: 'absolute', top: -4 * scale, width: '100%', alignItems: 'center' }}>
@@ -181,10 +181,39 @@ const AvatarWithFrame = ({
                 )}
 
                 {frameId === 'cat' && (
-                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 2 * scale, borderColor: '#f472b6' }]} />
                         <View style={{ position: 'absolute', top: -18 * scale, width: '100%', alignItems: 'center' }}>
                             <CatIcon size={size * 0.7} color="#f472b6" />
+                        </View>
+                    </View>
+                )}
+
+                {/* ICE KING */}
+                {frameId === 'ice_king' && (
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#a5f3fc', shadowColor: '#0891b2', shadowOpacity: 0.8, shadowRadius: 10 }]} />
+
+                        <View style={{ position: 'absolute', bottom: -10 * scale, width: '100%', alignItems: 'center' }}>
+                            <SnowflakeIcon size={16 * scale} color="#cffafe" />
+                        </View>
+                    </View>
+                )}
+
+                {/* MIDAS TOUCH */}
+                {frameId === 'midas_touch' && (
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+                        {/* Gold Glow */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: '#fbbf24', shadowColor: '#f59e0b', shadowOpacity: 1, shadowRadius: 15 }]} />
+                        {/* Inner Ring */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#fff', margin: 3 * scale, opacity: 0.5 }]} />
+
+                        {/* Sparkles simulate touch */}
+                        <View style={{ position: 'absolute', bottom: -5 * scale, right: -5 * scale }}>
+                            <View style={{ width: 4 * scale, height: 4 * scale, backgroundColor: '#fff', borderRadius: 2 }} />
+                        </View>
+                        <View style={{ position: 'absolute', top: 5 * scale, left: -2 * scale }}>
+                            <View style={{ width: 3 * scale, height: 3 * scale, backgroundColor: '#fbbf24', borderRadius: 1.5 }} />
                         </View>
                     </View>
                 )}

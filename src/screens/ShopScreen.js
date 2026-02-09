@@ -38,6 +38,36 @@ const DARK_PACK_PREVIEW = {
     ]
 };
 
+const CHILL_PACK_PREVIEW = {
+    it: [
+        "Un piccione con autostima",
+        "Indossare le crocs al matrimonio",
+        "L'ansia sociale a comando",
+        "Un abbraccio non richiesto"
+    ],
+    en: [
+        "A pigeon with self-esteem",
+        "Wearing crocs at a wedding",
+        "Social anxiety on command",
+        "An unsolicited hug"
+    ]
+};
+
+const SPICY_PACK_PREVIEW = {
+    it: [
+        "Un {dildo} nero venoso di 30cm",
+        "Leccare l'{ano} di un senzatetto",
+        "Un'{orgia} in una casa di riposo",
+        "Il sapore dello {sperma} di tuo padre"
+    ],
+    en: [
+        "A 12-inch veinous black {dildo}",
+        "Licking a homeless person's {anus}",
+        "An {orgy} in a retirement home",
+        "The taste of your dad's {cum}"
+    ]
+};
+
 export default function ShopScreen() {
     const { user, buyTheme, buySkin, buyFrame, buyPack } = useAuth();
     const { theme } = useTheme();
@@ -464,7 +494,9 @@ export default function ShopScreen() {
                     <Text style={[styles.itemName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
                         {t('pack_' + pack.id)}
                     </Text>
-                    <Text style={styles.itemDesc}>{isUnlocked ? t('owned') : t('pack_label')}</Text>
+                    <Text style={styles.itemDesc}>
+                        {isUnlocked ? t('owned') : t('pack_label')} • <Text style={{ color: theme.colors.accent }}>{t('cards_count', { count: pack.count })}</Text>
+                    </Text>
                 </View>
 
                 <View style={styles.actionRow}>
@@ -481,18 +513,22 @@ export default function ShopScreen() {
                                 onPress={() => {
                                     if (pack.id === 'dark') {
                                         buyItem('dark_pack');
+                                    } else if (pack.id === 'spicy') {
+                                        buyItem('spicy_pack_10');
                                     } else {
                                         handleBuyPack(pack.id, price, t('pack_' + pack.id));
                                     }
                                 }}
-                                disabled={isProcessing || (pack.id !== 'dark' && user.balance < price)}
+                                disabled={isProcessing || ((pack.id !== 'dark' && pack.id !== 'spicy') && user.balance < price)}
                             >
                                 <Text style={[styles.buyText, { color: '#000' }]}>
-                                    {isProcessing && pack.id === 'dark' ? "..." : (pack.id === 'dark' ? "4.99€" : price)}
+                                    {isProcessing && (pack.id === 'dark' || pack.id === 'spicy') ? "..." :
+                                        (pack.id === 'dark' ? "4.99€" : (pack.id === 'spicy' ? "2.99€" : price))
+                                    }
                                 </Text>
-                                {(!isProcessing || pack.id !== 'dark') && pack.id !== 'dark' && <DirtyCashIcon size={12} color="#000" />}
+                                {(!isProcessing || (pack.id !== 'dark' && pack.id !== 'spicy')) && (pack.id !== 'dark' && pack.id !== 'spicy') && <DirtyCashIcon size={12} color="#000" />}
                             </TouchableOpacity>
-                            {pack.id === 'dark' && (
+                            {(pack.id === 'dark' || pack.id === 'chill' || pack.id === 'spicy') && ( // Allow preview for all
                                 <TouchableOpacity
                                     style={[styles.previewButtonIcon, { marginLeft: 0 }]}
                                     onPress={() => handlePreview('pack', pack)}
@@ -671,7 +707,9 @@ export default function ShopScreen() {
                                     {t('shop_pack_info')}
                                 </Text>
                                 {[
-                                    { id: 'dark', price: 1000, color: '#ef4444' }
+                                    { id: 'dark', price: 1000, color: '#ef4444', count: 168 },
+                                    { id: 'chill', price: 5000, color: '#38bdf8', count: 60 }, // [NEW] SFW Extreme
+                                    { id: 'spicy', price: 1000, color: '#d946ef', count: 50 } // [NEW] NSFW Legal (Paid placeholder, handled as DC for now or custom flow)
                                 ].map((p, index) => renderPackItem(p, index))}
                             </View>
                         )}
@@ -730,7 +768,7 @@ export default function ShopScreen() {
                             </EfficientBlurView>
                         </Animated.View>
 
-                        <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center' }]} pointerEvents="box-none">
+                        <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center' }, { pointerEvents: 'box-none' }]}>
                             <Animated.View
                                 entering={ZoomIn.delay(50).duration(300)}
                                 exiting={ZoomOut.duration(200)}
@@ -740,7 +778,7 @@ export default function ShopScreen() {
                                     <Text style={[styles.previewSubtitle, { color: theme.colors.accent }]}>
                                         {preview?.type === 'skin' ? t('preview_subtitle_skin') :
                                             (preview?.type === 'frame' ? t('preview_subtitle_frame') :
-                                                (preview?.type === 'pack' ? "DARK PACK" : t('preview_subtitle_theme')))}
+                                                (preview?.type === 'pack' ? t('pack_' + preview?.item?.id).toUpperCase() : t('preview_subtitle_theme')))}
                                     </Text>
                                     {(preview?.type === 'skin' || preview?.type === 'frame' || preview?.type === 'pack') && (
                                         <Text style={styles.previewTitleMain}>
@@ -789,45 +827,48 @@ export default function ShopScreen() {
                                     ) : preview?.type === 'pack' ? (
                                         <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 20 }}>
                                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-                                                {(DARK_PACK_PREVIEW[language] || DARK_PACK_PREVIEW['en']).map((text, index) => {
-                                                    // Extract censored words (e.g., "{word}")
-                                                    const censoredMatches = text.match(/\{[^}]+\}/g) || [];
+                                                {((preview.item.id === 'chill' ? (CHILL_PACK_PREVIEW[language] || CHILL_PACK_PREVIEW['en']) :
+                                                    (preview.item.id === 'spicy' ? (SPICY_PACK_PREVIEW[language] || SPICY_PACK_PREVIEW['en']) :
+                                                        (DARK_PACK_PREVIEW[language] || DARK_PACK_PREVIEW['en'])))).map((text, index) => {
+                                                            // Extract censored words (e.g., "{word}")
+                                                            const censoredMatches = text.match(/\{[^}]+\}/g) || [];
 
-                                                    return (
-                                                        <View key={index} style={[styles.largeCard, {
-                                                            backgroundColor: '#f5f5f5', // White Answer Card
-                                                            borderColor: '#ddd',
-                                                            borderWidth: 1,
-                                                            width: (width * 0.85 - 60) / 2, // Safe width: Millimectric fit (85% modal - 40 padding - 10 gap - 10 buffer)
-                                                            height: ((width * 0.85 - 60) / 2) * 1.4, // Aspect ratio
-                                                            padding: 8 // Reduced padding
-                                                        }]}>
-                                                            <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 4 }}>
-                                                                <CensoredText
-                                                                    text={text}
-                                                                    censoredWords={censoredMatches}
-                                                                    style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}
-                                                                    textStyle={{
-                                                                        color: '#000',
-                                                                        fontFamily: 'Outfit',
-                                                                        fontSize: 10,
-                                                                        fontWeight: '600',
-                                                                        lineHeight: 14,
-                                                                        textAlign: 'center'
-                                                                    }}
-                                                                />
-                                                            </View>
-                                                            <View style={{ paddingBottom: 6, paddingLeft: 8, opacity: 0.8 }}>
-                                                                <Text style={{ fontSize: 5, color: '#000', opacity: 0.8, fontFamily: 'Outfit-Bold' }}>
-                                                                    MORAL DECAY
-                                                                </Text>
-                                                            </View>
-                                                        </View>
-                                                    );
-                                                })}
+                                                            return (
+                                                                <View key={index} style={[styles.largeCard, {
+                                                                    backgroundColor: '#f5f5f5', // White Answer Card
+                                                                    borderColor: '#ddd',
+                                                                    borderWidth: 1,
+                                                                    width: (width * 0.85 - 60) / 2, // Safe width: Millimectric fit (85% modal - 40 padding - 10 gap - 10 buffer)
+                                                                    height: ((width * 0.85 - 60) / 2) * 1.4, // Aspect ratio
+                                                                    padding: 8 // Reduced padding
+                                                                }]}>
+                                                                    <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 4 }}>
+                                                                        <CensoredText
+                                                                            text={text}
+                                                                            censoredWords={censoredMatches}
+                                                                            style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}
+                                                                            textStyle={{
+                                                                                color: '#000',
+                                                                                fontFamily: 'Outfit',
+                                                                                fontSize: 15,
+                                                                                fontWeight: '600',
+                                                                                lineHeight: 17,
+                                                                                textAlign: 'center'
+                                                                            }}
+                                                                        />
+                                                                    </View>
+                                                                    <View style={{ paddingBottom: 6, paddingLeft: 8, opacity: 0.8 }}>
+                                                                        <Text style={{ fontSize: 5, color: '#000', opacity: 0.8, fontFamily: 'Outfit-Bold' }}>
+                                                                            MORAL DECAY
+                                                                        </Text>
+                                                                    </View>
+                                                                </View>
+                                                            );
+                                                        })}
                                             </View>
                                             <Text style={{ color: '#888', fontFamily: 'Outfit', fontSize: 13, marginTop: 20, textAlign: 'center', paddingHorizontal: 30 }}>
-                                                {t('preview_pack_desc', 'Esplicito, Osceno e Moralmente Discutibile.')}
+                                                {preview.item.id === 'dark' ? t('preview_pack_desc', 'Esplicito, Osceno e Moralmente Discutibile.') :
+                                                    (preview.item.id === 'chill' ? t('chill_content') : t('spicy_content'))}
                                             </Text>
                                         </View>
                                     ) : preview?.type === 'theme' ? (

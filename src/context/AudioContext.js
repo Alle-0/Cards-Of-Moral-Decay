@@ -82,6 +82,30 @@ export const AudioProvider = ({ children }) => {
         };
     }, []);
 
+    const safePlay = async (player) => {
+        if (!player) return;
+        try {
+            const result = player.play();
+            // [IMPORTANT] Attach catch IMMEDIATELY in the same event loop tick 
+            // to prevent Chromium from reporting "Uncaught (in promise)"
+            if (result && typeof result.catch === 'function') {
+                result.catch(e => {
+                    if (e.name === 'NotAllowedError') {
+                        console.log("[AudioContext] Autoplay blocked, waiting for interaction.");
+                    } else {
+                        console.warn("[AudioContext] play() aborted:", e.message);
+                    }
+                });
+            }
+
+            if (result && typeof result.then === 'function') {
+                await result;
+            }
+        } catch (e) {
+            // Already handled in the catch above, but kept for async consistency
+        }
+    };
+
     const playMusic = async ({ fade = false } = {}) => {
         if (!soundRef.current) {
             console.warn("[AudioContext] Cannot play, sound not loaded");
@@ -99,7 +123,7 @@ export const AudioProvider = ({ children }) => {
             if (fade) {
                 console.log("[AudioContext] Starting music with fade-in...");
                 soundRef.current.volume = 0;
-                soundRef.current.play();
+                await safePlay(soundRef.current);
 
                 let step = 0;
                 const interval = setInterval(() => {
@@ -119,11 +143,11 @@ export const AudioProvider = ({ children }) => {
                 }, FADE_DURATION / FADE_STEPS);
             } else {
                 soundRef.current.volume = 0.4;
-                soundRef.current.play();
+                await safePlay(soundRef.current);
             }
             setIsPlaying(true);
         } catch (e) {
-            console.warn("[AudioContext] Play error", e);
+            console.warn("[AudioContext] playMusic top-level error", e);
         }
     };
 
@@ -135,7 +159,7 @@ export const AudioProvider = ({ children }) => {
             // Only try to play/pause if sound is loaded
             if (soundRef.current) {
                 if (shouldPlay) {
-                    soundRef.current.play();
+                    await safePlay(soundRef.current);
                 } else {
                     soundRef.current.pause();
                 }
@@ -160,9 +184,32 @@ export const AudioProvider = ({ children }) => {
         }
     };
 
+    // [NEW] Web Interaction Fallback
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+
+        const handleInteraction = () => {
+            if (isPlaying && soundRef.current) {
+                safePlay(soundRef.current);
+                // Once it plays successfully, we can remove the listeners
+                window.removeEventListener('click', handleInteraction);
+                window.removeEventListener('touchstart', handleInteraction);
+            }
+        };
+
+        window.addEventListener('click', handleInteraction);
+        window.addEventListener('touchstart', handleInteraction);
+
+        return () => {
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('touchstart', handleInteraction);
+        };
+    }, [isPlaying]);
+
     return (
         <AudioContext.Provider value={{ isPlaying, toggleMusic, setVolume, playMusic }}>
             {children}
         </AudioContext.Provider>
     );
 };
+

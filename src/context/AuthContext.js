@@ -1,4 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { Linking, Alert } from 'react-native'; // [FIX] Use standard react-native Linking
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { ref, get, set, child, update, increment, onValue, off, query, orderByChild, equalTo } from 'firebase/database';
 import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from '../services/firebase';
@@ -7,7 +10,6 @@ import { RANK_COLORS, RANK_THRESHOLDS } from '../constants/Ranks';
 import NotificationService from '../services/NotificationService';
 export { RANK_COLORS, RANK_THRESHOLDS };
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import AnalyticsService from '../services/AnalyticsService';
 
 const AuthContext = createContext();
@@ -16,10 +18,14 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [pendingRoom, setPendingRoom] = useState(null); // [NEW] Store room from deep link
+    const [pendingInvite, setPendingInvite] = useState(null); // [NEW] Store inviter from deep link
     const [loading, setLoading] = useState(true);
     const [isConnected, setIsConnected] = useState(true); // Default to true to avoid flash
 
     const USER_CACHE_KEY = 'cached_user_profile';
+    const PENDING_ROOM_KEY = 'pending_room_deep_link'; // [NEW]
+    const PENDING_INVITE_KEY = 'pending_invite_deep_link'; // [NEW]
 
     // 1. Auto-Login (Init)
     useEffect(() => {
@@ -29,12 +35,22 @@ export const AuthProvider = ({ children }) => {
                 const cached = await AsyncStorage.getItem(USER_CACHE_KEY);
                 if (cached) {
                     const parsed = JSON.parse(cached);
-                    // console.log(`[AUTH] Loaded cached user: ${parsed.username}`);
                     setUser(parsed);
-                    // [OFFLINE SAFETY] Force stop loading after 5s if we have cache
-                    setTimeout(() => setLoading(false), 5000);
                 }
-            } catch (e) { console.warn("[AUTH] Cache load failed", e); }
+
+                // [NEW] Load pending deep link stuff
+                const savedRoom = await AsyncStorage.getItem(PENDING_ROOM_KEY);
+                if (savedRoom) setPendingRoom(savedRoom);
+
+                const savedInvite = await AsyncStorage.getItem(PENDING_INVITE_KEY);
+                if (savedInvite) setPendingInvite(savedInvite);
+
+            } catch (e) {
+                console.warn("[AUTH] Cache load failed", e);
+            } finally {
+                // [FIX] No hardcoded 5s delay. Let Firebase Auth take over or finish if offline.
+                // If we have a cached user, we can show the UI. Firebase will sync later.
+            }
         };
         loadCache();
 
@@ -82,29 +98,16 @@ export const AuthProvider = ({ children }) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
 
-                // [NEW] Special override for Alle (Case-Sensitive)
-                if (user?.username === 'Alle') {
-                    data.rank = "Capo supremo";
-                    data.unlockedFrames = { ...data.unlockedFrames, capo: true };
-                    // Force equip the exclusive frame if no frame is active or it's the basic one
-                    if (!data.activeFrame || data.activeFrame === 'basic') {
-                        data.activeFrame = 'capo';
-                    }
-                }
+                // Consolidate special overrides
+                const processedData = applySpecialOverrides(data, user?.username);
 
-                // Merge to update local state with latest DB data, handling deleted nodes
-                setUser(prev => {
-                    const next = {
-                        ...prev,
-                        ...data,
-                        friends: data.friends || {},
-                        friendRequests: data.friendRequests || {}
-                    };
-
-                    // Cache the merged result
-                    AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(next));
-                    return next;
-                });
+                // Merge to update local state with latest DB data
+                setUser(prev => ({
+                    ...prev,
+                    ...processedData,
+                    friends: processedData.friends || {},
+                    friendRequests: processedData.friendRequests || {}
+                }));
             }
         });
 
@@ -135,7 +138,6 @@ export const AuthProvider = ({ children }) => {
                     await update(ref(db, `users/${user.username}`), {
                         pushToken: token
                     });
-                    // console.log(`[PUSH] Token updated for ${user.username}`);
                 }
             } catch (error) {
                 console.error("[PUSH] Error registering token:", error);
@@ -147,7 +149,161 @@ export const AuthProvider = ({ children }) => {
         }
     }, [user?.username]);
 
+    // [NEW] DEEP LINK HANDLER (Auto-Add Friend & Room)
+    useEffect(() => {
+        const handleDeepLink = async (url) => {
+            if (!url) return;
+            try {
+                let inviteName = null;
+
+                // 1. Parse Room
+                if (url.includes('room=')) {
+                    const roomMatch = url.match(/[?&]room=([^&]+)/);
+                    if (roomMatch && roomMatch[1]) {
+                        const roomCode = roomMatch[1].trim();
+                        console.log(`[DEEP LINK] Detected room: ${roomCode}`);
+                        setPendingRoom(roomCode);
+                        AsyncStorage.setItem(PENDING_ROOM_KEY, roomCode);
+                    }
+                }
+
+                // 2. Parse Invite
+                if (url.includes('invite=')) {
+                    const match = url.match(/[?&]invite=([^&]+)/);
+                    if (match && match[1]) {
+                        inviteName = decodeURIComponent(match[1]).trim();
+                        console.log(`[DEEP LINK] Detected invite: ${inviteName}`);
+                        setPendingInvite(inviteName);
+                        AsyncStorage.setItem(PENDING_INVITE_KEY, inviteName);
+                    }
+                }
+
+                // 3. Immediate reciprocal add if logged in
+                if (user?.username && inviteName && inviteName !== user.username) {
+                    if (user.friends && user.friends[inviteName]) return;
+
+                    const updates = {};
+                    updates[`users/${user.username}/friends/${inviteName}`] = true;
+                    updates[`users/${inviteName}/friendRequests/${user.username}`] = 'invite';
+                    await update(ref(db), updates);
+                    setPendingInvite(null);
+                    AsyncStorage.removeItem(PENDING_INVITE_KEY);
+
+                    Alert.alert(
+                        "Nuovo Complice!",
+                        `Hai aggiunto ${inviteName} agli amici tramite link.`,
+                        [{ text: "OK" }]
+                    );
+                }
+            } catch (e) {
+                console.warn("[DEEP LINK] Error:", e);
+            }
+        };
+
+        Linking.getInitialURL().then(url => handleDeepLink(url));
+        const subscription = Linking.addEventListener('url', ({ url }) => handleDeepLink(url));
+        return () => subscription.remove();
+    }, [user?.username]);
+
+    // [NEW] PROCESS PENDING INVITE (For new users after they login)
+    useEffect(() => {
+        if (user?.username && pendingInvite && pendingInvite !== user.username) {
+            const processInvite = async () => {
+                try {
+                    console.log(`[INVITE] Processing pending invite from: ${pendingInvite}`);
+                    // check if already friends
+                    if (user.friends && user.friends[pendingInvite]) {
+                        setPendingInvite(null);
+                        AsyncStorage.removeItem(PENDING_INVITE_KEY);
+                        return;
+                    }
+
+                    const updates = {};
+                    updates[`users/${user.username}/friends/${pendingInvite}`] = true;
+                    updates[`users/${pendingInvite}/friendRequests/${user.username}`] = 'invite';
+
+                    await update(ref(db), updates);
+                    setPendingInvite(null);
+                    AsyncStorage.removeItem(PENDING_INVITE_KEY);
+
+                    Alert.alert(
+                        "Nuovo Complice!",
+                        `Hai aggiunto ${pendingInvite} agli amici tramite link.`,
+                        [{ text: "OK" }]
+                    );
+                } catch (e) {
+                    console.warn("[INVITE] Error:", e);
+                }
+            };
+            processInvite();
+        }
+    }, [user?.username, pendingInvite]);
+
+    // [NEW] AUTO-ACCEPT INVITE REQUESTS
+    useEffect(() => {
+        if (!user?.friendRequests) return;
+
+        const processAutoAccepts = async () => {
+            const requests = user.friendRequests;
+            const updates = {};
+            let found = false;
+            let lastInviter = "";
+
+            for (const requester in requests) {
+                if (requests[requester] === 'invite') {
+                    // Mutual addition
+                    updates[`users/${user.username}/friends/${requester}`] = true;
+                    updates[`users/${user.username}/friendRequests/${requester}`] = null;
+                    updates[`users/${requester}/friends/${user.username}`] = true;
+                    found = true;
+                    lastInviter = requester;
+                }
+            }
+
+            if (found) {
+                try {
+                    console.log(`[AUTO-ACCEPT] Accepting invites from: ${lastInviter}`);
+                    await update(ref(db), updates);
+                    // Feedback for the original inviter
+                    Alert.alert(
+                        "Nuovo Complice!",
+                        `${lastInviter} si è unito alla tua banda tramite il tuo link!`,
+                        [{ text: "GRANDE" }]
+                    );
+                } catch (e) {
+                    console.warn("[AUTO-ACCEPT] Error:", e);
+                }
+            }
+        };
+
+        processAutoAccepts();
+    }, [user?.friendRequests]);
+
     // 3. RevenueCat Customer Info Listener
+
+    // --- Helper: Apply Special Overrides (e.g. Capo Supremo) ---
+    const applySpecialOverrides = (data, username) => {
+        if (!data || !username) return data;
+        const normalized = username.toLowerCase();
+
+        if (normalized === 'alle') {
+            return {
+                ...data,
+                rank: "Capo supremo",
+                unlockedFrames: { ...(data.unlockedFrames || {}), capo: true },
+                activeFrame: (!data.activeFrame || data.activeFrame === 'basic') ? 'capo' : data.activeFrame
+            };
+        }
+        return data;
+    };
+
+    // --- Helper: Persistence Sync ---
+    useEffect(() => {
+        if (user) {
+            AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(user))
+                .catch(err => console.error("[AUTH] Persistence error:", err));
+        }
+    }, [user]);
 
     // --- Helper: Generate Recovery Code ---
     const generateRecoveryCode = () => {
@@ -175,27 +331,17 @@ export const AuthProvider = ({ children }) => {
                     const userData = userSnapshot.val();
 
                     // [SECURITY] Check if this UID is still the valid owner
-                    // If the account was recovered by another UID, userData.uid will be different.
                     if (userData.uid && userData.uid !== uid) {
-                        console.warn(`[SECURITY] UID mismatch! ${uid} maps to ${username}, but owner is ${userData.uid}. Cleaning up stale mapping.`);
-                        // We are authenticated as 'uid', so we HAVE permission to delete 'uids/${uid}'
+                        console.warn(`[SECURITY] UID mismatch! ${uid} maps to ${username}, but owner is ${userData.uid}.`);
                         await set(uidRef, null);
                         setUser(null);
                         return;
                     }
 
-                    // [NEW] Special override for Alle
-                    if (username.toLowerCase() === 'alle') {
-                        userData.rank = "Capo supremo";
-                        userData.unlockedFrames = { ...(userData.unlockedFrames || {}), capo: true };
-                        if (!userData.activeFrame || userData.activeFrame === 'basic') {
-                            userData.activeFrame = 'capo';
-                        }
-                    }
-
-                    const finalUser = { username, ...userData };
+                    // Apply special overrides
+                    const processedData = applySpecialOverrides(userData, username);
+                    const finalUser = { username, ...processedData };
                     setUser(finalUser);
-                    AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(finalUser));
                     return;
                 }
             }
@@ -326,6 +472,66 @@ export const AuthProvider = ({ children }) => {
         setUser({ username, ...userData, uid: newUid, isRecovered: true });
 
         return true;
+    }, []);
+
+    // --- Action: Quick Login [DEV ONLY] ---
+    const devLogin = useCallback(async (username) => {
+        if (!__DEV__) return;
+        setLoading(true);
+        try {
+            console.log(`[DEV] Quick Login: ${username}`);
+
+            // 1. Ensure anonymous session
+            let currentUser = auth.currentUser;
+            if (!currentUser) {
+                const authResult = await signInAnonymously(auth);
+                currentUser = authResult.user;
+            }
+            const uid = currentUser.uid;
+
+            // 2. Check if user exists
+            const userRef = ref(db, `users/${username}`);
+            const snapshot = await get(userRef);
+
+            let userData;
+            if (!snapshot.exists()) {
+                // Create minimal test user
+                userData = {
+                    uid: uid,
+                    recoveryCode: "DEV-MODE",
+                    balance: 1000,
+                    totalScore: 0,
+                    rank: "Anima Candida",
+                    createdAt: new Date().toISOString(),
+                    friends: {},
+                    friendRequests: {},
+                    unlockedThemes: { default: true },
+                    activeCardSkin: 'classic',
+                    unlockedSkins: { classic: true },
+                    activeFrame: 'basic',
+                    unlockedFrames: { basic: true },
+                    unlockedPacks: { dark: false }
+                };
+                await set(userRef, userData);
+            } else {
+                userData = snapshot.val();
+            }
+
+            // 3. Map UID & Update ownership
+            await set(ref(db, `uids/${uid}`), username);
+            await update(userRef, { uid: uid });
+
+            // 4. Force state
+            const processedData = applySpecialOverrides(userData, username);
+            setUser({ username, ...processedData, uid: uid, isRecovered: true });
+
+            return true;
+        } catch (e) {
+            console.error("[DEV] Login failed:", e);
+            Alert.alert("Dev Error", e.message);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     // --- Action: Logout ---
@@ -559,14 +765,16 @@ export const AuthProvider = ({ children }) => {
     }, [user]);
 
     const addFriendDirectly = useCallback(async (friendUsername) => {
-        if (!user || !user.username) return false;
+        if (!user || !user.username) throw new Error("Devi essere loggato.");
         const target = friendUsername.trim();
-        if (target === user.username) return false;
+        if (target === user.username) throw new Error("Non puoi aggiungerti da solo.");
 
         // Check if target exists
         const targetRef = ref(db, `users/${target}`);
         const snapshot = await get(targetRef);
-        if (!snapshot.exists()) return false;
+        if (!snapshot.exists()) {
+            throw new Error(`Utente '${target}' non trovato.`);
+        }
 
         // Check if already friends
         if (user.friends && user.friends[target]) return true;
@@ -586,10 +794,15 @@ export const AuthProvider = ({ children }) => {
     // Memoize the context value to avoid re-rendering consumers unless necessary
     const value = React.useMemo(() => ({
         user,
+        pendingRoom,
+        setPendingRoom,
+        pendingInvite,
+        setPendingInvite,
         loading,
         isConnected, // [NEW] Exposed for UI usage
         signUp,
         recoverAccount,
+        devLogin, // [NEW]
         logout,
         awardMoney,
         spendMoney,
@@ -611,9 +824,14 @@ export const AuthProvider = ({ children }) => {
         addFriendDirectly
     }), [
         user,
+        pendingRoom,
+        setPendingRoom,
+        pendingInvite,
+        setPendingInvite,
         loading,
         signUp,
         recoverAccount,
+        devLogin, // [NEW]
         logout,
         awardMoney,
         spendMoney,

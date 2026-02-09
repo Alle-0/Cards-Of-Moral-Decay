@@ -8,6 +8,7 @@ import SoundService from '../services/SoundService';
 import GameDataService from '../services/GameDataService';
 import { useAuth } from './AuthContext';
 import AnalyticsService from '../services/AnalyticsService'; // [NEW]
+import { CHAOS_EVENTS } from '../constants/ChaosEvents'; // [NEW]
 
 // Context
 const GameContext = createContext();
@@ -231,7 +232,14 @@ export const GameProvider = ({ children }) => {
         return newRoom;
     };
 
-    const generateRoomCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+    const generateRoomCode = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+    };
 
     const setPresence = async (code, name) => {
         try {
@@ -310,8 +318,11 @@ export const GameProvider = ({ children }) => {
                 dominus: currentName,
                 dominusIndex: 0,
                 // [NEW] Store Package Settings & Language
-                allowedPackages: extraData.allowedPackages || { base: true, dark: false },
+                allowedPackages: extraData.allowedPackages || { base: true, dark: false, chill: false, spicy: false },
                 roomLanguage: extraData.roomLanguage || GameDataService.language || 'it',
+                chaosMode: extraData.chaosMode || false, // [NEW] Chaos Engine Toggle
+                activeChaosEvent: null, // [NEW] Current active event
+                lastChaosEvent: null, // [NEW] Track history for variety
                 cartaNera: null,
                 carteGiocate: {},
                 punti: { [currentName]: 0 },
@@ -459,6 +470,7 @@ export const GameProvider = ({ children }) => {
                 room.puntiPerVincere = targetPoints;
                 room.vincitorePartita = null;
                 room.vincitoreTurno = null;
+                room.randoPoints = 0; // [FIX] Reset Bot Points for new game
                 if (room.punti) { Object.keys(room.punti).forEach(k => { room.punti[k] = 0; }); }
                 return dehydrateRoom(room);
             });
@@ -520,7 +532,51 @@ export const GameProvider = ({ children }) => {
                 });
                 const activePlayers = Object.entries(room.giocatori).filter(([name]) => name !== room.dominus).length;
                 const playedCount = Object.keys(room.carteGiocate || {}).length;
-                if (playedCount >= activePlayers && activePlayers > 0) { room.statoTurno = "DOMINUS_CHOOSING"; }
+
+                // [FIX] ATOMIC TRANSACTION: Check if we are the last one playing in a 2-player game
+                // activePlayers includes us (because we are inside the transaction, but our card is already added to 'carteGiocate' above)
+                // Actually, 'room.carteGiocate' is updated in-memory above. So 'playedCount' includes us.
+
+                // Condition: 2 Players total (1 Dominus + 1 Player)
+                // We are that 1 Player. We just played.
+                if (activePlayers === 1) {
+                    const blanks = room.cartaNera?.blanks || 1;
+                    const randoCards = [];
+                    // Pop needed amount of cards
+                    for (let i = 0; i < blanks; i++) {
+                        // [FIX] EMPTY DECK SAFETY: Reshuffle if needed
+                        if (!room.whiteDeck || room.whiteDeck.length === 0) {
+                            // Harvest used cards to refill deck
+                            const excludedCards = new Set();
+                            // - Hands
+                            Object.values(room.giocatori || {}).forEach(p => {
+                                (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
+                            });
+                            // - Currently Played
+                            Object.values(room.carteGiocate || {}).forEach(cards => {
+                                const arr = Array.isArray(cards) ? cards : [cards];
+                                arr.forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
+                            });
+
+                            // Get all cards from packages
+                            const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }).carteBianche;
+                            const availableCards = allWhite.filter(c => !excludedCards.has(c.trim()));
+                            room.whiteDeck = shuffleArray(availableCards);
+                        }
+
+                        if (room.whiteDeck && room.whiteDeck.length > 0) {
+                            randoCards.push(room.whiteDeck.pop());
+                        }
+                    }
+
+                    if (randoCards.length > 0) {
+                        room.carteGiocate = room.carteGiocate || {};
+                        room.carteGiocate["Rando"] = randoCards;
+                    }
+                    room.statoTurno = "DOMINUS_CHOOSING";
+                } else if (playedCount >= activePlayers && activePlayers > 0) {
+                    room.statoTurno = "DOMINUS_CHOOSING";
+                }
                 return dehydrateRoom(room);
             });
         } catch (e) { console.error(e); }
@@ -532,24 +588,125 @@ export const GameProvider = ({ children }) => {
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
-                const newScore = (room.punti[winnerName] || 0) + 1;
-                room.punti[winnerName] = newScore;
-                room.vincitoreTurno = winnerName;
 
-                // [NEW] Analytics for Round Win
-                // We can approximate round number by the number of turns played if we tracked it, 
-                // or just log the event.
-                if (AnalyticsService) {
-                    AnalyticsService.logRoundComplete(roomCode, winnerName, (room.turnoCorrente || 0) + 1);
-                }
+                // [NEW] Unified Chaos Logic (Before determining final winner)
+                let actualWinner = winnerName;
+                let pointsToAdd = 1;
 
-                if (newScore >= (room.puntiPerVincere || 7)) {
-                    room.statoPartita = "GAME_OVER";
-                    room.vincitorePartita = winnerName;
-                    if (AnalyticsService) {
-                        AnalyticsService.logGameWin(winnerName, newScore);
+                // [NEW] CHAOS ENGINE LOGIC
+                if (room.chaosMode && room.activeChaosEvent) {
+                    // 1. INFLATION (Double Points)
+                    if (room.activeChaosEvent === CHAOS_EVENTS.INFLATION) {
+                        pointsToAdd = 2;
+                    }
+
+                    // 2. IDENTITY SWAP
+                    if (room.activeChaosEvent === CHAOS_EVENTS.IDENTITY_SWAP) {
+                        // Pool includes real players AND Rando if active
+                        let candidatePool = Object.keys(room.giocatori || {}).filter(n => n !== room.dominus);
+
+                        // [FIX] Robust Rando detection: check if Rando actually played cards this turn
+                        if (room.carteGiocate && room.carteGiocate['Rando']) {
+                            candidatePool.push('Rando');
+                        }
+
+                        // Safety dedupe
+                        candidatePool = [...new Set(candidatePool)];
+
+                        if (candidatePool.length > 1) {
+                            const randomIdx = Math.floor(Math.random() * candidatePool.length);
+                            const newWinner = candidatePool[randomIdx];
+
+                            // Store swap details
+                            room.chaosSwapDetails = {
+                                original: winnerName,
+                                actual: newWinner,
+                                type: 'IDENTITY_SWAP'
+                            };
+                            actualWinner = newWinner;
+                        }
+                    }
+
+                    // 3. ROBIN HOOD (Lowest Score Wins)
+                    if (room.activeChaosEvent === CHAOS_EVENTS.ROBIN_HOOD) {
+                        let minScore = Infinity;
+                        let poorestPlayers = [];
+
+                        const checkScore = (name, score) => {
+                            if (score < minScore) {
+                                minScore = score;
+                                poorestPlayers = [name];
+                            } else if (score === minScore) {
+                                poorestPlayers.push(name);
+                            }
+                        };
+
+                        // Check Humans
+                        Object.keys(room.giocatori || {}).forEach(p => {
+                            if (p !== room.dominus) {
+                                checkScore(p, room.punti?.[p] || 0);
+                            }
+                        });
+
+                        // Check Rando (only if playing)
+                        if (room.carteGiocate && room.carteGiocate['Rando']) {
+                            checkScore('Rando', room.randoPoints || 0);
+                        }
+
+                        if (poorestPlayers.length > 0) {
+                            const randomPoor = poorestPlayers[Math.floor(Math.random() * poorestPlayers.length)];
+                            room.chaosSwapDetails = {
+                                original: winnerName,
+                                actual: randomPoor,
+                                type: 'ROBIN_HOOD'
+                            };
+                            actualWinner = randomPoor;
+                        }
+                    }
+
+                    // 4. DIRTY WIN (Cash, no points)
+                    if (room.activeChaosEvent === CHAOS_EVENTS.DIRTY_WIN) {
+                        pointsToAdd = 0; // No points
+                        // Grant Dirty Cash (100 DC)
+                        if (actualWinner !== 'Rando') {
+                            room.chaosReward = {
+                                player: actualWinner,
+                                amount: 50, // [FIX] Changed from 100 to 50 to sum with standard 50 bonus
+                                type: 'DIRTY_CASH'
+                            };
+                        }
                     }
                 }
+
+                // [APPLY POINTS / WIN CONDITION]
+                if (actualWinner === 'Rando') {
+                    // Rando Logic
+                    room.randoPoints = (room.randoPoints || 0) + pointsToAdd;
+                    room.vincitoreTurno = 'Rando';
+
+                    if (room.randoPoints >= (room.puntiPerVincere || 7)) {
+                        room.statoPartita = "GAME_OVER";
+                        room.vincitorePartita = 'Rando';
+                    }
+                } else {
+                    // Human Logic
+                    const newScore = (room.punti[actualWinner] || 0) + pointsToAdd;
+                    room.punti[actualWinner] = newScore;
+                    room.vincitoreTurno = actualWinner;
+
+                    if (AnalyticsService) {
+                        AnalyticsService.logRoundComplete(roomCode, actualWinner, (room.turnoCorrente || 0) + 1);
+                    }
+
+                    if (newScore >= (room.puntiPerVincere || 7)) {
+                        room.statoPartita = "GAME_OVER";
+                        room.vincitorePartita = actualWinner;
+                        if (AnalyticsService) {
+                            AnalyticsService.logGameWin(actualWinner, newScore);
+                        }
+                    }
+                }
+
                 room.statoTurno = "SHOWING_WINNER";
                 return dehydrateRoom(room);
             });
@@ -562,6 +719,30 @@ export const GameProvider = ({ children }) => {
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
+
+                // [FIX] Increment Turn Counter
+                room.turnoCorrente = (room.turnoCorrente || 0) + 1;
+
+                // [NEW] CHAOS ENGINE TRIGGER
+                // Reset previous event
+                room.activeChaosEvent = null;
+                room.chaosSwapDetails = null; // [NEW] Reset swap info
+
+                const humanPlayers = Object.keys(room.giocatori || {});
+                const interval = humanPlayers.length === 2 ? 3 : 2;
+
+                if (room.chaosMode && room.turnoCorrente > 0 && room.turnoCorrente % interval === 0) {
+                    const events = Object.values(CHAOS_EVENTS);
+                    const lastEvent = room.lastChaosEvent;
+
+                    // Filter out the last event to guarantee variety
+                    const availableEvents = events.filter(e => e !== lastEvent);
+                    const randomEvent = availableEvents[Math.floor(Math.random() * availableEvents.length)];
+
+                    room.activeChaosEvent = randomEvent;
+                    room.lastChaosEvent = randomEvent; // Update history
+                }
+
                 if (!room.blackDeck || room.blackDeck.length === 0) {
                     const forcedLang = room.roomLanguage || null;
                     const oldLang = GameDataService.language;
@@ -775,6 +956,46 @@ export const GameProvider = ({ children }) => {
         }
     };
 
+    // [NEW] Chaos Engine: Dictatorship Event
+    const dominusDiscardPlayerHand = async (targetPlayerName) => {
+        if (!roomCode || !user || !roomData) return;
+        try {
+            await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
+                if (!rawRoom) return rawRoom;
+                const room = hydrateRoom(rawRoom);
+
+                // Verify we are Dominus and Event is active
+                if ((roomPlayerName || user.name) !== room.dominus) return rawRoom;
+                if (room.activeChaosEvent !== CHAOS_EVENTS.DICTATORSHIP) return rawRoom;
+
+                const player = room.giocatori[targetPlayerName];
+                if (!player) return rawRoom;
+
+                // Discard all cards
+                player.carte = [];
+
+                // Refill Hand
+                if (!room.whiteDeck || room.whiteDeck.length < 10) {
+                    const excludedCards = new Set();
+                    Object.values(room.giocatori || {}).forEach(p => { (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); }); });
+                    Object.values(room.carteGiocate || {}).forEach(cards => {
+                        const arr = Array.isArray(cards) ? cards : [cards];
+                        arr.forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
+                    });
+                    const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }).carteBianche;
+                    const availableCards = allWhite.filter(c => !excludedCards.has(c.trim()));
+                    room.whiteDeck = shuffleArray(availableCards);
+                }
+
+                while ((player.carte || []).length < 10 && room.whiteDeck && room.whiteDeck.length > 0) {
+                    player.carte.push(room.whiteDeck.pop());
+                }
+
+                return dehydrateRoom(room);
+            });
+        } catch (e) { console.error("Dictatorship Error:", e); }
+    };
+
     const isCreator = useMemo(() => !!(roomPlayerName && roomData && roomData.creatore === roomPlayerName), [roomPlayerName, roomData?.creatore]);
     const isDominus = useMemo(() => !!(roomPlayerName && roomData && roomData.dominus === roomPlayerName), [roomPlayerName, roomData?.dominus]);
     const myHand = useMemo(() => (roomPlayerName && roomData && roomData.giocatori?.[roomPlayerName]?.carte) ? roomData.giocatori[roomPlayerName].carte : [], [roomPlayerName, roomData?.giocatori]);
@@ -794,7 +1015,7 @@ export const GameProvider = ({ children }) => {
         login, createRoom, joinRoom, leaveRoom,
         kickPlayer,
         updateRoomSettings,
-        startGame, playCards, confirmDominusSelection, nextRound, discardCard, useAIJoker, forceReveal, bribeHand,
+        startGame, playCards, confirmDominusSelection, nextRound, discardCard, useAIJoker, forceReveal, bribeHand, dominusDiscardPlayerHand, // [NEW]
         isCreator, isDominus, myHand, roomPlayerName
     }), [
         user, roomCode, roomData, loading, error, availableRooms,

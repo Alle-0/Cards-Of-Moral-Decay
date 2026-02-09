@@ -6,13 +6,13 @@ import { useTheme, TEXTURES } from '../context/ThemeContext';
 import HapticsService from '../services/HapticsService';
 import PremiumIconButton from './PremiumIconButton';
 import PremiumPressable from './PremiumPressable';
-import { CardsIcon, RobotIcon, TrashIcon, DirtyCashIcon } from './Icons'; // [NEW] DirtyCashIcon
+import { CardsIcon, RobotIcon, TrashIcon, DirtyCashIcon, EyeOffIcon } from './Icons'; // [NEW] DirtyCashIcon, EyeOffIcon
 import { useWebScroll } from '../hooks/useWebScroll';
 import { useLanguage } from '../context/LanguageContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, showPlayButton, onPlay, onDiscard, isPlaying, selectionOrder, hasDiscarded, isSelectionFull, isSinglePick, skin, t }) => { // [NEW] skin
+const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, showPlayButton, onPlay, onDiscard, isPlaying, selectionOrder, hasDiscarded, isSelectionFull, isSinglePick, skin, t, isBlackout }) => { // [NEW] isBlackout
     const { theme } = useTheme();
     const [isEliminating, setIsEliminating] = useState(false);
 
@@ -253,16 +253,34 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
                         );
                     })()}
 
-                    <Text
-                        style={[
-                            styles.cardText,
-                            skin ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {},
-                            { fontSize: (text?.length || 0) > 50 ? 14 : ((text?.length || 0) > 30 ? 16 : 18) }
-                        ]}
-                        numberOfLines={10}
-                    >
-                        {text || ''}
-                    </Text>
+                    {/* [NEW] BLACKOUT LOGIC - Partial Censorship */}
+                    {(() => {
+                        // Deterministic Censorship
+                        const displayText = useMemo(() => {
+                            if (!isBlackout || !text) return text;
+                            return text.split(' ').map((word, i) => {
+                                // Keep short words or random chance based on index/length
+                                if (word.length <= 2) return word;
+                                // Simple deterministic hash for stability
+                                const hash = (text.length + i * 7 + word.charCodeAt(0));
+                                // Censor ~70% of words
+                                return (hash % 10 > 2) ? '█'.repeat(word.length) : word;
+                            }).join(' ');
+                        }, [text, isBlackout]);
+
+                        return (
+                            <Text
+                                style={[
+                                    styles.cardText,
+                                    skin ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {},
+                                    { fontSize: (text?.length || 0) > 50 ? 14 : ((text?.length || 0) > 30 ? 16 : 18) }
+                                ]}
+                                numberOfLines={10}
+                            >
+                                {displayText || ''}
+                            </Text>
+                        );
+                    })()}
                 </Animated.View>
 
                 {/* BADGE: Sibling to Inner Card, so it's NOT clipped */}
@@ -340,7 +358,7 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
 
 const PlayerHand = ({
     hand,
-    selectedCards,
+    selectedCards = [],
     onSelectCard,
     maxSelection,
     disabled,
@@ -355,7 +373,9 @@ const PlayerHand = ({
     skin,
     balance,
     isSmallScreen,
+
     onBackgroundPress,
+    isBlackout = false, // [NEW]
 }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
@@ -503,6 +523,7 @@ const PlayerHand = ({
                                                 isSinglePick={maxSelection === 1} // [NEW] -> Pass single pick mode
                                                 isSelectionFull={selectedCards.length >= maxSelection}
                                                 t={t}
+                                                isBlackout={isBlackout} // [NEW]
                                             />
                                         </Animated.View>
                                     );

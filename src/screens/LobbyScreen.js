@@ -54,14 +54,41 @@ const LobbyScreen = ({ onStartLoading }) => {
         updateProfile,
         dismissNewUser,
         dismissRecovered,
-        logout
+        logout,
+        pendingRoom, // [NEW]
+        setPendingRoom // [NEW]
     } = useAuth();
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    // [NEW] AUTO-JOIN ROOM EFFECT
+    useEffect(() => {
+        // [MODIFIED] Trigger immediately even if in IDENTITY step
+        if (pendingRoom && !isLoading && authUser?.username) {
+            console.log(`[AUTO-JOIN] Triggering join for room: ${pendingRoom}`);
+            handleJoinSpecific(pendingRoom);
+            setPendingRoom(null); // Clear after attempt
+
+            // Clear persistence
+            const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+            AsyncStorage.removeItem('pending_room_deep_link');
+        }
+    }, [pendingRoom, authUser?.username, isLoading]);
+
     const { MYSTERY_AVATAR, PLAYER_AVATARS, shuffleArray } = require('../utils/constants');
     const Clipboard = require('expo-clipboard');
 
-    const [currentStep, setCurrentStep] = useState(STEPS.IDENTITY);
+    const [currentStep, setCurrentStep] = useState(authUser?.username ? STEPS.ACTION : STEPS.IDENTITY);
     const [roomToJoin, setRoomToJoin] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+
+
+    // [NEW] AUTO-TRANSITION EFFECT
+    useEffect(() => {
+        if (authUser?.username && currentStep === STEPS.IDENTITY) {
+            console.log("[LOBBY] User authenticated, jumping to actions.");
+            setCurrentStep(STEPS.ACTION);
+        }
+    }, [authUser?.username]);
 
     const [localPlayerName, setLocalPlayerName] = useState(authUser?.nickname || authUser?.username || '');
     const [localAvatar, setLocalAvatar] = useState(authUser?.avatar || authUser?.avatar || MYSTERY_AVATAR);
@@ -229,8 +256,15 @@ const LobbyScreen = ({ onStartLoading }) => {
 
         setIsLoading(true);
         try {
+            // [NEW] If joining via deep link/auto, ensure we don't have a mystery avatar
+            let finalAvatar = localAvatar;
+            if (finalAvatar === MYSTERY_AVATAR) {
+                finalAvatar = PLAYER_AVATARS[Math.floor(Math.random() * PLAYER_AVATARS.length)];
+                setLocalAvatar(finalAvatar); // Sync local state
+            }
+
             const code = await joinRoom(roomId, {
-                avatar: localAvatar,
+                avatar: finalAvatar,
                 activeCardSkin: authUser?.activeCardSkin || 'classic',
                 activeFrame: authUser?.activeFrame || 'basic',
                 rank: authUser?.rank || 'Anima Candida'

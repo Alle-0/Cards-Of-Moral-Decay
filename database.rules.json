@@ -40,6 +40,17 @@
         },
         "game_data": {
             ".read": "true"
+        },
+        "suggestions": {
+            ".read": "auth != null",
+            "cards": {
+                "$suggestionId": {
+                    ".write": "auth != null && !data.exists() && newData.exists()"
+                },
+                ".indexOn": [
+                    "timestamp"
+                ]
+            }
         }
     }
 }

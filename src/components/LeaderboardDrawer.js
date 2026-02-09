@@ -4,7 +4,6 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS, Easing
 import { useTheme, AVATAR_FRAMES } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext'; // [NEW]
 import EfficientBlurView from './EfficientBlurView'; // [NEW]
-import { SvgUri } from 'react-native-svg';
 import PremiumIconButton from './PremiumIconButton';
 import { Image } from 'react-native';
 import PremiumModal from './PremiumModal';
@@ -176,7 +175,12 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                                     fontWeight: 'bold',
                                     marginTop: 0
                                 }}>
-                                    {player.rank ? t('rank_' + player.rank.toLowerCase().replace(/ /g, '_'), player.rank) : t('rank_anima_candida')}
+                                    {(() => {
+                                        const r = player.rank || 'Anima Candida';
+                                        // If already a key (starts with rank_), use it. Else format it.
+                                        const key = r.startsWith('rank_') ? r : 'rank_' + r.toLowerCase().replace(/ /g, '_');
+                                        return t(key, { defaultValue: r });
+                                    })()}
                                 </Text>
                             </View>
                             <Text style={[styles.score, { color: theme.colors.accent }]}>
@@ -184,7 +188,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                             </Text>
 
                             {isCreator && (
-                                player.name !== currentUserName ? (
+                                player.name !== currentUserName && player.name !== 'Rando' ? (
                                     <PremiumIconButton
                                         icon={
                                             <TrashIcon size={18} color="#ff6b6b" />

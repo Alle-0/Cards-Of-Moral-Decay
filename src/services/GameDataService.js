@@ -4,7 +4,7 @@ import { db } from './firebase'; // Import initialized DB
 import { carteNere as baseNereIT, carteBianche as baseBiancheIT } from '../utils/pacchetto_base';
 import { carteNere as baseNereEN, carteBianche as baseBiancheEN } from '../data/en/base';
 
-const CACHE_KEY = 'cah_game_data_v3'; // Bumped version
+const CACHE_KEY = 'cah_game_data_v4'; // Bumped version
 const DARK_CACHE_KEY = 'cah_dark_data_v1';
 const DB_PATH = 'game_data';
 
@@ -21,9 +21,11 @@ class GameDataService {
         this.basePack = this.basePackIT;
 
         this.darkPack = { nere: [], bianche: [] };
+        this.chillPack = { nere: [], bianche: [] }; // [NEW] Chill (SFW Extreme)
+        this.spicyPack = { nere: [], bianche: [] }; // [NEW] Spicy (NSFW Legal)
 
         this.isLoaded = false;
-        this.minVersion = "3.8.3";
+        this.minVersion = "4.0.0";
         this.downloadUrl = null;
     }
 
@@ -52,13 +54,9 @@ class GameDataService {
 
             // 2. Fetch Packs based on Language
             const currentLang = this.language; // 'it' or 'en'
-            const basePackRef = ref(db, `game_data/packs/${currentLang}/base`);
-            const darkPackRef = ref(db, `game_data/packs/${currentLang}/dark`);
-
-            // Also keep a listener or fetch for the other language if we want instant switch?
-            // For now, let's just fetch the CURRENT language pack.
-            // If user switches language, we might need to fetch again or pre-fetch both.
-            // Let's pre-fetch BOTH IT and EN to allow instant switching.
+            // We fetch the 'packs' root to get everything needed (Base/Dark/Chill/Spicy) efficiently
+            // or we could fetch individually if structure is strictly separated.
+            // Current structure seems to be game_data/packs/{lang}/{packType}
 
             const packsRef = ref(db, 'game_data/packs');
             const [packsSnap] = await Promise.all([get(packsRef)]);
@@ -83,7 +81,7 @@ class GameDataService {
 
                 // IT Dark
                 if (packs.it && packs.it.dark) {
-                    this.darkPackIT = { // We need to store IT dark separate from EN dark
+                    this.darkPackIT = {
                         nere: packs.it.dark.carteNere || [],
                         bianche: packs.it.dark.carteBianche || []
                     };
@@ -95,6 +93,15 @@ class GameDataService {
                 } else {
                     this.darkPackIT = { nere: [], bianche: [] };
                 }
+
+                // IT Chill & Spicy
+                if (packs.it && packs.it.chill) {
+                    this.chillPackIT = { nere: packs.it.chill.carteNere || [], bianche: packs.it.chill.carteBianche || [] };
+                } else { this.chillPackIT = { nere: [], bianche: [] }; }
+
+                if (packs.it && packs.it.spicy) {
+                    this.spicyPackIT = { nere: packs.it.spicy.carteNere || [], bianche: packs.it.spicy.carteBianche || [] };
+                } else { this.spicyPackIT = { nere: [], bianche: [] }; }
 
 
                 // EN Packs
@@ -113,6 +120,15 @@ class GameDataService {
                     this.darkPackEN = { nere: [], bianche: [] };
                 }
 
+                // EN Chill & Spicy
+                if (packs.en && packs.en.chill) {
+                    this.chillPackEN = { nere: packs.en.chill.carteNere || [], bianche: packs.en.chill.carteBianche || [] };
+                } else { this.chillPackEN = { nere: [], bianche: [] }; }
+
+                if (packs.en && packs.en.spicy) {
+                    this.spicyPackEN = { nere: packs.en.spicy.carteNere || [], bianche: packs.en.spicy.carteBianche || [] };
+                } else { this.spicyPackEN = { nere: [], bianche: [] }; }
+
                 // console.log('Packs (IT/EN) synced from Firebase.');
 
                 // Update active packs based on current language
@@ -128,9 +144,13 @@ class GameDataService {
         if (this.language === 'en') {
             this.basePack = this.basePackEN;
             this.darkPack = this.darkPackEN || { nere: [], bianche: [] };
+            this.chillPack = this.chillPackEN || { nere: [], bianche: [] };
+            this.spicyPack = this.spicyPackEN || { nere: [], bianche: [] };
         } else {
             this.basePack = this.basePackIT;
             this.darkPack = this.darkPackIT || { nere: [], bianche: [] };
+            this.chillPack = this.chillPackIT || { nere: [], bianche: [] };
+            this.spicyPack = this.spicyPackIT || { nere: [], bianche: [] };
         }
     }
 
@@ -142,7 +162,7 @@ class GameDataService {
         return this.downloadUrl;
     }
 
-    getPackages(activePacks = { base: true, dark: true }) {
+    getPackages(activePacks = { base: true, dark: true, chill: false, spicy: false }) {
         let nere = [];
         let bianche = [];
 
@@ -154,6 +174,16 @@ class GameDataService {
         if (activePacks.dark) {
             nere = [...nere, ...this.darkPack.nere];
             bianche = [...bianche, ...this.darkPack.bianche];
+        }
+
+        if (activePacks.chill) {
+            nere = [...nere, ...this.chillPack.nere];
+            bianche = [...bianche, ...this.chillPack.bianche];
+        }
+
+        if (activePacks.spicy) {
+            nere = [...nere, ...this.spicyPack.nere];
+            bianche = [...bianche, ...this.spicyPack.bianche];
         }
 
         return { carteNere: nere, carteBianche: bianche };
@@ -170,18 +200,24 @@ class GameDataService {
     getAllCards(forcedLang = null) {
         let base = this.basePack;
         let dark = this.darkPack;
+        let chill = this.chillPack;
+        let spicy = this.spicyPack;
 
         if (forcedLang === 'en') {
             base = this.basePackEN;
             dark = this.darkPackEN;
+            chill = this.chillPackEN;
+            spicy = this.spicyPackEN;
         } else if (forcedLang === 'it') {
             base = this.basePackIT;
             dark = this.darkPackIT;
+            chill = this.chillPackIT;
+            spicy = this.spicyPackIT;
         }
 
         return {
-            nere: [...(base?.nere || []), ...(dark?.nere || [])],
-            bianche: [...(base?.bianche || []), ...(dark?.bianche || [])]
+            nere: [...(base?.nere || []), ...(dark?.nere || []), ...(chill?.nere || []), ...(spicy?.nere || [])],
+            bianche: [...(base?.bianche || []), ...(dark?.bianche || []), ...(chill?.bianche || []), ...(spicy?.bianche || [])]
         };
     }
 

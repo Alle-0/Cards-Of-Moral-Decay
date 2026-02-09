@@ -37,8 +37,8 @@ export const translations = {
         particles_effects: "Particelle ed effetti",
         sound_effects: "EFFETTI SONORI",
         sounds_notifs: "Suoni e notifiche",
-        music_label: "Musica",
-        music_sub: "Colonna sonora",
+        music_label: "MUSICA / MUSIC",
+        music_sub: "Sottofondo / Background Score",
         audio_anim_lang: "AUDIO, ANIMAZIONI E LINGUA",
         subj_audio_anim_lang: "Suoni, haptics, effetti e lingua",
         account: "ACCOUNT",
@@ -77,10 +77,12 @@ export const translations = {
         rank_architetto_del_caos: "Architetto del Caos",
         rank_eminenza_grigia: "Eminenza Grigia",
         rank_entita_apocalittica: "Entità Apocalittica",
+        rank_bot: "BOT",
         rank_capo_supremo: "Capo Supremo",
         next_rank_points: "%{points} DC per %{rank}", // [NEW] Use 'per' in Italian
 
         ok_btn: "OK",
+        agree_btn: "ACCETTO",
         back_btn: "INDIETRO",
         close_btn: "CHIUDI",
         cancel_btn: "ANNULLA",
@@ -147,6 +149,7 @@ export const translations = {
         pack_label: "Pacchetto",
         shop_pack_info: "Espandi il gioco con nuove carte esplicite e situazioni assurde.\nNOTA: Basta che UN solo giocatore (il creatore della stanza) possieda il pacchetto per farlo usare a tutti!",
         pack_dark: "DARK PACK",
+        cards_count: "%{count} Carte",
         preview_subtitle_skin: "ANTEPRIMA SKIN",
         preview_subtitle_frame: "ANTEPRIMA CORNICE",
         preview_subtitle_theme: "ANTEPRIMA TEMA",
@@ -236,10 +239,11 @@ export const translations = {
         offline_title: "CONNESSIONE ASSENTE",
         offline_msg: "Stai giocando in modalità offline. Alcune funzionalità potrebbero essere limitate.",
         invite_friends_btn: "INVITA AMICI",
-        min_players_hint: "Serve avere almeno 2 amici per giocare.",
+        min_players_hint: "Serve avere almeno 1 amico per giocare.",
         // MODALSselect_points_title: "SELEZIONA I PUNTI PER VINCERE",
         points_label: "Punti",
         start_game_btn: "INIZIA PARTITA",
+        start_game_bot_btn: "AVVIA PARTITA CON 2 + BOT",
         waiting_title: "IN ATTESA...",
         black_card_label: "CARTA NERA",
         answers_label: "Risposte:",
@@ -375,6 +379,7 @@ export const translations = {
         // SHOP - SKINS
         skin_classic: "Bianco Avorio",
         skin_mida: "Foglia d'Oro",
+        skin_magma: "Magma", // [NEW]
         skin_blood: "Sangue",
         skin_noir: "Noir Elegance",
         skin_narco: "Narcodollaro",
@@ -392,6 +397,10 @@ export const translations = {
         preview_subtitle_theme: "TEMA",
         preview_subtitle_skin: "SKIN",
         preview_subtitle_frame: "CORNICE",
+
+        // FRAMES
+        frame_ice_king: "Re dei Ghiacci", // [NEW]
+        frame_midas_touch: "Tocco di Mida", // [NEW]
 
         // ARCHIVIO
         archive_title: "ARCHIVIO",
@@ -412,6 +421,42 @@ export const translations = {
         copyright_content: "Tutti i contenuti grafici, le icone, le illustrazioni, il design dell'interfaccia e il codice sorgente presenti in questa applicazione sono proprietà intellettuale esclusiva di Alessandro Basile.\n\nSono protetti dalle leggi vigenti sul diritto d'autore e sulla proprietà industriale. È severamente vietata l'estrazione, la riproduzione, la modifica o la ridistribuzione non autorizzata di qualsiasi asset contenuto in questo software.\n\nOgni violazione sarà perseguita nelle sedi legali competenti.",
         info_content_template: "Versione: %{version}\nArchitettura: Expo Framework\nRuntime: React Native",
         made_in_italy: "Prodotto con dedizione in Italia",
+        suggest_card_title: "CONSIGLIA UNA CARTA",
+        suggest_card_desc: "Hai un'idea geniale o terribile? Condividila con noi.",
+        suggest_card_desc_cost: "Invia una tua idea (Costo: 25 DC)",
+        suggest_card_type: "TIPO DI CARTA",
+        suggest_card_placeholder: "Scrivi qui il testo della carta...",
+        suggest_card_submit: "INVIA CONSIGLIO",
+        suggest_card_success: "Consiglio inviato! Verrà valutato dal Gran Consiglio del Caos.",
+        card_type_white: "Carta Bianca (Risposta)",
+        card_type_black: "Carta Nera (Domanda/Frase)",
+        suggestion_error: "Errore nell'invio del consiglio.",
+        section_suggestions: "CONSIGLIA CARTE",
+
+        // CHAOS ENGINE
+        chaos_mode_label: "PILASTRO DEL CAOS",
+        chaos_mode_desc: "Eventi casuali ogni 2 round. Non per i deboli di cuore.",
+        chaos_active_banner: "EVENTO CAOS ATTIVO",
+        chaos_event_inflation_title: "INFLAZIONE GALOPPANTE",
+        chaos_event_inflation_desc: "I punti valgono DOPPIO per questo round.",
+        chaos_event_blackout_title: "BLACKOUT",
+        chaos_event_blackout_desc: "Censura parziale! Devi intuire il contenuto delle carte.",
+        chaos_event_dictatorship_title: "DITTATURA",
+        chaos_event_dictatorship_desc: "Il Dominus elimina la mano di un suddito a sua scelta.",
+        chaos_event_identity_swap_title: "SCAMBIO D'IDENTITÀ",
+        chaos_event_identity_swap_desc: "Il Caos decide! Il vincitore viene scelto tirando i dadi tra tutti i partecipanti.",
+        chaos_event_robin_hood_title: "ROBIN HOOD",
+        chaos_event_robin_hood_desc: "Il punto del vincitore viene donato all'ultimo in classifica.",
+        chaos_event_dirty_win_title: "VITTORIA SPORCA",
+        chaos_event_dirty_win_desc: "Niente punti, solo sporchi contanti (100 DC)!",
+
+        chaos_theft_original_winner: "IL DOMINUS AVEVA SCELTO %{name}",
+        chaos_theft_desc: "MA IL CAOS HA DECISO DIVERSAMENTE!",
+        chaos_robin_hood_msg: "ROBIN HOOD HA RUBATO IL PUNTO PER I POVERI!",
+        rule_chaos_title: "IL PILASTRO DEL CAOS",
+        rule_chaos_content: "Se attivato, ogni 2 round si scatenerà un evento globale che stravolgerà la partita. Può essere disattivato nelle impostazioni della stanza.",
+        chaos_intro_title: "COME FUNZIONA",
+        chaos_intro_desc: "Se il Dominus attiva il Caos, ogni 2 round la partita verrà sconvolta da un evento casuale. Non puoi prevederlo, puoi solo subirlo.",
 
         // LOBBY MODALS
         exit_app_title: "USCIRE?",
@@ -470,6 +515,13 @@ export const translations = {
         install_btn: "INSTALLA",
         later_btn: "PIÙ TARDI",
 
+        // NEW CONTENT
+        pack_chill: "Chill",
+        pack_spicy: "Spicy",
+        chill_content: "Estremi ma SFW",
+        spicy_content: "Spicy NSFW (18+)",
+        chill_pack: "Chill",
+        spicy_pack: "Spicy",
     },
     en: {
         play: "PLAY",
@@ -507,8 +559,8 @@ export const translations = {
         particles_effects: "Particles and effects",
         sound_effects: "SOUND EFFECTS",
         sounds_notifs: "Sounds and notifications",
-        music_label: "Music",
-        music_sub: "Soundtrack",
+        music_label: "MUSICA / MUSIC",
+        music_sub: "Sottofondo / Background Score",
         audio_anim_lang: "AUDIO, ANIMATIONS & LANGUAGE",
         subj_audio_anim_lang: "Sounds, haptics, effects and language",
         account: "ACCOUNT",
@@ -547,10 +599,12 @@ export const translations = {
         rank_architetto_del_caos: "Architect of Chaos",
         rank_eminenza_grigia: "Grey Eminence",
         rank_entita_apocalittica: "Apocalyptic Entity",
+        rank_bot: "BOT",
         rank_capo_supremo: "Supreme Boss",
         next_rank_points: "%{points} DC to %{rank}", // [NEW] Use 'to' in English
 
         ok_btn: "OK",
+        agree_btn: "I AGREE",
         back_btn: "BACK",
         close_btn: "CLOSE",
         cancel_btn: "CANCEL",
@@ -617,6 +671,7 @@ export const translations = {
         pack_label: "Pack",
         shop_pack_info: "Expand the game with new explicit cards and absurd situations.\nNOTE: Only ONE player (the room creator) needs to own the pack for everyone to use it!",
         pack_dark: "DARK PACK",
+        cards_count: "%{count} Cards",
         preview_subtitle_skin: "SKIN PREVIEW",
         preview_subtitle_frame: "FRAME PREVIEW",
         preview_subtitle_theme: "THEME PREVIEW",
@@ -706,10 +761,11 @@ export const translations = {
         offline_title: "NO CONNECTION",
         offline_msg: "You are playing in offline mode. Some features may be limited.",
         invite_friends_btn: "INVITE FRIENDS",
-        min_players_hint: "You need at least 2 friends to play.",
+        min_players_hint: "You need at least 1 friend to play.",
         select_points_title: "SELECT POINTS TO WIN",
         points_label: "Points",
         start_game_btn: "START GAME",
+        start_game_bot_btn: "START GAME WITH 2 + BOT",
         waiting_title: "WAITING...",
         black_card_label: "BLACK CARD",
         answers_label: "Answers:",
@@ -793,6 +849,31 @@ export const translations = {
         skip_btn: "SKIP",
         reveal_btn: "REVEAL",
         waiting_cards: "WAITING FOR CARDS...",
+
+        // CHAOS ENGINE
+        chaos_mode_label: "PILLAR OF CHAOS",
+        chaos_mode_desc: "Random events every 2 rounds. Not for the faint of heart.",
+        chaos_active_banner: "CHAOS EVENT ACTIVE",
+        chaos_event_inflation_title: "GALLOPING INFLATION",
+        chaos_event_inflation_desc: "Points trigger DOUBLE for this turn.",
+        chaos_event_blackout_title: "BLACKOUT",
+        chaos_event_blackout_desc: "Partial censorship! You must guess card contents.",
+        chaos_event_dictatorship_title: "DICTATORSHIP",
+        chaos_event_dictatorship_desc: "The Dominus can discard the hand of a chosen subject.",
+        chaos_event_identity_swap_title: "IDENTITY SWAP",
+        chaos_event_identity_swap_desc: "Chaos decides! A random winner is chosen among all participants.",
+        chaos_event_robin_hood_title: "ROBIN HOOD",
+        chaos_event_robin_hood_desc: "The point goes to the poorest player!",
+        chaos_event_dirty_win_title: "DIRTY WIN",
+        chaos_event_dirty_win_desc: "No points, just cold hard cash (100 DC)!",
+
+        chaos_theft_original_winner: "THE DOMINUS CHOSE %{name}",
+        chaos_theft_desc: "BUT CHAOS DECIDED OTHERWISE!",
+        chaos_robin_hood_msg: "ROBIN HOOD STOLE THE POINT FOR THE POOR!", // [NEW]
+        rule_chaos_title: "THE PILLAR OF CHAOS",
+        rule_chaos_content: "If activated, a global event will trigger every 2 rounds, changing the game rules (e.g., double points, censored cards). It can be disabled during the game, but never re-enabled.",
+        chaos_intro_title: "HOW IT WORKS", // [NEW]
+        chaos_intro_desc: "If the Dominus activates Chaos, every 2 rounds the game will be disrupted by a random event. You can't predict it, you can only endure it.", // [NEW]
 
         // GLOBAL EXIT
         exit_app_title: "EXIT APP",
@@ -884,6 +965,17 @@ export const translations = {
         section_terms: "TERMS OF USE",
         section_copyright: "INTELLECTUAL PROPERTY",
         section_info: "SOFTWARE INFO",
+        suggest_card_title: "SUGGEST A CARD",
+        suggest_card_desc: "Have a brilliant or terrible idea? Share it with us.",
+        suggest_card_desc_cost: "Submit your idea (Cost: 25 DC)",
+        suggest_card_type: "CARD TYPE",
+        suggest_card_placeholder: "Write the card text here...",
+        suggest_card_submit: "SUBMIT SUGGESTION",
+        suggest_card_success: "Suggestion sent! It will be evaluated by the Chaos Council.",
+        card_type_white: "White Card (Answer)",
+        card_type_black: "Black Card (Question/Phrase)",
+        suggestion_error: "Error submitting suggestion.",
+        section_suggestions: "SUGGEST CARDS",
 
         // LOGIN SCREEN
         login_title: "Cards of\nMoral Decay",
@@ -944,5 +1036,16 @@ export const translations = {
         payment_dark_pack_msg: "Welcome to the abyss. The Dark Pack is yours.",
         payment_dc_msg: "+%{amount} Dirty Cash added to your balance.",
         payment_cancelled: "Payment cancelled.",
+
+        // NEW CONTENT
+        pack_chill: "Chill",
+        pack_spicy: "Spicy",
+        chill_content: "Extreme SFW",
+        spicy_content: "Spicy NSFW (18+)",
+        chill_pack: "Chill",
+        spicy_pack: "Spicy",
+        frame_ice_king: "Ice King",
+        frame_midas_touch: "Midas Touch",
+        skin_magma: "Magma",
     },
 };

@@ -124,7 +124,7 @@ const FriendsScreen = () => {
     return (
         <View style={{ flex: 1, backgroundColor: 'transparent' }}>
             {/* Main Content Container with conditional opacity */}
-            <View style={{ flex: 1, opacity: friendToDelete ? 0.1 : 1 }} pointerEvents={friendToDelete ? 'none' : 'auto'}>
+            <View style={{ flex: 1, opacity: friendToDelete ? 0.1 : 1, pointerEvents: friendToDelete ? 'none' : 'auto' }}>
                 {/* Header Title */}
                 <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
                     {t('friends_title')}
@@ -234,7 +234,7 @@ const FriendsScreen = () => {
 
             {/* DELETE CONFIRMATION OVERLAY (Absolute - covers the whole area) */}
             {friendToDelete && (
-                <View style={StyleSheet.absoluteFill}>
+                <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }]}>
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }}>
                         <Animated.View
                             style={styles.confirmBox}

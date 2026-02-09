@@ -125,17 +125,19 @@ const DominusOverlay = ({ status, onSkip, onReveal }) => {
                             <Text style={styles.actionBtnText}>{t('skip_btn')}</Text>
                         </PremiumPressable>
 
-                        <PremiumPressable
-                            onPress={onReveal}
-                            style={[styles.actionBtn, { backgroundColor: theme.colors.accent + '20' }]} // Slight accent tint
-                            rippleColor={theme.colors.accent + '40'}
-                            scaleDown={0.96}
-                            contentContainerStyle={styles.actionBtnContent}
-                            pressableStyle={{ height: '100%' }}
-                        >
-                            <EyeIcon size={24} color={theme.colors.accent} />
-                            <Text style={[styles.actionBtnText, { color: theme.colors.accent }]}>{t('reveal_btn')}</Text>
-                        </PremiumPressable>
+                        {__DEV__ && (
+                            <PremiumPressable
+                                onPress={onReveal}
+                                style={[styles.actionBtn, { backgroundColor: theme.colors.accent + '20' }]} // Slight accent tint
+                                rippleColor={theme.colors.accent + '40'}
+                                scaleDown={0.96}
+                                contentContainerStyle={styles.actionBtnContent}
+                                pressableStyle={{ height: '100%' }}
+                            >
+                                <EyeIcon size={24} color={theme.colors.accent} />
+                                <Text style={[styles.actionBtnText, { color: theme.colors.accent }]}>{t('reveal_btn')}</Text>
+                            </PremiumPressable>
+                        )}
                     </View>
                 </View>
             </Animated.View>

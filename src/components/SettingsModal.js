@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, ScrollView, Pressable, Share, Alert, Image, TouchableOpacity, Platform } from 'react-native';
 import PremiumPressable from './PremiumPressable';
 import PremiumToggle from './PremiumToggle'; // [NEW]
@@ -17,26 +17,29 @@ import { useAudio } from '../context/AudioContext'; // [NEW]
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService';
 import { APP_VERSION, BASE_URL } from '../constants/Config';
-import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutRight, SlideInLeft, SlideOutLeft, Easing, useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutRight, SlideInLeft, SlideOutLeft, Easing, useSharedValue, useAnimatedStyle, withSpring, withTiming, useAnimatedRef } from 'react-native-reanimated';
 
-import { RulesIcon, PaletteIcon, SettingsIcon, LinkIcon, OpenDoorIcon, CardsIcon, EyeIcon, EyeOffIcon } from './Icons'; // [NEW] EyeOffIcon
-import FrameSelectionModal from './FrameSelectionModal'; // [NEW]
+import { RulesIcon, PaletteIcon, SettingsIcon, LinkIcon, OpenDoorIcon, CardsIcon, EyeIcon, EyeOffIcon, HornsIcon, DirtyCashIcon, CrownIcon, RankIcon } from './Icons'; // [FIX] Added missing icons
+import FrameSelectionModal from './FrameSelectionModal';
+import { RANK_COLORS } from '../constants/Ranks'; // [FIX] Added missing import
+import ToastNotification from './ToastNotification'; // [NEW]
 
-const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLogoutRequest, onOpenInfo = () => { } }) => { // [NEW] onLogoutRequest/onOpenInfo
-    const { theme, themes, setTheme, animationsEnabled, toggleAnimations } = useTheme(); // [NEW] anims
-    const { isPlaying, toggleMusic } = useAudio(); // [NEW] Music Control
-    const { leaveRoom, roomCode } = useGame(); // Get game info
-    const { logout, user: authUser } = useAuth(); // [FIX] Use Auth user for recovery code
+const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLogoutRequest, onOpenInfo = () => { }, initialView = null }) => {
+    const { theme, themes, setTheme, animationsEnabled, toggleAnimations } = useTheme();
+    const { isPlaying, toggleMusic } = useAudio();
+    const { leaveRoom, roomCode } = useGame();
+    const { logout, user: authUser } = useAuth();
     const { t, language, setLanguage } = useLanguage();
 
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [hapticsEnabled, setHapticsEnabled] = useState(true);
     const [showRules, setShowRules] = useState(false);
     const [showPersonalization, setShowPersonalization] = useState(false);
-    const [showPreferences, setShowPreferences] = useState(false); // [NEW]
-    const [showAccount, setShowAccount] = useState(false); // [NEW]
+    const [showPreferences, setShowPreferences] = useState(false);
+    const [showAccount, setShowAccount] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     const [showRecoveryCode, setShowRecoveryCode] = useState(false);
+    const [showSuccessToast, setShowSuccessToast] = useState(false); // [NEW]
 
     // Modal State
     const [modalConfig, setModalConfig] = useState({
@@ -46,29 +49,50 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
         singleButton: true,
         onConfirm: null,
         confirmText: "OK",
-        variant: "primary" // 'primary' or 'danger' logic handled in component but passed for context
+        variant: "primary"
     });
 
+    // [NEW] Scroll Ref for Rules
+    const rulesScrollRef = useRef(null);
+    const [chaosPosition, setChaosPosition] = useState(0);
+
+    // [FIX] Split initialization effect to avoid reset on layout changes
     useEffect(() => {
         if (!visible) {
-            // [FIX] Reset state when closed
             setModalConfig(prev => ({ ...prev, visible: false }));
             setShowRules(false);
             setShowPersonalization(false);
-            setShowPreferences(false); // [NEW]
-            setShowAccount(false); // [NEW]
+            setShowPreferences(false);
+            setShowAccount(false);
             setActiveTab(0);
             setShowRecoveryCode(false);
         } else {
             loadSettings();
+
+            // Only handle initialView routing when the modal actually opens or initialView changes
+            if (initialView === 'rules' || initialView === 'rules_chaos') {
+                setShowRules(true);
+            } else if (initialView === 'style') {
+                setShowPersonalization(true);
+            } else if (initialView === 'audio') {
+                setShowPreferences(true);
+            }
         }
-    }, [visible]);
+    }, [visible, initialView]);
+
+    // Separate effect for chaotic rules scroll to avoid dependency conflicts
+    useEffect(() => {
+        if (visible && initialView === 'rules_chaos' && chaosPosition > 0) {
+            const timer = setTimeout(() => {
+                rulesScrollRef.current?.scrollTo({ y: chaosPosition, animated: true });
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [visible, initialView, chaosPosition]);
 
     const loadSettings = async () => {
         try {
-            // [FIX] Sound Source of Truth: SoundService
             setSoundEnabled(!SoundService.isMuted());
-
             const vibes = await AsyncStorage.getItem('cah_haptics');
             const isVibesOn = vibes !== 'false';
             setHapticsEnabled(isVibesOn);
@@ -123,13 +147,8 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
             SoundService.play('success');
         } else {
             try {
-                await Share.share({
-                    message: message,
-                    url: shareUrl, // iOS support
-                });
-            } catch (error) {
-                console.error("Share error", error);
-            }
+                await Share.share({ message: message, url: shareUrl });
+            } catch (error) { console.error("Share error", error); }
         }
     };
 
@@ -137,7 +156,6 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
         if (onLeaveRequest) {
             onLeaveRequest();
         } else {
-            // Fallback if prop is missing (shouldn't happen)
             showModal(
                 t('leave_game_title'),
                 t('leave_game_msg'),
@@ -160,34 +178,30 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                 t('logout_title'),
                 t('logout_msg'),
                 false,
-                () => {
-                    onClose();
-                    logout();
-                },
+                () => { onClose(); logout(); },
                 t('exit_btn')
             );
         }
     };
 
-    // [NEW] Shared Value for Tab Indicator
+    // Shared Value for Tab Indicator
     const tabBarWidth = useSharedValue(0);
     const tabIndicatorX = useSharedValue(0);
 
     const handleTabPress = (index) => {
         setActiveTab(index);
         if (tabBarWidth.value > 0) {
-            const tabWidth = (tabBarWidth.value - 8) / 3; // -8 for padding (4*2)
+            const tabWidth = (tabBarWidth.value - 8) / 3;
             tabIndicatorX.value = withTiming(index * tabWidth, { duration: 250, easing: Easing.out(Easing.quad) });
         }
     };
 
-    // Sync indicator if width changes (orientation or initial load)
     useEffect(() => {
         if (tabBarWidth.value > 0) {
             const tabWidth = (tabBarWidth.value - 8) / 3;
             tabIndicatorX.value = withTiming(activeTab * tabWidth, { duration: 250, easing: Easing.out(Easing.quad) });
         }
-    }, [activeTab]); // Removed tabBarWidth from deps as it's a SV
+    }, [activeTab]);
 
     const indicatorStyle = useAnimatedStyle(() => ({
         transform: [{ translateX: tabIndicatorX.value }],
@@ -238,61 +252,31 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         exiting={SlideOutRight.duration(500).easing(Easing.out(Easing.quad))}
                         style={{ width: '100%', height: 500 }}
                     >
-                        {/* Tab Bar */}
                         <View
                             style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 15 }}
-                            onLayout={(e) => {
-                                tabBarWidth.value = e.nativeEvent.layout.width;
-                            }}
+                            onLayout={(e) => { tabBarWidth.value = e.nativeEvent.layout.width; }}
                         >
-                            {/* Animated Slider Background */}
-                            <Animated.View style={[
-                                {
-                                    position: 'absolute',
-                                    top: 4, bottom: 4, left: 4,
-                                    backgroundColor: theme.colors.accent,
-                                    borderRadius: 8,
-                                    // Width handled by style
-                                },
-                                indicatorStyle
-                            ]} />
-
+                            <Animated.View style={[{ position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: theme.colors.accent, borderRadius: 8 }, indicatorStyle]} />
                             {[t('tab_themes'), t('tab_cards'), t('tab_frames')].map((tab, index) => {
                                 const isActive = activeTab === index;
                                 return (
                                     <Pressable
                                         key={tab}
                                         onPress={() => handleTabPress(index)}
-                                        style={{
-                                            flex: 1,
-                                            paddingVertical: 8,
-                                            alignItems: 'center',
-                                            // backgroundColor: 'transparent', // NO BG here
-                                            borderRadius: 8,
-                                            zIndex: 1 // Above indicator
-                                        }}
+                                        style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8, zIndex: 1 }}
                                     >
-                                        <Text style={{
-                                            color: isActive ? '#000' : theme.colors.textPrimary,
-                                            fontFamily: 'Outfit-Bold',
-                                            fontSize: 13,
-                                            includeFontPadding: false // Align better center
-                                        }}>
-                                            {tab}
-                                        </Text>
+                                        <Text style={{ color: isActive ? '#000' : theme.colors.textPrimary, fontFamily: 'Outfit-Bold', fontSize: 13, includeFontPadding: false }}>{tab}</Text>
                                     </Pressable>
                                 );
                             })}
                         </View>
 
-                        {/* Content */}
                         <View style={{ flex: 1 }}>
                             {activeTab === 0 && <ThemeSelectionModal onBack={() => setShowPersonalization(false)} hideBackButton={true} />}
                             {activeTab === 1 && <SkinSelectionModal onBack={() => setShowPersonalization(false)} hideBackButton={true} />}
                             {activeTab === 2 && <FrameSelectionModal onBack={() => setShowPersonalization(false)} hideBackButton={true} />}
                         </View>
 
-                        {/* Unified Back Button */}
                         <PremiumPressable
                             onPress={() => setShowPersonalization(false)}
                             enableSound={false}
@@ -308,36 +292,130 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         key="rules"
                         entering={SlideInRight.duration(500).easing(Easing.out(Easing.quad))}
                         exiting={SlideOutRight.duration(500).easing(Easing.out(Easing.quad))}
-                        style={{ height: 350, width: '100%' }}
+                        style={{ height: 500, width: '100%' }}
                     >
-                        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, marginBottom: 15 }}>
-                            <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit' }]}>
-                                <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13 }}>{t('rule_objective_title')}</Text>{'\n'}
-                                {t('rule_objective_content')}{'\n\n'}
+                        <ScrollView
+                            ref={rulesScrollRef}
+                            showsVerticalScrollIndicator={false}
+                            style={{ flex: 1, marginBottom: 15 }}
+                            contentContainerStyle={{ paddingBottom: 30 }}
+                        >
+                            <View style={{ gap: 20 }}>
+                                <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 }}>
+                                        <DirtyCashIcon size={20} color="#10b981" />
+                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_economy_title')}</Text>
+                                    </View>
+                                    <View style={{ gap: 2 }}>
+                                        <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>{t('rule_economy_1')}</Text>
+                                        <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>{t('rule_economy_2')}</Text>
+                                        <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>{t('rule_economy_3')}</Text>
+                                        <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.6, fontFamily: 'Outfit', fontSize: 13, fontStyle: 'italic', marginTop: 4 }]}>{t('rule_economy_footer')}</Text>
+                                    </View>
+                                </View>
+                                <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 }}>
+                                        <CrownIcon size={20} color="#FDB931" />
+                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_objective_title')}</Text>
+                                    </View>
+                                    <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>{t('rule_objective_content')}</Text>
+                                </View>
 
-                                <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13 }}>{t('rule_dynamics_title')}</Text>{'\n'}
-                                1. {t('rule_dynamics_1')}{'\n'}
-                                2. {t('rule_dynamics_2')}{'\n'}
-                                3. {t('rule_dynamics_3')}{'\n'}
-                                4. {t('rule_dynamics_4')}{'\n'}
-                                5. {t('rule_dynamics_5')}{'\n\n'}
+                                <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 }}>
+                                        <CardsIcon size={20} color="#3b82f6" />
+                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_dynamics_title')}</Text>
+                                    </View>
+                                    <View style={{ gap: 2 }}>
+                                        <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>1. {t('rule_dynamics_1')}</Text>
+                                        <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>2. {t('rule_dynamics_2')}</Text>
+                                        <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>3. {t('rule_dynamics_3')}</Text>
+                                        <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>4. {t('rule_dynamics_4')}</Text>
+                                        <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>5. {t('rule_dynamics_5')}</Text>
+                                    </View>
+                                </View>
+                                {/* RANKS */}
+                                <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 }}>
+                                        <RankIcon size={20} color="#8b5cf6" />
+                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_ranks_title')}</Text>
+                                    </View>
+                                    <View style={{ gap: 2 }}>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                                            <Text style={{ color: RANK_COLORS["Anima Candida"], fontFamily: 'Outfit', fontSize: 13 }}>• {t('rank_anima_candida')}</Text>
+                                            <Text style={{ color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }}> (0 DC)</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                                            <Text style={{ color: RANK_COLORS["Innocente"], fontFamily: 'Outfit', fontSize: 13 }}>• {t('rank_innocente')}</Text>
+                                            <Text style={{ color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }}> (1.000 DC)</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                                            <Text style={{ color: RANK_COLORS["Corrotto"], fontFamily: 'Outfit', fontSize: 13 }}>• {t('rank_corrotto')}</Text>
+                                            <Text style={{ color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }}> (2.500 DC)</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                                            <Text style={{ color: RANK_COLORS["Socio del Vizio"], fontFamily: 'Outfit', fontSize: 13 }}>• {t('rank_socio_del_vizio')}</Text>
+                                            <Text style={{ color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }}> (5.000 DC)</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                                            <Text style={{ color: RANK_COLORS["Architetto del Caos"], fontFamily: 'Outfit', fontSize: 13 }}>• {t('rank_architetto_del_caos')}</Text>
+                                            <Text style={{ color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }}> (10.000 DC)</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                                            <Text style={{ color: RANK_COLORS["Eminenza Grigia"], fontFamily: 'Outfit', fontSize: 13 }}>• {t('rank_eminenza_grigia')}</Text>
+                                            <Text style={{ color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }}> (25.000 DC)</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                                            <Text style={{ color: RANK_COLORS["Entità Apocalittica"], fontFamily: 'Outfit', fontSize: 13 }}>• {t('rank_entita_apocalittica')}</Text>
+                                            <Text style={{ color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }}> (50.000 DC)</Text>
+                                        </View>
+                                    </View>
+                                </View>
 
-                                <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13 }}>{t('rule_ranks_title')}</Text>{'\n'}
-                                - {t('rank_anima_candida')} (0 DC){'\n'}
-                                - {t('rank_innocente')} (1.000 DC){'\n'}
-                                - {t('rank_corrotto')} (2.500 DC){'\n'}
-                                - {t('rank_socio_del_vizio')} (5.000 DC){'\n'}
-                                - {t('rank_architetto_del_caos')} (10.000 DC){'\n'}
-                                - {t('rank_eminenza_grigia')} (25.000 DC){'\n'}
-                                - {t('rank_entita_apocalittica')} (50.000 DC){'\n\n'}
+                                {/* CHAOS ENGINE */}
+                                <View
+                                    onLayout={(event) => {
+                                        const layout = event.nativeEvent.layout;
+                                        setChaosPosition(layout.y);
+                                    }}
+                                    style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 }}>
+                                        <HornsIcon size={20} color="#ef4444" />
+                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_chaos_title')}</Text>
+                                    </View>
 
-                                <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13 }}>{t('rule_economy_title')}</Text>{'\n'}
-                                {t('rule_economy_1')}{'\n'}
-                                {t('rule_economy_2')}{'\n'}
-                                {t('rule_economy_3')}{'\n'}
-                                {t('rule_economy_footer')}
-                            </Text>
-                        </ScrollView>
+                                    <Text style={{ color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', marginBottom: 12, fontSize: 13, lineHeight: 20 }}>{t('chaos_intro_desc')}</Text>
+
+                                    <View style={{ gap: 8 }}>
+                                        <Text style={{ color: theme.colors.textPrimary, opacity: 0.9, fontFamily: 'Outfit', fontSize: 13, lineHeight: 18 }}>
+                                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary }}>• {t('chaos_event_inflation_title')}: </Text>
+                                            <Text>{t('chaos_event_inflation_desc')}</Text>
+                                        </Text>
+                                        <Text style={{ color: theme.colors.textPrimary, opacity: 0.9, fontFamily: 'Outfit', fontSize: 13, lineHeight: 18 }}>
+                                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary }}>• {t('chaos_event_blackout_title')}: </Text>
+                                            <Text>{t('chaos_event_blackout_desc')}</Text>
+                                        </Text>
+                                        <Text style={{ color: theme.colors.textPrimary, opacity: 0.9, fontFamily: 'Outfit', fontSize: 13, lineHeight: 18 }}>
+                                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary }}>• {t('chaos_event_dictatorship_title')}: </Text>
+                                            <Text>{t('chaos_event_dictatorship_desc')}</Text>
+                                        </Text>
+                                        <Text style={{ color: theme.colors.textPrimary, opacity: 0.9, fontFamily: 'Outfit', fontSize: 13, lineHeight: 18 }}>
+                                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary }}>• {t('chaos_event_identity_swap_title')}: </Text>
+                                            <Text>{t('chaos_event_identity_swap_desc')}</Text>
+                                        </Text>
+                                        <Text style={{ color: theme.colors.textPrimary, opacity: 0.9, fontFamily: 'Outfit', fontSize: 13, lineHeight: 18 }}>
+                                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary }}>• {t('chaos_event_robin_hood_title')}: </Text>
+                                            <Text>{t('chaos_event_robin_hood_desc')}</Text>
+                                        </Text>
+                                        <Text style={{ color: theme.colors.textPrimary, opacity: 0.9, fontFamily: 'Outfit', fontSize: 13, lineHeight: 18 }}>
+                                            <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary }}>• {t('chaos_event_dirty_win_title')}: </Text>
+                                            <Text>{t('chaos_event_dirty_win_desc')}</Text>
+                                        </Text>
+                                    </View>
+                                </View>
+                            </View >
+                        </ScrollView >
 
                         <PremiumPressable
                             onPress={() => setShowRules(false)}
@@ -348,7 +426,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         >
                             <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back_button')}</Text>
                         </PremiumPressable>
-                    </Animated.View>
+                    </Animated.View >
                 ) : showPreferences ? (
                     <Animated.View
                         key="preferences"
@@ -357,7 +435,6 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         style={{ gap: 15, width: '100%' }}
                     >
                         <View style={[styles.settingsGroup, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
-                            {/* [NEW] Language Toggle */}
                             <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 12 }]}>
                                 <View>
                                     <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>LINGUA / LANGUAGE</Text>
@@ -420,10 +497,9 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                 />
                             </View>
 
-                            {/* [NEW] Music Toggle */}
                             <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
                                 <View>
-                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('music_label').toUpperCase()} / {t('music_label') === 'Musica' ? 'MUSIC' : 'MUSICA'}</Text>
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('music_label')}</Text>
                                     <Text style={styles.rowSub}>{t('music_sub')}</Text>
                                 </View>
                                 <PremiumToggle
@@ -431,6 +507,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                     onValueChange={toggleMusic}
                                 />
                             </View>
+
                         </View>
 
                         <PremiumPressable
@@ -450,7 +527,6 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         exiting={SlideOutRight.duration(500).easing(Easing.out(Easing.quad))}
                         style={{ gap: 15, width: '100%' }}
                     >
-                        {/* Recovery Zone */}
                         {authUser?.recoveryCode && (
                             <View style={{ padding: 16, backgroundColor: 'rgba(220, 38, 38, 0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.3)' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 10 }}>
@@ -490,7 +566,6 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                             </View>
                         )}
 
-                        {/* Meta Actions */}
                         <View style={{ gap: 8 }}>
                             <PremiumPressable
                                 style={[styles.menuCard, { backgroundColor: 'rgba(239, 68, 68, 0.08)', borderRadius: 16 }]}
@@ -522,7 +597,6 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         exiting={SlideOutLeft.duration(500).easing(Easing.out(Easing.quad))}
                         style={{ gap: 8, width: '100%' }}
                     >
-                        {/* GRID CATEGORIES */}
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
                             <CategoryTile
                                 title={t('style_cat')}
@@ -552,7 +626,6 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                             />
                         </View>
 
-                        {/* ACTIONS (Contextual) */}
                         {roomCode && (
                             <View style={{ marginTop: 20, gap: 10 }}>
                                 <SecondaryAction
@@ -587,6 +660,12 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     </Animated.View>
                 )}
             </ClassyModal >
+            <ToastNotification
+                visible={showSuccessToast}
+                message={t('suggest_card_success')}
+                type="success"
+                onClose={() => setShowSuccessToast(false)}
+            />
             <ConfirmationModal
                 visible={modalConfig.visible}
                 onClose={() => setModalConfig(prev => ({ ...prev, visible: false }))}

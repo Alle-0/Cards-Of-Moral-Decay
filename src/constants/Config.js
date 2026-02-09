@@ -1,2 +1,2 @@
-export const APP_VERSION = "3.8.3";
+export const APP_VERSION = "4.0.0";
 export const BASE_URL = "https://carte-vs-umani.web.app";

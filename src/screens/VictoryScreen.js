@@ -30,11 +30,17 @@ const VictoryScreen = ({ winnerName, onExit }) => {
     const [showReward, setShowReward] = useState(false);
     const confettiRef = useRef(null);
 
-    const winner = roomData?.giocatori?.[winnerName];
+    const isWinnerRando = winnerName === 'Rando';
+    const winner = isWinnerRando ? { avatar: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando' } : roomData?.giocatori?.[winnerName];
 
     // Calculate loser BEFORE useEffect to avoid ReferenceError
-    const allScores = Object.entries(roomData?.punti || {})
-        .filter(([name]) => roomData?.giocatori?.[name])
+    const allScoresRaw = { ...(roomData?.punti || {}) };
+    if (roomData?.randoActive && roomData?.randoPoints !== undefined) {
+        allScoresRaw['Rando'] = roomData.randoPoints;
+    }
+
+    const allScores = Object.entries(allScoresRaw)
+        .filter(([name]) => name === 'Rando' || roomData?.giocatori?.[name])
         .sort(([, a], [, b]) => a - b);
 
     const potentialLosers = allScores.filter(([name]) => name !== winnerName);
@@ -47,7 +53,10 @@ const VictoryScreen = ({ winnerName, onExit }) => {
     // Use the first one for representative UI display
     const loser = tiedLosers.length > 0 ? tiedLosers[0] : null;
     const loserName = loser?.[0];
-    const loserData = roomData?.giocatori?.[loserName];
+    const isLoserRando = loserName === 'Rando';
+    const loserData = isLoserRando
+        ? { avatar: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando' }
+        : roomData?.giocatori?.[loserName];
 
     useEffect(() => {
         SoundService.play('success');
@@ -67,7 +76,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
         }, 2200);
 
         // [LEGACY] Track winner event
-        AnalyticsService.logGameWin(winnerName, roomData?.punti?.[winnerName] || 0);
+        AnalyticsService.logGameWin(winnerName, isWinnerRando ? (roomData?.randoPoints || 0) : (roomData?.punti?.[winnerName] || 0));
         const myUsername = user?.username || user?.name;
 
         if (winnerName === myUsername) {
@@ -168,7 +177,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                         entering={FadeIn.delay(1000)}
                         style={styles.subtitle}
                     >
-                        {t('winner_summary', { points: roomData?.punti?.[winnerName] })}
+                        {t('winner_summary', { points: isWinnerRando ? roomData?.randoPoints : roomData?.punti?.[winnerName] })}
                     </Animated.Text>
 
                     {/* Leaderboard Section */}
@@ -194,7 +203,11 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                             }
 
                             return displayedMiddle.map(([name, score]) => {
-                                const player = roomData?.giocatori?.[name];
+                                const isRowRando = name === 'Rando';
+                                const player = isRowRando ? null : roomData?.giocatori?.[name];
+                                const playerAvatar = isRowRando ? 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando' : player?.avatar;
+                                const playerRank = isRowRando ? 'Bot' : (player?.rank || 'Anima Candida');
+
                                 // Re-calculate rank index based on original sorted list
                                 const originalIndex = sortedPlayers.findIndex(([pName]) => pName === name);
 
@@ -206,13 +219,13 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                                         <View style={styles.smallAvatar}>
                                             <LocalAvatar
                                                 size={30}
-                                                seed={player?.avatar?.startsWith('http') ? player.avatar : (player?.avatar || 'User')}
+                                                seed={playerAvatar?.startsWith('http') ? playerAvatar : (playerAvatar || 'User')}
                                             />
                                         </View>
                                         <View style={{ flex: 1 }}>
                                             <Text style={[styles.playerName, { color: theme.colors.textPrimary }]}>{name}</Text>
-                                            <Text style={{ fontSize: 9, color: RANK_COLORS[player?.rank || 'Anima Candida'] || '#888', fontWeight: 'bold' }}>
-                                                {player?.rank ? t(`rank_${player.rank.toLowerCase().replace(/ /g, '_')}`, { defaultValue: player.rank }) : t('rank_anima_candida')}
+                                            <Text style={{ fontSize: 9, color: RANK_COLORS[playerRank] || '#888', fontWeight: 'bold' }}>
+                                                {isRowRando ? 'BOT' : (playerRank ? t(`rank_${playerRank.toLowerCase().replace(/ /g, '_')}`, { defaultValue: playerRank }) : t('rank_anima_candida'))}
                                             </Text>
                                         </View>
                                         <Text style={[styles.playerScore, { color: theme.colors.accent }]}>{score} {t('points_short')}</Text>
@@ -291,31 +304,33 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                         </Animated.View>
                     )}
                 </Animated.View>
-            </ScrollView>
+            </ScrollView >
             {/* [NEW] Rank Up Celebration Overlay */}
-            {showRankUp && (
-                <View style={[StyleSheet.absoluteFill, { zIndex: 10000, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }]}>
-                    <Animated.View
-                        entering={ZoomIn.duration(800).springify()}
-                        style={{ alignItems: 'center' }}
-                    >
-                        <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 14, letterSpacing: 2 }}>{t('new_rank_title') || "NUOVO GRADO RAGGIUNTO"}</Text>
-                        <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 42, textAlign: 'center', marginVertical: 20 }}>{user.rank}</Text>
-                        <PremiumButton
-                            title={t('awesome_btn') || "ECCELLENTE"}
-                            onPress={handleRankUpClose}
-                            style={{ width: 220, height: 60 }}
-                        />
-                    </Animated.View>
-                </View>
-            )}
+            {
+                showRankUp && (
+                    <View style={[StyleSheet.absoluteFill, { zIndex: 10000, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }]}>
+                        <Animated.View
+                            entering={ZoomIn.duration(800).springify()}
+                            style={{ alignItems: 'center' }}
+                        >
+                            <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 14, letterSpacing: 2 }}>{t('new_rank_title') || "NUOVO GRADO RAGGIUNTO"}</Text>
+                            <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 42, textAlign: 'center', marginVertical: 20 }}>{user.rank}</Text>
+                            <PremiumButton
+                                title={t('awesome_btn') || "ECCELLENTE"}
+                                onPress={handleRankUpClose}
+                                style={{ width: 220, height: 60 }}
+                            />
+                        </Animated.View>
+                    </View>
+                )
+            }
 
             <RewardPopup
                 amount={rewardAmount}
                 visible={showReward}
                 onFinish={() => setShowReward(false)}
             />
-        </View>
+        </View >
     );
 };
 

@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import RewardPopup from './RewardPopup';
 import { useState } from 'react';
 
-const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) => {
+const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swapDetails, activeChaosEvent, chaosReward }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
     const { user } = useAuth();
@@ -82,7 +82,32 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
                     <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10, 10, 10, 0.8)' }]} />
                 </View>
 
-                {/* TITOLO - Snappier entrance after modal zoom */}
+                {/* CHAOS SWAP MESSAGE */}
+                {swapDetails && (winnerInfo?.name !== swapDetails.original) && (
+                    <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', marginBottom: 5 }}>
+                        <Text style={{ color: swapDetails.type === 'ROBIN_HOOD' ? '#10b981' : '#ef4444', fontFamily: 'Cinzel-Bold', fontSize: 14, textAlign: 'center' }}>
+                            {swapDetails.type === 'ROBIN_HOOD'
+                                ? t('chaos_robin_hood_msg', { defaultValue: "ROBIN HOOD HA RUBATO IL PUNTO!" })
+                                : t('chaos_theft_original_winner', { name: swapDetails.original, defaultValue: `IL DOMINUS AVEVA SCELTO ${swapDetails.original}` })
+                            }
+                        </Text>
+                        {swapDetails.type !== 'ROBIN_HOOD' && (
+                            <Text style={{ color: '#ef4444', fontFamily: 'Outfit', fontSize: 12, textAlign: 'center' }}>
+                                {t('chaos_theft_desc', { defaultValue: "MA IL CAOS HA DECISO DIVERSAMENTE!" })}
+                            </Text>
+                        )}
+                    </Animated.View>
+                )}
+
+                {/* DIRTY WIN REWARD MSG */}
+                {activeChaosEvent === 'DIRTY_WIN' && (
+                    <Animated.View entering={FadeInDown.delay(200)} style={{ alignItems: 'center', marginBottom: 5 }}>
+                        <Text style={{ color: '#10b981', fontFamily: 'Cinzel-Bold', fontSize: 16, textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 }}>
+                            +100 DIRTY CASH
+                        </Text>
+                    </Animated.View>
+                )}
+
                 <Animated.View
                     entering={FadeInDown.delay(500).duration(500)}
                     style={{ width: '100%', alignItems: 'center', marginBottom: 25 }}
@@ -145,11 +170,11 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
                 >
                     <Text style={{
                         fontFamily: 'Cinzel-Bold',
-                        color: theme.colors?.accent || '#ffce6a',
+                        color: activeChaosEvent === 'DIRTY_WIN' ? '#10b981' : (theme.colors?.accent || '#ffce6a'),
                         fontSize: 24,
                         textAlign: 'center',
                         letterSpacing: 1,
-                        textShadowColor: 'rgba(212, 175, 55, 0.4)',
+                        textShadowColor: activeChaosEvent === 'DIRTY_WIN' ? 'rgba(0,0,0,0.8)' : 'rgba(212, 175, 55, 0.4)',
                         textShadowOffset: { width: 0, height: 0 },
                         textShadowRadius: 12
                     }}>
@@ -215,7 +240,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [] }) =>
             </View>
 
             <RewardPopup
-                amount={50}
+                amount={activeChaosEvent === 'DIRTY_WIN' ? 100 : 50} // 100 for Dirty Win, 50 otherwise
                 visible={showReward}
                 onFinish={() => setShowReward(false)}
             />

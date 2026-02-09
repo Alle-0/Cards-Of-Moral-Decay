@@ -23,7 +23,8 @@ import HapticsService from '../services/HapticsService';
 import { APP_VERSION } from '../constants/Config';
 import Animated, { SlideInRight, SlideOutRight, SlideInLeft, SlideOutLeft, Easing } from 'react-native-reanimated';
 
-import { RulesIcon, SettingsIcon, LinkIcon, OpenDoorIcon, EyeIcon, EyeOffIcon, ArrowLeftIcon, ShieldIcon, CheckIcon } from '../components/Icons';
+import { RulesIcon, SettingsIcon, LinkIcon, OpenDoorIcon, EyeIcon, EyeOffIcon, ArrowLeftIcon, ShieldIcon, CheckIcon, HornsIcon, CardsIcon } from '../components/Icons';
+import CardSuggestionModal from '../components/CardSuggestionModal';
 import InfoScreen from './InfoScreen';
 
 const SettingsScreen = ({ navigation }) => {
@@ -41,6 +42,8 @@ const SettingsScreen = ({ navigation }) => {
     const [showAccount, setShowAccount] = useState(false);
     const [showRecoveryCode, setShowRecoveryCode] = useState(false);
     const [showInfo, setShowInfo] = useState(false);
+    const [suggestionModalVisible, setSuggestionModalVisible] = useState(false);
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
 
     const [modalConfig, setModalConfig] = useState({
         visible: false,
@@ -208,7 +211,7 @@ const SettingsScreen = ({ navigation }) => {
                         exiting={SlideOutRight.duration(300).easing(Easing.out(Easing.quad))}
                         style={{ flex: 1, width: '100%', paddingTop: 50, paddingBottom: 80 + insets.bottom }}
                     >
-                        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, marginBottom: 15 }} contentContainerStyle={{ paddingBottom: 20 }}>
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, marginBottom: 15 }} contentContainerStyle={{ paddingBottom: 30 }}>
                             <View style={{ gap: 20 }}>
                                 {/* Introduction */}
                                 <View style={{ alignItems: 'center', marginBottom: 10 }}>
@@ -261,6 +264,21 @@ const SettingsScreen = ({ navigation }) => {
                                         t('rule_economy_2'),
                                         t('rule_economy_3'),
                                         t('rule_economy_footer')
+                                    ]}
+                                />
+
+                                {/* Section 5: Chaos */}
+                                <RuleCard
+                                    title={t('rule_chaos_title')}
+                                    icon={<HornsIcon size={16} color={theme.colors.accent} />}
+                                    content={[
+                                        <Text key="desc" style={{ marginBottom: 10 }}>{t('chaos_intro_desc')}</Text>,
+                                        <Text key="inf" style={{ marginBottom: 4 }}>• {t('chaos_event_inflation_title')}: {t('chaos_event_inflation_desc')}</Text>,
+                                        <Text key="blk" style={{ marginBottom: 4 }}>• {t('chaos_event_blackout_title')}: {t('chaos_event_blackout_desc')}</Text>,
+                                        <Text key="dic" style={{ marginBottom: 4 }}>• {t('chaos_event_dictatorship_title')}: {t('chaos_event_dictatorship_desc')}</Text>,
+                                        <Text key="swp" style={{ marginBottom: 4 }}>• {t('chaos_event_identity_swap_title')}: {t('chaos_event_identity_swap_desc')}</Text>,
+                                        <Text key="rob" style={{ marginBottom: 4 }}>• {t('chaos_event_robin_hood_title')}: {t('chaos_event_robin_hood_desc')}</Text>,
+                                        <Text key="drt">• {t('chaos_event_dirty_win_title')}: {t('chaos_event_dirty_win_desc')}</Text>
                                     ]}
                                 />
                             </View>
@@ -354,7 +372,7 @@ const SettingsScreen = ({ navigation }) => {
 
                             <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
                                 <View>
-                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('music_label').toUpperCase()} / {t('music_label') === 'Musica' ? 'MUSIC' : 'MUSICA'}</Text>
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('music_label')}</Text>
                                     <Text style={styles.rowSub}>{t('music_sub')}</Text>
                                 </View>
                                 <PremiumToggle
@@ -568,6 +586,13 @@ const SettingsScreen = ({ navigation }) => {
                                 color="#3b82f6"
                                 onPress={() => setShowRules(true)}
                             />
+                            <CategoryTile
+                                title={t('suggest_card_title') || "Consiglio Carte"}
+                                subtitle={t('suggest_card_desc_cost') || "Invia una tua idea (Costo: 25 DC)"}
+                                icon={<CardsIcon size={24} color={theme.colors.accent} />}
+                                color={theme.colors.accent}
+                                onPress={() => setSuggestionModalVisible(true)}
+                            />
                         </View>
 
                         {roomCode && (
@@ -634,6 +659,26 @@ const SettingsScreen = ({ navigation }) => {
                         </View>
                     )
                 }
+
+                <CardSuggestionModal
+                    visible={suggestionModalVisible}
+                    onClose={() => setSuggestionModalVisible(false)}
+                    onSuccess={() => setShowSuccessToast(true)}
+                />
+
+                <ToastNotification
+                    visible={showSuccessToast}
+                    message={t('suggest_card_success') || "Grazie per il tuo contributo!"}
+                    type="success"
+                    onClose={() => setShowSuccessToast(false)}
+                />
+
+                <ToastNotification
+                    visible={toast.visible}
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+                />
             </View >
         </View >
     );

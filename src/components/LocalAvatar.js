@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { SvgXml } from 'react-native-svg';
+import { View, StyleSheet, Image, Platform } from 'react-native';
+import { SvgXml, SvgUri } from 'react-native-svg';
 import { createAvatar } from '@dicebear/core';
 import * as adventurer from '@dicebear/adventurer';
 
@@ -14,6 +14,31 @@ import * as adventurer from '@dicebear/adventurer';
  * @param {object} style - Container style
  */
 const LocalAvatar = ({ seed, size = 128, style }) => {
+
+    // [FIX] Support External URLs (e.g. Bot Avatar)
+    if (seed?.startsWith('http')) {
+        const isSvg = seed.endsWith('.svg') || seed.includes('dicebear');
+
+        // [FIX] On web, we use Image for everything remote. 
+        // Browsers handle SVGs in <img> tags natively and more reliably than SvgUri.
+        if (Platform.OS === 'web') {
+            return (
+                <View style={[styles.container, { width: size, height: size }, style]}>
+                    <Image source={{ uri: seed }} style={{ width: '100%', height: '100%' }} />
+                </View>
+            );
+        }
+
+        return (
+            <View style={[styles.container, { width: size, height: size }, style]}>
+                {isSvg ? (
+                    <SvgUri uri={seed} width="100%" height="100%" />
+                ) : (
+                    <Image source={{ uri: seed }} style={{ width: '100%', height: '100%' }} />
+                )}
+            </View>
+        );
+    }
 
     const avatarSvg = useMemo(() => {
         return createAvatar(adventurer, {

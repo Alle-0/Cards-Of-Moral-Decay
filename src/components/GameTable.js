@@ -16,7 +16,14 @@ const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers, t, isSma
         <Text style={styles.headerTitle}>{t('black_card_label')}</Text>
         <View style={styles.cardInternal}>
             <Text
-                style={[styles.blackCardText, isSmallScreen && { fontSize: 18 }, { fontSize: (text?.length || 0) > 60 ? 14 : ((text?.length || 0) > 30 ? 16 : 20) }]}
+                style={[
+                    styles.blackCardText,
+                    {
+                        fontSize: isSmallScreen
+                            ? ((text?.length || 0) > 80 ? 12 : ((text?.length || 0) > 40 ? 14 : 16))
+                            : ((text?.length || 0) > 80 ? 13 : ((text?.length || 0) > 40 ? 15 : 18))
+                    }
+                ]}
                 numberOfLines={isSmallScreen ? 6 : 10}
             >
                 {text || ''}
@@ -45,7 +52,7 @@ const FaceDownCard = memo(() => (
     </View>
 ));
 
-const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed, isSelected, isWinning, onSelect, skin, t }) => { // [NEW] isWinning
+const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed, isSelected, isWinning, onSelect, skin, t, showIdentity }) => { // [NEW] showIdentity
     const aniValue = useSharedValue(0);
 
     const handlePress = () => {
@@ -141,6 +148,31 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                 ]} pointerEvents="none" />
 
 
+                {/* RANDO VISUAL DISTINCTION - ONLY WHEN IDENTITY IS REVEALED */}
+                {playerName === 'Rando' && revealed && showIdentity && (
+                    <View style={{
+                        position: 'absolute',
+                        top: -10,
+                        right: -10,
+                        backgroundColor: '#ff6b6b',
+                        borderRadius: 12,
+                        width: 24,
+                        height: 24,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        zIndex: 10,
+                        borderWidth: 1,
+                        borderColor: '#fff',
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 3.84,
+                        elevation: 5
+                    }}>
+                        <Text style={{ fontSize: 14 }}>🤖</Text>
+                    </View>
+                )}
+
                 {revealed ? (
                     <View style={{
                         flex: 1,
@@ -148,9 +180,11 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                         padding: 15,
                         justifyContent: 'center',
                         alignItems: 'center',
-                        backgroundColor: skin?.styles?.bg ? skin.styles.bg : '#d1d1d1',
+                        backgroundColor: (playerName === 'Rando' && showIdentity) ? '#e2e8f0' : (skin?.styles?.bg ? skin.styles.bg : '#d1d1d1'),
                         borderRadius: 15,
-                        overflow: 'hidden' // [NEW] Ensure texture stays inside
+                        overflow: 'hidden',
+                        borderWidth: (playerName === 'Rando' && showIdentity) ? 2 : 0,
+                        borderColor: '#94a3b8'
                     }}>
                         {/* [NEW] TEXTURE LAYER */}
                         {skin?.styles?.texture && TEXTURES[skin.styles.texture] && (() => {
@@ -351,6 +385,7 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
                                             onPickWinner={() => onSelectWinner(player)}
                                             skin={user?.activeCardSkin ? (CARD_SKINS[user.activeCardSkin] || CARD_SKINS.classic) : CARD_SKINS.classic}
                                             t={t}
+                                            showIdentity={status === 'SHOWING_WINNER'} // [FIX] Only show bot identity after selection
                                         />
                                     );
                                 })}

@@ -459,6 +459,18 @@ export const CARD_SKINS = {
             texture: 'marble',
             textureOpacity: 0.6 // [FIX] High visibility for light marble
         }
+    },
+    magma: {
+        id: 'magma',
+        label: 'Magma',
+        price: 2000,
+        styles: {
+            bg: '#250800',
+            text: '#fb923c',
+            border: '#ef4444',
+            texture: null, // [FIX] Removed petrol texture for cleaner look
+            textureOpacity: 0
+        }
     }
 };
 
@@ -476,6 +488,8 @@ export const AVATAR_FRAMES = {
     wanted: { id: 'wanted', label: 'WANTED', price: 2000, asset: 'frame_wanted' },
     toilet: { id: 'toilet', label: 'Trono di Ceramica', price: 500, asset: 'frame_toilet' },
     cat: { id: 'cat', label: 'Gattara', price: 1500, asset: 'frame_cat' },
+    ice_king: { id: 'ice_king', label: 'Re dei Ghiacci', price: 5000, asset: 'frame_ice_king' },
+    midas_touch: { id: 'midas_touch', label: 'Tocco di Mida', price: 10000, asset: 'frame_midas_touch' },
 };
 
 export const ThemeProvider = ({ children }) => {

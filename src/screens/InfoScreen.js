@@ -11,8 +11,11 @@ import {
     LinkIcon,
     SettingsIcon,
     LockIcon,
-    GithubIcon // [NEW]
+    GithubIcon,
+    HornsIcon,
+    CardsIcon
 } from '../components/Icons';
+import ToastNotification from '../components/ToastNotification';
 import PremiumBackground from '../components/PremiumBackground';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import HapticsService from '../services/HapticsService';
@@ -27,6 +30,7 @@ const InfoScreen = ({ onClose }) => {
     const { user } = useAuth();
     const { t } = useLanguage();
     const [expandedId, setExpandedId] = useState(null);
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
 
     // [FIX] Handle Android Hardware Back Button
     useEffect(() => {
@@ -92,7 +96,7 @@ const InfoScreen = ({ onClose }) => {
             icon: <SettingsIcon size={20} color={theme.colors.accent} />,
             content: t('info_content_template', { version: APP_VERSION }),
             readOnly: true
-        }
+        },
     ];
 
     const toggleSection = (id) => {
@@ -171,22 +175,34 @@ const InfoScreen = ({ onClose }) => {
 
                                     {isExpanded && (
                                         <View style={styles.cardContent}>
-                                            <Text style={[
-                                                styles.contentText,
-                                                isSpecial && { color: '#1a1a1a' }
-                                            ]}>
-                                                {section.content}
-                                            </Text>
+                                            {section.renderContent ? section.renderContent() : (
+                                                <Text style={[
+                                                    styles.contentText,
+                                                    isSpecial && { color: '#1a1a1a' }
+                                                ]}>
+                                                    {section.content}
+                                                </Text>
+                                            )}
 
                                             {section.action && (
                                                 <TouchableOpacity
                                                     style={[styles.actionButton, { borderColor: isSpecial ? '#000' : theme.colors.accent }]}
-                                                    onPress={() => handleLink(section.url)}
+                                                    onPress={() => {
+                                                        if (section.onAction) {
+                                                            section.onAction();
+                                                        } else {
+                                                            handleLink(section.url);
+                                                        }
+                                                    }}
                                                 >
                                                     <Text style={[styles.actionButtonText, { color: isSpecial ? '#000' : theme.colors.accent }]}>
                                                         {section.action}
                                                     </Text>
-                                                    <LinkIcon size={16} color={isSpecial ? '#000' : theme.colors.accent} />
+                                                    {section.onAction ? (
+                                                        <CardsIcon size={16} color={isSpecial ? '#000' : theme.colors.accent} />
+                                                    ) : (
+                                                        <LinkIcon size={16} color={isSpecial ? '#000' : theme.colors.accent} />
+                                                    )}
                                                 </TouchableOpacity>
                                             )}
 
@@ -206,6 +222,14 @@ const InfoScreen = ({ onClose }) => {
                         </View>
 
                     </ScrollView>
+
+
+                    <ToastNotification
+                        visible={showSuccessToast}
+                        message={t('suggest_card_success')}
+                        type="success"
+                        onClose={() => setShowSuccessToast(false)}
+                    />
                 </SafeAreaView>
             </PremiumBackground>
         </View>

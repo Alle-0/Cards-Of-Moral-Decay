@@ -91,14 +91,20 @@ class SoundService {
         if (preloaded) {
             try {
                 preloaded.seekTo(0);
-                preloaded.play();
+                const result = preloaded.play();
+                if (result && typeof result.catch === 'function') {
+                    result.catch(() => { }); // DEFENSIVE: Handle immediately for web
+                }
             } catch (e) {
                 console.log(`[SoundService] Replay Error '${name}':`, e.message);
                 // Attempt to recreate the player if it failed
                 try {
                     const player = createAudioPlayer(SOUND_MAP[name]);
                     this.preloadedSounds[name] = player;
-                    player.play();
+                    const result = player.play();
+                    if (result && typeof result.catch === 'function') {
+                        result.catch(() => { }); // DEFENSIVE: Handle immediately for web
+                    }
                 } catch (reloadError) {
                     console.log(`[SoundService] New player launch failed '${name}':`, reloadError.message);
                 }
@@ -116,12 +122,13 @@ class SoundService {
         try {
             const player = createAudioPlayer(soundSource);
             player.volume = 0.3; // [FIX] Lower effects volume
-            player.play();
-
-            // expo-audio players don't have a direct 'unload' like expo-av, 
-            // but we can release them if needed. Usually, for simple sounds, 
-            // letting them be GC'd is fine, or we can use a listener.
+            const result = player.play();
+            if (result && typeof result.catch === 'function') {
+                result.catch(() => { }); // [CRITICAL] Suppress Uncaught promise rejection for web
+            }
         } catch (error) {
+            // Log but don't crash
+            console.log(`[SoundService] playOnce failed for '${name}':`, error.message);
         }
     }
 

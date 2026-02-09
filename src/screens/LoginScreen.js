@@ -23,7 +23,7 @@ import PremiumBackground from '../components/PremiumBackground';
 const { width } = Dimensions.get('window');
 
 export default function LoginScreen() {
-    const { signUp, recoverAccount, loading: authLoading, user: authUserSession } = useAuth();
+    const { signUp, recoverAccount, devLogin, loading: authLoading, user: authUserSession } = useAuth();
     const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState('new'); // 'new' | 'recover'
 
@@ -274,6 +274,25 @@ export default function LoginScreen() {
             />
 
 
+            {__DEV__ && (
+                <Animated.View
+                    entering={FadeInDown.delay(800)}
+                    style={styles.devContainer}
+                >
+                    <Text style={styles.devLabel}>DEV QUICK LOGIN:</Text>
+                    <View style={styles.devButtons}>
+                        {['Prova', 'Prova2', 'Prova3'].map((name) => (
+                            <TouchableOpacity
+                                key={name}
+                                style={styles.devButton}
+                                onPress={() => devLogin(name)}
+                            >
+                                <Text style={styles.devButtonText}>{name}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </Animated.View>
+            )}
         </View>
     );
 
@@ -445,5 +464,40 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontFamily: 'Outfit',
         fontStyle: 'italic'
+    },
+    devContainer: {
+        marginTop: 30,
+        backgroundColor: 'rgba(255, 215, 0, 0.05)',
+        padding: 15,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.2)',
+        width: '100%',
+        alignItems: 'center'
+    },
+    devLabel: {
+        fontFamily: 'Cinzel-Bold',
+        fontSize: 10,
+        color: '#FFD700',
+        marginBottom: 10,
+        letterSpacing: 1
+    },
+    devButtons: {
+        flexDirection: 'row',
+        gap: 10,
+        justifyContent: 'center'
+    },
+    devButton: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)'
+    },
+    devButtonText: {
+        color: '#fff',
+        fontFamily: 'Cinzel-Bold',
+        fontSize: 12
     }
 });

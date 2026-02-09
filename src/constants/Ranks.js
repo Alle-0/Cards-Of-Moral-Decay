@@ -6,7 +6,8 @@ export const RANK_COLORS = {
     "Socio del Vizio": "#eab308", // Yellow
     "Corrotto": "#22c55e", // Green
     "Innocente": "#3b82f6", // Blue
-    "Anima Candida": "#94a3b8"  // Gray
+    "Anima Candida": "#94a3b8",  // Gray
+    "rank_bot": "#ef4444"        // [NEW] Bot Rank Color (Red)
 };
 
 export const RANK_THRESHOLDS = [
