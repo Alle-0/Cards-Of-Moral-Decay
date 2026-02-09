@@ -9,7 +9,7 @@
 
 <br/>
 
-[![Version](https://img.shields.io/badge/VERSION-v3.8.2-D4AF37?style=for-the-badge&labelColor=000000)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
+[![Github Latest Release](https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?style=for-the-badge&label=VERSION&color=D4AF37&labelColor=000000)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
 [![Platform](https://img.shields.io/badge/PLATFORM-ANDROID_%26_WEB-D4AF37?style=for-the-badge&labelColor=000000&logo=android&logoColor=D4AF37)](https://carte-vs-umani.web.app)
 [![License](https://img.shields.io/badge/RATING-18%2B-D4AF37?style=for-the-badge&labelColor=000000)](https://github.com/Alle-0/Cards-Of-Moral-Decay)
 
@@ -28,8 +28,8 @@
   <img src="https://img.shields.io/badge/🌐_LAUNCH_WEB_APP-E6C25D?style=for-the-badge&logo=google-chrome&logoColor=black&labelColor=000000" height="50" />
 </a>
 
-<a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/download/v3.8.2/CardsOfMoralDecay-v3.8.2.apk">
-  <img src="https://img.shields.io/badge/⬇_DOWNLOAD_APK_(v3.8.2)-D4AF37?style=for-the-badge&logo=android&logoColor=black&labelColor=000000" height="50" />
+<a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest">
+  <img src="https://img.shields.io/badge/⬇_DOWNLOAD_LATEST_APK-D4AF37?style=for-the-badge&logo=android&logoColor=black&labelColor=000000" height="50" />
 </a>
 
 <p align="center">
@@ -54,7 +54,14 @@ Created for friends. No random matchmaking, just private rooms where you can be 
 ### 🎭 Shop & Aesthetics
 Collect **Dirty Cash** and redefine your style. Unlock:
 - 🌌 **Immersive Themes** (Tokyo, Lucifer, Matrix, Asylum)
-- 🎴 **Custom Card Skins** - 🖼️ **Avatar Frames**
+- 🎴 **Custom Card Skins**
+- 🖼️ **Avatar Frames**
+
+### 🌪️ The Chaos Engine
+Entropy is part of the fun. When enabled, the **Chaos Engine** disrupts the game flow every 2 or 3 rounds with 6 different global events.
+
+### 🤖 Rand Bot
+Only have one friend? Don't worry, Rando Bot has your back. He automatically joins 2-player games and plays a random card every turn.
 
 ---
 
