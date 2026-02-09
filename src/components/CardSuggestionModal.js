@@ -104,9 +104,6 @@ const CardSuggestionModal = ({ visible, onClose, onSuccess }) => {
                     ) : (
                         <Text
                             style={styles.submitText}
-                            adjustsFontSizeToFit={true}
-                            numberOfLines={1}
-                            minimumFontScale={0.7}
                         >
                             {t('suggest_card_submit')} (25 DC)
                         </Text>

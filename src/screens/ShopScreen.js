@@ -458,7 +458,7 @@ export default function ShopScreen() {
                     </View>
                 ) : (
                     <View style={{ flexDirection: 'row', width: '100%', gap: 5 }}>
-                        <View style={{ flex: 1, height: 36, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(44, 125, 74, 0.1)', borderRadius: 8 }}>
+                        <View style={{ flex: 1, height: 36, justifyContent: 'center', alignItems: 'center', borderRadius: 8 }}>
                             <CheckIcon size={20} color={theme.colors.accent} />
                         </View>
                         <TouchableOpacity style={[styles.previewButtonIcon, { borderRadius: 8, padding: 8 }]} onPress={() => handlePreview('frame', itemFrame)}>
