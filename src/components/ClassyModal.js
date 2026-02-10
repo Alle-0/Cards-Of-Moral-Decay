@@ -129,7 +129,7 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
                         )}
                     </View>
 
-                    <Pressable style={styles.innerContainer}>
+                    <View style={styles.innerContainer}>
 
 
                         <PremiumIconButton
@@ -173,7 +173,7 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
                         <View style={[styles.content, { overflow: 'hidden' }]}>
                             {children}
                         </View>
-                    </Pressable>
+                    </View>
                 </Animated.View>
             </View>
         </Animated.View>

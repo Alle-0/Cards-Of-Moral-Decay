@@ -34,9 +34,22 @@ const STEPS = {
     JOIN: 2,
 };
 
+const RANK_KEY_MAP = {
+    "Anima Candida": "rank_anima_candida",
+    "Innocente": "rank_innocente",
+    "Corrotto": "rank_corrotto",
+    "Socio del Vizio": "rank_socio_del_vizio",
+    "Architetto del Caos": "rank_architetto_del_caos",
+    "Eminenza Grigia": "rank_eminenza_grigia",
+    "Entità Apocalittica": "rank_entita_apocalittica",
+    "Capo supremo": "rank_capo_supremo",
+    "BOT": "rank_bot"
+};
+
 const getRankKey = (rank) => {
     if (!rank) return 'rank_anima_candida';
-    return `rank_${rank.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ /g, '_')}`;
+    const cleanRank = rank.trim();
+    return RANK_KEY_MAP[cleanRank] || `rank_${cleanRank.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_')}`;
 };
 
 const LobbyScreen = ({ onStartLoading }) => {
@@ -294,6 +307,16 @@ const LobbyScreen = ({ onStartLoading }) => {
                         const nextRank = currentRankIdx !== -1 && currentRankIdx < RANK_THRESHOLDS.length - 1 ? RANK_THRESHOLDS[currentRankIdx + 1] : null;
                         const currentRankMin = RANK_THRESHOLDS[currentRankIdx]?.min || 0;
 
+                        // [FIX] Robust Color Lookup
+                        const getRankColor = (r) => {
+                            if (!r) return '#888';
+                            const clean = r.trim();
+                            // Try exact match or trimmed match
+                            return RANK_COLORS[r] || RANK_COLORS[clean] || '#888';
+                        };
+
+                        const rankColor = getRankColor(authUser.rank);
+
                         let progress = 0;
                         let pointsLeft = 0;
                         if (nextRank) {
@@ -308,10 +331,10 @@ const LobbyScreen = ({ onStartLoading }) => {
                                 entering={FadeIn.delay(500)}
                                 style={styles.rankBadgeContainer}
                             >
-                                <View style={[styles.rankBadgeGradient, { borderColor: (RANK_COLORS[authUser.rank] || '#888') + '44', borderWidth: 1 }]}>
-                                    <View style={[styles.rankVerticalBar, { backgroundColor: RANK_COLORS[authUser.rank] || '#888' }]} />
+                                <View style={[styles.rankBadgeGradient, { borderColor: rankColor + '44', borderWidth: 1 }]}>
+                                    <View style={[styles.rankVerticalBar, { backgroundColor: rankColor }]} />
                                     <View>
-                                        <Text style={[styles.rankTextLabel, { color: (RANK_COLORS[authUser.rank] || '#888') }]}>
+                                        <Text style={[styles.rankTextLabel, { color: rankColor }]}>
                                             {t(getRankKey(authUser.rank))}
                                         </Text>
 
@@ -320,7 +343,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                                                 {/* Global Progress Bar Background */}
                                                 <View style={{ height: 3, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden', width: '80%' }}>
                                                     {/* Active Progress */}
-                                                    <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: RANK_COLORS[authUser.rank] || '#888', borderRadius: 2 }} />
+                                                    <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: rankColor, borderRadius: 2 }} />
                                                 </View>
                                                 <Text style={{ fontSize: 8, color: '#666', marginTop: 2, fontFamily: 'Outfit', includeFontPadding: false }}>
                                                     {t('next_rank_points', { points: pointsLeft.toLocaleString(), rank: t(getRankKey(nextRank.name)) })}
