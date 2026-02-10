@@ -80,6 +80,7 @@ export const translations = {
         rank_bot: "BOT",
         rank_capo_supremo: "Capo Supremo",
         next_rank_points: "%{points} DC per %{rank}", // [NEW] Use 'per' in Italian
+        max_rank_reached: "Rank Massimo Raggiunto!",
 
         ok_btn: "OK",
         agree_btn: "ACCETTO",
@@ -602,6 +603,7 @@ export const translations = {
         rank_bot: "BOT",
         rank_capo_supremo: "Supreme Boss",
         next_rank_points: "%{points} DC to %{rank}", // [NEW] Use 'to' in English
+        max_rank_reached: "Max Rank Reached!",
 
         ok_btn: "OK",
         agree_btn: "I AGREE",

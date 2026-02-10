@@ -43,6 +43,7 @@ const RANK_KEY_MAP = {
     "Eminenza Grigia": "rank_eminenza_grigia",
     "Entità Apocalittica": "rank_entita_apocalittica",
     "Capo supremo": "rank_capo_supremo",
+    "Capo Supremo": "rank_capo_supremo", // [FIX] Case variation
     "BOT": "rank_bot"
 };
 
@@ -303,7 +304,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                     {/* [NEW] Rank Badge Top-Left (Ultra Clean Version) */}
                     {authUser?.rank && (() => {
                         const score = authUser.totalScore || 0;
-                        const currentRankIdx = RANK_THRESHOLDS.findIndex(r => r.name === authUser.rank);
+                        const currentRankIdx = RANK_THRESHOLDS.findIndex(r => r.name.toLowerCase() === (authUser.rank || '').toLowerCase().trim());
                         const nextRank = currentRankIdx !== -1 && currentRankIdx < RANK_THRESHOLDS.length - 1 ? RANK_THRESHOLDS[currentRankIdx + 1] : null;
                         const currentRankMin = RANK_THRESHOLDS[currentRankIdx]?.min || 0;
 
@@ -311,8 +312,17 @@ const LobbyScreen = ({ onStartLoading }) => {
                         const getRankColor = (r) => {
                             if (!r) return '#888';
                             const clean = r.trim();
-                            // Try exact match or trimmed match
-                            return RANK_COLORS[r] || RANK_COLORS[clean] || '#888';
+
+                            // 1. Try exact/trimmed match
+                            if (RANK_COLORS[r]) return RANK_COLORS[r];
+                            if (RANK_COLORS[clean]) return RANK_COLORS[clean];
+
+                            // 2. Try Case-Insensitive Match
+                            const lower = clean.toLowerCase();
+                            const match = Object.keys(RANK_COLORS).find(k => k.toLowerCase() === lower);
+                            if (match) return RANK_COLORS[match];
+
+                            return '#888';
                         };
 
                         const rankColor = getRankColor(authUser.rank);

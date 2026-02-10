@@ -422,9 +422,24 @@ const SettingsScreen = ({ navigation }) => {
                             {/* Rank Display */}
                             {(() => {
                                 const score = authUser?.totalScore || 0;
-                                const currentRankIdx = RANK_THRESHOLDS.findIndex(r => r.name === authUser?.rank);
+                                const currentRankIdx = RANK_THRESHOLDS.findIndex(r => r.name.toLowerCase() === (authUser?.rank || '').toLowerCase().trim());
                                 const nextRank = currentRankIdx !== -1 && currentRankIdx < RANK_THRESHOLDS.length - 1 ? RANK_THRESHOLDS[currentRankIdx + 1] : null;
                                 const currentRankMin = RANK_THRESHOLDS[currentRankIdx]?.min || 0;
+
+                                // [FIX] Robust Color Lookup
+                                const getRankColor = (r) => {
+                                    if (!r) return '#888';
+                                    const clean = r.trim();
+                                    // 1. Try exact/trimmed match
+                                    if (RANK_COLORS[r]) return RANK_COLORS[r];
+                                    if (RANK_COLORS[clean]) return RANK_COLORS[clean];
+                                    // 2. Try Case-Insensitive Match
+                                    const lower = clean.toLowerCase();
+                                    const match = Object.keys(RANK_COLORS).find(k => k.toLowerCase() === lower);
+                                    if (match) return RANK_COLORS[match];
+                                    return '#888';
+                                };
+                                const rankColor = getRankColor(authUser?.rank);
 
                                 let progress = 0;
                                 let pointsLeft = 0;
@@ -443,17 +458,17 @@ const SettingsScreen = ({ navigation }) => {
                                             padding: 8,
                                             width: '90%',
                                             borderWidth: 1,
-                                            borderColor: (RANK_COLORS[authUser?.rank] || '#888') + '33'
+                                            borderColor: rankColor + '33'
                                         }}>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 6 }}>
                                                 <View style={{
                                                     width: 3,
                                                     height: 12,
                                                     borderRadius: 1.5,
-                                                    backgroundColor: RANK_COLORS[authUser?.rank] || '#888'
+                                                    backgroundColor: rankColor
                                                 }} />
                                                 <Text style={{
-                                                    color: RANK_COLORS[authUser?.rank] || '#888',
+                                                    color: rankColor,
                                                     fontFamily: 'Cinzel-Bold',
                                                     fontSize: 12,
                                                     textTransform: 'uppercase',
@@ -471,7 +486,7 @@ const SettingsScreen = ({ navigation }) => {
                                             {nextRank ? (
                                                 <View style={{ width: '100%' }}>
                                                     <View style={{ height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%' }}>
-                                                        <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: RANK_COLORS[authUser?.rank] || '#888', borderRadius: 2 }} />
+                                                        <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: rankColor, borderRadius: 2 }} />
                                                     </View>
                                                     <Text style={{ fontSize: 9, color: '#666', marginTop: 4, fontFamily: 'Outfit', textAlign: 'center' }}>
                                                         {t('next_rank_points', { points: pointsLeft.toLocaleString(), rank: nextRank.name })}
@@ -479,7 +494,7 @@ const SettingsScreen = ({ navigation }) => {
                                                 </View>
                                             ) : (
                                                 <Text style={{ fontSize: 10, color: '#ffd700', marginTop: 4, fontFamily: 'Outfit', textAlign: 'center' }}>
-                                                    Rank Massimo Raggiunto!
+                                                    {t('max_rank_reached')}
                                                 </Text>
                                             )}
                                         </View>
