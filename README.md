@@ -67,13 +67,13 @@ Only have one friend? Don't worry, Rando Bot has your back. He automatically joi
 
 ## 📸 SCREENSHOTS
 
-<img width="1080" height="1080" alt="screen1" src="https://github.com/user-attachments/assets/35dc55a2-e1c6-4c42-b65d-f88ebe3dee56" />
-<img width="1080" height="1080" alt="screen2" src="https://github.com/user-attachments/assets/c42f7e0f-835c-4edb-b93b-ea65907b5d79" />
-<img width="1080" height="1080" alt="screen3" src="https://github.com/user-attachments/assets/814b79e9-fd53-4836-adfc-134ee93f4a9b" />
-<img width="1080" height="1080" alt="screen4" src="https://github.com/user-attachments/assets/0fa114f9-71b5-468d-a5c3-125ad9748d02" />
-<img width="1080" height="1080" alt="screen5" src="https://github.com/user-attachments/assets/a9909308-5516-4699-90e4-c2799489f87c" />
-<img width="1080" height="1080" alt="screen6" src="https://github.com/user-attachments/assets/b8743c9a-fb34-4e02-a710-95f14adfb15f" />
-<img width="1080" height="1080" alt="screen7" src="https://github.com/user-attachments/assets/796dab92-8a77-4f32-a518-2b10139614d6" />
+<img width="540" height="540" alt="screen1" src="https://github.com/user-attachments/assets/35dc55a2-e1c6-4c42-b65d-f88ebe3dee56" />
+<img width="540" height="540" alt="screen2" src="https://github.com/user-attachments/assets/c42f7e0f-835c-4edb-b93b-ea65907b5d79" />
+<img width="540" height="540" alt="screen3" src="https://github.com/user-attachments/assets/814b79e9-fd53-4836-adfc-134ee93f4a9b" />
+<img width="540" height="540" alt="screen4" src="https://github.com/user-attachments/assets/0fa114f9-71b5-468d-a5c3-125ad9748d02" />
+<img width="540" height="540" alt="screen5" src="https://github.com/user-attachments/assets/a9909308-5516-4699-90e4-c2799489f87c" />
+<img width="540" height="540" alt="screen6" src="https://github.com/user-attachments/assets/b8743c9a-fb34-4e02-a710-95f14adfb15f" />
+<img width="540" height="540" alt="screen7" src="https://github.com/user-attachments/assets/796dab92-8a77-4f32-a518-2b10139614d6" />
 
 ---
 
