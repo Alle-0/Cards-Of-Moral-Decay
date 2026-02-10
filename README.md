@@ -76,6 +76,7 @@ Only have one friend? Don't worry, Rando Bot has your back. He automatically joi
 <img width="270" height="270" alt="screen6" src="https://github.com/user-attachments/assets/b8743c9a-fb34-4e02-a710-95f14adfb15f" />
 <img width="270" height="270" alt="screen7" src="https://github.com/user-attachments/assets/796dab92-8a77-4f32-a518-2b10139614d6" />
 </div>
+
 ---
 
 <details>
