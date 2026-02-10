@@ -416,10 +416,10 @@ export const translations = {
         contacts_content: "Per segnalare bug, suggerire nuove idee, puoi aprire una issue su GitHub o scrivere una mail.", // [NEW]
         donate_content: "Il mantenimento delle infrastrutture server e lo sviluppo di nuovi contenuti richiedono un impegno costante. Chi desidera sostenere la continuità del progetto può farlo attraverso un contributo volontario.",
         donate_action: "SOSTIENI ORA",
-        credits_content: "Sviluppo & Design:\nAlessandro (Alle-0)\n\nCollaboratori:\nUn ringraziamento speciale a chi ha dedicato tempo ai test e ai feedback.",
+        credits_content: "Sviluppo & Design:\nAlessandro (Alle-0)\n\nAsset Esterni:\nAlcuni avatar ed effetti sonori sono utilizzati sotto licenza o appartengono ai legittimi proprietari.\n\nCollaboratori:\nUn ringraziamento speciale a chi ha dedicato tempo ai test e ai feedback.",
         privacy_content: "La tua privacy è fondamentale. Utilizziamo Firebase esclusivamente per la gestione dell'account e delle sessioni di gioco. Nessun dato personale viene monitorato o condiviso con terzi per finalità commerciali.",
         terms_content: "L'accesso al software implica l'accettazione dei seguenti termini:\n1. Utilizzo del prodotto nel rispetto della finalità ricreativa.\n2. Accettazione dei contenuti satirici e dell'umore nero tipico del genere.\n3. Responsabilità individuale per la gestione del proprio profilo.",
-        copyright_content: "Tutti i contenuti grafici, le icone, le illustrazioni, il design dell'interfaccia e il codice sorgente presenti in questa applicazione sono proprietà intellettuale esclusiva di Alessandro Basile.\n\nSono protetti dalle leggi vigenti sul diritto d'autore e sulla proprietà industriale. È severamente vietata l'estrazione, la riproduzione, la modifica o la ridistribuzione non autorizzata di qualsiasi asset contenuto in questo software.\n\nOgni violazione sarà perseguita nelle sedi legali competenti.",
+        copyright_content: "Tutti i contenuti grafici originali, le icone, il design dell'interfaccia e il codice sorgente presenti in questa applicazione sono proprietà intellettuale esclusiva di Alessandro Basile.\n\nSono protetti dalle leggi vigenti sul diritto d'autore. È vietata la riproduzione non autorizzata.",
         info_content_template: "Versione: %{version}\nArchitettura: Expo Framework\nRuntime: React Native",
         made_in_italy: "Prodotto con dedizione in Italia",
         suggest_card_title: "CONSIGLIA CARTE",
@@ -1004,13 +1004,13 @@ export const translations = {
         login_db_blocked_msg: "You must add the index in Firebase rules to enter. Check the implementation plan (implementation_plan.md) for the code to paste.",
 
 
-        contacts_content: "To report bugs, suggest new ideas, you can open an issue on GitHub or send an email.", // [NEW]
+        contacts_content: "To report bugs or suggest new ideas, you can open an issue on GitHub or send an email.", // [NEW]
         donate_content: "Server maintenance and new content development require constant effort. Those who wish to support the project can do so via a voluntary contribution.",
         donate_action: "SUPPORT NOW",
-        credits_content: "Development & Design:\nAlessandro (Alle-0)\n\nContributors:\nA special thanks to everyone who dedicated time for testing and feedback.",
+        credits_content: "Development & Design:\nAlessandro (Alle-0)\n\nExternal Assets:\nSome avatars and sound effects are used under license or belong to their respective owners.\n\nContributors:\nA special thanks to everyone who dedicated time for testing and feedback.",
         privacy_content: "Your privacy is fundamental. We use Firebase exclusively for account management and game sessions. No personal data is monitored or shared with third parties.",
-        terms_content: "Access implies acceptance of terms: 1. Recreational use. 2. Acceptance of satirical content. 3. Personal responsibility for profile management.",
-        copyright_content: "All graphics, code, and design are exclusive intellectual property. Unauthorized reproduction is prohibited.",
+        terms_content: "Access implies acceptance of the following terms:\n1. Recreational use of the product.\n2. Acceptance of satirical content and dark humor.\n3. Personal responsibility for profile management.",
+        copyright_content: "All original graphic content, interface design, and source code in this application are the exclusive intellectual property of Alessandro Basile.\n\nThey are protected by current copyright laws. Unauthorized reproduction is prohibited.",
         info_content_template: "Version: %{version}\nArchitecture: Expo Framework\nRuntime: React Native",
         made_in_italy: "Produced with dedication in Italy",
 
