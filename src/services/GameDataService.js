@@ -25,7 +25,7 @@ class GameDataService {
         this.spicyPack = { nere: [], bianche: [] }; // [NEW] Spicy (NSFW Legal)
 
         this.isLoaded = false;
-        this.minVersion = "4.0.2";
+        this.minVersion = "4.0.3";
         this.downloadUrl = null;
     }
 
