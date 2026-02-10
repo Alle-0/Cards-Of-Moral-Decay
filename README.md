@@ -67,6 +67,7 @@ Only have one friend? Don't worry, Rando Bot has your back. He automatically joi
 
 ## 📸 SCREENSHOTS
 
+<div align="center">
 <img width="270" height="270" alt="screen1" src="https://github.com/user-attachments/assets/35dc55a2-e1c6-4c42-b65d-f88ebe3dee56" />
 <img width="270" height="270" alt="screen2" src="https://github.com/user-attachments/assets/c42f7e0f-835c-4edb-b93b-ea65907b5d79" />
 <img width="270" height="270" alt="screen3" src="https://github.com/user-attachments/assets/814b79e9-fd53-4836-adfc-134ee93f4a9b" />
@@ -74,7 +75,7 @@ Only have one friend? Don't worry, Rando Bot has your back. He automatically joi
 <img width="270" height="270" alt="screen5" src="https://github.com/user-attachments/assets/a9909308-5516-4699-90e4-c2799489f87c" />
 <img width="270" height="270" alt="screen6" src="https://github.com/user-attachments/assets/b8743c9a-fb34-4e02-a710-95f14adfb15f" />
 <img width="270" height="270" alt="screen7" src="https://github.com/user-attachments/assets/796dab92-8a77-4f32-a518-2b10139614d6" />
-
+</div>
 ---
 
 <details>
