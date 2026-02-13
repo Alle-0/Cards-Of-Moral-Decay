@@ -46,7 +46,7 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
             const row = Math.floor(index / 3);
             const rowHeight = (itemWidth * 1.2) + (gap + 4);
             setTimeout(() => {
-                scrollRef.current?.scrollToOffset({ offset: row * rowHeight, animated: true });
+                scrollRef.current?.scrollToOffset?.({ offset: row * rowHeight, animated: true });
             }, 100);
         }
     }, []);

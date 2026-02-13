@@ -17,12 +17,65 @@ import { useAudio } from '../context/AudioContext'; // [NEW]
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService';
 import { APP_VERSION, BASE_URL } from '../constants/Config';
-import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutRight, SlideInLeft, SlideOutLeft, Easing, useSharedValue, useAnimatedStyle, withSpring, withTiming, useAnimatedRef } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutRight, SlideInLeft, SlideOutLeft, Easing, useSharedValue, useAnimatedStyle, withSpring, withTiming, useAnimatedRef, withSequence, interpolateColor } from 'react-native-reanimated';
+import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hooks/useLiquidAnimation';
+import { PanResponder } from 'react-native';
 
 import { RulesIcon, PaletteIcon, SettingsIcon, LinkIcon, OpenDoorIcon, CardsIcon, EyeIcon, EyeOffIcon, HornsIcon, DirtyCashIcon, CrownIcon, RankIcon } from './Icons'; // [FIX] Added missing icons
 import FrameSelectionModal from './FrameSelectionModal';
 import { RANK_COLORS } from '../constants/Ranks'; // [FIX] Added missing import
 import ToastNotification from './ToastNotification'; // [NEW]
+
+const ModalLanguageItem = ({ lang, translateX, theme }) => {
+    const textStyle = useAnimatedStyle(() => {
+        const isIt = lang === 'it';
+        const color = interpolateColor(
+            translateX.value,
+            [2, 52],
+            isIt
+                ? ['#000000', theme.colors.textPrimary + '88']
+                : [theme.colors.textPrimary + '88', '#000000']
+        );
+        return { color };
+    });
+
+    return (
+        <View pointerEvents="none" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+            <Animated.Text style={[{ fontFamily: 'Cinzel-Bold', fontSize: 10 }, textStyle]}>
+                {lang === 'it' ? 'IT' : 'EN'}
+            </Animated.Text>
+        </View>
+    );
+};
+
+const SettingsTabItem = ({ title, index, onPress, tabIndicatorX, tabBarWidth, theme }) => {
+    const textStyle = useAnimatedStyle(() => {
+        if (tabBarWidth.value <= 0) return {};
+        const tabWidth = (tabBarWidth.value - 8) / 3;
+
+        // Interpolate color based on indicator position
+        // When indicator is over this tab (index * tabWidth), color should be #000
+        const inputRange = [(index - 1) * tabWidth, index * tabWidth, (index + 1) * tabWidth];
+        const color = interpolateColor(
+            tabIndicatorX.value,
+            inputRange,
+            [theme.colors.textPrimary, '#000000', theme.colors.textPrimary]
+        );
+
+        return { color };
+    });
+
+    return (
+        <Pressable
+            onPress={onPress}
+            style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8, zIndex: 1 }}
+        >
+            <Animated.Text style={[{ fontFamily: 'Outfit-Bold', fontSize: 13, includeFontPadding: false }, textStyle]}>
+                {title}
+            </Animated.Text>
+        </Pressable>
+    );
+};
 
 const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLogoutRequest, onOpenInfo = () => { }, initialView = null }) => {
     const { theme, themes, setTheme, animationsEnabled, toggleAnimations } = useTheme();
@@ -41,6 +94,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
     const [showRecoveryCode, setShowRecoveryCode] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false); // [NEW]
 
+
     // Modal State
     const [modalConfig, setModalConfig] = useState({
         visible: false,
@@ -51,6 +105,126 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
         confirmText: "OK",
         variant: "primary"
     });
+
+    // [NEW] Language Selector Animation
+    const dragXLang = useSharedValue(language === 'en' ? 50 : 0);
+    const isGrabbingSV = useSharedValue(false); // [FIX] SharedValue for reactivity
+
+    // [NEW] Anchors for hook
+    const startX = useSharedValue(language === 'en' ? 50 : 0);
+    const targetX = useSharedValue(language === 'en' ? 50 : 0);
+
+    // [FIX] Liquid Scale logic for Language Toggle
+    const langScale = useLiquidScale(dragXLang, startX, targetX, isGrabbingSV, 1.15);
+    const gestureStartLang = useRef(undefined);
+    const touchedLang = useRef(undefined);
+    const isGrabbingIndicatorLang = useRef(false);
+
+    const isDraggingLang = useRef(false); // [NEW] Track if actively dragging
+    const skipSyncLang = useRef(false); // [NEW] Prevent useEffect animation during gesture
+    const languageRef = useRef(language); // [FIX] Ref to avoid stale closure
+
+    // Update ref when language changes
+    useEffect(() => {
+        languageRef.current = language;
+    }, [language]);
+
+    // Sync animation when language changes externally
+    useEffect(() => {
+        // [FIX] Skip animation if change was initiated by local gesture OR currently dragging
+        if (skipSyncLang.current || isDraggingLang.current) {
+            skipSyncLang.current = false;
+            return;
+        }
+
+        const targetX = language === 'en' ? 50 : 0;
+        dragXLang.value = withSpring(targetX, { damping: 40, stiffness: 200, overshootClamping: true });
+    }, [language]);
+
+    // [NEW] Language Drag Logic
+    const langPanResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderTerminationRequest: () => false,
+            onShouldBlockNativeResponder: () => true,
+            onPanResponderGrant: (evt, gestureState) => {
+                const { locationX } = evt.nativeEvent;
+
+                // [FIX] Validate that touch is within selector bounds (0-103px)
+                if (locationX < 0 || locationX > 103) return;
+
+                // [FIX] Hit detection matching lobby: EN is right half (>50px)
+                const hitLang = locationX > 50 ? 'en' : 'it';
+                touchedLang.current = hitLang;
+
+                const currentLang = languageRef.current; // [FIX] Use ref for current state
+                gestureStartLang.current = currentLang;
+
+                // [FIX] Only scale if grabbing the active indicator
+                const isGrabbing = (hitLang === currentLang);
+                isGrabbingIndicatorLang.current = isGrabbing;
+                isDraggingLang.current = true; // [NEW] Mark as actively dragging
+
+                if (isGrabbing) {
+                    isGrabbingSV.value = true;
+                    HapticsService.trigger('selection');
+                    // langScale is now derived from isDraggingLang ref + position
+                }
+            },
+            onPanResponderMove: (_, gestureState) => {
+                if (!isGrabbingIndicatorLang.current) return;
+
+                const startLangX = gestureStartLang.current === 'en' ? 50 : 0;
+                let newX = startLangX + gestureState.dx;
+                if (newX < 0) newX = 0;
+                if (newX > 50) newX = 50;
+                dragXLang.value = newX;
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                const isClick = Math.abs(gestureState.dx) < 10 && Math.abs(gestureState.dy) < 10;
+                let targetLang;
+                const currentLang = languageRef.current; // [FIX] Use ref
+
+                if (isClick) {
+                    // [CLICK] Snap to touched area
+                    targetLang = touchedLang.current;
+                } else if (!isGrabbingIndicatorLang.current) {
+                    // [FIX] Early return if not grabbing - don't change anything
+                    isDraggingLang.current = false;
+                    return;
+                } else {
+                    // [DRAG] Snap based on current position
+                    targetLang = (dragXLang.value > 25) ? 'en' : 'it';
+                }
+
+                if (targetLang !== currentLang) {
+                    skipSyncLang.current = true; // [NEW] Skip useEffect animation
+                    setLanguage(targetLang);
+                    if (isClick) HapticsService.trigger('selection');
+                }
+
+                // [FIX] Anchors on release
+                const targetPos = (targetLang || currentLang) === 'en' ? 50 : 0;
+                updateLiquidAnchors(startX, targetX, isGrabbingSV, dragXLang.value, targetPos);
+
+                dragXLang.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
+
+                gestureStartLang.current = undefined;
+                isDraggingLang.current = false; // [NEW] Mark drag complete
+            }
+        })
+    ).current;
+
+    const langIndicatorStyle = useAnimatedStyle(() => {
+        return {
+            transform: [
+                { translateX: dragXLang.value },
+                { scale: langScale.value }
+            ]
+        };
+    });
+
 
     // [NEW] Scroll Ref for Rules
     const rulesScrollRef = useRef(null);
@@ -84,7 +258,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
     useEffect(() => {
         if (visible && initialView === 'rules_chaos' && chaosPosition > 0) {
             const timer = setTimeout(() => {
-                rulesScrollRef.current?.scrollTo({ y: chaosPosition, animated: true });
+                rulesScrollRef.current?.scrollTo?.({ y: chaosPosition, animated: true });
             }, 500);
             return () => clearTimeout(timer);
         }
@@ -188,23 +362,116 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
     const tabBarWidth = useSharedValue(0);
     const tabIndicatorX = useSharedValue(0);
 
+    // [NEW] Liquid Scale Logic
+    const startXTabs = useSharedValue(0);
+    const targetXTabs = useSharedValue(0);
+    const isDraggingTabsSV = useSharedValue(false);
+    const tabScale = useLiquidScale(tabIndicatorX, startXTabs, targetXTabs, isDraggingTabsSV, 1.15);
+
     const handleTabPress = (index) => {
+        const prevIndex = activeTab;
         setActiveTab(index);
         if (tabBarWidth.value > 0) {
             const tabWidth = (tabBarWidth.value - 8) / 3;
-            tabIndicatorX.value = withTiming(index * tabWidth, { duration: 250, easing: Easing.out(Easing.quad) });
+            const currentPos = tabIndicatorX.value;
+            const targetPos = index * tabWidth;
+
+            // [FIX] Update anchors for liquid animation
+            startXTabs.value = currentPos;
+            targetXTabs.value = targetPos;
+
+            tabIndicatorX.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
         }
     };
 
     useEffect(() => {
         if (tabBarWidth.value > 0) {
             const tabWidth = (tabBarWidth.value - 8) / 3;
-            tabIndicatorX.value = withTiming(activeTab * tabWidth, { duration: 250, easing: Easing.out(Easing.quad) });
+            // Only animate if not already there (avoid conflicts)
+            if (Math.abs(tabIndicatorX.value - activeTab * tabWidth) > 1) {
+                tabIndicatorX.value = withSpring(activeTab * tabWidth, SNAP_SPRING_CONFIG);
+            }
         }
     }, [activeTab]);
 
+    const isGrabbingTabIndicator = useRef(false);
+    const activeTabRef = useRef(activeTab);
+
+    useEffect(() => {
+        activeTabRef.current = activeTab;
+    }, [activeTab]);
+
+    const tabsPanResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderTerminationRequest: () => false,
+            onPanResponderGrant: (evt) => {
+                if (tabBarWidth.value <= 0) return;
+                const tabWidth = (tabBarWidth.value - 8) / 3;
+                const { locationX } = evt.nativeEvent;
+
+                const touchedIndex = Math.floor((locationX - 4) / tabWidth);
+                if (touchedIndex === activeTabRef.current) {
+                    isGrabbingTabIndicator.current = true;
+                    isDraggingTabsSV.value = true;
+                    HapticsService.trigger('selection');
+                }
+            },
+            onPanResponderMove: (_, gestureState) => {
+                if (!isGrabbingTabIndicator.current || tabBarWidth.value <= 0) return;
+                const tabWidth = (tabBarWidth.value - 8) / 3;
+                const startX = activeTabRef.current * tabWidth;
+                let newX = startX + gestureState.dx;
+
+                // Clamp
+                const maxPos = tabWidth * 2;
+                if (newX < 0) newX = 0;
+                if (newX > maxPos) newX = maxPos;
+
+                tabIndicatorX.value = newX;
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (tabBarWidth.value <= 0) return;
+                const tabWidth = (tabBarWidth.value - 8) / 3;
+                let targetIndex = activeTabRef.current;
+
+                if (isGrabbingTabIndicator.current) {
+                    const currentPos = tabIndicatorX.value;
+                    targetIndex = Math.round(currentPos / tabWidth);
+                } else {
+                    // Click logic
+                    const { locationX } = gestureState; // This might be relative to screen if not captured correctly, but for tap it's usually okay or we rely on onPress
+                    // Check if it was a tap (small movement)
+                    if (Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5) {
+                        // We rely on Pressable onPress for taps on non-active tabs
+                        return;
+                    }
+                }
+
+                targetIndex = Math.max(0, Math.min(2, targetIndex));
+
+                if (targetIndex !== activeTabRef.current) {
+                    setActiveTab(targetIndex);
+                    HapticsService.trigger('selection');
+                }
+
+                const targetPos = targetIndex * tabWidth;
+
+                // [FIX] Update Anchors
+                updateLiquidAnchors(startXTabs, targetXTabs, isDraggingTabsSV, tabIndicatorX.value, targetPos);
+
+                tabIndicatorX.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
+                isGrabbingTabIndicator.current = false;
+            }
+        })
+    ).current;
+
     const indicatorStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: tabIndicatorX.value }],
+        transform: [
+            { translateX: tabIndicatorX.value },
+            { scale: tabScale.value }
+        ],
         width: tabBarWidth.value > 0 ? (tabBarWidth.value - 8) / 3 : 0,
     }));
 
@@ -255,20 +522,20 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                         <View
                             style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 15 }}
                             onLayout={(e) => { tabBarWidth.value = e.nativeEvent.layout.width; }}
+                            {...tabsPanResponder.panHandlers}
                         >
                             <Animated.View style={[{ position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: theme.colors.accent, borderRadius: 8 }, indicatorStyle]} />
-                            {[t('tab_themes'), t('tab_cards'), t('tab_frames')].map((tab, index) => {
-                                const isActive = activeTab === index;
-                                return (
-                                    <Pressable
-                                        key={tab}
-                                        onPress={() => handleTabPress(index)}
-                                        style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8, zIndex: 1 }}
-                                    >
-                                        <Text style={{ color: isActive ? '#000' : theme.colors.textPrimary, fontFamily: 'Outfit-Bold', fontSize: 13, includeFontPadding: false }}>{tab}</Text>
-                                    </Pressable>
-                                );
-                            })}
+                            {[t('tab_themes'), t('tab_cards'), t('tab_frames')].map((tab, index) => (
+                                <SettingsTabItem
+                                    key={tab}
+                                    title={tab}
+                                    index={index}
+                                    onPress={() => handleTabPress(index)}
+                                    tabIndicatorX={tabIndicatorX}
+                                    tabBarWidth={tabBarWidth}
+                                    theme={theme}
+                                />
+                            ))}
                         </View>
 
                         <View style={{ flex: 1 }}>
@@ -440,29 +707,38 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                     <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>LINGUA / LANGUAGE</Text>
                                     <Text style={styles.rowSub}>Italiano / English</Text>
                                 </View>
-                                <View style={{ flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 10, padding: 3 }}>
-                                    <TouchableOpacity
-                                        onPress={() => setLanguage('it')}
-                                        style={{
-                                            paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
-                                            backgroundColor: language === 'it' ? '#d4af37' : 'transparent',
-                                            shadowColor: 'transparent', shadowOpacity: 0, elevation: 0,
-                                            shadowRadius: 0, shadowOffset: { width: 0, height: 0 }
-                                        }}
-                                    >
-                                        <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 10, color: language === 'it' ? '#000' : '#666' }}>IT</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={() => setLanguage('en')}
-                                        style={{
-                                            paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
-                                            backgroundColor: language === 'en' ? '#d4af37' : 'transparent',
-                                            shadowColor: 'transparent', shadowOpacity: 0, elevation: 0,
-                                            shadowRadius: 0, shadowOffset: { width: 0, height: 0 }
-                                        }}
-                                    >
-                                        <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 10, color: language === 'en' ? '#000' : '#666' }}>EN</Text>
-                                    </TouchableOpacity>
+                                <View
+                                    style={{
+                                        position: 'relative',
+                                        flexDirection: 'row',
+                                        backgroundColor: 'rgba(0,0,0,0.4)',
+                                        borderRadius: 10,
+                                        padding: 3,
+                                        width: 103,
+                                        height: 32
+                                    }}
+                                    {...langPanResponder.panHandlers}
+                                >
+                                    {/* Animated Indicator */}
+                                    <Animated.View
+                                        style={[
+                                            {
+                                                position: 'absolute',
+                                                left: 3,
+                                                top: 3,
+                                                width: 47,
+                                                height: 26,
+                                                borderRadius: 8,
+                                                backgroundColor: theme.colors.accent || '#d4af37'
+                                            },
+                                            langIndicatorStyle
+                                        ]}
+                                        pointerEvents="none"
+                                    />
+                                    {/* Static Labels */}
+                                    {/* Dynamic Labels */}
+                                    <ModalLanguageItem lang="it" translateX={dragXLang} theme={theme} />
+                                    <ModalLanguageItem lang="en" translateX={dragXLang} theme={theme} />
                                 </View>
                             </View>
 

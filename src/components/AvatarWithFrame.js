@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Platform, Image, Text } from 'react-native';
 import Svg, { Defs, RadialGradient, Stop, Circle, Path, Ellipse } from 'react-native-svg';
+import { useTheme } from '../context/ThemeContext'; // [NEW]
 import LocalAvatar from './LocalAvatar';
 import { CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, CatIcon, SnowflakeIcon } from './Icons';
 
@@ -12,6 +13,7 @@ const AvatarWithFrame = ({
     isDominus = false,
     style
 }) => {
+    const { theme } = useTheme(); // [NEW]
     // scale factor for internal elements relative to base 56px size
     // If size is different, we scale the internal icons accordingly or keep them proportional
     const scale = size / 56;
@@ -78,7 +80,7 @@ const AvatarWithFrame = ({
             <View style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
 
                 {/* 1. Base Avatar */}
-                <View style={{ width: size, height: size, borderRadius: borderRadius, overflow: 'hidden', backgroundColor: '#111' }}>
+                <View style={{ width: size, height: size, borderRadius: borderRadius, overflow: 'hidden', backgroundColor: theme.colors.cardBg || 'rgba(255,255,255,0.05)' }}>
                     <LocalAvatar
                         size={size}
                         seed={avatar?.startsWith('http') ? avatar : (avatar || 'User')}

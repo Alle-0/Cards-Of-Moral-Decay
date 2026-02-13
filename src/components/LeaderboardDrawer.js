@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, memo } from 'react';
-import { StyleSheet, View, Text, Pressable, Dimensions, PanResponder, TouchableWithoutFeedback } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Dimensions, PanResponder, TouchableWithoutFeedback, ScrollView, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS, Easing, interpolate, Extrapolate, withRepeat, interpolateColor } from 'react-native-reanimated';
 import { useTheme, AVATAR_FRAMES } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext'; // [NEW]
@@ -138,6 +138,11 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                 style={[styles.drawer, animatedStyle]}
                 pointerEvents={visible ? 'auto' : 'none'}
             >
+                <EfficientBlurView
+                    intensity={Platform.OS === 'web' ? 30 : 20}
+                    tint="dark"
+                    style={StyleSheet.absoluteFill}
+                />
                 <View style={styles.header}>
                     <Text style={[styles.title, { color: theme.colors.accent, fontFamily: 'Cinzel-Bold' }]}>
                         {t('leaderboard_title')}
@@ -148,63 +153,72 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                 </View>
 
                 {/* List Container */}
-                <View style={styles.list}>
-                    {players.map((player, index) => (
-                        <View key={player.name} style={[styles.playerRow, { borderColor: player.name === currentUserName ? theme.colors.accent : 'rgba(255,255,255,0.1)' }]}>
-                            {/* ... rank and avatar ... */}
-                            <View style={styles.rankContainer}>
-                                <Text style={[styles.rank, { color: index === 0 ? '#ffd700' : '#888' }]}>
-                                    {index + 1}
-                                </Text>
-                            </View>
+                <View style={{ flex: 1 }}>
+                    <ScrollView
+                        contentContainerStyle={{ paddingBottom: 40 }}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <View style={styles.list}>
+                            {players.map((player, index) => (
+                                <View key={player.name} style={[styles.playerRow, { borderColor: player.name === currentUserName ? theme.colors.accent : 'rgba(255,255,255,0.1)' }]}>
+                                    {/* ... rank and avatar ... */}
+                                    <View style={styles.rankContainer}>
+                                        <Text style={[styles.rank, { color: index === 0 ? '#ffd700' : '#888' }]}>
+                                            {index + 1}
+                                        </Text>
+                                    </View>
 
-                            <AvatarItem
-                                player={player}
-                                theme={theme}
-                                isThinking={status === 'WAITING_CARDS' && !playedPlayers.includes(player.name) && !player.isDominus}
-                            />
-
-                            <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center' }}>
-                                <Text style={[styles.name, { color: theme.colors.textPrimary }]} numberOfLines={1}>
-                                    {player.name}
-                                </Text>
-                                <Text style={{
-                                    fontSize: 10,
-                                    color: getRankColor(player.rank || 'Anima Candida'),
-                                    fontFamily: 'Outfit',
-                                    fontWeight: 'bold',
-                                    marginTop: 0
-                                }}>
-                                    {(() => {
-                                        const r = player.rank || 'Anima Candida';
-                                        // If already a key (starts with rank_), use it. Else format it.
-                                        const key = r.startsWith('rank_') ? r : 'rank_' + r.toLowerCase().replace(/ /g, '_');
-                                        return t(key, { defaultValue: r });
-                                    })()}
-                                </Text>
-                            </View>
-                            <Text style={[styles.score, { color: theme.colors.accent }]}>
-                                {player.points || 0}
-                            </Text>
-
-                            {isCreator && (
-                                player.name !== currentUserName && player.name !== 'Rando' ? (
-                                    <PremiumIconButton
-                                        icon={
-                                            <TrashIcon size={18} color="#ff6b6b" />
-                                        }
-                                        size={32}
-                                        onPress={() => {
-                                            onKick && onKick(player);
-                                        }}
-                                        style={{ marginLeft: 10, backgroundColor: 'rgba(255, 107, 107, 0.1)', borderColor: 'rgba(255, 107, 107, 0.3)', borderWidth: 1, borderRadius: 20 }}
+                                    <AvatarItem
+                                        player={player}
+                                        theme={theme}
+                                        isThinking={status === 'WAITING_CARDS' && !playedPlayers.includes(player.name) && !player.isDominus}
                                     />
-                                ) : (
-                                    <View style={{ width: 32, height: 32, marginLeft: 10 }} />
-                                )
-                            )}
+
+                                    <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center' }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={[styles.name, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                                                {player.name}
+                                            </Text>
+                                        </View>
+                                        <Text style={{
+                                            fontSize: 10,
+                                            color: getRankColor(player.rank || 'Anima Candida'),
+                                            fontFamily: 'Outfit',
+                                            fontWeight: 'bold',
+                                            marginTop: 0
+                                        }}>
+                                            {(() => {
+                                                const r = player.rank || 'Anima Candida';
+                                                // If already a key (starts with rank_), use it. Else format it.
+                                                const key = r.startsWith('rank_') ? r : 'rank_' + r.toLowerCase().replace(/ /g, '_');
+                                                return t(key, { defaultValue: r });
+                                            })()}
+                                        </Text>
+                                    </View>
+                                    <Text style={[styles.score, { color: theme.colors.accent }]}>
+                                        {player.points || 0}
+                                    </Text>
+
+                                    {isCreator && (
+                                        player.name !== currentUserName && player.name !== 'Rando' ? (
+                                            <PremiumIconButton
+                                                icon={
+                                                    <TrashIcon size={18} color="#ff6b6b" />
+                                                }
+                                                size={32}
+                                                onPress={() => {
+                                                    onKick && onKick(player);
+                                                }}
+                                                style={{ marginLeft: 10, backgroundColor: 'rgba(255, 107, 107, 0.1)', borderColor: 'rgba(255, 107, 107, 0.3)', borderWidth: 1, borderRadius: 20 }}
+                                            />
+                                        ) : (
+                                            <View style={{ width: 32, height: 32, marginLeft: 10 }} />
+                                        )
+                                    )}
+                                </View>
+                            ))}
                         </View>
-                    ))}
+                    </ScrollView>
                 </View>
 
                 {/* Draggable Handle Area - Fades out at Fullscreen */}
@@ -230,7 +244,7 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(20, 20, 25, 0.98)',
+        backgroundColor: 'rgba(20, 20, 25, 0.6)',
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
         paddingHorizontal: 20,
@@ -386,6 +400,18 @@ const AvatarItem = memo(({ player, isThinking, theme }) => {
                     <CrownIcon size={14} color="#ffd700" />
                 </View>
             )}
+
+            {/* Online/Offline Badge (Bottom Right) */}
+            <View style={{
+                position: 'absolute',
+                bottom: -2, right: -2,
+                width: 12, height: 12,
+                borderRadius: 6,
+                backgroundColor: player.isOnline ? '#4ade80' : '#666',
+                borderWidth: 2,
+                borderColor: '#18181b',
+                zIndex: 20
+            }} />
         </View>
     );
 });

@@ -58,7 +58,32 @@ const MatrixRain = React.memo(() => {
 });
 
 // ============================================
-// 1B. POLICE LIGHTS (Red/Blue Strobe)
+// 1B. SCRATCHES (Manicomio Theme)
+// ============================================
+const Scratches = React.memo(() => {
+    const { x, y, rotation, scale, opacity } = useMemo(() => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        rotation: (Math.random() - 0.5) * 45,
+        scale: 0.5 + Math.random() * 1.5,
+        opacity: 0.1 + Math.random() * 0.2
+    }), []);
+
+    return (
+        <View style={{
+            position: 'absolute',
+            left: x,
+            top: y,
+            width: 100,
+            height: 2,
+            backgroundColor: 'rgba(255,255,255,' + opacity + ')',
+            transform: [{ rotate: rotation + 'deg' }, { scaleX: scale }]
+        }} />
+    );
+});
+
+// ============================================
+// 1C. POLICE LIGHTS (Red/Blue Strobe)
 // ============================================
 const PoliceLights = React.memo(() => {
     const opacityBlue = useSharedValue(0);

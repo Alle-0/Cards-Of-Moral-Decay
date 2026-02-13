@@ -33,7 +33,7 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                 const row = Math.floor(selectedIndex / 3); // 3 items per row approx
                 const itemHeight = 110; // Approx
 
-                scrollRef.current.scrollTo({
+                scrollRef.current?.scrollTo?.({
                     y: row * itemHeight,
                     animated: true
                 });

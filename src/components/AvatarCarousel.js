@@ -9,7 +9,7 @@ import LocalAvatar from './LocalAvatar'; // [NEW]
 
 import { useWebDragScroll } from '../hooks/useWebDragScroll';
 import { MYSTERY_AVATAR } from '../utils/constants';
-import { Image } from 'react-native';
+import { Image } from 'expo-image';
 import { DiceIcon } from './Icons';
 
 const AvatarCarousel = memo(forwardRef(({ seeds, onSelectAvatar, selectedAvatar }, ref) => {

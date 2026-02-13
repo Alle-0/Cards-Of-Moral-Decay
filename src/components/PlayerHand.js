@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { StyleSheet, View, Text, ScrollView, Pressable, Dimensions, Image, TouchableWithoutFeedback } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, FlatList, Pressable, Dimensions, Image, TouchableWithoutFeedback } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, withDelay, withSequence, ZoomIn, FadeOut, Easing, runOnJS, LinearTransition, interpolate, interpolateColor } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme, TEXTURES } from '../context/ThemeContext';
@@ -356,6 +356,8 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
     );
 });
 
+
+
 const PlayerHand = ({
     hand,
     selectedCards = [],
@@ -375,12 +377,14 @@ const PlayerHand = ({
     isSmallScreen,
 
     onBackgroundPress,
-    isBlackout = false, // [NEW]
+    isBlackout = false,
 }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
-    const scrollRef = useWebScroll(false); // Vertical drag
-    // Start at dropped position if initially disabled/playing to avoid "slide down" on mount
+    // const scrollRef = useWebScroll(false); // Removed web scroll hook for FlatList compatibility if needed, or keep if generic
+    // Using simple ref for FlatList
+    const flatListRef = useRef(null);
+
     const handOffset = useSharedValue(disabled || isPlaying ? 400 : 0);
     const [containerHeight, setContainerHeight] = useState(0);
 
@@ -390,18 +394,12 @@ const PlayerHand = ({
     };
 
     useEffect(() => {
-        // Drop hand if playing OR if disabled (meaning cards are played)
         if (isPlaying || disabled) {
-            // Calculate offset to leave just the header visible (~55px instead of 90px)
             const targetOffset = containerHeight > 0 ? containerHeight - 55 : 300;
-            // Only animate if not already there (approx)
             if (Math.abs(handOffset.value - targetOffset) > 1) {
                 handOffset.value = withTiming(targetOffset, { duration: 500, easing: Easing.out(Easing.quad) });
             }
         } else {
-            // Only animate up if not already up
-            // Only animate up if not already up
-            // [FIX] Allow slight negative offset to "pull up" the hand if desired
             if (handOffset.value !== 40) {
                 handOffset.value = withTiming(40, { duration: 300 });
             }
@@ -411,6 +409,47 @@ const PlayerHand = ({
     const handAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: handOffset.value }],
     }));
+
+    // [OPTIMIZATION] Stable renderItem
+    const renderCard = ({ item, index }) => {
+        const sIdx = selectedCards.indexOf(item);
+        return (
+            <Animated.View
+                layout={LinearTransition.duration(200)}
+                style={{ width: '48%', height: isSmallScreen ? 120 : 140, marginBottom: 30 }} // Moved margin to item for consistent layout
+            >
+                <CardItem
+                    text={item}
+                    index={index}
+                    isSelected={sIdx !== -1}
+                    selectionOrder={maxSelection > 1 ? sIdx + 1 : 0}
+                    onSelect={onSelectCard}
+                    disabled={disabled || isPlaying}
+                    isPlaying={isPlaying}
+                    onPlay={onPlay}
+                    onDiscard={() => onDiscard && onDiscard(item)}
+                    showPlayButton={sIdx !== -1 && selectedCards.length === maxSelection}
+                    hasDiscarded={hasDiscarded}
+                    skin={skin}
+                    isSinglePick={maxSelection === 1}
+                    isSelectionFull={selectedCards.length >= maxSelection}
+                    t={t}
+                    isBlackout={isBlackout}
+                />
+            </Animated.View>
+        );
+    };
+
+    // [OPTIMIZATION] Stable keyExtractor
+    const keyExtractor = (item, index) => `${item}-${index}`;
+
+    // [OPTIMIZATION] Layout calculation
+    const getItemLayout = (data, index) => {
+        const itemHeight = isSmallScreen ? 120 : 140;
+        const gap = 30;
+        const totalHeight = itemHeight + gap;
+        return { length: totalHeight, offset: totalHeight * index, index };
+    };
 
     return (
         <Animated.View
@@ -444,12 +483,8 @@ const PlayerHand = ({
                     </View>
                 </View>
 
-
-
-                {/* [NEW] Action Buttons Container */}
+                {/* Action Buttons Container */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, position: 'absolute', right: 20 }}>
-
-                    {/* Bribe Button */}
                     {onBribe && (
                         <PremiumIconButton
                             icon={<DirtyCashIcon size={isSmallScreen ? 24 : 30} color="#FFD700" />}
@@ -462,7 +497,6 @@ const PlayerHand = ({
                         />
                     )}
 
-                    {/* AI Joker Button */}
                     <PremiumIconButton
                         icon={<RobotIcon size={isSmallScreen ? 24 : 30} color="#FFD700" />}
                         onPress={onAIJoker}
@@ -473,95 +507,46 @@ const PlayerHand = ({
                         size={isSmallScreen ? 34 : 40}
                     />
                 </View>
-
-
-
             </View>
 
-            {/* Container for ScrollView + Gradients */}
+            {/* Container for FlatList + Gradients */}
             <View style={{ flex: 1, position: 'relative' }}>
-                <ScrollView
-                    ref={scrollRef}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={[styles.scrollContent, { flexGrow: 1 }]}
-                    style={{ flex: 1 }}
-                >
-                    <TouchableWithoutFeedback onPress={() => onBackgroundPress && onBackgroundPress()}>
-                        <View
-                            style={{
-                                flexGrow: 1,
-                                minHeight: '100%',
-                                paddingHorizontal: 15,
-                                paddingTop: 25,
-                                paddingBottom: 60,
-                                backgroundColor: 'transparent', // [WEB] Critical for hit testing
-                                cursor: 'default'
-                            }}
-                        >
-                            <View style={styles.grid}>
-                                {hand.map((card, index) => {
-                                    const sIdx = selectedCards.indexOf(card);
-                                    return (
-                                        <Animated.View
-                                            key={`${card}-${index}`}
-                                            layout={LinearTransition.duration(200)}
-                                            style={{ width: '48%', height: isSmallScreen ? 120 : 140 }}
-                                        >
-                                            <CardItem
-                                                text={card}
-                                                index={index}
-                                                isSelected={sIdx !== -1}
-                                                selectionOrder={maxSelection > 1 ? sIdx + 1 : 0}
-                                                onSelect={onSelectCard} // Pass stable(ish) reference
-                                                disabled={disabled || isPlaying}
-                                                isPlaying={isPlaying}
-                                                onPlay={onPlay}
-                                                onDiscard={() => onDiscard && onDiscard(card)}
-                                                showPlayButton={sIdx !== -1 && selectedCards.length === maxSelection}
-                                                hasDiscarded={hasDiscarded}
-                                                skin={skin}
-                                                isSinglePick={maxSelection === 1} // [NEW] -> Pass single pick mode
-                                                isSelectionFull={selectedCards.length >= maxSelection}
-                                                t={t}
-                                                isBlackout={isBlackout} // [NEW]
-                                            />
-                                        </Animated.View>
-                                    );
-                                })}
-                            </View>
-                        </View>
-                    </TouchableWithoutFeedback>
-                </ScrollView>
+                <TouchableWithoutFeedback onPress={() => onBackgroundPress && onBackgroundPress()}>
+                    <View style={{ flex: 1 }}>
+                        {/* [OPTIMIZATION] FlatList Implementation */}
+                        <FlatList
+                            ref={flatListRef}
+                            data={hand}
+                            renderItem={renderCard}
+                            keyExtractor={keyExtractor}
+                            numColumns={2}
+                            columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 15 }} // Apply gap and padding here
+                            contentContainerStyle={{ paddingTop: 25, paddingBottom: 60 }} // Vertical padding
+                            showsVerticalScrollIndicator={false}
+                            removeClippedSubviews={true}
+                            initialNumToRender={6}
+                            maxToRenderPerBatch={6} // optimized batch
+                            windowSize={5} // reduced window size
+                            getItemLayout={getItemLayout}
+                        />
+                    </View>
+                </TouchableWithoutFeedback>
 
-                {/* Top Shadow Gradient - Softened */}
+                {/* Top Shadow Gradient */}
                 <LinearGradient
                     colors={['rgba(17,17,17,0.4)', 'transparent']}
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: 10,
-                        zIndex: 10,
-                    }}
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 10, zIndex: 10 }}
                     pointerEvents="none"
                 />
 
-                {/* Bottom Shadow Gradient - Enhanced */}
+                {/* Bottom Shadow Gradient */}
                 <LinearGradient
                     colors={['transparent', 'rgba(17,17,17,0.9)']}
-                    style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: 50,
-                        zIndex: 10,
-                    }}
+                    style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 50, zIndex: 10 }}
                     pointerEvents="none"
                 />
             </View>
-        </Animated.View >
+        </Animated.View>
     );
 };
 

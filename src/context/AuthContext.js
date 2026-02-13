@@ -392,8 +392,8 @@ export const AuthProvider = ({ children }) => {
             friendRequests: {}, // [NEW] Initialize friend requests
             unlockedThemes: {
                 default: true,
-                ghiaccio: true,
-                onice: true
+                onice: true,
+                ghiaccio: true
             },
             activeCardSkin: 'classic',
             unlockedSkins: {

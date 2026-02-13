@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, Text, Pressable, Dimensions, useWindowDimensions, Platform, Image } from 'react-native';
 import { BlurView } from 'expo-blur';
+import EfficientBlurView from './EfficientBlurView';
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
@@ -91,12 +92,8 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
             <View style={styles.overlay}>
 
                 {visible && (
-                    <View style={[StyleSheet.absoluteFill, { zIndex: -1, backgroundColor: 'rgba(0,0,0,0.85)' }]} pointerEvents="none">
-                        <BlurView
-                            intensity={Platform.OS === 'android' ? 40 : 10}
-                            tint="dark"
-                            style={StyleSheet.absoluteFill}
-                        />
+                    <View style={[StyleSheet.absoluteFill, { zIndex: -1 }]} pointerEvents="none">
+                        <EfficientBlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill} />
                     </View>
                 )}
 

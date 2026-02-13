@@ -4,8 +4,9 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, int
 import HapticsService from '../services/HapticsService';
 import { useTheme } from '../context/ThemeContext';
 
-const PremiumToggle = ({ value, onValueChange, size = 28 }) => {
+const PremiumToggle = ({ value, onValueChange, size = 28, activeColor }) => {
     const { theme } = useTheme();
+    const resolvedColor = activeColor || theme.colors.accent;
     const offset = useSharedValue(value ? 1 : 0);
 
     // Track dimensions
@@ -27,7 +28,7 @@ const PremiumToggle = ({ value, onValueChange, size = 28 }) => {
         const backgroundColor = interpolateColor(
             offset.value,
             [0, 1],
-            ['#333333', theme.colors.accent]
+            ['#333333', resolvedColor]
         );
         return { backgroundColor };
     });

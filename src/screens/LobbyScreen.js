@@ -7,6 +7,7 @@ import Animated, {
     useAnimatedStyle,
     withTiming,
     FadeIn,
+    FadeOut,
     LinearTransition,
     withSequence,
     Easing
@@ -57,6 +58,7 @@ const LobbyScreen = ({ onStartLoading }) => {
     const {
         createRoom,
         joinRoom,
+        quickJoin, // [NEW]
         availableRooms,
         refreshRooms,
     } = useGame();
@@ -113,46 +115,58 @@ const LobbyScreen = ({ onStartLoading }) => {
     // [NEW] Exit Modal State
     const [showExitModal, setShowExitModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false); // [NEW]
 
-    // [NEW] Filter rooms: My rooms, Friends' rooms, OR Public Lobbies
-    const validRooms = (availableRooms || []).filter(room => {
-        if (!room) return false;
-
+    // [NEW] Split Rooms Logic
+    const { friendsRooms, publicRooms } = React.useMemo(() => {
+        const friends = [];
+        const publicR = [];
         const myUsername = (authUser?.username || '').toLowerCase().trim();
         const myNickname = (authUser?.nickname || '').toLowerCase().trim();
-
-        const roomCreatorId = (room.creatorUsername || '').toLowerCase().trim();
-        const roomCreatore = (room.creatore || '').toLowerCase().trim();
-
-        // 1. Is it mine?
-        const isMyRoom =
-            (roomCreatorId !== '' && (roomCreatorId === myUsername || roomCreatorId === myNickname)) ||
-            (roomCreatore !== '' && (roomCreatore === myUsername || roomCreatore === myNickname));
-
-        // 2. Is it a friend's?
-        const creatorId = (roomCreatorId || roomCreatore).toLowerCase();
         const friendsList = authUser?.friends || {};
         const myFriendsKeys = Object.keys(friendsList).map(k => k.toLowerCase());
 
-        const isFriendRoom = creatorId !== '' && (
-            myFriendsKeys.includes(creatorId) ||
-            myFriendsKeys.includes(creatorId.replace(/\./g, '_'))
-        );
+        (availableRooms || []).forEach(room => {
+            if (!room) return;
 
-        // 3. Am I already a participant?
-        const participants = room.giocatori ? Object.keys(room.giocatori).map(p => p.toLowerCase()) : [];
-        const amIIn = participants.includes(myUsername) || participants.includes(myNickname);
+            const roomCreatorId = (room.creatorUsername || '').toLowerCase().trim();
+            const roomCreatore = (room.creatore || '').toLowerCase().trim();
+            const creatorId = (roomCreatorId || roomCreatore).toLowerCase();
 
-        // 4. Fallback: If it's a LOBBY, let's keep it visible for now to avoid "ghosting" 
-        // especially during testing or if friending is one-way/pending.
-        const isPublicLobby = room.statoPartita === 'LOBBY';
+            // Checks
+            const isMyRoom = (roomCreatorId !== '' && (roomCreatorId === myUsername || roomCreatorId === myNickname)) ||
+                (roomCreatore !== '' && (roomCreatore === myUsername || roomCreatore === myNickname));
 
-        const keep = isMyRoom || isFriendRoom || amIIn;
+            const isFriendRoom = creatorId !== '' && (
+                myFriendsKeys.includes(creatorId) ||
+                myFriendsKeys.includes(creatorId.replace(/\./g, '_'))
+            );
 
+            const participants = room.giocatori ? Object.keys(room.giocatori).map(p => p.toLowerCase()) : [];
+            const amIIn = participants.includes(myUsername) || participants.includes(myNickname);
 
+            // Classification
+            if (isMyRoom || isFriendRoom || amIIn) {
+                friends.push(room);
+            }
 
-        return keep;
-    });
+            // [MODIFIED] Allow overlap: If it's public, it goes to Public tab too
+            if (room.visibility === 'public') {
+                publicR.push(room);
+            }
+        });
+
+        console.log('[LOBBY] Room filtering:', {
+            total: (availableRooms || []).length,
+            friends: friends.length,
+            public: publicR.length,
+            myUsername,
+            myNickname,
+            friendsCount: myFriendsKeys.length
+        });
+
+        return { friendsRooms: friends, publicRooms: publicR };
+    }, [availableRooms, authUser]);
 
     // Custom Back Handler
     useFocusEffect(
@@ -240,7 +254,13 @@ const LobbyScreen = ({ onStartLoading }) => {
         }
     };
 
-    const handleCreateRoom = async () => {
+    const handleCreateRoomRequest = () => {
+        // Show modal to choose visibility
+        setShowCreateModal(true);
+    };
+
+    const handleConfirmCreateRoom = async (visibility) => {
+        setShowCreateModal(false);
         if (onStartLoading) onStartLoading();
 
         setIsLoading(true);
@@ -249,12 +269,48 @@ const LobbyScreen = ({ onStartLoading }) => {
                 avatar: localAvatar,
                 activeCardSkin: authUser?.activeCardSkin || 'classic',
                 activeFrame: authUser?.activeFrame || 'basic',
-                rank: authUser?.rank || 'Anima Candida'
+                rank: authUser?.rank || 'Anima Candida',
+                visibility: visibility // 'public' or 'private'
             });
+            // Auto nav handled by GameContext or similar if needed, but Lobby stays until roomData set
         } catch (e) {
-            if (onStartLoading) onStartLoading(false); // Force hide splash
+            console.error(e);
+            if (onStartLoading) onStartLoading(false);
             SoundService.play('error');
             setToast({ visible: true, message: "Impossibile creare la stanza." });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // [NEW] Quick Join Logic
+    const handleQuickJoin = async () => {
+        // [FIX] Immediate check to avoid splash screen if no rooms
+        if (!publicRooms || publicRooms.length === 0) {
+            SoundService.play('error');
+            setToast({ visible: true, message: t('no_public_rooms') || "Nessuna stanza disponibile." });
+            return;
+        }
+
+        if (onStartLoading) onStartLoading();
+        setIsLoading(true);
+        try {
+            // Ensure avatar is set
+            let finalAvatar = localAvatar;
+            if (finalAvatar === MYSTERY_AVATAR) {
+                finalAvatar = PLAYER_AVATARS[Math.floor(Math.random() * PLAYER_AVATARS.length)];
+                setLocalAvatar(finalAvatar);
+                if (authUser?.username) {
+                    await updateProfile({ avatar: finalAvatar });
+                }
+            }
+
+            await quickJoin();
+        } catch (e) {
+            console.warn(e);
+            if (onStartLoading) onStartLoading(false);
+            SoundService.play('error');
+            setToast({ visible: true, message: t('no_public_rooms') || "Nessuna stanza disponibile." });
         } finally {
             setIsLoading(false);
         }
@@ -366,42 +422,54 @@ const LobbyScreen = ({ onStartLoading }) => {
                         );
                     })()}
 
-                    <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 100 + insets.bottom }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                        {currentStep === STEPS.IDENTITY && (
-                            <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 30 }}>
-                                <Text style={[styles.mainTitle, { color: theme.colors.accent }]}>CARDS OF</Text>
-                                <Text style={[styles.mainTitle, { color: theme.colors.accent }]}>MORAL DECAY</Text>
-                            </View>
-                        )}
+                    {/* UNIFIED FRAME STRUCTURE */}
+                    <View style={{ flex: 1, justifyContent: 'center', paddingBottom: 80 + insets.bottom, paddingTop: insets.top + 20 }}>
                         <View style={styles.frameContainer}>
+                            {currentStep === STEPS.IDENTITY && (
+                                <Animated.View
+                                    entering={FadeIn.duration(400)}
+                                    exiting={FadeOut.duration(300)}
+                                    style={{ alignItems: 'center', marginBottom: 20 }}
+                                >
+                                    <Text style={[styles.mainTitle, { color: theme.colors.accent }]}>CARDS OF</Text>
+                                    <Text style={[styles.mainTitle, { color: theme.colors.accent }]}>MORAL DECAY</Text>
+                                </Animated.View>
+                            )}
+
                             <Animated.View
                                 layout={LinearTransition.duration(300)}
-                                style={[styles.innerFrame, { borderColor: theme.colors.cardBorder, marginTop: 5 }]}
+                                style={[styles.innerFrame, { borderColor: theme.colors.cardBorder, marginTop: 5, width: '100%' }]}
                             >
                                 {currentStep === STEPS.IDENTITY ? (
-                                    <IdentityStep
-                                        theme={theme}
-                                        name={localPlayerName}
-                                        onNameChange={setLocalPlayerName}
-                                        avatar={localAvatar}
-                                        onEditAvatar={() => setShowAvatarModal(true)}
-                                        onNext={() => handleNextToActions(localPlayerName, localAvatar)}
-                                    />
+                                    <View>
+                                        <IdentityStep
+                                            theme={theme}
+                                            name={localPlayerName}
+                                            onNameChange={setLocalPlayerName}
+                                            avatar={localAvatar}
+                                            onEditAvatar={() => setShowAvatarModal(true)}
+                                            onNext={() => handleNextToActions(localPlayerName, localAvatar)}
+                                        />
+                                    </View>
                                 ) : (
-                                    <MainMenuStep
-                                        theme={theme}
-                                        roomToJoin={roomToJoin}
-                                        setRoomToJoin={setRoomToJoin}
-                                        isLoading={isLoading}
-                                        onBack={() => setCurrentStep(STEPS.IDENTITY)}
-                                        onCreateRoom={handleCreateRoom}
-                                        onJoinRoom={handleJoinSpecific}
-                                        validRooms={validRooms}
-                                    />
+                                    <View style={{ maxHeight: Dimensions.get('window').height * 0.8 }}>
+                                        <MainMenuStep
+                                            theme={theme}
+                                            roomToJoin={roomToJoin}
+                                            setRoomToJoin={setRoomToJoin}
+                                            isLoading={isLoading}
+                                            onBack={() => setCurrentStep(STEPS.IDENTITY)}
+                                            onCreateRoom={handleCreateRoomRequest}
+                                            onJoinRoom={handleJoinSpecific}
+                                            onQuickJoin={handleQuickJoin}
+                                            friendsRooms={friendsRooms}
+                                            publicRooms={publicRooms}
+                                        />
+                                    </View>
                                 )}
                             </Animated.View>
                         </View>
-                    </ScrollView>
+                    </View>
                 </View>
             </TouchableWithoutFeedback>
 
@@ -525,6 +593,38 @@ const LobbyScreen = ({ onStartLoading }) => {
                         style={{ backgroundColor: theme.colors.accent, width: '100%', height: 55 }}
                         textStyle={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 15 }}
                     />
+                </View>
+            </PremiumModal>
+
+            {/* [NEW] Create Room Visibility Modal */}
+            <PremiumModal
+                visible={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                title={t('create_room_visibility_title')}
+            >
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                    <Text style={{ color: '#aaa', fontFamily: 'Outfit', textAlign: 'center', marginBottom: 20 }}>
+                        {t('create_room_visibility_msg')}
+                    </Text>
+
+                    <View style={{ width: '100%', gap: 15 }}>
+                        <PremiumButton
+                            title={t('visibility_private_btn')}
+                            onPress={() => handleConfirmCreateRoom('private')}
+                            style={{ backgroundColor: theme.colors.cardBackground, borderWidth: 1, borderColor: theme.colors.accent }}
+                            textStyle={{
+                                color: Platform.OS === 'web' ? '#171717ff' : 'rgba(231, 231, 231, 1)',
+                                fontFamily: 'Cinzel-Bold',
+                                fontWeight: '700'
+                            }}
+                        />
+                        <PremiumButton
+                            title={t('visibility_public_btn')}
+                            onPress={() => handleConfirmCreateRoom('public')}
+                            style={{ backgroundColor: theme.colors.accent }}
+                            textStyle={{ color: '#18181b', fontFamily: 'Cinzel-Bold', fontWeight: '900' }}
+                        />
+                    </View>
                 </View>
             </PremiumModal>
 

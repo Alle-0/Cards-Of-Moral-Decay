@@ -1,13 +1,174 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, ActivityIndicator, Platform } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { StyleSheet, View, Text, TextInput, ActivityIndicator, Platform, PanResponder, TouchableOpacity } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolateColor, interpolate } from 'react-native-reanimated';
 import PremiumModal from './PremiumModal';
 import PremiumPressable from './PremiumPressable';
+import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hooks/useLiquidAnimation';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { db } from '../services/firebase';
 import { ref, push, serverTimestamp } from 'firebase/database';
 import SoundService from '../services/SoundService';
+import HapticsService from '../services/HapticsService';
+
+// [NEW] Internal refined component for robust liquid toggle
+const LiquidToggle = ({ type, setType, t, theme }) => {
+    const [containerWidth, setContainerWidth] = useState(0);
+    const tabWidth = (containerWidth - 8) / 2;
+
+    const dragX = useSharedValue(type === 'white' ? 0 : 0); // Will update on layout
+    const startX = useSharedValue(0);
+    const targetX = useSharedValue(0);
+    const isDragging = useSharedValue(false);
+
+    const scale = useLiquidScale(dragX, startX, targetX, isDragging, 1.15);
+
+    // Gestures refs
+    const isGrabbing = useRef(false);
+    const gestureStartX = useRef(0);
+    const gestureStartLocationX = useRef(0);
+    const currentType = useRef(type);
+    const tabWidthRef = useRef(tabWidth);
+    const isInitialized = useRef(false);
+
+    useEffect(() => {
+        currentType.current = type;
+        tabWidthRef.current = tabWidth;
+        if (tabWidth > 0) {
+            const target = type === 'white' ? 0 : tabWidth;
+            if (!isInitialized.current) {
+                dragX.value = target;
+                isInitialized.current = true;
+            } else {
+                dragX.value = withSpring(target, SNAP_SPRING_CONFIG);
+            }
+        }
+    }, [type, tabWidth]);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, state) => {
+                const dx = Math.abs(state.dx);
+                const dy = Math.abs(state.dy);
+                return dx > 2 || dy > 2; // Capture almost any movement to be safe
+            },
+            onPanResponderTerminationRequest: () => false,
+            onShouldBlockNativeResponder: () => true,
+            onPanResponderGrant: (evt) => {
+                const { locationX } = evt.nativeEvent;
+                const currentTabWidth = tabWidthRef.current;
+
+                gestureStartLocationX.current = locationX;
+
+                // If containerWidth is 0, we can't do anything
+                if (currentTabWidth <= 0) return;
+
+                const isSecondTab = locationX > currentTabWidth;
+                const touchedType = isSecondTab ? 'black' : 'white';
+
+                // Only allow grab if touching the active indicator?
+                // Actually, for better UX let's allow grabbing the indicator, 
+                // OR just clicking the other side.
+                // If touching active -> Grab
+                if (touchedType === currentType.current) {
+                    isGrabbing.current = true;
+                    isDragging.value = true;
+                    gestureStartX.current = dragX.value;
+                    HapticsService.trigger('selection');
+                }
+            },
+            onPanResponderMove: (_, gestureState) => {
+                if (!isGrabbing.current) return;
+                const currentTabWidth = tabWidthRef.current;
+                let newPos = gestureStartX.current + gestureState.dx;
+                // Clamp
+                newPos = Math.max(0, Math.min(newPos, currentTabWidth));
+                dragX.value = newPos;
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                const currentTabWidth = tabWidthRef.current;
+                // If tabWidth is invalid, abort
+                if (currentTabWidth <= 0) return;
+
+                const isClick = Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5;
+                let targetType = currentType.current;
+
+                if (isClick && !isGrabbing.current) {
+                    // Tap on non-active area
+                    const touchedX = gestureStartLocationX.current;
+                    targetType = touchedX > currentTabWidth ? 'black' : 'white';
+                } else if (isGrabbing.current) {
+                    // Drag release
+                    const progress = dragX.value / currentTabWidth;
+                    const snapIndex = progress > 0.5 ? 1 : 0;
+                    targetType = snapIndex === 1 ? 'black' : 'white';
+                }
+
+                isGrabbing.current = false;
+
+                if (targetType !== currentType.current) {
+                    setType(targetType);
+                    HapticsService.trigger('selection');
+                }
+
+                const finalTarget = targetType === 'black' ? currentTabWidth : 0;
+                // Anchors
+                updateLiquidAnchors(startX, targetX, isDragging, dragX.value, finalTarget);
+                dragX.value = withSpring(finalTarget, SNAP_SPRING_CONFIG);
+            }
+        })
+    ).current;
+
+    return (
+        <View
+            style={[styles.toggleContainer, { opacity: tabWidth > 0 ? 1 : 0 }]}
+            onLayout={(e) => {
+                const w = e.nativeEvent.layout.width;
+                if (w > 0 && Math.abs(containerWidth - w) > 1) {
+                    setContainerWidth(w);
+                }
+            }}
+            {...panResponder.panHandlers}
+        >
+            {/* Indicator */}
+            <Animated.View
+                pointerEvents="none"
+                style={[
+                    styles.toggleIndicator,
+                    useAnimatedStyle(() => ({
+                        width: tabWidth > 0 ? tabWidth : 0,
+                        backgroundColor: interpolateColor(dragX.value, [0, tabWidth], ['rgba(255, 255, 255, 1)', '#151515']),
+                        borderColor: interpolateColor(dragX.value, [0, tabWidth], ['rgba(255,255,255,0)', 'rgba(255,255,255,1)']),
+                        borderWidth: 1.5,
+                        transform: [
+                            { translateX: dragX.value },
+                            { scale: scale.value }
+                        ]
+                    }))
+                ]} />
+
+            {/* Labels overlay */}
+            <View style={styles.toggleClickArea} pointerEvents="none">
+                <View style={styles.toggleBtn}>
+                    <Animated.Text style={[styles.toggleText, useAnimatedStyle(() => ({
+                        color: interpolateColor(dragX.value, [0, tabWidth / 2], ['#000', '#666'])
+                    }))]}>{t('card_type_white')}</Animated.Text>
+                </View>
+                <View style={styles.toggleBtn}>
+                    <Animated.Text style={[styles.toggleText, useAnimatedStyle(() => ({
+                        color: interpolateColor(dragX.value, [tabWidth / 2, tabWidth], ['#666', '#FFF'])
+                    }))]}>{t('card_type_black')}</Animated.Text>
+                </View>
+            </View>
+
+            {/* Invisible Touch Areas for reliable Clicking if Drag doesn't activate? */}
+            {/* Actually PanResponder captures taps too. We need to handle tap logic in Release. */}
+            {/* Let's refine Release to check start location from Grant to determine tap target. */}
+        </View>
+    );
+};
 
 /**
  * CardSuggestionModal
@@ -57,6 +218,9 @@ const CardSuggestionModal = ({ visible, onClose, onSuccess }) => {
         }
     };
 
+
+
+
     return (
         <PremiumModal
             visible={visible}
@@ -66,22 +230,13 @@ const CardSuggestionModal = ({ visible, onClose, onSuccess }) => {
             <View style={styles.container}>
                 <Text style={styles.desc}>{t('suggest_card_desc_cost') || "Invia la tua idea folle per una nuova carta nera o bianca (Costo: 25 DC)."}</Text>
 
-                <View style={styles.typeContainer}>
-                    <PremiumPressable
-                        style={[styles.typeButton, type === 'white' && { borderColor: theme.colors.accent, backgroundColor: 'rgba(255,215,0,0.1)' }]}
-                        onPress={() => setType('white')}
-                        haptic="light"
-                    >
-                        <Text style={[styles.typeText, type === 'white' && { color: theme.colors.accent }]}>{t('card_type_white')}</Text>
-                    </PremiumPressable>
-                    <PremiumPressable
-                        style={[styles.typeButton, type === 'black' && { borderColor: '#fff', backgroundColor: 'rgba(255,255,255,0.1)' }]}
-                        onPress={() => setType('black')}
-                        haptic="light"
-                    >
-                        <Text style={[styles.typeText, type === 'black' && { color: '#fff' }]}>{t('card_type_black')}</Text>
-                    </PremiumPressable>
-                </View>
+                {/* LIQUID TOGGLE CONTAINER */}
+                <LiquidToggle
+                    type={type}
+                    setType={setType}
+                    t={t}
+                    theme={theme}
+                />
 
                 <TextInput
                     style={[styles.input, { color: theme.colors.textPrimary }]}
@@ -126,22 +281,38 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 20,
     },
-    typeContainer: {
-        flexDirection: 'row',
-        gap: 10,
-    },
-    typeButton: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 12,
+    toggleContainer: {
+        height: 50,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        borderRadius: 25,
+        padding: 4,
+        position: 'relative',
+        justifyContent: 'center',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
-        alignItems: 'center',
     },
-    typeText: {
+    toggleIndicator: {
+        position: 'absolute',
+        top: 4,
+        bottom: 4,
+        left: 4,
+        borderRadius: 21,
+        backgroundColor: '#FFF',
+        height: 40, // Height - padding*2
+    },
+    toggleClickArea: {
+        flexDirection: 'row',
+        height: '100%',
+    },
+    toggleBtn: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1,
+    },
+    toggleText: {
         fontFamily: 'Cinzel-Bold',
-        fontSize: 10,
-        color: '#666',
+        fontSize: 11,
         textAlign: 'center',
     },
     input: {

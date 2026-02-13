@@ -80,7 +80,7 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                 {/* 1. Backdrop Blur (Non-interactive visual) */}
                 <Animated.View style={[StyleSheet.absoluteFill, { zIndex: -1, backgroundColor: 'rgba(0,0,0,0.5)' }, backdropStyle]} pointerEvents="none">
                     <EfficientBlurView
-                        intensity={20}
+                        intensity={10}
                         tint="dark"
                         style={StyleSheet.absoluteFill}
                     />

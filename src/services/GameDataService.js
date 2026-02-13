@@ -1,8 +1,6 @@
 // AsyncStorage removed to prevent local caching
 import { ref, get } from 'firebase/database';
 import { db } from './firebase'; // Import initialized DB
-import { carteNere as baseNereIT, carteBianche as baseBiancheIT } from '../utils/pacchetto_base';
-import { carteNere as baseNereEN, carteBianche as baseBiancheEN } from '../data/en/base';
 
 const CACHE_KEY = 'cah_game_data_v4'; // Bumped version
 const DARK_CACHE_KEY = 'cah_dark_data_v1';
@@ -13,9 +11,9 @@ class GameDataService {
         this.language = 'it'; // Default
 
         // IT Defaults
-        this.basePackIT = { nere: baseNereIT, bianche: baseBiancheIT };
+        this.basePackIT = { nere: [], bianche: [] };
         // EN Defaults
-        this.basePackEN = { nere: baseNereEN, bianche: baseBiancheEN };
+        this.basePackEN = { nere: [], bianche: [] };
 
         // Current Base (Starts as IT)
         this.basePack = this.basePackIT;
@@ -25,7 +23,7 @@ class GameDataService {
         this.spicyPack = { nere: [], bianche: [] }; // [NEW] Spicy (NSFW Legal)
 
         this.isLoaded = false;
-        this.minVersion = "4.0.3";
+        this.minVersion = "4.5.0";
         this.downloadUrl = null;
     }
 

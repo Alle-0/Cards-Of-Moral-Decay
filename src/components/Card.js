@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Image } from 'react-native';
+import { Image } from 'expo-image';
 import { COLORS, FONTS, LAYOUT } from '../styles/theme';
 
 const { width } = Dimensions.get('window');

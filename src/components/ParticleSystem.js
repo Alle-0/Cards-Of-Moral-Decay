@@ -16,7 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 const { width, height } = Dimensions.get('window');
 const PARTICLE_COUNT = 15;
 
-const Particle = ({ emoji, animationType, delay }) => {
+const Particle = ({ emoji, animationType, delay, theme }) => {
     const x = useSharedValue(Math.random() * width);
     const y = useSharedValue(Math.random() * height);
     const opacity = useSharedValue(0);
@@ -120,6 +120,7 @@ const ParticleSystem = () => {
                     emoji={theme.colors.particleEmoji}
                     animationType={getAnimationType()}
                     delay={p.delay}
+                    theme={theme}
                 />
             ))}
         </View>

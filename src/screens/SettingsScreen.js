@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, View, Text, ScrollView, BackHandler, Platform, TouchableOpacity, Pressable } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, BackHandler, Platform, TouchableOpacity, Pressable, PanResponder } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
@@ -21,11 +21,56 @@ import { useAudio } from '../context/AudioContext'; // [NEW]
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService';
 import { APP_VERSION } from '../constants/Config';
-import Animated, { SlideInRight, SlideOutRight, SlideInLeft, SlideOutLeft, Easing } from 'react-native-reanimated';
+import Animated, { SlideInRight, SlideOutRight, SlideInLeft, SlideOutLeft, Easing, useSharedValue, withSpring, useAnimatedStyle, withTiming, withSequence, runOnJS, interpolateColor, useDerivedValue } from 'react-native-reanimated';
+import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hooks/useLiquidAnimation';
+
+import { useRef } from 'react';
 
 import { RulesIcon, SettingsIcon, LinkIcon, OpenDoorIcon, EyeIcon, EyeOffIcon, ArrowLeftIcon, ShieldIcon, CheckIcon, HornsIcon, CardsIcon } from '../components/Icons';
 import CardSuggestionModal from '../components/CardSuggestionModal';
 import InfoScreen from './InfoScreen';
+
+const RANK_KEY_MAP = {
+    "Anima Candida": "rank_anima_candida",
+    "Innocente": "rank_innocente",
+    "Corrotto": "rank_corrotto",
+    "Socio del Vizio": "rank_socio_del_vizio",
+    "Architetto del Caos": "rank_architetto_del_caos",
+    "Eminenza Grigia": "rank_eminenza_grigia",
+    "Entità Apocalittica": "rank_entita_apocalittica",
+    "Capo supremo": "rank_capo_supremo",
+    "Capo Supremo": "rank_capo_supremo",
+    "BOT": "rank_bot"
+};
+
+const getRankKey = (rank) => {
+    if (!rank) return 'rank_anima_candida';
+    const cleanRank = rank.trim();
+    return RANK_KEY_MAP[cleanRank] || `rank_${cleanRank.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_')}`;
+};
+
+// Helper component for dynamic text color
+const SettingsLanguageItem = ({ lang, translateX, theme }) => {
+    const textStyle = useAnimatedStyle(() => {
+        const isIt = lang === 'it';
+        const color = interpolateColor(
+            translateX.value,
+            [2, 52],
+            isIt
+                ? ['#000000', theme.colors.textPrimary + '88']
+                : [theme.colors.textPrimary + '88', '#000000']
+        );
+        return { color };
+    });
+
+    return (
+        <View pointerEvents="none" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+            <Animated.Text style={[{ fontFamily: 'Cinzel-Bold', fontSize: 10 }, textStyle]}>
+                {lang === 'it' ? 'IT' : 'EN'}
+            </Animated.Text>
+        </View>
+    );
+};
 
 const SettingsScreen = ({ navigation }) => {
     const { theme, animationsEnabled, toggleAnimations } = useTheme();
@@ -34,6 +79,109 @@ const SettingsScreen = ({ navigation }) => {
     const { t, language, setLanguage } = useLanguage();
     const { logout, user: authUser } = useAuth();
     const insets = useSafeAreaInsets();
+
+    const languageRef = useRef(language);
+    const touchedLang = useRef(null);
+    const gestureStartLang = useRef(null);
+    const isDraggingLang = useRef(false);
+    const isGrabbingIndicatorLang = useRef(false);
+    const isGrabbingSV = useSharedValue(false); // [FIX] Reactivity
+    const langTranslateX = useSharedValue(language === 'en' ? 52 : 2);
+
+    // [NEW] Anchors for hook
+    const startX = useSharedValue(language === 'en' ? 52 : 2);
+    const targetX = useSharedValue(language === 'en' ? 52 : 2);
+
+    const langScale = useLiquidScale(langTranslateX, startX, targetX, isGrabbingSV, 1.15);
+    const lastValidLang = useRef(language);
+
+    // Sync Ref
+    useEffect(() => {
+        languageRef.current = language;
+        lastValidLang.current = language;
+        langTranslateX.value = withSpring(language === 'en' ? 52 : 2, { damping: 200, stiffness: 250 });
+    }, [language]);
+
+    const langPanResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+                return isHorizontal && Math.abs(gestureState.dx) > 5;
+            },
+            onPanResponderTerminationRequest: () => false,
+            onShouldBlockNativeResponder: () => true,
+            onPanResponderGrant: (evt, gestureState) => {
+                const { locationX } = evt.nativeEvent;
+                if (locationX < 0 || locationX > 103) return;
+
+                const hitLang = locationX > 50 ? 'en' : 'it';
+                touchedLang.current = hitLang;
+                const currentLang = languageRef.current;
+                gestureStartLang.current = currentLang;
+
+                const isGrabbing = (hitLang === currentLang);
+                isGrabbingIndicatorLang.current = isGrabbing;
+                isDraggingLang.current = true;
+
+                if (isGrabbing) {
+                    isGrabbingSV.value = true;
+                    HapticsService.trigger('selection');
+                    // Scale handled by derived value
+                }
+            },
+            onPanResponderMove: (_, gestureState) => {
+                const currentLang = languageRef.current;
+                const isGrabbing = isGrabbingIndicatorLang.current;
+
+                if (isGrabbing) {
+                    const startX = currentLang === 'en' ? 52 : 2;
+                    let newX = startX + gestureState.dx;
+                    newX = Math.max(2, Math.min(newX, 52));
+                    langTranslateX.value = newX;
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                const isClick = Math.abs(gestureState.dx) < 10 && Math.abs(gestureState.dy) < 10;
+                let targetLang;
+                const currentLang = languageRef.current;
+
+                if (isClick && touchedLang.current) {
+                    targetLang = touchedLang.current;
+                    if (targetLang !== currentLang) {
+                        HapticsService.trigger('light');
+                    }
+                } else if (isGrabbingIndicatorLang.current) {
+                    const center = 103 / 2; // 51.5
+                    const currentPos = langTranslateX.value; // ~3 or ~50
+                    // Add offset to position to determine center of knob (knob width ~47) -> center ~23.5
+                    const knobCenter = currentPos + 23.5;
+                    targetLang = knobCenter > center ? 'en' : 'it';
+                } else {
+                    targetLang = currentLang;
+                }
+
+                if (targetLang && targetLang !== currentLang) {
+                    setLanguage(targetLang);
+                    HapticsService.trigger('selection');
+                }
+
+                // [FIX] Anchors and Snap
+                const targetPos = (targetLang || currentLang) === 'en' ? 52 : 2;
+                updateLiquidAnchors(startX, targetX, isGrabbingSV, langTranslateX.value, targetPos);
+
+                langTranslateX.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
+
+                isDraggingLang.current = false;
+                isGrabbingIndicatorLang.current = false;
+                touchedLang.current = null;
+            }
+        })
+    ).current;
+
+    const langIndicatorStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: langTranslateX.value }, { scale: langScale.value }]
+    }));
 
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [hapticsEnabled, setHapticsEnabled] = useState(true);
@@ -309,31 +457,38 @@ const SettingsScreen = ({ navigation }) => {
                                     <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('select_language')}</Text>
                                     <Text style={styles.rowSub}>{language === 'it' ? 'Italiano' : 'English'}</Text>
                                 </View>
-                                <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 3, width: 110 }}>
-                                    {['it', 'en'].map(lang => (
-                                        <Pressable
-                                            key={lang}
-                                            onPress={() => setLanguage(lang)}
-                                            android_disableSound={true}
-                                            style={({ pressed }) => ({
-                                                flex: 1,
-                                                paddingVertical: 5,
-                                                borderRadius: 6,
-                                                backgroundColor: language === lang ? '#d4af37' : 'transparent',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                opacity: pressed ? 0.8 : 1
-                                            })}
-                                        >
-                                            <Text style={{
-                                                fontFamily: 'Cinzel-Bold',
-                                                fontSize: 10,
-                                                color: language === lang ? '#000' : 'rgba(255,255,255,0.5)'
-                                            }}>
-                                                {lang.toUpperCase()}
-                                            </Text>
-                                        </Pressable>
-                                    ))}
+                                <View
+                                    style={{
+                                        position: 'relative',
+                                        flexDirection: 'row',
+                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                        borderRadius: 10,
+                                        padding: 3,
+                                        width: 103,
+                                        height: 32
+                                    }}
+                                    {...langPanResponder.panHandlers}
+                                >
+                                    {/* Animated Indicator */}
+                                    <Animated.View
+                                        style={[
+                                            {
+                                                position: 'absolute',
+                                                left: 2,
+                                                top: 3,
+                                                width: 47,
+                                                height: 26,
+                                                borderRadius: 8,
+                                                backgroundColor: theme.colors.accent || '#d4af37'
+                                            },
+                                            langIndicatorStyle
+                                        ]}
+                                        pointerEvents="none"
+                                    />
+                                    {/* Static Labels */}
+                                    {/* Dynamic Labels */}
+                                    <SettingsLanguageItem lang="it" translateX={langTranslateX} theme={theme} />
+                                    <SettingsLanguageItem lang="en" translateX={langTranslateX} theme={theme} />
                                 </View>
                             </View>
 
@@ -407,7 +562,7 @@ const SettingsScreen = ({ navigation }) => {
                                 size={80}
                             />
                             <Text style={{
-                                color: '#d4af37',
+                                color: theme.colors.accent,
                                 fontFamily: 'Cinzel-Bold',
                                 fontSize: 22,
                                 marginTop: 12,
@@ -475,7 +630,7 @@ const SettingsScreen = ({ navigation }) => {
                                                     letterSpacing: 1,
                                                     includeFontPadding: false
                                                 }}>
-                                                    {authUser?.rank}
+                                                    {t(getRankKey(authUser?.rank))}
                                                 </Text>
                                             </View>
 
@@ -535,7 +690,7 @@ const SettingsScreen = ({ navigation }) => {
                                         }}
                                     >
                                         <Text style={{ color: '#fff', fontFamily: 'Outfit-Bold', fontSize: 11, textAlign: 'center', includeFontPadding: false }}>
-                                            {showRecoveryCode ? "COPY" : "VEDI"}
+                                            {showRecoveryCode ? t('recovery_copy_btn') : t('recovery_view_btn')}
                                         </Text>
                                     </PremiumPressable>
                                 </View>
@@ -573,7 +728,7 @@ const SettingsScreen = ({ navigation }) => {
                         entering={SlideInLeft.duration(300).easing(Easing.out(Easing.quad))}
                         style={{ flex: 1, width: '100%' }}
                     >
-                        <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
+                        <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
                             {t('settings')}
                         </Text>
 
@@ -721,7 +876,7 @@ const CategoryTile = ({ title, subtitle, icon, color, onPress }) => {
             pressableStyle={{
                 backgroundColor: 'rgba(255,255,255,0.03)',
                 borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.06)',
+                borderColor: 'rgba(255,255,255,0.1)',
                 borderRadius: 25,
                 minHeight: 80,
                 paddingVertical: 12,
@@ -751,12 +906,12 @@ const CategoryTile = ({ title, subtitle, icon, color, onPress }) => {
                 {icon}
             </View>
             <View style={{ flex: 1 }}>
-                <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 1.2 }}>{title}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Outfit', fontSize: 10, marginTop: 5 }}>{subtitle}</Text>
+                <Text style={{ color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 1.2 }}>{title}</Text>
+                <Text style={{ color: theme.colors.textPrimary + '44', fontFamily: 'Outfit', fontSize: 10, marginTop: 5 }}>{subtitle}</Text>
             </View>
             <View style={{ opacity: 0.4, marginRight: 5 }}>
                 <View style={{ transform: [{ rotate: '180deg' }] }}>
-                    <ArrowLeftIcon size={18} color="#fff" />
+                    <ArrowLeftIcon size={18} color={theme.colors.textPrimary + '44'} />
                 </View>
             </View>
         </PremiumPressable>
@@ -767,7 +922,7 @@ const SecondaryAction = ({ icon, label, onPress, bgColor, color }) => {
     return (
         <PremiumPressable
             style={{ width: '100%', borderRadius: 14, overflow: 'hidden' }}
-            pressableStyle={{ backgroundColor: bgColor, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderRadius: 14 }}
+            pressableStyle={{ backgroundColor: bgColor, borderWidth: 1, borderColor: theme.colors.cardBorder, borderRadius: 14 }}
             contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 }}
             onPress={onPress}
         >

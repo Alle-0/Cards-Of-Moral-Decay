@@ -26,6 +26,7 @@ export const translations = {
         select_language: "LINGUA / LANGUAGE",
         create_room: "CREA",
         join_room: "ENTRA",
+        insert_code: "INSERISCI CODICE",
         room_code: "CODICE STANZA",
         black_market_desc: "Spendi i tuoi Dirty Cash qui.",
         not_enough_money: "Sei povero. Gioca di più.",
@@ -37,8 +38,8 @@ export const translations = {
         particles_effects: "Particelle ed effetti",
         sound_effects: "EFFETTI SONORI",
         sounds_notifs: "Suoni e notifiche",
-        music_label: "MUSICA / MUSIC",
-        music_sub: "Sottofondo / Background Score",
+        music_label: "MUSICA",
+        music_sub: "Sottofondo",
         audio_anim_lang: "AUDIO, ANIMAZIONI E LINGUA",
         subj_audio_anim_lang: "Suoni, haptics, effetti e lingua",
         account: "ACCOUNT",
@@ -156,7 +157,6 @@ export const translations = {
         preview_subtitle_theme: "ANTEPRIMA TEMA",
         preview_frame_desc: "Questa cornice apparirà intorno al tuo avatar in partita e nella classifica.",
         theme_dynamic_effect: "EFFETTI DINAMICI",
-        theme_dynamic_effect: "EFFETTI DINAMICI",
         theme_static_decor: "DECORAZIONE STATICA",
         preview_pack_desc: "Esplicito, Osceno e Moralmente Discutibile.",
 
@@ -232,7 +232,21 @@ export const translations = {
         no_public_rooms: "Nessuna stanza al momento.",
         playing_state: "IN CORSO",
         lobby_state: "LOBBY",
+        room_state_playing: "IN CORSO",
+        lobby_state: "LOBBY",
         join_btn: "ENTRA",
+        quick_join_btn: "PARTITA VELOCE", // [NEW]
+        quick_join_subtitle: "Entra in una pubblica disfatta", // [NEW]
+        room_visibility_public: "PUBBLICA", // [NEW]
+        room_visibility_private: "SOLO AMICI", // [NEW]
+        create_room_visibility_title: "VISIBILITÀ STANZA", // [NEW]
+        create_room_visibility_msg: "Chi può entrare nella tua stanza?", // [NEW]
+        visibility_public_btn: "TUTTI (Pubblica)", // [NEW]
+        visibility_private_btn: "SOLO AMICI (Privata)", // [NEW]
+        tab_friends_rooms: "AMICI", // [NEW]
+        tab_public_rooms: "PUBBLICHE", // [NEW]
+        online_status: "ONLINE", // [NEW]
+        offline_status: "OFFLINE", // [NEW]
 
         // GAME LOBBY
         waiting_host_msg: "In attesa che l'host inizi la partita...",
@@ -429,8 +443,8 @@ export const translations = {
         suggest_card_placeholder: "Scrivi qui il testo della carta...",
         suggest_card_submit: "INVIA",
         suggest_card_success: "Consiglio inviato! Verrà valutato dal Gran Consiglio del Caos.",
-        card_type_white: "Carta Bianca (Risposta)",
-        card_type_black: "Carta Nera (Domanda/Frase)",
+        card_type_white: "CARTA BIANCA",
+        card_type_black: "CARTA NERA",
         suggestion_error: "Errore nell'invio del consiglio.",
         section_suggestions: "CONSIGLIA CARTE",
 
@@ -549,6 +563,7 @@ export const translations = {
         select_language: "LANGUAGE",
         create_room: "CREATE",
         join_room: "JOIN",
+        insert_code: "INSERT CODE",
         room_code: "ROOM CODE",
         black_market_desc: "Spend your Dirty Cash here.",
         not_enough_money: "You're broke. Play more.",
@@ -560,8 +575,8 @@ export const translations = {
         particles_effects: "Particles and effects",
         sound_effects: "SOUND EFFECTS",
         sounds_notifs: "Sounds and notifications",
-        music_label: "MUSICA / MUSIC",
-        music_sub: "Sottofondo / Background Score",
+        music_label: "MUSIC",
+        music_sub: "Background Score",
         audio_anim_lang: "AUDIO, ANIMATIONS & LANGUAGE",
         subj_audio_anim_lang: "Sounds, haptics, effects and language",
         account: "ACCOUNT",
@@ -756,6 +771,18 @@ export const translations = {
         playing_state: "PLAYING",
         lobby_state: "LOBBY",
         join_btn: "JOIN",
+        quick_join_btn: "QUICK JOIN", // [NEW]
+        quick_join_subtitle: "Jump into a public disaster", // [NEW]
+        room_visibility_public: "PUBLIC", // [NEW]
+        room_visibility_private: "FRIENDS ONLY", // [NEW]
+        create_room_visibility_title: "ROOM VISIBILITY", // [NEW]
+        create_room_visibility_msg: "Who can join your room?", // [NEW]
+        visibility_public_btn: "EVERYONE (Public)", // [NEW]
+        visibility_private_btn: "FRIENDS ONLY (Private)", // [NEW]
+        tab_friends_rooms: "FRIENDS", // [NEW]
+        tab_public_rooms: "PUBLIC", // [NEW]
+        online_status: "ONLINE", // [NEW]
+        offline_status: "OFFLINE", // [NEW]
 
         // GAME LOBBY
         waiting_host_msg: "Waiting for host to start the game...",
@@ -798,7 +825,7 @@ export const translations = {
         recovery_code: "RECOVERY ZONE",
         recovery_sub: "If you lose this code, you lose your account forever.",
         recovery_copy_btn: "COPY",
-        recovery_view_btn: "VIEW",
+        recovery_view_btn: "REVEAL",
         logout_btn: "Logout",
         rules_cat: "RULES",
         manual_sub: "Manual",
@@ -974,8 +1001,8 @@ export const translations = {
         suggest_card_placeholder: "Write the card text here...",
         suggest_card_submit: "SUBMIT",
         suggest_card_success: "Suggestion sent! It will be evaluated by the Chaos Council.",
-        card_type_white: "White Card (Answer)",
-        card_type_black: "Black Card (Question/Phrase)",
+        card_type_white: "WHITE CARD",
+        card_type_black: "BLACK CARD",
         suggestion_error: "Error submitting suggestion.",
         section_suggestions: "SUGGEST CARDS",
 

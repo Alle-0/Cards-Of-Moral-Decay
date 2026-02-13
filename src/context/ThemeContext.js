@@ -251,7 +251,7 @@ export const THEMES = {
         colors: {
             accent: '#14b8a6', // Turchese chirurgico
             accentWeak: 'rgba(20, 184, 166, 0.15)',
-            background: ['#ababab', '#afaeae', '#777777'], // Grigio imbottito
+            background: ['#8a8a8aff', '#585858ff', '#4d4d4dff'], // Grigio imbottito
             cardBg: 'rgba(20, 184, 166, 0.08)',
             cardBorder: 'rgba(20, 184, 166, 0.5)',
             textPrimary: '#0f766e', // Testo scuro per contrasto su background chiaro

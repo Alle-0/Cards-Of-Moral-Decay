@@ -8,6 +8,7 @@ import { useAuth, RANK_COLORS } from '../context/AuthContext';
 import { THEMES, CARD_SKINS, AVATAR_FRAMES, TEXTURES, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext'; // [NEW]
 import PremiumBackground from '../components/PremiumBackground';
+import LobbySettingsPanel from '../components/LobbySettingsPanel'; // [NEW]
 import PremiumButton from '../components/PremiumButton';
 import PlayerHand from '../components/PlayerHand';
 import GameTable from '../components/GameTable';
@@ -39,6 +40,27 @@ import CensoredText from '../components/CensoredText'; // [NEW]
 import { CHAOS_EVENTS, CHAOS_EVENT_DETAILS } from '../constants/ChaosEvents'; // [NEW]
 
 
+
+
+const RANK_KEY_MAP = {
+    "Anima Candida": "rank_anima_candida",
+    "Innocente": "rank_innocente",
+    "Corrotto": "rank_corrotto",
+    "Socio del Vizio": "rank_socio_del_vizio",
+    "Architetto del Caos": "rank_architetto_del_caos",
+    "Eminenza Grigia": "rank_eminenza_grigia",
+    "Entità Apocalittica": "rank_entita_apocalittica",
+    "Capo supremo": "rank_capo_supremo",
+    "Capo Supremo": "rank_capo_supremo",
+    "BOT": "rank_bot"
+};
+
+const getRankKey = (rank) => {
+    if (!rank) return 'rank_anima_candida';
+    const cleanRank = rank.trim();
+    if (cleanRank.startsWith('rank_')) return cleanRank;
+    return RANK_KEY_MAP[cleanRank] || `rank_${cleanRank.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_')}`;
+};
 
 const CHILL_PACK_PREVIEW = {
     it: [
@@ -251,6 +273,9 @@ const GameScreen = ({ onStartLoading }) => {
     } = useGame();
     const { theme } = useTheme();
     const { bribe: payBribe, awardMoney, logout, user: authUser } = useAuth(); // [NEW] get authUser for skins
+
+    // [NEW] Settings View State
+    const [initialSettingsView, setInitialSettingsView] = useState(null);
     const { t } = useLanguage(); // [NEW]
     const { height: screenHeight, width: screenWidth } = useWindowDimensions();
     const isSmallScreen = screenHeight < 700;
@@ -788,7 +813,8 @@ const GameScreen = ({ onStartLoading }) => {
                 isDominus: (roomData?.dominus || '').trim() === name,
                 avatar: isRando ? 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando' : roomData?.giocatori?.[rawName]?.avatar,
                 activeFrame: isRando ? 'glitch' : roomData?.giocatori?.[rawName]?.activeFrame,
-                rank: isRando ? 'rank_bot' : roomData?.giocatori?.[rawName]?.rank
+                rank: isRando ? 'rank_bot' : roomData?.giocatori?.[rawName]?.rank,
+                isOnline: (rawName === authUser?.username) || (isRando ? true : roomData?.giocatori?.[rawName]?.online) // [FIX] Always online for self
             };
         });
 
@@ -985,13 +1011,25 @@ const GameScreen = ({ onStartLoading }) => {
                         entering={ZoomIn.delay(index * 100).springify()}
                         style={{ alignItems: 'center' }}
                     >
-                        <View style={{ marginBottom: 8 }}>
+                        <View style={{ marginBottom: 8, position: 'relative' }}>
                             <AvatarWithFrame
                                 avatar={p.avatar || p.name}
                                 frameId={p.activeFrame || 'basic'}
                                 size={54}
                                 isDominus={p.isDominus}
                             />
+                            {/* [NEW] Online / Offline Badge on Avatar */}
+                            <View style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                right: 0,
+                                width: 12,
+                                height: 12,
+                                borderRadius: 6,
+                                backgroundColor: p.isOnline ? '#4ade80' : '#666',
+                                borderWidth: 2,
+                                borderColor: '#111' // Match background
+                            }} />
                         </View>
                         <Text style={{
                             color: '#e2e8f0',
@@ -1005,14 +1043,14 @@ const GameScreen = ({ onStartLoading }) => {
                         {/* [NEW] Rank Display below name */}
                         {p.rank && (
                             <Text style={{
-                                color: p.name === 'Rando' ? '#ef4444' : '#888', // Red for Rando
+                                color: p.name === 'Rando' ? '#ef4444' : (RANK_COLORS[getRankKey(p.rank)] || '#888'), // Dynamic Rank Color
                                 fontFamily: 'Outfit',
                                 fontSize: 9,
                                 textAlign: 'center',
                                 maxWidth: 80,
                                 marginTop: 2
                             }} numberOfLines={1}>
-                                {p.rank.startsWith('rank_') ? t(p.rank, { defaultValue: p.rank }) : p.rank}
+                                {t(getRankKey(p.rank))}
                             </Text>
                         )}
                     </Animated.View>
@@ -1058,207 +1096,45 @@ const GameScreen = ({ onStartLoading }) => {
             )}
 
             {/* --- IMPOSTAZIONI DEL CREATORE --- */}
+            {/* --- IMPOSTAZIONI DEL CREATORE --- */}
             {isCreator && (
-                <View style={[styles.premiumBox, { marginTop: 0, paddingVertical: 10 }]}>
-
-                    {/* 1. LINGUA (Stile Lingotto) */}
-                    <SectionHeader title={t('room_language_label')} />
-                    <View style={{
-                        flexDirection: 'row', backgroundColor: '#000', borderRadius: 20, padding: 3,
-                        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-                        width: 200, alignSelf: 'center',
-                        marginBottom: 10
-                    }}>
-                        {['it', 'en'].map((lang) => {
-                            const isActive = roomLanguage === lang;
-                            return (
-                                <PremiumPressable
-                                    key={lang}
-                                    onPress={() => {
-                                        setRoomLanguage(lang);
-                                        updateRoomSettings({ roomLanguage: lang });
-                                    }}
-                                    style={{
-                                        flex: 1, paddingVertical: 8, borderRadius: 17,
-                                        alignItems: 'center', justifyContent: 'center',
-                                        backgroundColor: isActive ? '#d4af37' : 'transparent'
-                                    }}
-                                >
-                                    <Text style={{
-                                        fontFamily: 'Cinzel-Bold', fontSize: 11,
-                                        color: isActive ? '#000' : '#666',
-                                        textAlign: 'center',
-                                        includeFontPadding: false
-                                    }}>
-                                        {lang === 'it' ? 'ITA' : 'EN'}
-                                    </Text>
-                                </PremiumPressable>
-                            );
-                        })}
-                    </View>
-
-                    {/* 2. PACCHETTI (Stile Grid 2-col) */}
-                    <SectionHeader title={t('select_packages')} />
-                    <View style={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 }}>
-                        <MinimalPackCard
-                            label={t('base_pack')}
-                            type="base"
-                            selected={true}
-                            onPreview={() => handlePreviewPack('base')}
-                            style={{ width: '48%' }}
-                        />
-                        <MinimalPackCard
-                            label={t('dark_pack')}
-                            type="dark"
-                            selected={allowedPackages.dark}
-                            owned={!!authUser?.unlockedPacks?.dark}
-                            onPress={() => {
-                                const newVal = !allowedPackages.dark;
-                                setAllowedPackages({ ...allowedPackages, dark: newVal });
-                                updateRoomSettings({ allowedPackages: { ...allowedPackages, dark: newVal } });
-                            }}
-                            onPreview={() => handlePreviewPack('dark')}
-                            style={{ width: '48%' }}
-                        />
-                        <MinimalPackCard
-                            label={t('chill_pack')}
-                            type="chill"
-                            selected={allowedPackages.chill}
-                            owned={!!authUser?.unlockedPacks?.chill}
-                            onPress={() => {
-                                const newVal = !allowedPackages.chill;
-                                setAllowedPackages({ ...allowedPackages, chill: newVal });
-                                updateRoomSettings({ allowedPackages: { ...allowedPackages, chill: newVal } });
-                            }}
-                            onPreview={() => handlePreviewPack('chill')}
-                            style={{ width: '48%' }}
-                        />
-                        <MinimalPackCard
-                            label={t('spicy_pack')}
-                            type="spicy"
-                            selected={allowedPackages.spicy}
-                            owned={!!authUser?.unlockedPacks?.spicy}
-                            onPress={() => {
-                                const newVal = !allowedPackages.spicy;
-                                setAllowedPackages({ ...allowedPackages, spicy: newVal });
-                                updateRoomSettings({ allowedPackages: { ...allowedPackages, spicy: newVal } });
-                            }}
-                            onPreview={() => handlePreviewPack('spicy')}
-                            style={{ width: '48%' }}
-                        />
-                    </View>
-
-                    {/* 3. PUNTI (Stile Monoliti Ancorati) */}
-                    <SectionHeader title={t('select_points_title')} />
-                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 10, paddingVertical: 10 }}>
-                        {[3, 5, 7, 10].map(points => {
-                            const isActive = targetPoints === points;
-                            return (
-                                <TouchableOpacity
-                                    key={points}
-                                    onPress={() => {
-                                        setTargetPoints(points);
-                                        updateRoomSettings({ puntiPerVincere: points });
-                                    }}
-                                    activeOpacity={0.8}
-                                    style={{
-                                        width: 50,
-                                        height: 52, // [FIX] Very compact
-                                        borderRadius: 10,
-                                        borderWidth: 1,
-                                        borderColor: isActive ? '#d4af37' : 'rgba(255,255,255,0.1)',
-                                        backgroundColor: isActive ? 'rgba(212, 175, 55, 0.1)' : '#0a0a0a',
-                                        alignItems: 'center',
-                                        justifyContent: 'flex-start', // [FIX] Align top to avoid bottom clip
-                                        paddingTop: 6,
-                                        marginVertical: 2, // [FIX] Safety margin
-                                        // Ancoraggio senza glow
-                                        borderBottomWidth: isActive ? 4 : 1,
-                                        borderBottomColor: isActive ? '#d4af37' : 'rgba(255,255,255,0.1)', // [FIX] Now visible
-                                        shadowColor: 'transparent', shadowOpacity: 0, elevation: 0,
-                                        overflow: 'visible'
-                                    }}
-                                >
-                                    <View style={{ alignItems: 'center' }}>
-                                        <Text style={{
-                                            fontFamily: 'Cinzel-Bold',
-                                            color: isActive ? '#d4af37' : '#444',
-                                            fontSize: 20,
-                                            textAlign: 'center',
-                                            includeFontPadding: false,
-                                            marginBottom: -2
-                                        }}>
-                                            {points}
-                                        </Text>
-                                        <Text style={{
-                                            fontFamily: 'Outfit', fontSize: 8,
-                                            color: isActive ? '#d4af37' : '#333', opacity: 0.7,
-                                            textAlign: 'center',
-                                            includeFontPadding: false
-                                        }}>
-                                            {t('points_label').toUpperCase()}
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-
-                    {/* 4. CHAOS ENGINE (Minimal Pill) */}
-                    <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                const newVal = !roomData.chaosMode;
-                                updateRoomSettings({ chaosMode: newVal });
-                            }}
-                            activeOpacity={0.8}
-                            style={{
-                                flexDirection: 'row', alignItems: 'center',
-                                backgroundColor: roomData.chaosMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.05)',
-                                paddingVertical: 4, paddingHorizontal: 10, borderRadius: 16,
-                                borderWidth: 1, borderColor: roomData.chaosMode ? '#ef4444' : 'rgba(255,255,255,0.1)',
-                                alignSelf: 'center'
-                            }}
-                        >
-                            <ThornsIcon size={12} color={roomData.chaosMode ? '#ef4444' : '#666'} />
-                            <Text style={{
-                                fontFamily: 'Cinzel-Bold', fontSize: 9, // Smaller font
-                                color: roomData.chaosMode ? '#ef4444' : '#666',
-                                marginLeft: 5, marginRight: 5
-                            }}>
-                                CHAOS
-                            </Text>
-                            <View style={{
-                                width: 20, height: 10, borderRadius: 5,
-                                backgroundColor: '#222', // Dark track
-                                justifyContent: 'center',
-                                alignItems: roomData.chaosMode ? 'flex-end' : 'flex-start',
-                                paddingHorizontal: 1
-                            }}>
-                                <View style={{
-                                    width: 8, height: 8, borderRadius: 4,
-                                    backgroundColor: roomData.chaosMode ? '#ef4444' : '#555' // Toggle dot
-                                }} />
-                            </View>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => {
-                                setSettingsView('rules_chaos');
-                                setShowSettings(true);
-                            }}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            style={{ padding: 4 }}
-                        >
-                            <InfoIcon size={14} color="#666" />
-                        </TouchableOpacity>
-                    </View>
-
+                <View style={{ width: '100%', marginBottom: 10 }}>
+                    <LobbySettingsPanel
+                        isHost={true}
+                        settings={{
+                            language: roomLanguage,
+                            points: targetPoints,
+                            chaosMode: roomData?.chaosMode,
+                            packs: Object.keys(allowedPackages).filter(k => allowedPackages[k])
+                        }}
+                        unlockedPacks={authUser?.unlockedPacks || {}}
+                        updateSettings={(key, value) => {
+                            if (key === 'packs') {
+                                const newPackages = { base: false, dark: false, chill: false, spicy: false };
+                                value.forEach(p => newPackages[p] = true);
+                                setAllowedPackages(newPackages);
+                                updateRoomSettings({ allowedPackages: newPackages });
+                            } else if (key === 'language') {
+                                setRoomLanguage(value);
+                                updateRoomSettings({ roomLanguage: value });
+                            } else if (key === 'points') {
+                                setTargetPoints(value);
+                                updateRoomSettings({ puntiPerVincere: value });
+                            } else if (key === 'chaosMode') {
+                                updateRoomSettings({ chaosMode: value });
+                            }
+                        }}
+                        onPreviewPack={handlePreviewPack}
+                        onOpenChaosRules={() => {
+                            setInitialSettingsView('rules_chaos');
+                            setShowSettings(true);
+                        }}
+                    />
                 </View>
             )}
 
             {/* Pulsante Avvio */}
-            <View style={{ marginTop: 10 }}>
+            <View style={{ marginTop: 5 }}>
                 {isCreator ? (
                     <PremiumButton
                         title={(playersList.length === 2 || (playersList.length === 3 && playersList.some(p => p.name === 'Rando')))
@@ -1689,8 +1565,11 @@ const GameScreen = ({ onStartLoading }) => {
 
                 <SettingsModal
                     visible={showSettings}
-                    onClose={() => setShowSettings(false)}
-                    initialView={settingsView}
+                    onClose={() => {
+                        setShowSettings(false);
+                        setInitialSettingsView(null);
+                    }}
+                    initialView={initialSettingsView}
                     onStartLoading={onStartLoading} // Pass the splash trigger
                     onLeaveRequest={showLeaveConfirmation} // [FIX] Trigger generic function
                     onLogoutRequest={handleLogoutRequest} // [NEW]
@@ -1864,7 +1743,10 @@ const GameScreen = ({ onStartLoading }) => {
                     hardwareAccelerated={true}
                 >
                     {previewPack && (
-                        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' }}>
+                        <EfficientBlurView
+                            intensity={10}
+                            style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+                        >
                             <TouchableWithoutFeedback onPress={handleClosePreview}>
                                 <View style={StyleSheet.absoluteFill} />
                             </TouchableWithoutFeedback>
@@ -1982,7 +1864,7 @@ const GameScreen = ({ onStartLoading }) => {
                                     </Text>
                                 </TouchableOpacity>
                             </Animated.View>
-                        </View>
+                        </EfficientBlurView>
                     )}
                 </Modal>
 

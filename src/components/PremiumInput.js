@@ -85,9 +85,12 @@ const PremiumInput = ({
                 </Animated.View>
             </Pressable>
 
-            <Animated.Text style={[styles.label, { fontFamily: 'Cinzel' }, labelStyle]} pointerEvents="none">
-                {label}
-            </Animated.Text>
+            {/* [FIX] Wrapper verifies perfect centering of the chip */}
+            <View style={styles.labelContainer} pointerEvents="none">
+                <Animated.Text style={[styles.label, labelStyle]}>
+                    {label}
+                </Animated.Text>
+            </View>
         </View>
     );
 };
@@ -116,14 +119,24 @@ const styles = StyleSheet.create({
         paddingTop: 4,
         paddingBottom: 0, // Pushes text down
         height: '100%',
+        textAlign: 'left', // [FIX] Align text to left
         textAlignVertical: 'center', // Ensures consistencys
         outlineStyle: 'none', // [FIX] Remove web border
         // textTransform: 'uppercase', // REMOVED to allow lowercase
     },
-    label: {
+    labelContainer: {
         position: 'absolute',
-        left: 30, // [FIX] More right
-        zIndex: 1,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'flex-start', // [FIX] Align label to left
+        justifyContent: 'flex-start', // Let translateY handle vertical pos
+        paddingLeft: 16, // [FIX] Align with input padding
+        zIndex: 10,
+    },
+    label: {
+        fontFamily: 'Cinzel',
         textTransform: 'uppercase',
     },
 });

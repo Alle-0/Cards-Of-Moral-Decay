@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, Image, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { SvgXml, SvgUri } from 'react-native-svg';
 import { createAvatar } from '@dicebear/core';
 import * as adventurer from '@dicebear/adventurer';

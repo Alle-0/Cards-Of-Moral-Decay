@@ -42,7 +42,7 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
                 // Scroll to the row, leaving a bit of headroom (20px)
                 const targetY = row > 0 ? (row * gridItemHeight) - 20 : 0;
 
-                scrollRef.current.scrollTo({
+                scrollRef.current?.scrollTo?.({
                     y: targetY,
                     animated: true
                 });

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, Modal, InteractionManager, BackHandler, Pressable } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, Modal, InteractionManager, BackHandler, Pressable, PanResponder } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import EfficientBlurView from '../components/EfficientBlurView';
 import CensoredText from '../components/CensoredText';
@@ -8,7 +8,9 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { THEMES, CARD_SKINS, AVATAR_FRAMES, TEXTURES } from '../context/ThemeContext';
-import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut, Easing, useSharedValue, withTiming, useAnimatedStyle, withRepeat, withSequence } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut, Easing, useSharedValue, withTiming, useAnimatedStyle, withRepeat, withSequence, withSpring, interpolateColor, useDerivedValue } from 'react-native-reanimated';
+import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hooks/useLiquidAnimation';
+
 import { DirtyCashIcon, EyeIcon, CheckIcon } from '../components/Icons';
 import ToastNotification from '../components/ToastNotification';
 import ThemeBackground from '../components/ThemeBackground';
@@ -19,6 +21,7 @@ import { useStripePayment } from '../services/StripeService';
 import HapticsService from '../services/HapticsService';
 import PaymentResultModal from '../components/PaymentResultModal';
 import ConfirmationModal from '../components/ConfirmationModal';
+import GameDataService from '../services/GameDataService';
 
 const { width } = Dimensions.get('window');
 
@@ -167,17 +170,169 @@ export default function ShopScreen() {
     const tabBarWidth = useSharedValue(0);
     const tabIndicatorX = useSharedValue(0);
 
+    // [NEW] Track activeTab in ref to avoid stale closure
+    const activeTabRef = useRef(activeTab);
+
+    // [NEW] Track layout width on JS side for PanResponder
+    const tabBarWidthRef = useRef(0);
+    const isInteracting = useRef(false);
+
+    // Sync animation when activeTab changes (only if NOT interacting)
     useEffect(() => {
-        if (tabBarWidth.value > 0) {
+        activeTabRef.current = activeTab; // Sync ref
+        if (!isInteracting.current && tabBarWidth.value > 0) {
             const tabWidth = (tabBarWidth.value - 8) / 5;
-            tabIndicatorX.value = withTiming(activeTab * tabWidth, { duration: 250, easing: Easing.out(Easing.quad) });
+            const targetPos = activeTab * tabWidth;
+
+            // [FIX] Anchors for midpoint peak
+            startX.value = tabIndicatorX.value;
+            targetX.value = targetPos;
+
+            tabIndicatorX.value = withSpring(targetPos, {
+                damping: 40,
+                stiffness: 200,
+                overshootClamping: true
+            });
         }
     }, [activeTab]);
 
+    // [NEW] Scale Animation Shared Value
+    const startX = useSharedValue(0);
+    const targetX = useSharedValue(0);
+    const isDraggingSV = useSharedValue(false);
+
+    const indicatorScale = useLiquidScale(tabIndicatorX, startX, targetX, isDraggingSV, 1.15);
+
+    // [NEW] Track if we are dragging the indicator
+    const isGrabbingIndicator = useRef(false);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            // [FIX] Prevent parent from stealing the gesture (horizontal scroll/swipe back)
+            onPanResponderTerminationRequest: () => false,
+            onShouldBlockNativeResponder: () => true,
+            onPanResponderGrant: (evt) => {
+                if (tabBarWidthRef.current <= 0) return;
+                const tabWidth = (tabBarWidthRef.current - 8) / 5;
+                const { locationX } = evt.nativeEvent;
+
+                // Determine which tab was touched
+                const touchedIndex = Math.floor((locationX - 4) / tabWidth);
+
+                // [FIX] Only allow drag if touching the ACTIVE tab
+                const isGrabbing = (touchedIndex === activeTabRef.current);
+                isGrabbingIndicator.current = isGrabbing;
+
+                // [FIX] Scale up ONLY if touching the ACTIVE tab
+                isInteracting.current = true;
+
+                if (isGrabbing) {
+                    HapticsService.trigger('selection');
+                    isDraggingSV.value = true;
+                }
+            },
+            onPanResponderMove: (evt, gestureState) => {
+                // [FIX] Only move if we grabbed the indicator
+                if (!isGrabbingIndicator.current) return;
+
+                if (tabBarWidthRef.current <= 0) return;
+                const tabWidth = (tabBarWidthRef.current - 8) / 5;
+                const startX = activeTabRef.current * tabWidth;
+                let newX = startX + gestureState.dx;
+                const maxRange = (tabBarWidthRef.current - 8) - tabWidth;
+
+                // Clamp
+                newX = Math.max(0, Math.min(newX, maxRange));
+                tabIndicatorX.value = newX;
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                if (tabBarWidthRef.current <= 0) return;
+                const tabWidth = (tabBarWidthRef.current - 8) / 5;
+                const isClick = Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5;
+                let targetIndex = activeTabRef.current;
+
+                if (isClick) {
+                    const touchX = evt.nativeEvent.locationX;
+                    targetIndex = Math.floor((touchX - 4) / tabWidth);
+                } else if (isGrabbingIndicator.current) {
+                    // [FIX] Only snap calculate if we were dragging
+                    const currentX = tabIndicatorX.value;
+                    targetIndex = Math.round(currentX / tabWidth);
+                } else {
+                    // If we weren't dragging and it wasn't a click (e.g. swipe on non-active), do nothing or reset
+                    targetIndex = activeTabRef.current;
+                }
+
+                // Clamp index (0 to 4 for 5 tabs)
+                targetIndex = Math.max(0, Math.min(4, targetIndex));
+
+                if (targetIndex !== activeTabRef.current) {
+                    HapticsService.trigger('light');
+                }
+
+                setActiveTab(targetIndex);
+
+                const targetPos = targetIndex * tabWidth;
+
+                // [FIX] Anchors on release
+                isDraggingSV.value = false;
+                startX.value = tabIndicatorX.value;
+                targetX.value = targetPos;
+
+                // Snap animation
+                tabIndicatorX.value = withSpring(targetPos, {
+                    damping: 40,
+                    stiffness: 200,
+                    overshootClamping: true
+                });
+
+
+
+                isInteracting.current = false;
+                isGrabbingIndicator.current = false;
+            }
+        })
+    ).current;
+
     const indicatorStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: tabIndicatorX.value }],
+        transform: [
+            { translateX: tabIndicatorX.value },
+            { scale: indicatorScale.value }
+        ],
         width: tabBarWidth.value > 0 ? (tabBarWidth.value - 8) / 5 : 0,
     }));
+
+    // Helper Component for Dynamic Text Color
+    const ShopTabItem = ({ title, index, tabIndicatorX, tabBarWidth }) => {
+        const textColorStyle = useAnimatedStyle(() => {
+            if (tabBarWidth.value <= 0) return {};
+            const tabWidth = (tabBarWidth.value - 8) / 5;
+            const itemCenter = index * tabWidth;
+
+            // Interpolate color based on indicator position
+            // Indicator width is tabWidth.
+            // When indicator is at 'itemCenter', color should be Accent.
+            // When indicator is away, color should be TextPrimary.
+
+            const color = interpolateColor(
+                tabIndicatorX.value,
+                [itemCenter - tabWidth, itemCenter, itemCenter + tabWidth],
+                [theme.colors.textPrimary, '#000', theme.colors.textPrimary]
+            );
+
+            return { color };
+        });
+
+        return (
+            <View style={{ flex: 1, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', zIndex: 10 }} pointerEvents="none">
+                <Animated.Text style={[{ fontFamily: 'Outfit-Bold', fontSize: 11 }, textColorStyle]} numberOfLines={1}>
+                    {title}
+                </Animated.Text>
+            </View>
+        );
+    };
 
     const handleTabPress = (index) => {
         if (activeTab !== index) {
@@ -289,8 +444,9 @@ export default function ShopScreen() {
                 style={[
                     styles.card,
                     {
-                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255, 255, 255, 0.05)',
-                        borderWidth: isUnlocked ? 2 : 1
+                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
+                        borderWidth: isUnlocked ? 2 : 1,
+                        backgroundColor: 'rgba(255,255,255,0.03)'
                     }
                 ]}
             >
@@ -322,8 +478,8 @@ export default function ShopScreen() {
                             style={[
                                 styles.buyButton,
                                 {
-                                    backgroundColor: user.balance >= price ? '#d4af37' : 'rgba(255,255,255,0.05)',
-                                    borderColor: user.balance >= price ? '#d4af37' : 'rgba(255,255,255,0.2)'
+                                    backgroundColor: user.balance >= price ? theme.colors.accent : 'rgba(255,255,255,0.05)',
+                                    borderColor: user.balance >= price ? theme.colors.accent : theme.colors.cardBorder
                                 }
                             ]}
                             onPress={() => handleBuy(itemTheme.id, price, t('theme_' + itemTheme.id, itemTheme.label))}
@@ -357,8 +513,9 @@ export default function ShopScreen() {
                 style={[
                     styles.card,
                     {
-                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255, 255, 255, 0.05)',
-                        borderWidth: isUnlocked ? 2 : 1
+                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
+                        borderWidth: isUnlocked ? 2 : 1,
+                        backgroundColor: 'rgba(255,255,255,0.03)'
                     }
                 ]}
             >
@@ -386,8 +543,8 @@ export default function ShopScreen() {
                             style={[
                                 styles.buyButton,
                                 {
-                                    backgroundColor: user.balance >= skin.price ? '#d4af37' : 'rgba(255,255,255,0.05)',
-                                    borderColor: user.balance >= skin.price ? '#d4af37' : 'rgba(255,255,255,0.2)'
+                                    backgroundColor: user.balance >= skin.price ? theme.colors.accent : theme.colors.cardBg,
+                                    borderColor: user.balance >= skin.price ? theme.colors.accent : theme.colors.cardBorder
                                 }
                             ]}
                             onPress={() => handleBuySkin(skin.id, skin.price, t('skin_' + skin.id, skin.label))}
@@ -423,8 +580,9 @@ export default function ShopScreen() {
                 style={[
                     styles.cardFrame,
                     {
-                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255, 255, 255, 0.05)',
-                        borderWidth: isUnlocked ? 2 : 1
+                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
+                        borderWidth: isUnlocked ? 2 : 1,
+                        backgroundColor: 'rgba(255,255,255,0.03)'
                     }
                 ]}
             >
@@ -442,8 +600,8 @@ export default function ShopScreen() {
                                 {
                                     flex: 1,
                                     paddingHorizontal: 0,
-                                    backgroundColor: user.balance >= price ? '#d4af37' : 'rgba(255,255,255,0.05)',
-                                    borderColor: user.balance >= price ? '#d4af37' : 'rgba(255,255,255,0.2)'
+                                    backgroundColor: user.balance >= price ? theme.colors.accent : theme.colors.cardBg,
+                                    borderColor: user.balance >= price ? theme.colors.accent : theme.colors.cardBorder
                                 }
                             ]}
                             onPress={() => handleBuyFrame(itemFrame.id, price, t('frame_' + itemFrame.id, itemFrame.label))}
@@ -482,8 +640,9 @@ export default function ShopScreen() {
                 style={[
                     styles.card,
                     {
-                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255, 255, 255, 0.05)',
-                        borderWidth: isUnlocked ? 2 : 1
+                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
+                        borderWidth: isUnlocked ? 2 : 1,
+                        backgroundColor: 'rgba(255,255,255,0.03)'
                     }
                 ]}
             >
@@ -506,8 +665,8 @@ export default function ShopScreen() {
                                 style={[
                                     styles.buyButton,
                                     {
-                                        backgroundColor: '#d4af37',
-                                        borderColor: '#d4af37'
+                                        backgroundColor: theme.colors.accent,
+                                        borderColor: theme.colors.accent
                                     }
                                 ]}
                                 onPress={() => {
@@ -559,8 +718,9 @@ export default function ShopScreen() {
                         marginBottom: 10,
                         padding: 0,
                         overflow: 'hidden',
-                        borderColor: bundle.bestValue ? '#d4af37' : 'rgba(255, 255, 255, 0.05)',
-                        borderWidth: bundle.bestValue ? 2 : 1
+                        borderColor: bundle.bestValue ? theme.colors.accent : 'rgba(255,255,255,0.1)',
+                        borderWidth: bundle.bestValue ? 2 : 1,
+                        backgroundColor: 'rgba(255,255,255,0.03)'
                     }
                 ]} // Remove default padding for full control
             >
@@ -570,7 +730,7 @@ export default function ShopScreen() {
                         position: 'absolute',
                         top: 0,
                         right: 0,
-                        backgroundColor: '#d4af37',
+                        backgroundColor: theme.colors.accent,
                         paddingHorizontal: 8,
                         paddingVertical: 2,
                         borderBottomLeftRadius: 8,
@@ -592,11 +752,11 @@ export default function ShopScreen() {
                         borderRightColor: 'rgba(255,255,255,0.05)'
                     }}
                 >
-                    <DirtyCashIcon size={42} color="#d4af37" />
+                    <DirtyCashIcon size={42} color={theme.colors.accent} />
                 </LinearGradient>
 
                 <View style={[styles.infoContainer, { paddingLeft: 15, paddingVertical: 10 }]}>
-                    <Text style={[styles.itemName, { color: '#d4af37', fontSize: 16 }]} numberOfLines={1}>
+                    <Text style={[styles.itemName, { color: theme.colors.accent, fontSize: 16 }]} numberOfLines={1}>
                         {t('dc_bundle_title', { amount: bundle.amount })}
                     </Text>
                     <Text style={[styles.itemDesc, { marginTop: 4 }]}>{t('dc_bundle_desc')}</Text>
@@ -607,8 +767,8 @@ export default function ShopScreen() {
                         style={[
                             styles.buyButton,
                             {
-                                backgroundColor: isBuying ? 'rgba(212, 175, 55, 0.5)' : '#d4af37',
-                                borderColor: '#d4af37',
+                                backgroundColor: isBuying ? theme.colors.accentWeak : theme.colors.accent,
+                                borderColor: theme.colors.accent,
                                 height: 36,
                                 paddingHorizontal: 15
                             }
@@ -629,41 +789,55 @@ export default function ShopScreen() {
         // [MODIFIED] Removed LinearGradient/ThemeBackground - Now handled globally in AppNavigator
         <View style={{ flex: 1, backgroundColor: 'transparent' }}>
             {/* Header */}
-            <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
+            <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
                 {t('shop_title')}
             </Text>
 
             {/* Balance */}
-            <View style={styles.balanceContainer}>
+            <View style={[styles.balanceContainer, { backgroundColor: theme.colors.accentWeak, borderColor: theme.colors.accent + '33' }]}>
                 <Text style={styles.balanceLabel}>{t('balance_label')}</Text>
-                <Text style={styles.balanceValue}>{user?.balance || 0}</Text>
-                <DirtyCashIcon size={16} color="#d4af37" />
+                <Text style={[styles.balanceValue, { color: theme.colors.accent }]}>{user?.balance || 0}</Text>
+                <DirtyCashIcon size={16} color={theme.colors.accent} />
             </View>
 
             <View style={{ flex: 1, paddingHorizontal: 20 }}>
                 {/* Tab Bar */}
+                {/* Tab Bar using ported Drag Logic */}
                 <View
-                    style={styles.tabBarContainer}
-                    onLayout={(e) => {
-                        tabBarWidth.value = e.nativeEvent.layout.width;
+                    style={{
+                        flexDirection: 'row',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        borderRadius: 12,
+                        padding: 4,
+                        marginBottom: 15,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.1)'
                     }}
+                    onLayout={(e) => {
+                        const w = e.nativeEvent.layout.width;
+                        tabBarWidth.value = w;
+                        tabBarWidthRef.current = w;
+                    }}
+                    {...panResponder.panHandlers}
                 >
-                    <Animated.View style={[styles.tabIndicator, indicatorStyle]} />
+                    <Animated.View style={[
+                        {
+                            position: 'absolute',
+                            top: 4, bottom: 4, left: 4,
+                            backgroundColor: theme.colors.accent,
+                            borderRadius: 8,
+                        },
+                        indicatorStyle
+                    ]} pointerEvents="none" />
+
                     {tabs.map((tab, index) => (
-                        <Pressable
-                            key={tab}
-                            onPress={() => handleTabPress(index)}
-                            style={styles.tabItem}
-                        >
-                            <Text style={{
-                                color: activeTab === index ? '#000' : '#888',
-                                fontFamily: 'Outfit-Bold',
-                                fontSize: 10,
-                                letterSpacing: 0.5
-                            }}>
-                                {tab}
-                            </Text>
-                        </Pressable>
+                        <ShopTabItem
+                            key={index}
+                            title={tab}
+                            index={index}
+                            tabIndicatorX={tabIndicatorX}
+                            tabBarWidth={tabBarWidth}
+                        />
                     ))}
                 </View>
 
@@ -707,9 +881,9 @@ export default function ShopScreen() {
                                     {t('shop_pack_info')}
                                 </Text>
                                 {[
-                                    { id: 'dark', price: 1000, color: '#ef4444', count: 168 },
-                                    { id: 'chill', price: 5000, color: '#38bdf8', count: 60 }, // [NEW] SFW Extreme
-                                    { id: 'spicy', price: 1000, color: '#d946ef', count: 50 } // [NEW] NSFW Legal (Paid placeholder, handled as DC for now or custom flow)
+                                    { id: 'dark', price: 1000, color: '#ef4444', count: (GameDataService.darkPack?.nere?.length || 0) + (GameDataService.darkPack?.bianche?.length || 0) },
+                                    { id: 'chill', price: 5000, color: '#38bdf8', count: (GameDataService.chillPack?.nere?.length || 0) + (GameDataService.chillPack?.bianche?.length || 0) },
+                                    { id: 'spicy', price: 1000, color: '#d946ef', count: (GameDataService.spicyPack?.nere?.length || 0) + (GameDataService.spicyPack?.bianche?.length || 0) }
                                 ].map((p, index) => renderPackItem(p, index))}
                             </View>
                         )}
@@ -772,7 +946,7 @@ export default function ShopScreen() {
                             <Animated.View
                                 entering={ZoomIn.delay(50).duration(300)}
                                 exiting={ZoomOut.duration(200)}
-                                style={[styles.previewModal, { borderColor: theme.colors.accent, shadowOpacity: 0, elevation: 0 }]}
+                                style={[styles.previewModal, { backgroundColor: theme.colors.background[0] === 'transparent' ? '#111' : theme.colors.background[0], borderColor: theme.colors.accent, shadowOpacity: 0, elevation: 0 }]}
                             >
                                 <View style={styles.previewHeaderNew}>
                                     <Text style={[styles.previewSubtitle, { color: theme.colors.accent }]}>
@@ -975,11 +1149,11 @@ const styles = StyleSheet.create({
     },
     tabBarContainer: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(255,255,255,0.05)',
         marginBottom: 15,
         borderRadius: 12,
         padding: 4,
-        height: 44
+        height: 44,
+        borderWidth: 1,
     },
     tabItem: {
         flex: 1,

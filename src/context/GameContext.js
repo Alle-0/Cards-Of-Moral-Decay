@@ -263,6 +263,24 @@ export const GameProvider = ({ children }) => {
             }
         });
     };
+    // [NEW] Quick Join Logic
+    const quickJoin = async () => {
+        // Find a suitable public room
+        const candidates = availableRooms.filter(r =>
+            r.visibility === 'public' &&
+            r.statoPartita === 'LOBBY' &&
+            Object.keys(r.giocatori || {}).length < 10
+        );
+
+        if (candidates.length > 0) {
+            // Pick random or first
+            const randomRoom = candidates[Math.floor(Math.random() * candidates.length)];
+            return await joinRoom(randomRoom.id);
+        } else {
+            // No room found, maybe create one? Or just return null for UI to handle
+            throw new Error("Nessuna stanza pubblica disponibile al momento.");
+        }
+    };
 
     // --- ACTIONS ---
 
@@ -320,6 +338,7 @@ export const GameProvider = ({ children }) => {
                 // [NEW] Store Package Settings & Language
                 allowedPackages: extraData.allowedPackages || { base: true, dark: false, chill: false, spicy: false },
                 roomLanguage: extraData.roomLanguage || GameDataService.language || 'it',
+                visibility: extraData.visibility || 'private', // [NEW] public vs private
                 chaosMode: extraData.chaosMode || false, // [NEW] Chaos Engine Toggle
                 activeChaosEvent: null, // [NEW] Current active event
                 lastChaosEvent: null, // [NEW] Track history for variety
@@ -421,7 +440,7 @@ export const GameProvider = ({ children }) => {
                 await set(ref(db, `stanze/${code}/punti/${currentName}`), 0);
             }
 
-            await setPresence(code, currentName);
+            setPresence(code, currentName).catch(e => console.warn("Presence failed async:", e));
             setRoomCode(code);
             setRoomPlayerName(currentName);
             AsyncStorage.setItem('lastRoomCode', code);
@@ -1012,7 +1031,7 @@ export const GameProvider = ({ children }) => {
     const contextValue = useMemo(() => ({
         user, roomCode, roomData, loading, error, availableRooms,
         refreshRooms,
-        login, createRoom, joinRoom, leaveRoom,
+        login, createRoom, joinRoom, leaveRoom, quickJoin, // [NEW]
         kickPlayer,
         updateRoomSettings,
         startGame, playCards, confirmDominusSelection, nextRound, discardCard, useAIJoker, forceReveal, bribeHand, dominusDiscardPlayerHand, // [NEW]
