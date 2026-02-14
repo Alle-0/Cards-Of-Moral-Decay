@@ -30,7 +30,7 @@ const IdentityStep = ({
         >
             {/* Title Section */}
             <View style={{ width: '100%', marginBottom: 30, marginTop: 10 }}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.accent }]}>{t('who_are_you')}</Text>
+                <Text style={styles.sectionTitle}>{t('who_are_you')}</Text>
                 <Text style={[styles.subTitle, { color: '#888', fontFamily: 'Outfit' }]}>
                     {t('choose_identity_sub')}
                 </Text>
@@ -95,10 +95,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     sectionTitle: {
-        fontSize: 32,
+        fontSize: 22,
         fontFamily: 'Cinzel-Bold',
-        marginBottom: 10,
+        marginBottom: 5,
         textAlign: 'left',
+        color: '#FFFFFF'
     },
     subTitle: {
         fontSize: 16,

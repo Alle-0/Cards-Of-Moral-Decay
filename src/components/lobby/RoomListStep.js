@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, PanResponder, FlatList } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolateColor, withSequence, withTiming, useDerivedValue } from 'react-native-reanimated';
+import { View, Text, ScrollView, StyleSheet, PanResponder, FlatList, LayoutAnimation, Platform, UIManager } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolateColor, withSequence, withTiming, useDerivedValue, LinearTransition, Easing, FadeIn, ZoomIn, interpolate } from 'react-native-reanimated';
 import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../../hooks/useLiquidAnimation';
 
 // ...
@@ -31,7 +31,7 @@ const TabItem = ({ label, index, dragX }) => {
     );
 };
 
-const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollEnabled = true, children }) => {
+const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollEnabled = true }) => {
     const { t } = useLanguage();
     const { theme } = useTheme();
     const [activeTab, setActiveTab] = React.useState('friends'); // 'friends' | 'public'
@@ -58,6 +58,9 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
 
     // ... (Keep existing useEffects and PanResponder) ...
     useEffect(() => {
+        if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+            UIManager.setLayoutAnimationEnabledExperimental(true);
+        }
         activeTabRef.current = activeTab;
     }, [activeTab]);
 
@@ -65,7 +68,7 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
         const target = activeTab === 'friends' ? 0 : 50;
         startX.value = dragXPercent.value;
         targetX.value = target;
-        dragXPercent.value = withSpring(target, { damping: 40, stiffness: 200, overshootClamping: true });
+        dragXPercent.value = withSpring(target, SNAP_SPRING_CONFIG);
     }, [activeTab]);
 
     const panResponder = useRef(
@@ -106,6 +109,8 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
                     targetPercent = dragXPercent.value > 25 ? 50 : 0;
                 }
                 const newTab = targetPercent === 0 ? 'friends' : 'public';
+                // [FIX] Animate height change
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setActiveTab(newTab);
                 if (newTab !== activeTabRef.current) {
                     HapticsService.trigger('selection');
@@ -118,14 +123,16 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
 
     const indicatorStyle = useAnimatedStyle(() => {
         return {
-            transform: [{ scale: tabScale.value }],
+            transform: [
+                { translateX: interpolate(dragXPercent.value, [0, 50], [2, -2]) },
+                { scale: tabScale.value }
+            ],
             left: `${dragXPercent.value}%`
         };
     });
 
     const renderHeader = () => (
         <View>
-            {children}
             <View style={{ width: '100%', marginTop: 20 }}>
                 <View
                     style={[
@@ -155,40 +162,64 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
         </View>
     );
 
+    // [FIX] explicit height animation for Web/Native consistency
+    const listHeight = useSharedValue(200); // Start with minHeight
+
+    const animatedListStyle = useAnimatedStyle(() => ({
+        height: withTiming(listHeight.value, { duration: 300, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }),
+        opacity: withTiming(1, { duration: 300 }) // Fade in content slightly?
+    }));
+
     return (
-        <View style={{ width: '100%', marginTop: 20, minHeight: 400 }}>
-            <FlatList
-                data={activeList}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <RoomItem
-                        roomName={`${item.id}`}
-                        playerCount={Object.keys(item.giocatori || {}).length}
-                        state={item.statoPartita === 'LOBBY' ? t('lobby_state') : t('playing_state')}
-                        onJoin={() => onJoinRoom(item.id)}
-                        joinText={t('join_btn')}
-                        creatorName={item.creatore}
-                        isOnline={item.giocatori?.[item.creatore]?.online}
-                        creatorId={item.creatorUsername || item.creatore}
-                    />
-                )}
-                ListHeaderComponent={renderHeader}
-                ListEmptyComponent={
-                    <View style={{ minHeight: 100, justifyContent: 'center' }}>
-                        <Text style={styles.emptyText}>
-                            {t('no_public_rooms')}
-                        </Text>
-                    </View>
-                }
-                scrollEnabled={scrollEnabled}
-                contentContainerStyle={{ flexGrow: 0, paddingBottom: 20 }}
-                showsVerticalScrollIndicator={false}
-                initialNumToRender={6}
-                maxToRenderPerBatch={6}
-                windowSize={5}
-                removeClippedSubviews={false}
-            />
-        </View>
+        <Animated.View
+            style={[{ width: '100%', overflow: 'hidden' }, animatedListStyle]}
+        >
+            <View
+                style={{ width: '100%', position: 'absolute' }}
+                onLayout={(event) => {
+                    const { height } = event.nativeEvent.layout;
+                    // Only update if difference > 1 to avoid jitter
+                    if (Math.abs(listHeight.value - height) > 1) {
+                        listHeight.value = height;
+                    }
+                }}
+            >
+                <FlatList
+                    data={activeList}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <RoomItem
+                            roomName={`${item.id}`}
+                            playerCount={Object.keys(item.giocatori || {}).length}
+                            state={item.statoPartita === 'LOBBY' ? t('lobby_state') : t('playing_state')}
+                            onJoin={() => onJoinRoom(item.id)}
+                            joinText={t('join_btn')}
+                            creatorName={item.creatore}
+                            isOnline={item.giocatori?.[item.creatore]?.online}
+                            creatorId={item.creatorUsername || item.creatore}
+                        />
+                    )}
+                    ListHeaderComponent={renderHeader}
+                    ListEmptyComponent={
+                        <Animated.View
+                            entering={ZoomIn.duration(500).springify()}
+                            style={{ minHeight: 20, justifyContent: 'center' }}
+                        >
+                            <Text style={styles.emptyText}>
+                                {t('no_public_rooms')}
+                            </Text>
+                        </Animated.View>
+                    }
+                    scrollEnabled={scrollEnabled}
+                    contentContainerStyle={{ flexGrow: 0, paddingBottom: 20 }} // Added paddingBottom
+                    showsVerticalScrollIndicator={false}
+                    initialNumToRender={6}
+                    maxToRenderPerBatch={6}
+                    windowSize={5}
+                    removeClippedSubviews={false}
+                />
+            </View>
+        </Animated.View>
     );
 };
 

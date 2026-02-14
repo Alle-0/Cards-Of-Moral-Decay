@@ -18,6 +18,9 @@ const PremiumInput = ({
     const focusAnim = useSharedValue(0);
     const inputRef = useRef(null);
 
+    // Extract height from style prop, default to 60
+    const customHeight = style?.height || 60;
+
     const handleFocus = () => {
         setIsFocused(true);
         focusAnim.value = withTiming(1, { duration: 200, easing: Easing.bezier(0.4, 0, 0.2, 1) });
@@ -41,7 +44,7 @@ const PremiumInput = ({
         return {
             top: 0,
             transform: [
-                { translateY: withTiming(focusAnim.value === 1 || value ? -6 : 18, { duration: 200 }) }, // [FIX] Lower position (-10 -> -4)
+                { translateY: withTiming(focusAnim.value === 1 || value ? -6 : customHeight * 0.3, { duration: 200 }) },
             ],
             fontSize: withTiming(focusAnim.value === 1 || value ? 12 : 16),
             color: withTiming(focusAnim.value === 1 ? theme.colors.accent : 'rgba(243, 243, 243, 0.5)'),
@@ -50,7 +53,7 @@ const PremiumInput = ({
             borderRadius: 4,
             zIndex: 10,
         };
-    }, [value, theme.colors.accent, labelBackgroundColor]);
+    }, [value, theme.colors.accent, labelBackgroundColor, customHeight]);
 
     const borderStyle = useAnimatedStyle(() => {
         return {
@@ -61,14 +64,14 @@ const PremiumInput = ({
 
 
     return (
-        <View style={[styles.wrapper, style]}>
+        <View style={[styles.wrapper, style, { height: customHeight }]}>
             <Pressable
                 onPress={() => inputRef.current?.focus()}
                 android_disableSound={true}
                 android_ripple={null}
                 style={{ width: '100%' }}
             >
-                <Animated.View style={[styles.inputContainer, borderStyle]}>
+                <Animated.View style={[styles.inputContainer, borderStyle, { height: customHeight }]}>
                     <TextInput
                         ref={inputRef}
                         style={[styles.input, { color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', backgroundColor: 'transparent' }]}

@@ -31,7 +31,7 @@ const ModalLanguageItem = ({ lang, translateX, theme }) => {
         const isIt = lang === 'it';
         const color = interpolateColor(
             translateX.value,
-            [2, 52],
+            [0, 47],
             isIt
                 ? ['#000000', theme.colors.textPrimary + '88']
                 : [theme.colors.textPrimary + '88', '#000000']
@@ -66,14 +66,13 @@ const SettingsTabItem = ({ title, index, onPress, tabIndicatorX, tabBarWidth, th
     });
 
     return (
-        <Pressable
-            onPress={onPress}
+        <View
             style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8, zIndex: 1 }}
         >
             <Animated.Text style={[{ fontFamily: 'Outfit-Bold', fontSize: 13, includeFontPadding: false }, textStyle]}>
                 {title}
             </Animated.Text>
-        </Pressable>
+        </View>
     );
 };
 
@@ -138,7 +137,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
         }
 
         const targetX = language === 'en' ? 50 : 0;
-        dragXLang.value = withSpring(targetX, { damping: 40, stiffness: 200, overshootClamping: true });
+        dragXLang.value = withSpring(targetX, SNAP_SPRING_CONFIG);
     }, [language]);
 
     // [NEW] Language Drag Logic
@@ -152,7 +151,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                 const { locationX } = evt.nativeEvent;
 
                 // [FIX] Validate that touch is within selector bounds (0-103px)
-                if (locationX < 0 || locationX > 103) return;
+                if (locationX < 0 || locationX > 100) return;
 
                 // [FIX] Hit detection matching lobby: EN is right half (>50px)
                 const hitLang = locationX > 50 ? 'en' : 'it';
@@ -175,10 +174,10 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
             onPanResponderMove: (_, gestureState) => {
                 if (!isGrabbingIndicatorLang.current) return;
 
-                const startLangX = gestureStartLang.current === 'en' ? 50 : 0;
+                const startLangX = gestureStartLang.current === 'en' ? 47 : 0;
                 let newX = startLangX + gestureState.dx;
                 if (newX < 0) newX = 0;
-                if (newX > 50) newX = 50;
+                if (newX > 47) newX = 47;
                 dragXLang.value = newX;
             },
             onPanResponderRelease: (_, gestureState) => {
@@ -195,7 +194,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     return;
                 } else {
                     // [DRAG] Snap based on current position
-                    targetLang = (dragXLang.value > 25) ? 'en' : 'it';
+                    targetLang = (dragXLang.value > 23.5) ? 'en' : 'it';
                 }
 
                 if (targetLang !== currentLang) {
@@ -205,7 +204,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                 }
 
                 // [FIX] Anchors on release
-                const targetPos = (targetLang || currentLang) === 'en' ? 50 : 0;
+                const targetPos = (targetLang || currentLang) === 'en' ? 47 : 0;
                 updateLiquidAnchors(startX, targetX, isGrabbingSV, dragXLang.value, targetPos);
 
                 dragXLang.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
@@ -401,9 +400,12 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
         activeTabRef.current = activeTab;
     }, [activeTab]);
 
+    const touchedTabIndex = useRef(null); // [NEW] Track which tab was touched
+
     const tabsPanResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
+            onStartShouldSetPanResponderCapture: () => true,
             onMoveShouldSetPanResponder: () => true,
             onPanResponderTerminationRequest: () => false,
             onPanResponderGrant: (evt) => {
@@ -411,8 +413,10 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                 const tabWidth = (tabBarWidth.value - 8) / 3;
                 const { locationX } = evt.nativeEvent;
 
-                const touchedIndex = Math.floor((locationX - 4) / tabWidth);
-                if (touchedIndex === activeTabRef.current) {
+                const index = Math.floor((locationX - 4) / tabWidth);
+                touchedTabIndex.current = index; // Store for potential click
+
+                if (index === activeTabRef.current) {
                     isGrabbingTabIndicator.current = true;
                     isDraggingTabsSV.value = true;
                     HapticsService.trigger('selection');
@@ -441,11 +445,10 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     targetIndex = Math.round(currentPos / tabWidth);
                 } else {
                     // Click logic
-                    const { locationX } = gestureState; // This might be relative to screen if not captured correctly, but for tap it's usually okay or we rely on onPress
-                    // Check if it was a tap (small movement)
                     if (Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5) {
-                        // We rely on Pressable onPress for taps on non-active tabs
-                        return;
+                        if (touchedTabIndex.current !== null) {
+                            targetIndex = touchedTabIndex.current;
+                        }
                     }
                 }
 
@@ -463,6 +466,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
 
                 tabIndicatorX.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
                 isGrabbingTabIndicator.current = false;
+                touchedTabIndex.current = null;
             }
         })
     ).current;
@@ -714,7 +718,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                         backgroundColor: 'rgba(0,0,0,0.4)',
                                         borderRadius: 10,
                                         padding: 3,
-                                        width: 103,
+                                        width: 100,
                                         height: 32
                                     }}
                                     {...langPanResponder.panHandlers}

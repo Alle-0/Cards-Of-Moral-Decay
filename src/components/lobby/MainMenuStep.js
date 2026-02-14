@@ -1,6 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import Animated, { SlideInRight, SlideOutRight, LinearTransition } from 'react-native-reanimated';
+import Animated, {
+    SlideInRight,
+    SlideOutRight,
+    LinearTransition,
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming
+} from 'react-native-reanimated';
 import RoomListStep from './RoomListStep';
 import PremiumInput from '../PremiumInput';
 import { useLanguage } from '../../context/LanguageContext';
@@ -22,117 +30,142 @@ const MainMenuStep = ({
     const { t } = useLanguage();
     const [showJoinInput, setShowJoinInput] = useState(false);
 
+    // [NEW] Manual Height Animation for reliability on Web
+    const heightSV = useSharedValue(0);
+    const opacitySV = useSharedValue(0);
+    const translateSV = useSharedValue(500); // Start off-screen to the right
+
+    useEffect(() => {
+        if (showJoinInput) {
+            heightSV.value = withSpring(75, { damping: 40, stiffness: 300 });
+            opacitySV.value = withSpring(1, { damping: 40, stiffness: 300 });
+            translateSV.value = withSpring(0, { damping: 40, stiffness: 300 });
+        } else {
+            heightSV.value = withSpring(0, { damping: 40, stiffness: 300 });
+            opacitySV.value = withSpring(0, { damping: 40, stiffness: 300 });
+            translateSV.value = withSpring(500, { damping: 40, stiffness: 300 }); // Slide out to right
+        }
+    }, [showJoinInput]);
+
+    const animatedWrapperStyle = useAnimatedStyle(() => ({
+        height: heightSV.value,
+        opacity: opacitySV.value,
+        overflow: 'hidden'
+    }));
+
+    const animatedInnerStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: translateSV.value }]
+    }));
+
     return (
         <Animated.View
             entering={SlideInRight.springify().damping(35).stiffness(150)}
             exiting={SlideOutRight.duration(300)}
             style={styles.stepContainer}
         >
+            <View style={styles.contentWrapper}>
+                {/* BACK BUTTON */}
+                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                    <Text style={styles.backButtonText}>{t('back_button')}</Text>
+                </TouchableOpacity>
+
+                {/* MAIN CARD CONTAINER */}
+                <Animated.View
+                    style={[styles.cardContainer, { borderColor: theme.colors.cardBorder, overflow: 'visible' }]}
+                >
+
+                    {/* QUICK JOIN SECTION */}
+                    <View style={styles.section}>
+                        <TouchableOpacity
+                            style={[styles.quickJoinButton, { backgroundColor: theme.colors.accent }]}
+                            onPress={onQuickJoin}
+                            activeOpacity={0.8}
+                            disabled={isLoading}
+                        >
+                            <Text style={styles.quickJoinText}>{t('quick_join_btn')}</Text>
+                            <Text style={styles.quickJoinSubtext}>{t('quick_join_subtitle')}</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* CREATE / JOIN BUTTONS */}
+                    <View style={styles.section}>
+                        <View style={styles.actionRow}>
+                            {/* CREATE BUTTON */}
+                            <TouchableOpacity
+                                style={[
+                                    styles.actionCard,
+                                    {
+                                        borderColor: 'rgba(255,255,255,0.1)',
+                                        backgroundColor: 'rgba(0,0,0,0.3)'
+                                    }
+                                ]}
+                                onPress={() => onCreateRoom({})}
+                                disabled={isLoading}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.actionCardText}>{t('create_room')}</Text>
+                            </TouchableOpacity>
+
+                            {/* JOIN BUTTON */}
+                            <TouchableOpacity
+                                style={[
+                                    styles.actionCard,
+                                    {
+                                        borderColor: showJoinInput ? theme.colors.accent : 'rgba(255,255,255,0.1)',
+                                        backgroundColor: showJoinInput ? theme.colors.accent : 'rgba(0,0,0,0.3)'
+                                    }
+                                ]}
+                                onPress={() => setShowJoinInput(!showJoinInput)}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.actionCardText,
+                                    showJoinInput && { color: '#000' }
+                                ]}>
+                                    {t('insert_code')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* JOIN CODE INPUT - ANIMATED HEIGHT CONTAINER */}
+                    {/* Always Render but Animate Visibility */}
+                    <Animated.View style={animatedWrapperStyle}>
+                        <Animated.View style={[styles.codeSection, animatedInnerStyle]}>
+                            <View style={styles.codeInputRow}>
+                                <View style={{ flex: 1, marginRight: 10 }}>
+                                    <PremiumInput
+                                        label={t('room_code')}
+                                        value={roomToJoin}
+                                        onChangeText={(text) => setRoomToJoin(text.toUpperCase())}
+                                        maxLength={6}
+                                        autoCapitalize="characters"
+                                        labelBackgroundColor="#0d0d0d"
+                                        style={{ marginVertical: 0, height: 50 }}
+                                    />
+                                </View>
+                                <TouchableOpacity
+                                    style={[styles.goButton, { backgroundColor: theme.colors.accent }]}
+                                    onPress={() => onJoinRoom(roomToJoin)}
+                                    disabled={!roomToJoin || isLoading}
+                                >
+                                    <Text style={styles.goButtonText}>GO</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </Animated.View>
+                    </Animated.View>
+                </Animated.View>
+            </View>
+
             {/* ROOM LISTS - NOW WRAPS EVERYTHING */}
             <RoomListStep
                 friendsRooms={friendsRooms}
                 publicRooms={publicRooms}
                 onJoinRoom={onJoinRoom}
                 scrollEnabled={scrollEnabled}
-            >
-                <View style={styles.contentWrapper}>
-                    {/* BACK BUTTON */}
-                    <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <Text style={styles.backButtonText}>{t('back_button')}</Text>
-                    </TouchableOpacity>
+            />
 
-                    {/* MAIN CARD CONTAINER */}
-                    <View style={[styles.cardContainer, { borderColor: theme.colors.cardBorder }]}>
-
-                        {/* QUICK JOIN SECTION */}
-                        <View style={styles.section}>
-                            <TouchableOpacity
-                                style={[styles.quickJoinButton, { backgroundColor: theme.colors.accent }]}
-                                onPress={onQuickJoin}
-                                activeOpacity={0.8}
-                                disabled={isLoading}
-                            >
-                                <Text style={styles.quickJoinText}>{t('quick_join_btn')}</Text>
-                                <Text style={styles.quickJoinSubtext}>{t('quick_join_subtitle')}</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* CREATE / JOIN BUTTONS */}
-                        <View style={styles.section}>
-                            <View style={styles.actionRow}>
-                                {/* CREATE BUTTON */}
-                                <TouchableOpacity
-                                    style={[
-                                        styles.actionCard,
-                                        {
-                                            borderColor: 'rgba(255,255,255,0.1)',
-                                            backgroundColor: 'rgba(0,0,0,0.3)'
-                                        }
-                                    ]}
-                                    onPress={() => onCreateRoom({})}
-                                    disabled={isLoading}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={styles.actionCardText}>{t('create_room')}</Text>
-                                </TouchableOpacity>
-
-                                {/* JOIN BUTTON */}
-                                <TouchableOpacity
-                                    style={[
-                                        styles.actionCard,
-                                        {
-                                            borderColor: showJoinInput ? theme.colors.accent : 'rgba(255,255,255,0.1)',
-                                            backgroundColor: showJoinInput ? theme.colors.accentWeak : 'rgba(0,0,0,0.3)'
-                                        }
-                                    ]}
-                                    onPress={() => setShowJoinInput(!showJoinInput)}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={[
-                                        styles.actionCardText,
-                                        showJoinInput && { color: '#000', fontWeight: 'bold' }
-                                    ]}>
-                                        {t('insert_code')}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        {/* JOIN CODE INPUT */}
-                        {showJoinInput && (
-                            <Animated.View
-                                entering={SlideInRight.duration(200)}
-                                exiting={SlideOutRight.duration(200)}
-                                layout={LinearTransition}
-                                style={styles.codeSection}
-                            >
-                                <View style={styles.codeInputRow}>
-                                    <View style={{ flex: 1, marginRight: 10 }}>
-                                        <PremiumInput
-                                            label={t('room_code')}
-                                            value={roomToJoin}
-                                            onChangeText={(text) => setRoomToJoin(text.toUpperCase())}
-                                            maxLength={6}
-                                            autoCapitalize="characters"
-                                            labelBackgroundColor="#0d0d0d"
-                                            style={{ marginVertical: 0 }}
-                                        />
-                                    </View>
-                                    <TouchableOpacity
-                                        style={[styles.goButton, { backgroundColor: theme.colors.accent }]}
-                                        onPress={() => onJoinRoom(roomToJoin)}
-                                        disabled={!roomToJoin || isLoading}
-                                    >
-                                        <Text style={styles.goButtonText}>GO</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </Animated.View>
-                        )}
-                    </View>
-                </View>
-            </RoomListStep>
-
-        </Animated.View>
+        </Animated.View >
     );
 };
 
@@ -160,7 +193,8 @@ const styles = StyleSheet.create({
         padding: 20,
         width: '94%',
         alignSelf: 'center',
-        marginBottom: 10
+        marginBottom: 10,
+        overflow: 'hidden'
     },
 
     // SECTIONS
@@ -233,21 +267,22 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
+        height: 50,
     },
     codeInput: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.3)',
         borderWidth: 1.5,
         borderRadius: 14,
-        padding: 14,
+        padding: 10,
         textAlign: 'center',
         fontFamily: 'Cinzel-Bold',
-        fontSize: 14,
+        fontSize: 10,
         letterSpacing: 1
     },
     goButton: {
-        height: 60,
-        width: 80,
+        height: 50,
+        width: 70,
         borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',

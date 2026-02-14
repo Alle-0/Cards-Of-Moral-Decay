@@ -423,13 +423,13 @@ const LobbyScreen = ({ onStartLoading }) => {
                     })()}
 
                     {/* UNIFIED FRAME STRUCTURE */}
-                    <View style={{ flex: 1, justifyContent: 'center', paddingBottom: 80 + insets.bottom, paddingTop: insets.top + 20 }}>
+                    <View style={{ flex: 1, justifyContent: 'flex-start', paddingBottom: 80 + insets.bottom, paddingTop: insets.top + 100 }}>
                         <View style={styles.frameContainer}>
                             {currentStep === STEPS.IDENTITY && (
                                 <Animated.View
                                     entering={FadeIn.duration(400)}
                                     exiting={FadeOut.duration(300)}
-                                    style={{ alignItems: 'center', marginBottom: 20 }}
+                                    style={{ position: 'absolute', top: 0, width: '100%', alignItems: 'center', zIndex: -1 }}
                                 >
                                     <Text style={[styles.mainTitle, { color: theme.colors.accent }]}>CARDS OF</Text>
                                     <Text style={[styles.mainTitle, { color: theme.colors.accent }]}>MORAL DECAY</Text>
@@ -437,8 +437,14 @@ const LobbyScreen = ({ onStartLoading }) => {
                             )}
 
                             <Animated.View
-                                layout={LinearTransition.duration(300)}
-                                style={[styles.innerFrame, { borderColor: theme.colors.cardBorder, marginTop: 5, width: '100%' }]}
+                                layout={LinearTransition.springify().damping(35).stiffness(200)}
+                                style={[styles.innerFrame, {
+                                    borderColor: theme.colors.cardBorder,
+                                    marginTop: currentStep === STEPS.IDENTITY ? 110 : 5,
+                                    width: '100%',
+                                    zIndex: 1,
+                                    backgroundColor: '#0d0d0d' // Ensure solid bg to cover
+                                }]}
                             >
                                 {currentStep === STEPS.IDENTITY ? (
                                     <View>

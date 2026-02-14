@@ -15,7 +15,7 @@ import HapticsService from '../services/HapticsService';
 // [NEW] Internal refined component for robust liquid toggle
 const LiquidToggle = ({ type, setType, t, theme }) => {
     const [containerWidth, setContainerWidth] = useState(0);
-    const tabWidth = (containerWidth - 8) / 2;
+    const tabWidth = (containerWidth - 10) / 2;
 
     const dragX = useSharedValue(type === 'white' ? 0 : 0); // Will update on layout
     const startX = useSharedValue(0);
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
         height: 50,
         backgroundColor: 'rgba(0,0,0,0.4)',
         borderRadius: 25,
-        padding: 4,
+        padding: 5,
         position: 'relative',
         justifyContent: 'center',
         borderWidth: 1,
@@ -293,10 +293,10 @@ const styles = StyleSheet.create({
     },
     toggleIndicator: {
         position: 'absolute',
-        top: 4,
-        bottom: 4,
-        left: 4,
-        borderRadius: 21,
+        top: 5,
+        bottom: 5,
+        left: 5,
+        borderRadius: 20,
         backgroundColor: '#FFF',
         height: 40, // Height - padding*2
     },

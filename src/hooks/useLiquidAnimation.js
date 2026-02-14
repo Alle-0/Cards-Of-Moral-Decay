@@ -1,9 +1,8 @@
 import { useDerivedValue, withSpring, useSharedValue } from 'react-native-reanimated';
-
 export const SNAP_SPRING_CONFIG = {
     damping: 40,
     stiffness: 200,
-    overshootClamping: true
+    overshootClamping: false
 };
 
 /**

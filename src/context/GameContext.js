@@ -86,7 +86,7 @@ export const GameProvider = ({ children }) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 const now = Date.now();
-                const STALE_MS = 8 * 60 * 60 * 1000; // 8 Hours
+                const STALE_MS = 24 * 60 * 60 * 1000; // 24 Hours
 
                 const roomList = Object.keys(data).map(key => {
                     const room = data[key];

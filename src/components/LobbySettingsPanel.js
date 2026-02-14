@@ -61,11 +61,17 @@ const PackCard = React.memo(({ pack, isSelected, isOwned, onToggle, onPreview, t
     const borderColorSV = useSharedValue(isSelected ? theme.colors.accent : (isOwned ? 'rgba(255,255,255,0.05)' : '#111'));
 
     useEffect(() => {
-        opacitySV.value = withTiming(isSelected ? 1 : (isOwned ? 0.8 : 0.5), { duration: 250 });
-        selectionProgress.value = withTiming(isSelected ? 1 : 0, { duration: 250 });
-        borderColorSV.value = withTiming(
-            isSelected ? 'rgba(255,255,255,0.3)' : (isOwned ? 'rgba(255,255,255,0.05)' : '#111'), // [FIX] Brighter border on select
-            { duration: 250 }
+        opacitySV.value = withSpring(
+            isSelected ? 1 : (isOwned ? 0.8 : 0.5),
+            SNAP_SPRING_CONFIG
+        );
+        selectionProgress.value = withSpring(
+            isSelected ? 1 : 0,
+            SNAP_SPRING_CONFIG
+        );
+        borderColorSV.value = withSpring(
+            isSelected ? 'rgba(255,255,255,0.3)' : (isOwned ? 'rgba(255,255,255,0.05)' : '#111'),
+            SNAP_SPRING_CONFIG
         );
     }, [isSelected, isOwned]);
 
@@ -181,7 +187,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
         startXPoints.value = dragXPoints.value;
         targetXPoints.value = targetX;
 
-        dragXPoints.value = withSpring(targetX, { damping: 40, stiffness: 200, overshootClamping: true });
+        dragXPoints.value = withSpring(targetX, SNAP_SPRING_CONFIG);
     }, [settings.points, isHost]);
 
     useEffect(() => {
@@ -194,7 +200,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
         startXLang.value = dragXLang.value;
         targetXLang.value = targetX;
 
-        dragXLang.value = withSpring(targetX, { damping: 40, stiffness: 200, overshootClamping: true });
+        dragXLang.value = withSpring(targetX, SNAP_SPRING_CONFIG);
     }, [settings.language, isHost]);
 
     const togglePack = (packId) => {
@@ -592,7 +598,7 @@ const styles = StyleSheet.create({
         top: 2,
         left: 2,
         bottom: 2,
-        width: 50,
+        width: 48,
         backgroundColor: 'rgba(255,255,255,0.1)',
         borderRadius: 18,
         borderWidth: 1,

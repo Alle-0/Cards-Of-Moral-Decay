@@ -1938,6 +1938,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingBottom: Platform.OS === 'android' ? 80 : 20,
     },
     lobbyTitle: {
         fontSize: 32,

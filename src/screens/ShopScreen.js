@@ -83,7 +83,46 @@ export default function ShopScreen() {
     const [buyingId, setBuyingId] = useState(null);
     const [ready, setReady] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
-    const [preview, setPreview] = useState(null);
+    const [preview, setPreview] = useState(null); // [RESTORED]
+    // [NEW] Track visited tabs for Lazy + Keep Alive
+    const [visitedTabs, setVisitedTabs] = useState([0]);
+    const [readyTabs, setReadyTabs] = useState([0]);
+
+    useEffect(() => {
+        if (!visitedTabs.includes(activeTab)) {
+            setVisitedTabs(prev => [...prev, activeTab]);
+
+            // Defer heavy render to allow animation to complete (400ms for spring)
+            setTimeout(() => {
+                setReadyTabs(prev => [...prev, activeTab]);
+            }, 400);
+        }
+    }, [activeTab]);
+
+    const renderTabContent = (index, content) => {
+        if (!visitedTabs.includes(index)) return null;
+
+        const isVisible = activeTab === index;
+        const isReady = readyTabs.includes(index);
+
+        return (
+            <View style={{ display: isVisible ? 'flex' : 'none', flex: 1 }}>
+                {!isReady ? (
+                    renderSkeleton()
+                ) : (
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        overScrollMode="never"
+                    >
+                        {content}
+                    </ScrollView>
+                )}
+            </View>
+        );
+    };
     const [showExitModal, setShowExitModal] = useState(false);
 
     // Stripe Logic
@@ -146,11 +185,51 @@ export default function ShopScreen() {
         );
     };
 
-    const renderSkeleton = () => (
-        <ScrollView contentContainerStyle={{ paddingBottom: 80 + insets.bottom }} showsVerticalScrollIndicator={false}>
-            {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
-        </ScrollView>
-    );
+    // Skeleton HelpersWrapper
+    const SkeletonGridItem = () => {
+        const opacity = useSharedValue(0.3);
+        useEffect(() => {
+            opacity.value = withRepeat(
+                withSequence(
+                    withTiming(0.1, { duration: 800 }),
+                    withTiming(0.3, { duration: 800 })
+                ),
+                -1,
+                true
+            );
+        }, []);
+
+        const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+        return (
+            <Animated.View style={[{
+                width: '48%', // [FIX] 2-column layout for Shop
+                aspectRatio: 1,
+                borderRadius: 12,
+                marginTop: 15,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.1)',
+                backgroundColor: 'rgba(255,255,255,0.02)',
+            }, animatedStyle]} />
+        );
+    };
+
+    const renderSkeleton = () => {
+        if (activeTab === 2) {
+            // Grid Layout for Frames
+            return (
+                <View style={{ flex: 1, padding: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonGridItem key={i} />)}
+                </View>
+            );
+        }
+        // List Layout for others
+        return (
+            <ScrollView contentContainerStyle={{ paddingBottom: 80 + insets.bottom }} showsVerticalScrollIndicator={false}>
+                {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
+            </ScrollView>
+        );
+    };
 
     // Android Back Handler
     useEffect(() => {
@@ -181,18 +260,14 @@ export default function ShopScreen() {
     useEffect(() => {
         activeTabRef.current = activeTab; // Sync ref
         if (!isInteracting.current && tabBarWidth.value > 0) {
-            const tabWidth = (tabBarWidth.value - 8) / 5;
+            const tabWidth = (tabBarWidth.value - 10) / 5;
             const targetPos = activeTab * tabWidth;
 
             // [FIX] Anchors for midpoint peak
             startX.value = tabIndicatorX.value;
             targetX.value = targetPos;
 
-            tabIndicatorX.value = withSpring(targetPos, {
-                damping: 40,
-                stiffness: 200,
-                overshootClamping: true
-            });
+            tabIndicatorX.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
         }
     }, [activeTab]);
 
@@ -215,7 +290,7 @@ export default function ShopScreen() {
             onShouldBlockNativeResponder: () => true,
             onPanResponderGrant: (evt) => {
                 if (tabBarWidthRef.current <= 0) return;
-                const tabWidth = (tabBarWidthRef.current - 8) / 5;
+                const tabWidth = (tabBarWidthRef.current - 10) / 5;
                 const { locationX } = evt.nativeEvent;
 
                 // Determine which tab was touched
@@ -238,10 +313,10 @@ export default function ShopScreen() {
                 if (!isGrabbingIndicator.current) return;
 
                 if (tabBarWidthRef.current <= 0) return;
-                const tabWidth = (tabBarWidthRef.current - 8) / 5;
+                const tabWidth = (tabBarWidthRef.current - 10) / 5;
                 const startX = activeTabRef.current * tabWidth;
                 let newX = startX + gestureState.dx;
-                const maxRange = (tabBarWidthRef.current - 8) - tabWidth;
+                const maxRange = (tabBarWidthRef.current - 10) - tabWidth;
 
                 // Clamp
                 newX = Math.max(0, Math.min(newX, maxRange));
@@ -249,7 +324,7 @@ export default function ShopScreen() {
             },
             onPanResponderRelease: (evt, gestureState) => {
                 if (tabBarWidthRef.current <= 0) return;
-                const tabWidth = (tabBarWidthRef.current - 8) / 5;
+                const tabWidth = (tabBarWidthRef.current - 10) / 5;
                 const isClick = Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5;
                 let targetIndex = activeTabRef.current;
 
@@ -282,11 +357,7 @@ export default function ShopScreen() {
                 targetX.value = targetPos;
 
                 // Snap animation
-                tabIndicatorX.value = withSpring(targetPos, {
-                    damping: 40,
-                    stiffness: 200,
-                    overshootClamping: true
-                });
+                tabIndicatorX.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
 
 
 
@@ -301,14 +372,14 @@ export default function ShopScreen() {
             { translateX: tabIndicatorX.value },
             { scale: indicatorScale.value }
         ],
-        width: tabBarWidth.value > 0 ? (tabBarWidth.value - 8) / 5 : 0,
+        width: tabBarWidth.value > 0 ? (tabBarWidth.value - 10) / 5 : 0,
     }));
 
     // Helper Component for Dynamic Text Color
     const ShopTabItem = ({ title, index, tabIndicatorX, tabBarWidth }) => {
         const textColorStyle = useAnimatedStyle(() => {
             if (tabBarWidth.value <= 0) return {};
-            const tabWidth = (tabBarWidth.value - 8) / 5;
+            const tabWidth = (tabBarWidth.value - 10) / 5;
             const itemCenter = index * tabWidth;
 
             // Interpolate color based on indicator position
@@ -823,7 +894,7 @@ export default function ShopScreen() {
                     <Animated.View style={[
                         {
                             position: 'absolute',
-                            top: 4, bottom: 4, left: 4,
+                            top: 4, bottom: 4, left: 5,
                             backgroundColor: theme.colors.accent,
                             borderRadius: 8,
                         },
@@ -845,29 +916,39 @@ export default function ShopScreen() {
                 {!ready ? (
                     renderSkeleton()
                 ) : (
-                    <ScrollView
-                        contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
-                        overScrollMode="never"
-                    >
-                        {activeTab === 0 && Object.values(THEMES).map((t, index) => {
-                            if (['default', 'onice', 'ghiaccio'].includes(t.id)) return null;
-                            return renderThemeItem(t, index);
-                        })}
-                        {activeTab === 1 && Object.values(CARD_SKINS).map((s, index) => {
-                            if (s.id === 'classic') return null;
-                            return renderSkinItem(s, index);
-                        })}
-                        {activeTab === 2 && (
+                    <View style={{ flex: 1 }}>
+                        {/* TAB 0: THEMES */}
+                        {renderTabContent(0, (
+                            <View>
+                                {Object.values(THEMES).map((t, index) => {
+                                    if (['default', 'onice', 'ghiaccio'].includes(t.id)) return null;
+                                    return renderThemeItem(t, index);
+                                })}
+                            </View>
+                        ))}
+
+                        {/* TAB 1: SKINS */}
+                        {renderTabContent(1, (
+                            <View>
+                                {Object.values(CARD_SKINS).map((s, index) => {
+                                    if (s.id === 'classic') return null;
+                                    return renderSkinItem(s, index);
+                                })}
+                            </View>
+                        ))}
+
+                        {/* TAB 2: FRAMES */}
+                        {renderTabContent(2, (
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
                                 {Object.values(AVATAR_FRAMES).map((f, index) => {
                                     if (['basic', 'capo'].includes(f.id)) return null;
                                     return renderFrameItem(f, index);
                                 })}
                             </View>
-                        )}
-                        {activeTab === 3 && (
+                        ))}
+
+                        {/* TAB 3: PACKS */}
+                        {renderTabContent(3, (
                             <View>
                                 <Text style={{
                                     fontFamily: 'Outfit',
@@ -886,8 +967,10 @@ export default function ShopScreen() {
                                     { id: 'spicy', price: 1000, color: '#d946ef', count: (GameDataService.spicyPack?.nere?.length || 0) + (GameDataService.spicyPack?.bianche?.length || 0) }
                                 ].map((p, index) => renderPackItem(p, index))}
                             </View>
-                        )}
-                        {activeTab === 4 && (
+                        ))}
+
+                        {/* TAB 4: DC BUNDLES */}
+                        {renderTabContent(4, (
                             <View style={{ paddingBottom: 20 }}>
                                 <Text style={{
                                     fontFamily: 'Cinzel-Bold',
@@ -904,8 +987,8 @@ export default function ShopScreen() {
                                     { id: 'dc_12000', amount: 12000, price: 14.99, priceLabel: '14.99€', bestValue: true }
                                 ].map((bundle, index) => renderDCBundle(bundle, index))}
                             </View>
-                        )}
-                    </ScrollView>
+                        ))}
+                    </View>
                 )}
             </View>
 

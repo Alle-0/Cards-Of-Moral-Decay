@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, BackHandler, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, BackHandler, Platform, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 import PremiumPressable from '../components/PremiumPressable';
@@ -12,8 +12,9 @@ import { RANK_COLORS, RANK_THRESHOLDS } from '../constants/Ranks';
 import LocalAvatar from '../components/LocalAvatar';
 import { useRef } from 'react';
 import { PanResponder, RunOnJS } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing, interpolateColor, useDerivedValue, withSequence } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing, interpolateColor, useDerivedValue, withSequence, withRepeat } from 'react-native-reanimated';
 import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hooks/useLiquidAnimation';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,7 +26,7 @@ const TabItem = ({ title, index, tabBarWidth, tabIndicatorX, theme }) => {
     const textColorStyle = useAnimatedStyle(() => {
         if (tabBarWidth.value <= 0) return {};
 
-        const tabWidth = (tabBarWidth.value - 8) / 3;
+        const tabWidth = (tabBarWidth.value - 10) / 3;
         const start = (index - 1) * tabWidth;
         const center = index * tabWidth;
         const end = (index + 1) * tabWidth;
@@ -68,6 +69,156 @@ const PersonalizationScreen = () => {
     const { theme } = useTheme();
     const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState(0);
+    // [NEW] Track visited tabs for Lazy + Keep Alive
+    const [visitedTabs, setVisitedTabs] = useState([0]);
+    const [readyTabs, setReadyTabs] = useState([0]);
+
+    useEffect(() => {
+        if (!visitedTabs.includes(activeTab)) {
+            setVisitedTabs(prev => [...prev, activeTab]);
+            // Defer heavy render to allow animation to complete (400ms for spring)
+            setTimeout(() => {
+                setReadyTabs(prev => [...prev, activeTab]);
+            }, 400);
+        }
+    }, [activeTab]);
+
+    // Skeleton Helpers
+    const SkeletonCard = () => {
+        const opacity = useSharedValue(0.3);
+        useEffect(() => {
+            opacity.value = withRepeat(
+                withSequence(
+                    withTiming(0.1, { duration: 800 }),
+                    withTiming(0.3, { duration: 800 })
+                ),
+                -1,
+                true
+            );
+        }, []);
+
+        const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+        return (
+            <Animated.View style={[{
+                marginBottom: 15,
+                borderRadius: 16,
+                padding: 15,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.1)',
+                backgroundColor: 'rgba(255,255,255,0.02)',
+                flexDirection: 'row',
+                alignItems: 'center'
+            }, animatedStyle]}>
+                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                <View style={{ flex: 1, marginLeft: 15, gap: 8 }}>
+                    <View style={{ width: '60%', height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                    <View style={{ width: '40%', height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                </View>
+            </Animated.View>
+        );
+    };
+
+    const SkeletonGridItem = () => {
+        const opacity = useSharedValue(0.3);
+        useEffect(() => {
+            opacity.value = withRepeat(
+                withSequence(
+                    withTiming(0.1, { duration: 800 }),
+                    withTiming(0.3, { duration: 800 })
+                ),
+                -1,
+                true
+            );
+        }, []);
+
+        const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+        return (
+            <Animated.View style={[{
+                width: '30%',
+                aspectRatio: 1,
+                borderRadius: 12,
+                marginTop: 15,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.1)',
+                backgroundColor: 'rgba(255,255,255,0.02)',
+            }, animatedStyle]} />
+        );
+    };
+
+    const SkeletonSkinItem = () => {
+        const opacity = useSharedValue(0.3);
+        useEffect(() => {
+            opacity.value = withRepeat(
+                withSequence(
+                    withTiming(0.1, { duration: 800 }),
+                    withTiming(0.3, { duration: 800 })
+                ),
+                -1,
+                true
+            );
+        }, []);
+
+        const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+        return (
+            <Animated.View style={[{
+                width: '30%', // [FIX] 3-column layout
+                aspectRatio: 0.7, // Card aspect ratio
+                borderRadius: 12,
+                marginTop: 15,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.1)',
+                backgroundColor: 'rgba(255,255,255,0.02)',
+            }, animatedStyle]} />
+        );
+    };
+
+    const renderSkeleton = () => {
+        if (activeTab === 1) {
+            // Skins (New Skeleton)
+            return (
+                <View style={{ flex: 1, padding: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                    {[1, 2, 3, 4, 5, 6].map(i => <SkeletonSkinItem key={i} />)}
+                </View>
+            );
+        }
+
+        if (activeTab === 0 || activeTab === 2) {
+            // Grid Layout for Themes (0) and Frames (2)
+            return (
+                <View style={{ flex: 1, padding: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonGridItem key={i} />)}
+                </View>
+            );
+        }
+
+        // Fallback (though all tabs are covered now)
+        return (
+            <View style={{ flex: 1, padding: 10 }}>
+                {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
+            </View>
+        );
+    };
+
+    const renderTabContent = (index, content) => {
+        if (!visitedTabs.includes(index)) return null;
+
+        const isVisible = activeTab === index;
+        const isReady = readyTabs.includes(index);
+
+        return (
+            <View style={{ display: isVisible ? 'flex' : 'none', flex: 1 }}>
+                {!isReady ? (
+                    renderSkeleton()
+                ) : (
+                    content
+                )}
+            </View>
+        );
+    };
+
     const insets = useSafeAreaInsets();
     const [showExitModal, setShowExitModal] = useState(false);
 
@@ -91,18 +242,14 @@ const PersonalizationScreen = () => {
     useEffect(() => {
         activeTabRef.current = activeTab; // [FIX] Sync ref
         if (!isInteracting.current && tabBarWidth.value > 0) {
-            const tabWidth = (tabBarWidth.value - 8) / 3;
+            const tabWidth = (tabBarWidth.value - 10) / 3;
             const targetPos = activeTab * tabWidth;
 
             // [FIX] Anchors for midpoint peak
             startX.value = tabIndicatorX.value;
             targetX.value = targetPos;
 
-            tabIndicatorX.value = withSpring(targetPos, {
-                damping: 40,
-                stiffness: 200,
-                overshootClamping: true
-            });
+            tabIndicatorX.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
         }
     }, [activeTab]);
 
@@ -129,7 +276,7 @@ const PersonalizationScreen = () => {
             onPanResponderGrant: (evt) => {
                 const { locationX } = evt.nativeEvent;
                 if (tabBarWidthRef.current <= 0) return;
-                const tabWidth = (tabBarWidthRef.current - 8) / 3;
+                const tabWidth = (tabBarWidthRef.current - 10) / 3;
 
                 // Determine which tab was touched relative to the bar
                 const touchedIndex = Math.floor((locationX - 4) / tabWidth);
@@ -151,10 +298,10 @@ const PersonalizationScreen = () => {
                 if (!isGrabbingIndicator.current) return;
 
                 if (tabBarWidthRef.current <= 0) return;
-                const tabWidth = (tabBarWidthRef.current - 8) / 3;
+                const tabWidth = (tabBarWidthRef.current - 10) / 3;
                 const startX = activeTabRef.current * tabWidth;
                 let newX = startX + gestureState.dx;
-                const maxRange = (tabBarWidthRef.current - 8) - tabWidth;
+                const maxRange = (tabBarWidthRef.current - 10) - tabWidth;
 
                 // Clamp
                 newX = Math.max(0, Math.min(newX, maxRange));
@@ -162,7 +309,7 @@ const PersonalizationScreen = () => {
             },
             onPanResponderRelease: (evt, gestureState) => {
                 if (tabBarWidthRef.current <= 0) return;
-                const tabWidth = (tabBarWidthRef.current - 8) / 3;
+                const tabWidth = (tabBarWidthRef.current - 10) / 3;
 
                 // Calculate target index
                 let targetIndex = activeTabRef.current;
@@ -231,7 +378,7 @@ const PersonalizationScreen = () => {
             { translateX: tabIndicatorX.value },
             { scale: indicatorScale.value } // [NEW] Apply scale
         ],
-        width: tabBarWidth.value > 0 ? (tabBarWidth.value - 8) / 3 : 0,
+        width: tabBarWidth.value > 0 ? (tabBarWidth.value - 10) / 3 : 0,
     }));
 
     return (
@@ -256,7 +403,7 @@ const PersonalizationScreen = () => {
                     <Animated.View style={[
                         {
                             position: 'absolute',
-                            top: 4, bottom: 4, left: 4,
+                            top: 4, bottom: 4, left: 5,
                             backgroundColor: theme.colors.accent,
                             borderRadius: 8,
                         },
@@ -276,9 +423,9 @@ const PersonalizationScreen = () => {
                 </View>
 
                 <View style={{ flex: 1 }}>
-                    {activeTab === 0 && <ThemeSelectionModal onBack={() => { }} hideBackButton={true} />}
-                    {activeTab === 1 && <SkinSelectionModal onBack={() => { }} hideBackButton={true} />}
-                    {activeTab === 2 && <FrameSelectionModal onBack={() => { }} hideBackButton={true} />}
+                    {renderTabContent(0, <ThemeSelectionModal onBack={() => { }} hideBackButton={true} />)}
+                    {renderTabContent(1, <SkinSelectionModal onBack={() => { }} hideBackButton={true} />)}
+                    {renderTabContent(2, <FrameSelectionModal onBack={() => { }} hideBackButton={true} />)}
                 </View>
             </View>
 
