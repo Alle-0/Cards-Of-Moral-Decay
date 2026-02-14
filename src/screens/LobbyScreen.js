@@ -10,7 +10,9 @@ import Animated, {
     FadeOut,
     LinearTransition,
     withSequence,
-    Easing
+    Easing,
+    interpolate,
+    Extrapolate
 } from 'react-native-reanimated';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
@@ -76,6 +78,11 @@ const LobbyScreen = ({ onStartLoading }) => {
     } = useAuth();
 
     const [isLoading, setIsLoading] = useState(false);
+    const { width, height } = useWindowDimensions();
+    const [roomToJoin, setRoomToJoin] = useState('');
+    const [currentStep, setCurrentStep] = useState(authUser?.username ? STEPS.ACTION : STEPS.IDENTITY);
+
+
 
     // [NEW] AUTO-JOIN ROOM EFFECT
     useEffect(() => {
@@ -94,17 +101,60 @@ const LobbyScreen = ({ onStartLoading }) => {
     const { MYSTERY_AVATAR, PLAYER_AVATARS, shuffleArray } = require('../utils/constants');
     const Clipboard = require('expo-clipboard');
 
-    const [currentStep, setCurrentStep] = useState(authUser?.username ? STEPS.ACTION : STEPS.IDENTITY);
-    const [roomToJoin, setRoomToJoin] = useState('');
+    // [NEW] Unified Carousel Animation
+    const stepProgress = useSharedValue(authUser?.username ? 1 : 0); // 0 = Identity, 1 = Menu
+    const frameMarginTop = useSharedValue(authUser?.username ? 5 : 110);
+    const activeHeight = useSharedValue(100); // [FIX] Start small to ensure tight wrap from the beginning
 
+    const animatedFrameStyle = useAnimatedStyle(() => ({
+        marginTop: withTiming(frameMarginTop.value, {
+            duration: 350, // [FIX] Reduced from 500ms
+            easing: Easing.bezier(0.33, 1, 0.68, 1)
+        }),
+        height: withTiming(activeHeight.value, {
+            duration: 300, // [FIX] Reduced from 400ms
+            easing: Easing.bezier(0.33, 1, 0.68, 1)
+        }),
+        maxHeight: height * 0.90
+    }));
 
-    // [NEW] AUTO-TRANSITION EFFECT
+    const animatedCarouselStyle = useAnimatedStyle(() => {
+        const slideWidth = width - 40;
+        return {
+            transform: [{
+                translateX: withTiming(-stepProgress.value * slideWidth, {
+                    duration: 350, // [FIX] Reduced from 500ms
+                    easing: Easing.bezier(0.33, 1, 0.68, 1)
+                })
+            }]
+        };
+    });
+
+    // [FIX] Keep opacity at 1 to preserve carousel slide visibility
+    // The overflow:hidden on the parent container will handle clipping
+    const identityOpacity = useAnimatedStyle(() => ({
+        opacity: 1
+    }));
+
+    const actionOpacity = useAnimatedStyle(() => ({
+        opacity: 1
+    }));
+
     useEffect(() => {
-        if (authUser?.username && currentStep === STEPS.IDENTITY) {
-            console.log("[LOBBY] User authenticated, jumping to actions.");
-            setCurrentStep(STEPS.ACTION);
+        if (currentStep === STEPS.IDENTITY) {
+            stepProgress.value = 0;
+            frameMarginTop.value = 110;
+            activeHeight.value = 320; // [FIX] Increased from 280 for better balance
+        } else {
+            stepProgress.value = 1;
+            frameMarginTop.value = 5;
+            // [FIX] Reset height to a reasonable baseline when switching to Menu
+            // This ensures it doesn't stay trapped at Identity's 320px
+            if (activeHeight.value < 500) {
+                activeHeight.value = 500;
+            }
         }
-    }, [authUser?.username]);
+    }, [currentStep]);
 
     const [localPlayerName, setLocalPlayerName] = useState(authUser?.nickname || authUser?.username || '');
     const [localAvatar, setLocalAvatar] = useState(authUser?.avatar || authUser?.avatar || MYSTERY_AVATAR);
@@ -119,6 +169,8 @@ const LobbyScreen = ({ onStartLoading }) => {
 
     // [NEW] Split Rooms Logic
     const { friendsRooms, publicRooms } = React.useMemo(() => {
+        if (availableRooms === null) return { friendsRooms: null, publicRooms: null };
+
         const friends = [];
         const publicR = [];
         const myUsername = (authUser?.username || '').toLowerCase().trim();
@@ -154,15 +206,6 @@ const LobbyScreen = ({ onStartLoading }) => {
             if (room.visibility === 'public') {
                 publicR.push(room);
             }
-        });
-
-        console.log('[LOBBY] Room filtering:', {
-            total: (availableRooms || []).length,
-            friends: friends.length,
-            public: publicR.length,
-            myUsername,
-            myNickname,
-            friendsCount: myFriendsKeys.length
         });
 
         return { friendsRooms: friends, publicRooms: publicR };
@@ -429,7 +472,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                                 <Animated.View
                                     entering={FadeIn.duration(400)}
                                     exiting={FadeOut.duration(300)}
-                                    style={{ position: 'absolute', top: 0, width: '100%', alignItems: 'center', zIndex: -1 }}
+                                    style={{ position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center', zIndex: -1 }}
                                 >
                                     <Text style={[styles.mainTitle, { color: theme.colors.accent }]}>CARDS OF</Text>
                                     <Text style={[styles.mainTitle, { color: theme.colors.accent }]}>MORAL DECAY</Text>
@@ -437,17 +480,18 @@ const LobbyScreen = ({ onStartLoading }) => {
                             )}
 
                             <Animated.View
-                                layout={LinearTransition.springify().damping(35).stiffness(200)}
-                                style={[styles.innerFrame, {
+                                style={[styles.innerFrame, animatedFrameStyle, {
                                     borderColor: theme.colors.cardBorder,
-                                    marginTop: currentStep === STEPS.IDENTITY ? 110 : 5,
                                     width: '100%',
                                     zIndex: 1,
-                                    backgroundColor: '#0d0d0d' // Ensure solid bg to cover
+                                    backgroundColor: '#0d0d0d',
+                                    overflow: 'hidden',
+                                    paddingHorizontal: 0, // [FIX] Move padding to children for carousel
                                 }]}
                             >
-                                {currentStep === STEPS.IDENTITY ? (
-                                    <View>
+                                <Animated.View style={[{ flexDirection: 'row', width: (width - 40) * 2, alignItems: 'flex-start' }, animatedCarouselStyle]}>
+                                    {/* STEP 0: IDENTITY */}
+                                    <Animated.View style={[{ width: width - 40, alignItems: 'flex-start' }, identityOpacity]}>
                                         <IdentityStep
                                             theme={theme}
                                             name={localPlayerName}
@@ -455,10 +499,17 @@ const LobbyScreen = ({ onStartLoading }) => {
                                             avatar={localAvatar}
                                             onEditAvatar={() => setShowAvatarModal(true)}
                                             onNext={() => handleNextToActions(localPlayerName, localAvatar)}
+                                            onHeightChange={() => {
+                                                if (currentStep === STEPS.IDENTITY) {
+                                                    // [FIX] Increased to 320 for better visual balance
+                                                    activeHeight.value = 320;
+                                                }
+                                            }}
                                         />
-                                    </View>
-                                ) : (
-                                    <View style={{ maxHeight: Dimensions.get('window').height * 0.8 }}>
+                                    </Animated.View>
+
+                                    {/* STEP 1: ACTIONS */}
+                                    <Animated.View style={[{ width: width - 40, alignItems: 'flex-start' }, actionOpacity]}>
                                         <MainMenuStep
                                             theme={theme}
                                             roomToJoin={roomToJoin}
@@ -470,14 +521,20 @@ const LobbyScreen = ({ onStartLoading }) => {
                                             onQuickJoin={handleQuickJoin}
                                             friendsRooms={friendsRooms}
                                             publicRooms={publicRooms}
+                                            onHeightChange={(h) => {
+                                                if (currentStep !== STEPS.IDENTITY) {
+                                                    // [FIX] Ensure the Menu can grow and shrink dynamically without arbitrary caps
+                                                    activeHeight.value = h;
+                                                }
+                                            }}
                                         />
-                                    </View>
-                                )}
+                                    </Animated.View>
+                                </Animated.View>
                             </Animated.View>
                         </View>
                     </View>
                 </View>
-            </TouchableWithoutFeedback>
+            </TouchableWithoutFeedback >
 
             <AvatarSelectionModal
                 visible={showAvatarModal}
@@ -668,7 +725,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                     />
                 </View>
             </PremiumModal>
-        </View>
+        </View >
     );
 };
 
@@ -689,8 +746,8 @@ const styles = StyleSheet.create({
     innerFrame: {
         borderWidth: 1,
         borderRadius: 20,
-        paddingHorizontal: 20,
-        paddingBottom: 20,
+        paddingHorizontal: 0,
+        paddingBottom: 0, // [FIX] Padding is now handled by children steps for tighter fit
         paddingTop: 0,
         backgroundColor: '#0d0d0ddd',
         marginTop: 40,
@@ -700,7 +757,8 @@ const styles = StyleSheet.create({
         fontSize: 38,
         fontFamily: 'Cinzel-Bold',
         textAlign: 'center',
-        letterSpacing: 1.5,
+        letterSpacing: 2,
+        paddingLeft: 2, // [FIX] Compensate letterSpacing
     },
     rankBadgeContainer: {
         position: 'absolute',

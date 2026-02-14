@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, PanResponder, FlatList, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, PanResponder, FlatList, Platform } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolateColor, withSequence, withTiming, useDerivedValue, LinearTransition, Easing, FadeIn, ZoomIn, interpolate } from 'react-native-reanimated';
 import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../../hooks/useLiquidAnimation';
 
@@ -10,6 +10,7 @@ import RoomItem from '../RoomItem';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import HapticsService from '../../services/HapticsService';
+import PremiumSkeleton from '../PremiumSkeleton';
 
 const TabItem = ({ label, index, dragX }) => {
     const textStyle = useAnimatedStyle(() => {
@@ -31,7 +32,37 @@ const TabItem = ({ label, index, dragX }) => {
     );
 };
 
-const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollEnabled = true }) => {
+const SkeletonRoomItem = () => (
+    <View style={{
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        marginBottom: 6,
+        borderRadius: 14,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.05)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '80%',
+        alignSelf: 'center'
+    }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}>
+            <View style={{ marginRight: 10 }}>
+                <PremiumSkeleton width={18} height={18} borderRadius={4} />
+            </View>
+            <PremiumSkeleton width={60} height={12} borderRadius={6} />
+            <View style={{ width: 12 }} />
+            <View style={{ marginRight: 6 }}>
+                <PremiumSkeleton width={14} height={14} borderRadius={7} />
+            </View>
+            <PremiumSkeleton width={100} height={10} borderRadius={5} />
+        </View>
+        <PremiumSkeleton width={60} height={24} borderRadius={12} />
+    </View>
+);
+
+const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = true, onHeightChange, isLoading = false }) => {
     const { t } = useLanguage();
     const { theme } = useTheme();
     const [activeTab, setActiveTab] = React.useState('friends'); // 'friends' | 'public'
@@ -41,11 +72,13 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
         return activeTab === 'friends' ? (friendsRooms || []) : (publicRooms || []);
     }, [activeTab, friendsRooms, publicRooms]);
 
+    const isFetching = isLoading || (activeTab === 'friends' ? friendsRooms === null : publicRooms === null);
+
     // Animation Values (0 to 100 percentage)
     const dragXPercent = useSharedValue(0);
     const startX = useSharedValue(0);
     const targetX = useSharedValue(0);
-    const isDraggingSV = useSharedValue(false);
+    const isDraggingSV = useSharedValue(isFetching);
 
     const tabScale = useLiquidScale(dragXPercent, startX, targetX, isDraggingSV, 1.1);
     // Refs
@@ -58,9 +91,6 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
 
     // ... (Keep existing useEffects and PanResponder) ...
     useEffect(() => {
-        if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-            UIManager.setLayoutAnimationEnabledExperimental(true);
-        }
         activeTabRef.current = activeTab;
     }, [activeTab]);
 
@@ -109,8 +139,6 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
                     targetPercent = dragXPercent.value > 25 ? 50 : 0;
                 }
                 const newTab = targetPercent === 0 ? 'friends' : 'public';
-                // [FIX] Animate height change
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setActiveTab(newTab);
                 if (newTab !== activeTabRef.current) {
                     HapticsService.trigger('selection');
@@ -124,7 +152,7 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
     const indicatorStyle = useAnimatedStyle(() => {
         return {
             transform: [
-                { translateX: interpolate(dragXPercent.value, [0, 50], [2, -2]) },
+                { translateX: interpolate(dragXPercent.value, [0, 50], [2, 0.5]) },
                 { scale: tabScale.value }
             ],
             left: `${dragXPercent.value}%`
@@ -162,28 +190,12 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
         </View>
     );
 
-    // [FIX] explicit height animation for Web/Native consistency
-    const listHeight = useSharedValue(200); // Start with minHeight
-
-    const animatedListStyle = useAnimatedStyle(() => ({
-        height: withTiming(listHeight.value, { duration: 300, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }),
-        opacity: withTiming(1, { duration: 300 }) // Fade in content slightly?
-    }));
-
     return (
-        <Animated.View
-            style={[{ width: '100%', overflow: 'hidden' }, animatedListStyle]}
+        <View
+            style={{ width: '100%', overflow: 'hidden' }}
+            onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
         >
-            <View
-                style={{ width: '100%', position: 'absolute' }}
-                onLayout={(event) => {
-                    const { height } = event.nativeEvent.layout;
-                    // Only update if difference > 1 to avoid jitter
-                    if (Math.abs(listHeight.value - height) > 1) {
-                        listHeight.value = height;
-                    }
-                }}
-            >
+            <View style={{ width: '100%' }}>
                 <FlatList
                     data={activeList}
                     keyExtractor={(item) => item.id}
@@ -201,25 +213,30 @@ const RoomListStep = ({ friendsRooms = [], publicRooms = [], onJoinRoom, scrollE
                     )}
                     ListHeaderComponent={renderHeader}
                     ListEmptyComponent={
-                        <Animated.View
-                            entering={ZoomIn.duration(500).springify()}
-                            style={{ minHeight: 20, justifyContent: 'center' }}
-                        >
-                            <Text style={styles.emptyText}>
-                                {t('no_public_rooms')}
-                            </Text>
-                        </Animated.View>
+                        isFetching ? (
+                            <View style={{ padding: 10 }}>
+                                {[1, 2, 3].map(i => <SkeletonRoomItem key={i} />)}
+                            </View>
+                        ) : (
+                            <View
+                                style={{ paddingVertical: 20, justifyContent: 'center' }}
+                            >
+                                <Text style={styles.emptyText}>
+                                    {activeTab === 'friends' ? t('no_friends_rooms') : t('no_public_rooms')}
+                                </Text>
+                            </View>
+                        )
                     }
                     scrollEnabled={scrollEnabled}
-                    contentContainerStyle={{ flexGrow: 0, paddingBottom: 20 }} // Added paddingBottom
-                    showsVerticalScrollIndicator={false}
-                    initialNumToRender={6}
-                    maxToRenderPerBatch={6}
+                    contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+                    showsVerticalScrollIndicator={true}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={false}
                 />
             </View>
-        </Animated.View>
+        </View>
     );
 };
 
@@ -233,7 +250,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         borderWidth: 1,
         alignSelf: 'center',
-        width: '94%',
+        width: '80%',
     },
     animatedBackground: {
         position: 'absolute',

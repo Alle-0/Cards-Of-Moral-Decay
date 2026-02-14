@@ -347,6 +347,8 @@ const styles = StyleSheet.create({
         color: '#FFD700',
         textAlign: 'center',
         marginBottom: 30,
+        letterSpacing: 1.5,
+        paddingLeft: 1.5, // [FIX] Compensate for letterSpacing to ensure perfect centering
         textShadowColor: 'rgba(255, 215, 0, 0.3)',
         textShadowOffset: { width: 0, height: 2 },
         textShadowRadius: 10

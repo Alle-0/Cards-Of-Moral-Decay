@@ -775,7 +775,7 @@ const GameScreen = ({ onStartLoading }) => {
                     await navigator.share({
                         title: 'Cards of Moral Decay',
                         text: message,
-                        url: shareUrl,
+                        // [FIX] Removed url parameter to avoid duplicate links (link is already in message)
                     });
                     AnalyticsService.logShareApp('web_navigator'); // [NEW]
                 } catch (error) {
@@ -1938,6 +1938,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingTop: 40,
         paddingBottom: Platform.OS === 'android' ? 80 : 20,
     },
     lobbyTitle: {

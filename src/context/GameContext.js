@@ -22,7 +22,7 @@ export const GameProvider = ({ children }) => {
     console.log("GameProvider initializing...");
     const [roomCode, setRoomCode] = useState(null);
     const [roomData, setRoomData] = useState(null);
-    const [availableRooms, setAvailableRooms] = useState([]);
+    const [availableRooms, setAvailableRooms] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [roomPlayerName, setRoomPlayerName] = useState(null); // [NEW] Track the specific name used in current room

@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 14,
         marginBottom: 6,
-        width: '94%',
+        width: '80%',
         alignSelf: 'center',
 
         // Premium Shadow

@@ -138,11 +138,6 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                 style={[styles.drawer, animatedStyle]}
                 pointerEvents={visible ? 'auto' : 'none'}
             >
-                <EfficientBlurView
-                    intensity={Platform.OS === 'web' ? 30 : 20}
-                    tint="dark"
-                    style={StyleSheet.absoluteFill}
-                />
                 <View style={styles.header}>
                     <Text style={[styles.title, { color: theme.colors.accent, fontFamily: 'Cinzel-Bold' }]}>
                         {t('leaderboard_title')}
@@ -244,7 +239,7 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(20, 20, 25, 0.6)',
+        backgroundColor: 'rgba(20, 20, 25, 0.95)',
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
         paddingHorizontal: 20,

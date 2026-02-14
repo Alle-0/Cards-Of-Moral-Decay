@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import Animated, {
     SlideInRight,
@@ -7,7 +7,9 @@ import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withSpring,
-    withTiming
+    withTiming,
+    Easing,
+    interpolate
 } from 'react-native-reanimated';
 import RoomListStep from './RoomListStep';
 import PremiumInput from '../PremiumInput';
@@ -25,153 +27,201 @@ const MainMenuStep = ({
     onQuickJoin,
     friendsRooms,
     publicRooms,
-    scrollEnabled = true
+    scrollEnabled = true,
+    onHeightChange // [NEW]
 }) => {
     const { t } = useLanguage();
     const [showJoinInput, setShowJoinInput] = useState(false);
+    const contentRef = useRef(null);
+    const lastBaseHeight = useRef(200); // Baseline placeholder
+    const isToggling = useRef(false);
 
-    // [NEW] Manual Height Animation for reliability on Web
-    const heightSV = useSharedValue(0);
-    const opacitySV = useSharedValue(0);
-    const translateSV = useSharedValue(500); // Start off-screen to the right
+    // [FIX] Stable height reporting without loops
+    const reportHeight = (predictedDelta = 0) => {
+        if (contentRef.current && !isToggling.current) {
+            contentRef.current.measure((x, y, width, height) => {
+                if (height > 0) {
+                    lastBaseHeight.current = height;
+                    onHeightChange?.(height + predictedDelta + 40);
+                }
+            });
+        }
+    };
+
+    const toggleJoinInput = () => {
+        isToggling.current = true;
+        const nextState = !showJoinInput;
+        setShowJoinInput(nextState);
+
+        const curve = Easing.bezier(0.33, 1, 0.68, 1);
+
+        // Immediate report with prediction to sync with parent
+        onHeightChange?.(lastBaseHeight.current + (nextState ? 75 : -75) + 40);
+
+        // After animation finishes, allow measurements again and sync final
+        setTimeout(() => {
+            isToggling.current = false;
+            reportHeight();
+        }, 350);
+    };
 
     useEffect(() => {
+        // Only report height when rooms change, but not during a toggle
+        if (!isToggling.current) {
+            reportHeight();
+        }
+    }, [publicRooms, friendsRooms, onHeightChange]);
+
+    // [NEW] Shared Value for Code Pulse (Static as per user request)
+    const heightSV = useSharedValue(0);
+    const opacitySV = useSharedValue(0);
+    const translateSV = useSharedValue(50); // [FIX] Reduced from 500 to 50 for snappier entrance
+
+    useEffect(() => {
+        const curve = Easing.bezier(0.33, 1, 0.68, 1);
         if (showJoinInput) {
-            heightSV.value = withSpring(75, { damping: 40, stiffness: 300 });
-            opacitySV.value = withSpring(1, { damping: 40, stiffness: 300 });
-            translateSV.value = withSpring(0, { damping: 40, stiffness: 300 });
+            heightSV.value = withTiming(75, { duration: 300, easing: curve });
+            opacitySV.value = withTiming(1, { duration: 250, easing: curve });
+            // translateSV.value = withTiming(0, { duration: 250, easing: Easing.out(Easing.cubic) }); // Removed as per instruction
         } else {
-            heightSV.value = withSpring(0, { damping: 40, stiffness: 300 });
-            opacitySV.value = withSpring(0, { damping: 40, stiffness: 300 });
-            translateSV.value = withSpring(500, { damping: 40, stiffness: 300 }); // Slide out to right
+            heightSV.value = withTiming(0, { duration: 300, easing: curve });
+            opacitySV.value = withTiming(0, { duration: 200, easing: curve });
+            // translateSV.value = withTiming(50, { duration: 200, easing: Easing.in(Easing.cubic) }); // Removed as per instruction
         }
     }, [showJoinInput]);
 
     const animatedWrapperStyle = useAnimatedStyle(() => ({
         height: heightSV.value,
         opacity: opacitySV.value,
-        overflow: 'hidden'
+        overflow: 'hidden',
     }));
 
     const animatedInnerStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: translateSV.value }]
+        transform: [{ translateY: interpolate(opacitySV.value, [0, 1], [-10, 0]) }]
     }));
 
     return (
-        <Animated.View
-            entering={SlideInRight.springify().damping(35).stiffness(150)}
-            exiting={SlideOutRight.duration(300)}
+        <View
             style={styles.stepContainer}
         >
-            <View style={styles.contentWrapper}>
-                {/* BACK BUTTON */}
-                <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                    <Text style={styles.backButtonText}>{t('back_button')}</Text>
-                </TouchableOpacity>
-
-                {/* MAIN CARD CONTAINER */}
-                <Animated.View
-                    style={[styles.cardContainer, { borderColor: theme.colors.cardBorder, overflow: 'visible' }]}
+            <View
+                ref={contentRef}
+                style={{ width: '100%' }}
+            >
+                <View
+                    style={styles.contentWrapper}
                 >
+                    {/* BACK BUTTON */}
+                    <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                        <Text style={styles.backButtonText}>{t('back_button')}</Text>
+                    </TouchableOpacity>
 
-                    {/* QUICK JOIN SECTION */}
-                    <View style={styles.section}>
-                        <TouchableOpacity
-                            style={[styles.quickJoinButton, { backgroundColor: theme.colors.accent }]}
-                            onPress={onQuickJoin}
-                            activeOpacity={0.8}
-                            disabled={isLoading}
-                        >
-                            <Text style={styles.quickJoinText}>{t('quick_join_btn')}</Text>
-                            <Text style={styles.quickJoinSubtext}>{t('quick_join_subtitle')}</Text>
-                        </TouchableOpacity>
-                    </View>
+                    {/* MAIN CARD CONTAINER */}
+                    <Animated.View
+                        style={[styles.cardContainer, { borderColor: theme.colors.cardBorder }]}
+                    >
 
-                    {/* CREATE / JOIN BUTTONS */}
-                    <View style={styles.section}>
-                        <View style={styles.actionRow}>
-                            {/* CREATE BUTTON */}
+                        {/* QUICK JOIN SECTION */}
+                        <View style={styles.section}>
                             <TouchableOpacity
-                                style={[
-                                    styles.actionCard,
-                                    {
-                                        borderColor: 'rgba(255,255,255,0.1)',
-                                        backgroundColor: 'rgba(0,0,0,0.3)'
-                                    }
-                                ]}
-                                onPress={() => onCreateRoom({})}
+                                style={[styles.quickJoinButton, { backgroundColor: theme.colors.accent }]}
+                                onPress={onQuickJoin}
+                                activeOpacity={0.8}
                                 disabled={isLoading}
-                                activeOpacity={0.7}
                             >
-                                <Text style={styles.actionCardText}>{t('create_room')}</Text>
-                            </TouchableOpacity>
-
-                            {/* JOIN BUTTON */}
-                            <TouchableOpacity
-                                style={[
-                                    styles.actionCard,
-                                    {
-                                        borderColor: showJoinInput ? theme.colors.accent : 'rgba(255,255,255,0.1)',
-                                        backgroundColor: showJoinInput ? theme.colors.accent : 'rgba(0,0,0,0.3)'
-                                    }
-                                ]}
-                                onPress={() => setShowJoinInput(!showJoinInput)}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={[
-                                    styles.actionCardText,
-                                    showJoinInput && { color: '#000' }
-                                ]}>
-                                    {t('insert_code')}
-                                </Text>
+                                <Text style={styles.quickJoinText}>{t('quick_join_btn')}</Text>
+                                <Text style={styles.quickJoinSubtext}>{t('quick_join_subtitle')}</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
 
-                    {/* JOIN CODE INPUT - ANIMATED HEIGHT CONTAINER */}
-                    {/* Always Render but Animate Visibility */}
-                    <Animated.View style={animatedWrapperStyle}>
-                        <Animated.View style={[styles.codeSection, animatedInnerStyle]}>
-                            <View style={styles.codeInputRow}>
-                                <View style={{ flex: 1, marginRight: 10 }}>
-                                    <PremiumInput
-                                        label={t('room_code')}
-                                        value={roomToJoin}
-                                        onChangeText={(text) => setRoomToJoin(text.toUpperCase())}
-                                        maxLength={6}
-                                        autoCapitalize="characters"
-                                        labelBackgroundColor="#0d0d0d"
-                                        style={{ marginVertical: 0, height: 50 }}
-                                    />
-                                </View>
+                        {/* CREATE / JOIN BUTTONS */}
+                        <View style={styles.section}>
+                            <View style={styles.actionRow}>
+                                {/* CREATE BUTTON */}
                                 <TouchableOpacity
-                                    style={[styles.goButton, { backgroundColor: theme.colors.accent }]}
-                                    onPress={() => onJoinRoom(roomToJoin)}
-                                    disabled={!roomToJoin || isLoading}
+                                    style={[
+                                        styles.actionCard,
+                                        {
+                                            borderColor: 'rgba(255,255,255,0.1)',
+                                            backgroundColor: 'rgba(0,0,0,0.3)'
+                                        }
+                                    ]}
+                                    onPress={() => onCreateRoom({})}
+                                    disabled={isLoading}
+                                    activeOpacity={0.7}
                                 >
-                                    <Text style={styles.goButtonText}>GO</Text>
+                                    <Text style={styles.actionCardText}>{t('create_room')}</Text>
+                                </TouchableOpacity>
+
+                                {/* JOIN BUTTON */}
+                                <TouchableOpacity
+                                    style={[
+                                        styles.actionCard,
+                                        {
+                                            borderColor: showJoinInput ? theme.colors.accent : 'rgba(255,255,255,0.1)',
+                                            backgroundColor: showJoinInput ? theme.colors.accent : 'rgba(0,0,0,0.3)'
+                                        }
+                                    ]}
+                                    onPress={toggleJoinInput}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={[
+                                        styles.actionCardText,
+                                        showJoinInput && { color: '#000' }
+                                    ]}>
+                                        {t('insert_code')}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
+                        </View>
+
+                        {/* JOIN CODE INPUT - ANIMATED HEIGHT CONTAINER */}
+                        {/* Always Render but Animate Visibility */}
+                        <Animated.View style={animatedWrapperStyle}>
+                            <Animated.View style={[styles.codeSection, animatedInnerStyle]}>
+                                <View style={styles.codeInputRow}>
+                                    <View style={{ flex: 1, marginRight: 10 }}>
+                                        <PremiumInput
+                                            label={t('room_code')}
+                                            value={roomToJoin}
+                                            onChangeText={(text) => setRoomToJoin(text.toUpperCase())}
+                                            maxLength={6}
+                                            autoCapitalize="characters"
+                                            labelBackgroundColor="#0d0d0d"
+                                            style={{ marginVertical: 0, height: 50 }}
+                                        />
+                                    </View>
+                                    <TouchableOpacity
+                                        style={[styles.goButton, { backgroundColor: theme.colors.accent }]}
+                                        onPress={() => onJoinRoom(roomToJoin)}
+                                        disabled={!roomToJoin || isLoading}
+                                    >
+                                        <Text style={styles.goButtonText}>GO</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </Animated.View>
                         </Animated.View>
                     </Animated.View>
-                </Animated.View>
+                </View>
+
+                {/* ROOM LISTS - NOW WRAPS EVERYTHING */}
+                <RoomListStep
+                    friendsRooms={friendsRooms}
+                    publicRooms={publicRooms}
+                    onJoinRoom={onJoinRoom}
+                    scrollEnabled={scrollEnabled}
+                    isLoading={isLoading}
+                />
             </View>
-
-            {/* ROOM LISTS - NOW WRAPS EVERYTHING */}
-            <RoomListStep
-                friendsRooms={friendsRooms}
-                publicRooms={publicRooms}
-                onJoinRoom={onJoinRoom}
-                scrollEnabled={scrollEnabled}
-            />
-
-        </Animated.View >
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     stepContainer: {
         width: '100%',
+        paddingBottom: 24, // [FIX] Consistent spacing
+        alignSelf: 'flex-start', // [FIX] Prevent vertical stretching
         // flex: 1 removed to allow adaptive height
     },
     backButton: {
@@ -304,6 +354,7 @@ const styles = StyleSheet.create({
     // LIST CONTAINER
     contentWrapper: {
         width: '100%',
+        paddingHorizontal: 20, // [FIX] Restore padding removed from parent
     }
 });
 

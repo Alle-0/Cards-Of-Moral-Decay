@@ -293,12 +293,12 @@ const styles = StyleSheet.create({
     },
     toggleIndicator: {
         position: 'absolute',
-        top: 5,
-        bottom: 5,
+        top: 4, // [FIX] Adjusted for 50px container (1px border + 4px top + 40px height + 4px bottom + 1px border = 50px)
+        bottom: 4,
         left: 5,
         borderRadius: 20,
         backgroundColor: '#FFF',
-        height: 40, // Height - padding*2
+        height: 40,
     },
     toggleClickArea: {
         flexDirection: 'row',

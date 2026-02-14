@@ -14,6 +14,7 @@ const IdentityStep = ({
     avatar,
     onEditAvatar,
     onNext,
+    onHeightChange // [NEW] Callback for dynamic height synchronization
 }) => {
     // Props are now fully controlled by LobbyScreen
     const { t } = useLanguage();
@@ -23,13 +24,12 @@ const IdentityStep = ({
     };
 
     return (
-        <Animated.View
-            entering={SlideInLeft.springify().damping(35).stiffness(150)}
-            exiting={SlideOutLeft.duration(300)}
+        <View
             style={styles.stepContainer}
+            onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
         >
             {/* Title Section */}
-            <View style={{ width: '100%', marginBottom: 30, marginTop: 10 }}>
+            <View style={{ width: '100%', marginBottom: 20, marginTop: 10, paddingHorizontal: 20 }}>
                 <Text style={styles.sectionTitle}>{t('who_are_you')}</Text>
                 <Text style={[styles.subTitle, { color: '#888', fontFamily: 'Outfit' }]}>
                     {t('choose_identity_sub')}
@@ -67,25 +67,27 @@ const IdentityStep = ({
                 </View>
             </View>
 
-            <PremiumButton
-                title={t('next_btn')}
-                onPress={handleNext}
-                enableSound={false}
-                disabled={!name || !name.trim()}
-                style={{
-                    marginTop: 40,
-                    backgroundColor: theme.colors.accent,
-                    borderColor: theme.colors.accent,
-                    width: '100%'
-                }}
-                textStyle={{
-                    color: '#000',
-                    fontFamily: 'Cinzel-Bold',
-                    fontSize: 20
-                }}
-            />
+            <View style={{ width: '100%', paddingHorizontal: 20 }}>
+                <PremiumButton
+                    title={t('next_btn')}
+                    onPress={handleNext}
+                    enableSound={false}
+                    disabled={!name || !name.trim()}
+                    style={{
+                        marginTop: 35, // [FIX] More breathing room
+                        backgroundColor: theme.colors.accent,
+                        borderColor: theme.colors.accent,
+                        width: '100%'
+                    }}
+                    textStyle={{
+                        color: '#000',
+                        fontFamily: 'Cinzel-Bold',
+                        fontSize: 20
+                    }}
+                />
+            </View>
 
-        </Animated.View>
+        </View>
     );
 };
 
@@ -93,6 +95,8 @@ const styles = StyleSheet.create({
     stepContainer: {
         width: '100%',
         alignItems: 'center',
+        paddingBottom: 20, // [FIX] Balanced spacing
+        alignSelf: 'flex-start', // [FIX] Prevent vertical stretching
     },
     sectionTitle: {
         fontSize: 22,
@@ -111,7 +115,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 15,
         width: '100%',
-        marginBottom: 20
+        marginBottom: 15, // [FIX] More balanced spacing
+        paddingHorizontal: 20, // [FIX] Restore padding removed from parent
     },
     avatarBubble: {
         width: 60,

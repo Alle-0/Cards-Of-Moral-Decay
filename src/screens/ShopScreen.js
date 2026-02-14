@@ -22,6 +22,7 @@ import HapticsService from '../services/HapticsService';
 import PaymentResultModal from '../components/PaymentResultModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import GameDataService from '../services/GameDataService';
+import PremiumSkeleton from '../components/PremiumSkeleton';
 
 const { width } = Dimensions.get('window');
 
@@ -100,14 +101,14 @@ export default function ShopScreen() {
     }, [activeTab]);
 
     const renderTabContent = (index, content) => {
-        if (!visitedTabs.includes(index)) return null;
-
         const isVisible = activeTab === index;
+        if (!visitedTabs.includes(index) && !isVisible) return null;
+
         const isReady = readyTabs.includes(index);
 
         return (
             <View style={{ display: isVisible ? 'flex' : 'none', flex: 1 }}>
-                {!isReady ? (
+                {(!isReady || !visitedTabs.includes(index)) ? (
                     renderSkeleton()
                 ) : (
                     <ScrollView
@@ -155,79 +156,60 @@ export default function ShopScreen() {
     }, []);
 
     // Skeleton Helpers
-    const SkeletonCard = ({ isGrid = false }) => {
-        const opacity = useSharedValue(0.3);
-        useEffect(() => {
-            opacity.value = withRepeat(
-                withSequence(
-                    withTiming(0.1, { duration: 800 }),
-                    withTiming(0.3, { duration: 800 })
-                ),
-                -1,
-                true
-            );
-        }, []);
+    const SkeletonCard = () => (
+        <View style={styles.card}>
+            <PremiumSkeleton width={50} height={50} borderRadius={25} />
+            <View style={{ flex: 1, marginLeft: 15, gap: 8 }}>
+                <PremiumSkeleton width="60%" height={12} borderRadius={6} />
+                <PremiumSkeleton width="40%" height={8} borderRadius={4} />
+            </View>
+        </View>
+    );
 
-        const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+    const SkeletonGridItem = () => (
+        <View style={styles.cardFrame}>
+            <View style={{ marginBottom: 15, justifyContent: 'center', alignItems: 'center' }}>
+                <PremiumSkeleton width={60} height={60} borderRadius={30} />
+            </View>
+            <PremiumSkeleton width="70%" height={12} borderRadius={6} style={{ marginBottom: 8 }} />
+            <PremiumSkeleton width="40%" height={8} borderRadius={4} />
+        </View>
+    );
 
-        return (
-            <Animated.View style={[
-                isGrid ? styles.cardFrame : styles.card,
-                { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.05)', borderWidth: 1 },
-                animStyle
-            ]}>
-                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-                <View style={{ flex: 1, marginLeft: 15, gap: 8 }}>
-                    <View style={{ width: '60%', height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-                    <View style={{ width: '40%', height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-                </View>
-            </Animated.View>
-        );
-    };
-
-    // Skeleton HelpersWrapper
-    const SkeletonGridItem = () => {
-        const opacity = useSharedValue(0.3);
-        useEffect(() => {
-            opacity.value = withRepeat(
-                withSequence(
-                    withTiming(0.1, { duration: 800 }),
-                    withTiming(0.3, { duration: 800 })
-                ),
-                -1,
-                true
-            );
-        }, []);
-
-        const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-
-        return (
-            <Animated.View style={[{
-                width: '48%', // [FIX] 2-column layout for Shop
-                aspectRatio: 1,
-                borderRadius: 12,
-                marginTop: 15,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.1)',
-                backgroundColor: 'rgba(255,255,255,0.02)',
-            }, animatedStyle]} />
-        );
-    };
+    const SkeletonCardItem = () => (
+        <View style={[styles.card, { paddingVertical: 15 }]}>
+            <PremiumSkeleton width={34} height={48} borderRadius={4} />
+            <View style={{ flex: 1, marginLeft: 15, gap: 8 }}>
+                <PremiumSkeleton width="65%" height={12} borderRadius={6} />
+                <PremiumSkeleton width="30%" height={8} borderRadius={4} />
+            </View>
+        </View>
+    );
 
     const renderSkeleton = () => {
         if (activeTab === 2) {
-            // Grid Layout for Frames
+            // Frames (Grid)
             return (
-                <View style={{ flex: 1, padding: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonGridItem key={i} />)}
+                <View style={{ padding: 15, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                    {[1, 2, 3, 4, 5, 6].map(i => <SkeletonGridItem key={i} />)}
                 </View>
             );
         }
-        // List Layout for others
+
+        if (activeTab === 1) {
+            // Skins (Cards)
+            return (
+                <View style={{ padding: 15 }}>
+                    {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCardItem key={i} />)}
+                </View>
+            );
+        }
+
+        // Themes (0), Packs (3), DC (4)
         return (
-            <ScrollView contentContainerStyle={{ paddingBottom: 80 + insets.bottom }} showsVerticalScrollIndicator={false}>
+            <View style={{ padding: 15 }}>
                 {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
-            </ScrollView>
+            </View>
         );
     };
 
@@ -1262,7 +1244,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.05)'
     },
     cardFrame: {
-        width: width * 0.43,
+        width: '48.5%', // [FIX] Stable 2-column layout
         padding: 15,
         marginBottom: 15,
         borderRadius: 16,

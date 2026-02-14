@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import HapticsService from '../services/HapticsService';
+import PremiumSkeleton from '../components/PremiumSkeleton';
 
 const TabItem = ({ title, index, tabBarWidth, tabIndicatorX, theme }) => {
     const textColorStyle = useAnimatedStyle(() => {
@@ -83,134 +84,101 @@ const PersonalizationScreen = () => {
         }
     }, [activeTab]);
 
-    // Skeleton Helpers
-    const SkeletonCard = () => {
-        const opacity = useSharedValue(0.3);
-        useEffect(() => {
-            opacity.value = withRepeat(
-                withSequence(
-                    withTiming(0.1, { duration: 800 }),
-                    withTiming(0.3, { duration: 800 })
-                ),
-                -1,
-                true
-            );
-        }, []);
+    // Skeleton Helpers - Refined for Personalization
+    const SkeletonThemeItem = () => (
+        <View style={{
+            width: '31%',
+            aspectRatio: 0.85,
+            borderRadius: 12,
+            marginTop: 15,
+            backgroundColor: 'rgba(255,255,255,0.03)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.08)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8
+        }}>
+            <PremiumSkeleton width={48} height={48} borderRadius={24} />
+            <PremiumSkeleton width="60%" height={10} borderRadius={5} />
+        </View>
+    );
 
-        const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+    const SkeletonSkinItem = () => (
+        <View style={{
+            width: '31%',
+            aspectRatio: 0.65,
+            borderRadius: 12,
+            marginTop: 15,
+            backgroundColor: 'rgba(255,255,255,0.03)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.08)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 15
+        }}>
+            <PremiumSkeleton width={40} height={80} borderRadius={4} />
+            <PremiumSkeleton width="70%" height={10} borderRadius={5} />
+        </View>
+    );
 
-        return (
-            <Animated.View style={[{
-                marginBottom: 15,
-                borderRadius: 16,
-                padding: 15,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.1)',
-                backgroundColor: 'rgba(255,255,255,0.02)',
-                flexDirection: 'row',
-                alignItems: 'center'
-            }, animatedStyle]}>
-                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-                <View style={{ flex: 1, marginLeft: 15, gap: 8 }}>
-                    <View style={{ width: '60%', height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-                    <View style={{ width: '40%', height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-                </View>
-            </Animated.View>
-        );
-    };
-
-    const SkeletonGridItem = () => {
-        const opacity = useSharedValue(0.3);
-        useEffect(() => {
-            opacity.value = withRepeat(
-                withSequence(
-                    withTiming(0.1, { duration: 800 }),
-                    withTiming(0.3, { duration: 800 })
-                ),
-                -1,
-                true
-            );
-        }, []);
-
-        const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-
-        return (
-            <Animated.View style={[{
-                width: '30%',
-                aspectRatio: 1,
-                borderRadius: 12,
-                marginTop: 15,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.1)',
-                backgroundColor: 'rgba(255,255,255,0.02)',
-            }, animatedStyle]} />
-        );
-    };
-
-    const SkeletonSkinItem = () => {
-        const opacity = useSharedValue(0.3);
-        useEffect(() => {
-            opacity.value = withRepeat(
-                withSequence(
-                    withTiming(0.1, { duration: 800 }),
-                    withTiming(0.3, { duration: 800 })
-                ),
-                -1,
-                true
-            );
-        }, []);
-
-        const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-
-        return (
-            <Animated.View style={[{
-                width: '30%', // [FIX] 3-column layout
-                aspectRatio: 0.7, // Card aspect ratio
-                borderRadius: 12,
-                marginTop: 15,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.1)',
-                backgroundColor: 'rgba(255,255,255,0.02)',
-            }, animatedStyle]} />
-        );
-    };
+    const SkeletonFrameItem = () => (
+        <View style={{
+            width: '31%',
+            borderRadius: 12,
+            marginTop: 15,
+            paddingVertical: 15,
+            backgroundColor: 'rgba(255,255,255,0.03)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.08)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10
+        }}>
+            <PremiumSkeleton width={60} height={60} borderRadius={30} />
+            <PremiumSkeleton width="60%" height={10} borderRadius={5} />
+        </View>
+    );
 
     const renderSkeleton = () => {
+        if (activeTab === 0) {
+            // Themes
+            return (
+                <View style={{ flex: 1, paddingHorizontal: 5, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonThemeItem key={i} />)}
+                </View>
+            );
+        }
+
         if (activeTab === 1) {
-            // Skins (New Skeleton)
+            // Skins
             return (
-                <View style={{ flex: 1, padding: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                    {[1, 2, 3, 4, 5, 6].map(i => <SkeletonSkinItem key={i} />)}
+                <View style={{ flex: 1, paddingHorizontal: 5, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonSkinItem key={i} />)}
                 </View>
             );
         }
 
-        if (activeTab === 0 || activeTab === 2) {
-            // Grid Layout for Themes (0) and Frames (2)
+        if (activeTab === 2) {
+            // Frames
             return (
-                <View style={{ flex: 1, padding: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonGridItem key={i} />)}
+                <View style={{ flex: 1, paddingHorizontal: 5, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonFrameItem key={i} />)}
                 </View>
             );
         }
 
-        // Fallback (though all tabs are covered now)
-        return (
-            <View style={{ flex: 1, padding: 10 }}>
-                {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
-            </View>
-        );
+        return null; // All tabs handled
     };
 
     const renderTabContent = (index, content) => {
-        if (!visitedTabs.includes(index)) return null;
-
         const isVisible = activeTab === index;
+        if (!visitedTabs.includes(index) && !isVisible) return null;
+
         const isReady = readyTabs.includes(index);
 
         return (
             <View style={{ display: isVisible ? 'flex' : 'none', flex: 1 }}>
-                {!isReady ? (
+                {(!isReady || !visitedTabs.includes(index)) ? (
                     renderSkeleton()
                 ) : (
                     content
