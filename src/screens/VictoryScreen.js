@@ -79,27 +79,29 @@ const VictoryScreen = ({ winnerName, onExit }) => {
         AnalyticsService.logGameWin(winnerName, isWinnerRando ? (roomData?.randoPoints || 0) : (roomData?.punti?.[winnerName] || 0));
         const myUsername = user?.username || user?.name;
 
+        const currentOpponents = Object.keys(roomData?.giocatori || {}).filter(name => name !== myUsername);
+
         if (winnerName === myUsername) {
-            awardMoney(150);
-            const timerReward = setTimeout(() => {
-                setRewardAmount(150);
-                setShowReward(true);
-            }, 800);
+            awardMoney(150, currentOpponents).then(res => {
+                if (res?.success) {
+                    setRewardAmount(res.awarded);
+                    setTimeout(() => setShowReward(true), 800);
+                }
+            });
             return () => {
                 clearTimeout(timer1);
                 clearTimeout(timerShame);
-                clearTimeout(timerReward);
             };
         } else if (isPlayerAmongLosers) {
-            awardMoney(100);
-            const timerReward = setTimeout(() => {
-                setRewardAmount(100);
-                setShowReward(true);
-            }, 2300); // Appear with the shame award zoom
+            awardMoney(100, currentOpponents).then(res => {
+                if (res?.success) {
+                    setRewardAmount(res.awarded);
+                    setTimeout(() => setShowReward(true), 2300);
+                }
+            });
             return () => {
                 clearTimeout(timer1);
                 clearTimeout(timerShame);
-                clearTimeout(timerReward);
             };
         }
 

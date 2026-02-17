@@ -84,51 +84,57 @@ export const GameProvider = ({ children }) => {
         const roomsRef = ref(db, 'stanze');
         const unsub = onValue(roomsRef, (snapshot) => {
             if (snapshot.exists()) {
-                const data = snapshot.val();
-                const now = Date.now();
-                const STALE_MS = 24 * 60 * 60 * 1000; // 24 Hours
+                try {
+                    const data = snapshot.val();
+                    const now = Date.now();
+                    const STALE_MS = 24 * 60 * 60 * 1000; // 24 Hours
 
-                const roomList = Object.keys(data).map(key => {
-                    const room = data[key];
-                    const players = Object.values(room.giocatori || {});
+                    const roomList = Object.keys(data).map(key => {
+                        const room = data[key];
+                        const players = Object.values(room.giocatori || {});
 
-                    if (players.length > 0) {
-                        const isAnyoneOnline = players.some(p => p.online === true);
-                        if (!isAnyoneOnline) {
-                            // Find the most recent activity among all players
-                            const lastSeenTimes = players.map(p => p.lastSeen || 0);
-                            const mostRecentActivity = Math.max(...lastSeenTimes, room.timestamp || 0);
+                        if (players.length > 0) {
+                            const isAnyoneOnline = players.some(p => p.online === true);
+                            if (!isAnyoneOnline) {
+                                // Find the most recent activity among all players
+                                const lastSeenTimes = players.map(p => p.lastSeen || 0);
+                                const mostRecentActivity = Math.max(...lastSeenTimes, room.timestamp || 0);
 
-                            if (now - mostRecentActivity > STALE_MS) {
-                                console.log(`[CLEANUP] Deleting offline room ${key}`);
+                                if (now - mostRecentActivity > STALE_MS) {
+                                    console.log(`[CLEANUP] Deleting offline room ${key}`);
+                                    set(ref(db, `stanze/${key}`), null);
+                                    return null;
+                                }
+                            }
+                        } else {
+                            // Empty rooms are deleted based on creation timestamp
+                            const roomTs = room.timestamp || 0;
+                            if (now - roomTs > STALE_MS) {
                                 set(ref(db, `stanze/${key}`), null);
                                 return null;
                             }
                         }
-                    } else {
-                        // Empty rooms are deleted based on creation timestamp
-                        const roomTs = room.timestamp || 0;
-                        if (now - roomTs > STALE_MS) {
-                            set(ref(db, `stanze/${key}`), null);
-                            return null;
-                        }
-                    }
 
-                    const hydrated = hydrateRoom(room);
-                    return {
-                        id: key,
-                        ...hydrated
-                    };
-                }).filter(r => r !== null);
-                roomList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                setAvailableRooms(roomList);
+                        const hydrated = hydrateRoom(room);
+                        return {
+                            id: key,
+                            ...hydrated
+                        };
+                    }).filter(r => r !== null);
+                    roomList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    setAvailableRooms(roomList);
+                } catch (err) {
+                    setAvailableRooms([]);
+                }
             } else {
                 setAvailableRooms([]);
             }
+        }, (error) => {
+            setAvailableRooms([]);
         });
         allRoomsUnsubscribe.current = unsub;
         return () => unsub();
-    }, []);
+    }, [authUser?.uid]);
 
     // --- HELPERS ---
 
@@ -670,12 +676,6 @@ export const GameProvider = ({ children }) => {
                             const randomIdx = Math.floor(Math.random() * candidatePool.length);
                             const newWinner = candidatePool[randomIdx];
 
-                            // Store swap details
-                            room.chaosSwapDetails = {
-                                original: winnerName,
-                                actual: newWinner,
-                                type: 'IDENTITY_SWAP'
-                            };
                             actualWinner = newWinner;
                         }
                     }

@@ -38,8 +38,8 @@ const ConfirmationModal = ({
                             enableSound={false}
                             onPress={onClose}
                             style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', maxWidth: '100%', width: 'auto' }}
-                            contentContainerStyle={{ paddingVertical: 12 }}
-                            textStyle={{ fontSize: 13 }}
+                            contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 4 }}
+                            textStyle={{ fontSize: 11 }}
                         />
                     )}
                     <PremiumButton
@@ -51,8 +51,8 @@ const ConfirmationModal = ({
                             onClose();
                         }}
                         style={{ flex: 1, maxWidth: '100%', width: 'auto' }}
-                        contentContainerStyle={{ paddingVertical: 12 }}
-                        textStyle={{ fontSize: 13, fontFamily: 'Cinzel-Bold' }}
+                        contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 4 }}
+                        textStyle={{ fontSize: 11, fontFamily: 'Cinzel-Bold' }}
                     />
                 </View>
             </View>

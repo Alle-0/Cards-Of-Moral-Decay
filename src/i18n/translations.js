@@ -49,7 +49,7 @@ export const translations = {
         copy_code: "COPIA CODICE",
         leave_room: "ABBANDONA STANZA",
         info_privacy: "Info, Privacy & Donazioni",
-        logout_account: "Disconnetti",
+        logout_account: "DISCONNETTI",
         logout_confirm_title: "Disconnetti",
         logout_confirm_msg: "Vuoi uscire dall'account?\nDovrai effettuare nuovamente il login.",
         version: "Versione",
@@ -520,11 +520,36 @@ export const translations = {
         login_secret_code_placeholder: "XXX-XXXX",
         login_btn_recover: "RIPRISTINA",
         login_btn_verifying: "VERIFICA...",
+        delete_account: "ELIMINA ACCOUNT",
+        delete_confirm_title: "ELIMINA ACCOUNT",
+        delete_confirm_msg: "Sei sicuro di voler eliminare il tuo account permanentemente? Non potrai più recuperare i tuoi progressi o il tuo credito.",
+        delete_final_confirm_title: "CONFERMA FINALE",
+        delete_final_confirm_msg: "Questa azione è irreversibile. Confermi di voler procedere all'eliminazione totale dei tuoi dati?",
         login_error_title: "Errore",
         login_error_missing_name: "Devi scegliere un nome.",
         login_error_missing_recover_data: "Inserisci nome e codice segreto.",
         login_db_blocked_title: "DATABASE BLOCCATO",
         login_db_blocked_msg: "Devi aggiungere l'indice nelle regole di Firebase per poter entrare. Controlla il piano di implementazione (implementation_plan.md) per il codice da incollare.",
+        error_offensive_name: "Nome non valido o offensivo. Scegline un altro.",
+        error_username_too_short: "Il nome è troppo corto (minimo 2 caratteri).",
+        error_username_too_long: "Il nome è troppo lungo (massimo 20 caratteri).",
+        error_username_invalid_chars: "Il nome contiene caratteri non validi.",
+
+        // EULA
+        eula_title: "Termini e Condizioni",
+        eula_accept_btn: "Accetto e Procedo",
+        eula_header_1: "1. Comportamento dell'Utente",
+        eula_body_1: "Partecipando a Cards of Moral Decay, accetti di mantenere un comportamento rispettoso. È severamente vietato l'uso di un linguaggio d'odio, molestie o contenuti espliciti nei nomi utente.",
+        eula_header_2: "2. Moderazione dei Contenuti",
+        eula_body_2: "Questo gioco è basato sull'ironia e può contenere temi forti. Tuttavia, non tolleriamo abusi. Gli utenti possono segnalare comportamenti scorretti in qualsiasi momento tramite l'apposito tasto.",
+        eula_header_3: "3. Responsabilità",
+        eula_body_3: "Accettando, confermi di avere almeno 18 anni e di essere consapevole che il gioco è pensato per un pubblico adulto.",
+
+        // REPORTING
+        report_player_title: "SEGNALA GIOCATORE",
+        report_player_msg: "Vuoi segnalare %{name} per comportamento inappropriato o nome offensivo?",
+        report_btn: "SEGNALA",
+        toast_report_sent: "Segnalazione inviata. Grazie.",
 
         // PWA INSTALL
         install_app_title: "INSTALLA L'APP",
@@ -590,7 +615,7 @@ export const translations = {
         copy_code: "COPY CODE",
         leave_room: "LEAVE ROOM",
         info_privacy: "Info, Privacy & Donations",
-        logout_account: "Logout",
+        logout_account: "LOGOUT",
         logout_confirm_title: "Logout",
         logout_confirm_msg: "Do you want to log out?\nYou will need to login again.",
         version: "Version",
@@ -1035,8 +1060,33 @@ export const translations = {
         login_error_title: "Error",
         login_error_missing_name: "You must choose a name.",
         login_error_missing_recover_data: "Enter name and secret code.",
+        delete_account: "DELETE ACCOUNT",
+        delete_confirm_title: "DELETE ACCOUNT",
+        delete_confirm_msg: "Are you sure you want to permanently delete your account? You will not be able to recover your progress or credits.",
+        delete_final_confirm_title: "FINAL CONFIRMATION",
+        delete_final_confirm_msg: "This action is irreversible. Do you confirm that you want to proceed with the total deletion of your data?",
         login_db_blocked_title: "DATABASE BLOCKED",
         login_db_blocked_msg: "You must add the index in Firebase rules to enter. Check the implementation plan (implementation_plan.md) for the code to paste.",
+        error_offensive_name: "Invalid or offensive name. Please choose another.",
+        error_username_too_short: "The name is too short (minimum 2 characters).",
+        error_username_too_long: "The name is too long (maximum 20 characters).",
+        error_username_invalid_chars: "The name contains invalid characters.",
+
+        // EULA
+        eula_title: "Terms and Conditions",
+        eula_accept_btn: "Accept and Proceed",
+        eula_header_1: "1. User Behavior",
+        eula_body_1: "By playing Cards of Moral Decay, you agree to maintain respectful behavior. Hate speech, harassment, or explicit content in usernames are strictly prohibited.",
+        eula_header_2: "2. Content Moderation",
+        eula_body_2: "This game is based on irony and may contain strong themes. However, we do not tolerate abuse. Users can report inappropriate behavior at any time via the specific button.",
+        eula_header_3: "3. Responsibility",
+        eula_body_3: "By accepting, you confirm you are at least 18 years old and aware that the game is intended for an adult audience.",
+
+        // REPORTING
+        report_player_title: "REPORT PLAYER",
+        report_player_msg: "Do you want to report %{name} for inappropriate behavior or offensive name?",
+        report_btn: "REPORT",
+        toast_report_sent: "Report sent. Thank you.",
 
 
         contacts_content: "To report bugs or suggest new ideas, you can open an issue on GitHub or send an email.", // [NEW]

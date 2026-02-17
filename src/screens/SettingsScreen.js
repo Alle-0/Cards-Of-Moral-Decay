@@ -77,7 +77,7 @@ const SettingsScreen = ({ navigation }) => {
     const { isPlaying, toggleMusic } = useAudio(); // [NEW] Music Control
     const { leaveRoom, roomCode } = useGame();
     const { t, language, setLanguage } = useLanguage();
-    const { logout, user: authUser } = useAuth();
+    const { logout, deleteAccount, user: authUser } = useAuth();
     const insets = useSafeAreaInsets();
 
     const languageRef = useRef(language);
@@ -280,6 +280,36 @@ const SettingsScreen = ({ navigation }) => {
                 logout();
             },
             t('logout_account')
+        );
+    };
+
+    const handleDeleteAccount = () => {
+        // Step 1: Broad Confirmation
+        showModal(
+            t('delete_confirm_title'),
+            t('delete_confirm_msg'),
+            false,
+            () => {
+                // Step 2: Final Ireversible Confirmation
+                setTimeout(() => {
+                    showModal(
+                        t('delete_final_confirm_title'),
+                        t('delete_final_confirm_msg'),
+                        false,
+                        async () => {
+                            try {
+                                await deleteAccount();
+                                // AuthContext should take care of state and navigation (via Auth state change)
+                            } catch (e) {
+                                console.error("Account deletion failed", e);
+                                showModal(t('login_error_title'), e.message);
+                            }
+                        },
+                        t('delete_account')
+                    );
+                }, 500); // Small delay for UX between modals
+            },
+            t('delete_account')
         );
     };
 
@@ -699,15 +729,37 @@ const SettingsScreen = ({ navigation }) => {
 
                         <View style={{ gap: 8 }}>
                             <PremiumPressable
-                                style={[styles.menuCard, { backgroundColor: 'rgba(239, 68, 68, 0.08)', borderRadius: 16 }]}
+                                style={[styles.menuCard, { backgroundColor: 'rgba(239, 68, 68, 0.12)', borderRadius: 16 }]}
                                 onPress={handleLogout}
                                 enableSound={false}
                                 contentContainerStyle={[styles.menuCardContent, { borderRadius: 16 }]}
                             >
-                                <View style={styles.menuCardIconWrap}>
+                                <View style={[styles.menuCardIconWrap, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
                                     <OpenDoorIcon size={20} color="#ef4444" />
                                 </View>
-                                <Text style={[styles.menuCardText, { color: '#ef4444' }]}>{t('logout_account')}</Text>
+                                <Text
+                                    style={[styles.menuCardText, { color: '#ef4444', flex: 1, letterSpacing: -0.2 }]}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
+                                    minimumFontScale={0.7}
+                                >{t('logout_account')}</Text>
+                            </PremiumPressable>
+
+                            <PremiumPressable
+                                style={[styles.menuCard, { backgroundColor: 'rgba(239, 68, 68, 0.12)', borderRadius: 16 }]}
+                                onPress={handleDeleteAccount}
+                                enableSound={false}
+                                contentContainerStyle={[styles.menuCardContent, { borderRadius: 16 }]}
+                            >
+                                <View style={[styles.menuCardIconWrap, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                                    <ShieldIcon size={20} color="#ef4444" />
+                                </View>
+                                <Text
+                                    style={[styles.menuCardText, { color: '#ef4444', flex: 1, letterSpacing: -0.3 }]}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
+                                    minimumFontScale={0.5}
+                                >{t('delete_account')}</Text>
                             </PremiumPressable>
                         </View>
 
@@ -801,7 +853,8 @@ const SettingsScreen = ({ navigation }) => {
                             </Text>
                         </View>
                     </Animated.View>
-                )}
+                )
+                }
 
                 <ConfirmationModal
                     visible={modalConfig.visible}
@@ -984,20 +1037,21 @@ const styles = StyleSheet.create({
     menuCardContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 14,
-        gap: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 10,
+        gap: 8,
     },
     menuCardIconWrap: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
+        width: 30, // Reduced from 32
+        height: 30,
+        borderRadius: 8,
         backgroundColor: 'rgba(255,255,255,0.05)',
         alignItems: 'center',
         justifyContent: 'center',
     },
     menuCardText: {
         fontFamily: 'Outfit-Bold',
-        fontSize: 14,
+        fontSize: 13,
     },
 });
 

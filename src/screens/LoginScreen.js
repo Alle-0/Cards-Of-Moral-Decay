@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { isProfane, validateUsername } from '../utils/ValidationUtils';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ScrollView, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../services/firebase';
@@ -19,6 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import ConfirmationModal from '../components/ConfirmationModal';
 import PremiumBackground from '../components/PremiumBackground';
+import EulaModal from '../components/EulaModal';
 
 const { width } = Dimensions.get('window');
 
@@ -64,21 +66,35 @@ export default function LoginScreen() {
 
     const [loading, setLoading] = useState(false);
     const [modal, setModal] = useState({ visible: false, title: '', message: '' });
+    const [showEula, setShowEula] = useState(false);
 
     // --- Actions ---
 
-    const handleSignUp = async () => {
-        if (!username.trim()) {
-            setModal({ visible: true, title: t('login_error_title'), message: t('login_error_missing_name') });
+    const handleSignUp = () => {
+        const validation = validateUsername(username.trim());
+        if (!validation.valid) {
+            let errorMsg = t('login_error_missing_name');
+            if (validation.error === 'username_too_short') errorMsg = t('error_username_too_short');
+            else if (validation.error === 'username_too_long') errorMsg = t('error_username_too_long');
+            else if (validation.error === 'username_invalid_chars') errorMsg = t('error_username_invalid_chars');
+            else if (validation.error === 'username_offensive') errorMsg = t('error_offensive_name');
+
+            setModal({ visible: true, title: t('login_error_title'), message: errorMsg });
             return;
         }
+        setShowEula(true);
+    };
 
+    const confirmSignUp = async () => {
+        setShowEula(false);
         setLoading(true);
         try {
             await signUp(username.trim());
             setLoading(false);
         } catch (error) {
-            setModal({ visible: true, title: t('login_error_title'), message: error.message });
+            // Handle specific profanity error or others
+            const errorMsg = error.message === "error_offensive_name" ? t('error_offensive_name') : error.message;
+            setModal({ visible: true, title: t('login_error_title'), message: errorMsg });
             setLoading(false);
         }
     };
@@ -271,6 +287,11 @@ export default function LoginScreen() {
                 singleButton={true}
                 confirmText={t('ok_btn')}
                 onConfirm={() => setModal({ ...modal, visible: false })}
+            />
+
+            <EulaModal
+                visible={showEula}
+                onAccept={confirmSignUp}
             />
 
 

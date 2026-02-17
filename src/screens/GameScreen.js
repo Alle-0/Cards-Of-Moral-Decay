@@ -440,9 +440,19 @@ const GameScreen = ({ onStartLoading }) => {
 
 
     useEffect(() => {
-        if (roomData?.statoTurno === 'SHOWING_WINNER' && roomData?.vincitoreTurno === (roomPlayerName || user.name)) {
+        const myNameInRoom = roomPlayerName || user?.username;
+        if (roomData?.statoTurno === 'SHOWING_WINNER' && roomData?.vincitoreTurno === myNameInRoom) {
             if (!lastPaidTurn) {
-                awardMoney(50);
+                // Calculate Base Reward + potential Chaos Reward (Dirty Win)
+                let amountToAward = 50; // Standard round win
+                if (roomData?.activeChaosEvent === CHAOS_EVENTS.DIRTY_WIN) {
+                    amountToAward = 100; // Total (usually 50 base + 50 extra)
+                }
+
+                // Collect opponents for anti-farming check
+                const currentOpponents = Object.keys(roomData?.giocatori || {}).filter(name => name !== myNameInRoom);
+
+                awardMoney(amountToAward, currentOpponents);
                 setLastPaidTurn("PAID");
             }
         } else if (roomData?.statoTurno !== 'SHOWING_WINNER') {

@@ -8,17 +8,19 @@ import PremiumIconButton from './PremiumIconButton';
 import { Image } from 'react-native';
 import PremiumModal from './PremiumModal';
 import PremiumButton from './PremiumButton';
+import ConfirmationModal from './ConfirmationModal';
 
 import LocalAvatar from './LocalAvatar';
 import { TrashIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ThornsIcon, CrossIcon } from './Icons';
 import AvatarWithFrame from './AvatarWithFrame'; // [NEW] Standardized
-import { RANK_COLORS } from '../context/AuthContext'; // [NEW]
+import { useAuth, RANK_COLORS } from '../context/AuthContext'; // [FIX] Added useAuth
 
 const SCREEN_HEIGHT = Dimensions.get('screen').height + 120;
 
 const getRankColor = (rank) => RANK_COLORS[rank] || '#888';
 
 const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserName, isCreator, onKick, status, playedPlayers = [] }) => {
+    const { reportPlayer } = useAuth();
     // ... (rest of component start)
 
     const { theme } = useTheme();
@@ -36,6 +38,9 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
     const startHeight = useRef(0);
     const [playerToKick, setPlayerToKick] = useState(null); // Data
     const [showKickModal, setShowKickModal] = useState(false); // Visibility
+
+    const [playerToReport, setPlayerToReport] = useState(null);
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const ANIM_CONFIG = {
         duration: 250,
@@ -210,6 +215,22 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                                             <View style={{ width: 32, height: 32, marginLeft: 10 }} />
                                         )
                                     )}
+
+                                    {player.name !== currentUserName && player.name !== 'Rando' && (
+                                        <PremiumIconButton
+                                            icon={
+                                                <View style={{ transform: [{ rotate: '15deg' }] }}>
+                                                    <Text style={{ fontSize: 18 }}>🚩</Text>
+                                                </View>
+                                            }
+                                            size={32}
+                                            onPress={() => {
+                                                setPlayerToReport(player);
+                                                setShowReportModal(true);
+                                            }}
+                                            style={{ marginLeft: 10, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 20 }}
+                                        />
+                                    )}
                                 </View>
                             ))}
                         </View>
@@ -223,6 +244,25 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                 >
                     <View style={styles.handle} />
                 </Animated.View>
+
+                {/* Report Confirmation Modal */}
+                <ConfirmationModal
+                    visible={showReportModal}
+                    title={t('report_player_title', { defaultValue: 'SEGNALA GIOCATORE' })}
+                    message={t('report_player_msg', { name: playerToReport?.name })}
+                    confirmText={t('report_btn', { defaultValue: 'SEGNALA' })}
+                    onConfirm={async () => {
+                        if (playerToReport) {
+                            await reportPlayer(playerToReport.name);
+                            setShowReportModal(false);
+                            setPlayerToReport(null);
+                        }
+                    }}
+                    onClose={() => {
+                        setShowReportModal(false);
+                        setPlayerToReport(null);
+                    }}
+                />
 
             </Animated.View>
         </>
@@ -402,7 +442,7 @@ const AvatarItem = memo(({ player, isThinking, theme }) => {
                 bottom: -2, right: -2,
                 width: 12, height: 12,
                 borderRadius: 6,
-                backgroundColor: player.isOnline ? '#4ade80' : '#666',
+                backgroundColor: (player.isOnline || player.name === 'Rando') ? '#4ade80' : '#666',
                 borderWidth: 2,
                 borderColor: '#18181b',
                 zIndex: 20

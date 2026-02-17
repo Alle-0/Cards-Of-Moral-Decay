@@ -85,14 +85,15 @@ const PremiumButton = ({
             contentContainerStyle={[{
                 justifyContent: 'center',
                 alignItems: 'center',
-                paddingVertical: 10,
-                paddingHorizontal: 12,
+                paddingVertical: 8, // Reduced padding
+                paddingHorizontal: 10, // Reduced padding
             }, contentContainerStyle]} // Merge prop
         >
             <Text
                 style={[styles.text, { fontFamily: 'Cinzel-Bold' }, getTextStyle(), textStyle]}
                 numberOfLines={1}
-                adjustsFontSizeToFit={false}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.7}
             >
                 {title}
             </Text>

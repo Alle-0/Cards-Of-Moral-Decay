@@ -2,15 +2,17 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 import { Linking, Alert } from 'react-native'; // [FIX] Use standard react-native Linking
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { ref, get, set, child, update, increment, onValue, off, query, orderByChild, equalTo } from 'firebase/database';
-import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
+import { ref, get, set, child, update, increment, onValue, off, query, orderByChild, equalTo, serverTimestamp } from 'firebase/database';
+import { signInAnonymously, onAuthStateChanged, signOut, deleteUser } from 'firebase/auth';
 import { db, auth } from '../services/firebase';
 
 import { RANK_COLORS, RANK_THRESHOLDS } from '../constants/Ranks';
 import NotificationService from '../services/NotificationService';
+import { isProfane, validateUsername } from '../utils/ValidationUtils';
 export { RANK_COLORS, RANK_THRESHOLDS };
 
 import AnalyticsService from '../services/AnalyticsService';
+import { DAILY_EARNINGS_CAP, NEMESIS_THRESHOLD_0, NEMESIS_THRESHOLD_50, NEMESIS_WINDOW_MS } from '../constants/Config';
 
 const AuthContext = createContext();
 
@@ -379,13 +381,21 @@ export const AuthProvider = ({ children }) => {
         // [MODIFIED] Re-use current anonymous session if available to avoid races
         let currentUser = auth.currentUser;
         if (!currentUser) {
-            // console.log("[DEBUG] No current user, signing in anonymously...");
             const authResult = await signInAnonymously(auth);
             currentUser = authResult.user;
         }
 
         const uid = currentUser.uid;
         // console.log(`[DEBUG] Authenticated as UID: ${uid}`);
+
+        // 0. [NEW] Holistic Validation
+        const validation = validateUsername(username);
+        if (!validation.valid) {
+            // Map validation errors to translation keys if necessary, 
+            // but for AuthContext we usually throw the raw error key.
+            if (validation.error === 'username_offensive') throw new Error("error_offensive_name");
+            throw new Error(`error_${validation.error}`);
+        }
 
         // 2. Check Uniqueness (Optimized for Rules)
         // console.log(`[DEBUG] Checking uniqueness for: ${username}`);
@@ -422,7 +432,9 @@ export const AuthProvider = ({ children }) => {
             },
             unlockedPacks: {
                 dark: false
-            }
+            },
+            eulaAccepted: true, // [NEW] EULA is now required for signup
+            eulaAcceptedAt: serverTimestamp() // [NEW] Timestamp for EULA acceptance
         };
 
         // Create UID mapping first, then the user profile (Sequential to satisfy Rules)
@@ -627,16 +639,84 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const awardMoney = useCallback(async (amount) => {
-        if (!user) return;
+    const awardMoney = useCallback(async (amount, opponents = []) => {
+        if (!user || amount <= 0) return;
         const userRef = ref(db, `users/${user.username}`);
-        await update(userRef, {
-            balance: increment(amount),
-            totalScore: increment(amount)
-        });
-        await updateRank(user.username);
-        // Listener updates state
-    }, [user?.username]);
+        const now = Date.now();
+
+        try {
+            // 1. Daily Reset & Cap Logic
+            const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            let currentDaily = user.dailyEarnings || 0;
+            const lastAwardDate = user.lastAwardDate || "";
+
+            if (lastAwardDate !== todayStr) {
+                currentDaily = 0;
+            }
+
+            if (currentDaily >= DAILY_EARNINGS_CAP) {
+                console.log("[ANTI-FARMER] Daily Cap reached. Prize Blocked.");
+                return { success: false, reason: 'daily_cap' };
+            }
+
+            // 2. Nemesis (Anti-Trading) Logic
+            // If any opponent is a "Nemesis" (played too much today), reduce the prize.
+            let multiplier = 1.0;
+            const nemesisHistory = user.nemesisHistory || {};
+            const cleanNemesisHistory = { ...nemesisHistory };
+            let maxMatches = 0;
+
+            opponents.forEach(opp => {
+                if (!opp || opp === 'Rando' || opp === user.username) return;
+
+                // Cleanup old entries
+                const matches = nemesisHistory[opp] || [];
+                const validMatches = matches.filter(ts => (now - ts) < NEMESIS_WINDOW_MS);
+                cleanNemesisHistory[opp] = validMatches;
+
+                if (validMatches.length > maxMatches) {
+                    maxMatches = validMatches.length;
+                }
+            });
+
+            if (maxMatches >= NEMESIS_THRESHOLD_0) {
+                multiplier = 0;
+            } else if (maxMatches >= NEMESIS_THRESHOLD_50) {
+                multiplier = 0.5;
+            }
+
+            const finalAmount = Math.floor(amount * multiplier);
+
+            if (finalAmount <= 0) {
+                console.log(`[ANTI-FARMER] Nemesis Block. Matches: ${maxMatches}. Prize 0.`);
+                return { success: false, reason: 'nemesis' };
+            }
+
+            // 3. Update Database
+            const updates = {
+                balance: increment(finalAmount),
+                totalScore: increment(finalAmount),
+                dailyEarnings: (lastAwardDate === todayStr) ? increment(finalAmount) : finalAmount,
+                lastAwardDate: todayStr,
+            };
+
+            // Update match history for human opponents
+            opponents.forEach(opp => {
+                if (!opp || opp === 'Rando' || opp === user.username) return;
+                const matches = cleanNemesisHistory[opp] || [];
+                matches.push(now);
+                updates[`nemesisHistory/${opp}`] = matches;
+            });
+
+            await update(userRef, updates);
+            await updateRank(user.username);
+
+            return { success: true, awarded: finalAmount };
+        } catch (e) {
+            console.error("[ECONOMY] awardMoney failed", e);
+            return { success: false, error: e.message };
+        }
+    }, [user]);
 
     const spendMoney = useCallback(async (amount) => {
         if (!user) return false;
@@ -833,6 +913,63 @@ export const AuthProvider = ({ children }) => {
         return true;
     }, [user]);
 
+    // [NEW] Accept EULA
+    const acceptEula = useCallback(async () => {
+        if (!user) return;
+        const userRef = ref(db, `users/${user.username}`);
+        await update(userRef, {
+            eulaAccepted: true,
+            eulaAcceptedAt: serverTimestamp()
+        });
+    }, [user]);
+
+    // [NEW] Report Player
+    const reportPlayer = useCallback(async (targetUsername, reason = 'Reported from Leaderboard') => {
+        if (!user) return;
+        const reportId = `${user.username}_${targetUsername}_${Date.now()}`;
+        const reportRef = ref(db, `reports/${reportId}`);
+        await set(reportRef, {
+            reporter: user.username,
+            target: targetUsername,
+            reason,
+            timestamp: serverTimestamp(),
+            status: 'PENDING'
+        });
+    }, [user]);
+
+    // [NEW] Delete Account (Apple Compliance)
+    const deleteAccount = useCallback(async () => {
+        if (!user || !auth.currentUser) return;
+
+        const username = user.username;
+        const uid = auth.currentUser.uid;
+        const friends = user.friends || {};
+
+        // 1. Prepare batch updates for clean deletion
+        const updates = {};
+
+        // Remove the profile and UID mapping
+        updates[`users/${username}`] = null;
+        updates[`uids/${uid}`] = null;
+
+        // Remove reciprocal friend connections
+        Object.keys(friends).forEach(friendName => {
+            updates[`users/${friendName}/friends/${username}`] = null;
+            // Also try to clear any pending requests just in case
+            updates[`users/${friendName}/friendRequests/${username}`] = null;
+        });
+
+        // 2. Execute multiple removals atomically
+        await update(ref(db), updates);
+
+        // 3. Remove from Auth
+        await deleteUser(auth.currentUser);
+
+        // 4. Clear State & Cache
+        setUser(null);
+        await AsyncStorage.removeItem(USER_CACHE_KEY);
+    }, [user]);
+
     // Memoize the context value to avoid re-rendering consumers unless necessary
     const value = React.useMemo(() => ({
         user,
@@ -863,7 +1000,10 @@ export const AuthProvider = ({ children }) => {
         acceptFriendRequest,
         rejectFriendRequest,
         removeFriend,
-        addFriendDirectly
+        addFriendDirectly,
+        acceptEula,
+        reportPlayer,
+        deleteAccount
     }), [
         user,
         pendingRoom,
@@ -893,6 +1033,9 @@ export const AuthProvider = ({ children }) => {
         rejectFriendRequest,
         removeFriend,
         addFriendDirectly,
+        acceptEula,
+        reportPlayer,
+        deleteAccount,
         isConnected
     ]);
 

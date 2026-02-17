@@ -124,7 +124,7 @@ const FriendsScreen = () => {
     return (
         <View style={{ flex: 1, backgroundColor: 'transparent' }}>
             {/* Main Content Container with conditional opacity */}
-            <View style={{ flex: 1, opacity: friendToDelete ? 0.1 : 1, pointerEvents: friendToDelete ? 'none' : 'auto' }}>
+            <View style={{ flex: 1 }}>
                 {/* Header Title */}
                 <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
                     {t('friends_title')}
@@ -232,38 +232,17 @@ const FriendsScreen = () => {
                 </View>
             </View>
 
-            {/* DELETE CONFIRMATION OVERLAY (Absolute - covers the whole area) */}
-            {friendToDelete && (
-                <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }]}>
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }}>
-                        <Animated.View
-                            style={styles.confirmBox}
-                            entering={ZoomIn.duration(300)}
-                            exiting={ZoomOut.duration(200)}
-                        >
-                            <Text style={styles.confirmTitle}>{t('confirm_delete_title')}</Text>
-                            <Text style={styles.confirmText}>{t('confirm_delete_msg')}</Text>
-                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 20, width: '100%' }}>
-                                <PremiumButton
-                                    title={t('cancel_btn')}
-                                    variant="ghost"
-                                    onPress={() => setFriendToDelete(null)}
-                                    style={{ flex: 1, height: 45 }}
-                                />
-                                <PremiumButton
-                                    title={t('farewell_btn')}
-                                    variant="danger"
-                                    onPress={() => {
-                                        removeFriend(friendToDelete);
-                                        setFriendToDelete(null);
-                                    }}
-                                    style={{ flex: 1, height: 45 }}
-                                />
-                            </View>
-                        </Animated.View>
-                    </View>
-                </View>
-            )}
+            <ConfirmationModal
+                visible={!!friendToDelete}
+                onClose={() => setFriendToDelete(null)}
+                title={t('confirm_delete_title')}
+                message={t('confirm_delete_msg')}
+                confirmText={t('farewell_btn')}
+                onConfirm={() => {
+                    removeFriend(friendToDelete);
+                    setFriendToDelete(null);
+                }}
+            />
 
             <ConfirmationModal
                 visible={showExitModal}

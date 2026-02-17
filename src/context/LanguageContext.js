@@ -26,12 +26,20 @@ export const LanguageProvider = ({ children }) => {
     };
 
     // Funzione per tradurre UI con supporto interpolazione
+    // Funzione per tradurre UI con supporto interpolazione e valore di default
     const t = (key, params = {}) => {
-        let text = translations[language][key] || key;
+        // Fallback strategy: translations[lang][key] -> params.defaultValue -> key
+        let text = translations[language][key];
+
+        if (!text) {
+            text = params.defaultValue || key;
+        }
 
         // Interpolazione parametri %{key}
         Object.keys(params).forEach(paramKey => {
-            text = text.replace(new RegExp(`%\\{${paramKey}\\}`, 'g'), params[paramKey]);
+            if (paramKey !== 'defaultValue') {
+                text = text.replace(new RegExp(`%\\{${paramKey}\\}`, 'g'), params[paramKey]);
+            }
         });
 
         return text;

@@ -200,9 +200,9 @@ const LobbyScreen = ({ onStartLoading }) => {
             // [NEW] Dynamic Height Logic based on CONTENT
             const activeListLength = currentTab === 'friends' ? (friendsRooms?.length || 0) : (publicRooms?.length || 0);
 
-            const ITEM_HEIGHT = 50;  // More generous allowance per item
-            const BASE_HEIGHT = 360; // Increased base height for menu + tabs
-            const MIN_HEIGHT = 440;  // Minimum height prevents layout collapsing too much
+            const ITEM_HEIGHT = 64;  // Increased from 50
+            const BASE_HEIGHT = 380; // Increased from 360
+            const MIN_HEIGHT = 440;
 
             // Calculate exact needed height
             const calculatedHeight = BASE_HEIGHT + (activeListLength * ITEM_HEIGHT) + (showJoinInput ? 120 : 0);
