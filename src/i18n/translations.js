@@ -93,6 +93,10 @@ export const translations = {
         no_code_toast_title: "NESSUN CODICE",
         leave_confirm_title: "ABBANDONA PARTITA",
         leave_confirm_msg: "Sei sicuro di voler uscire dalla stanza corrente?",
+        update_required: "AGGIORNAMENTO NECESSARIO",
+        update_available: "Una nuova versione di\n%{appName}\nè disponibile.",
+        download_now: "SCARICA ORA",
+        update_hint: "Sarai reindirizzato al browser per scaricare l'aggiornamento.",
 
         // FRIENDS
         friends_title: "COMPLICI",
@@ -659,6 +663,10 @@ export const translations = {
         no_code_toast_title: "NO CODE",
         leave_confirm_title: "LEAVE ROOM",
         leave_confirm_msg: "Are you sure you want to leave the current room?",
+        update_required: "UPDATE REQUIRED",
+        update_available: "A new version of\n%{appName}\nis available.",
+        download_now: "DOWNLOAD NOW",
+        update_hint: "You will be redirected to the browser to download the update.",
 
         // FRIENDS
         friends_title: "ACCOMPLICES",

@@ -5,9 +5,11 @@ import PremiumButton from './PremiumButton';
 import { ShieldIcon } from './Icons';
 import { useTheme } from '../context/ThemeContext';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { useLanguage } from '../context/LanguageContext';
 
 const UpdateOverlay = ({ downloadUrl }) => {
     const { theme } = useTheme();
+    const { t } = useLanguage();
 
     const handleUpdate = async () => {
         if (Platform.OS === 'web') {
@@ -16,7 +18,7 @@ const UpdateOverlay = ({ downloadUrl }) => {
         }
 
         if (downloadUrl) {
-            Linking.openURL(downloadUrl).catch(err => 
+            Linking.openURL(downloadUrl).catch(err =>
                 console.error("Couldn't load page", err)
             );
         }
@@ -38,17 +40,15 @@ const UpdateOverlay = ({ downloadUrl }) => {
                         </View>
 
                         <Text style={[styles.title, { color: theme.colors.accent }]}>
-                            AGGIORNAMENTO NECESSARIO
+                            {t('update_required')}
                         </Text>
 
                         <Text style={styles.message}>
-                            Una nuova versione di {`\n`}
-                            <Text style={{ fontFamily: 'Cinzel-Bold', color: '#fff' }}>Cards of Moral Decay</Text>
-                            {`\n`}è disponibile.
+                            {t('update_available', { appName: 'Cards of Moral Decay' })}
                         </Text>
 
                         <PremiumButton
-                            title="SCARICA ORA"
+                            title={t('download_now')}
                             onPress={handleUpdate}
                             style={{ backgroundColor: theme.colors.accent, width: '100%', height: 60 }}
                             textStyle={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 16 }}
@@ -56,7 +56,7 @@ const UpdateOverlay = ({ downloadUrl }) => {
 
                         {Platform.OS !== 'web' && (
                             <Text style={styles.hint}>
-                                Sarai reindirizzato al browser per scaricare l'aggiornamento.
+                                {t('update_hint')}
                             </Text>
                         )}
                     </Animated.View>

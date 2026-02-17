@@ -81,9 +81,8 @@ export default function App() {
         if (fontsLoaded) prepare();
     }, [fontsLoaded]);
 
-    useEffect(() => {
-        if (appIsReady) SplashScreen.hideAsync();
-    }, [appIsReady]);
+    // [REMOVED] SplashScreen.hideAsync() is now handled inside ElegantSplashScreen
+    // to ensure a smoother transition between native and JS views.
 
     if (!appIsReady) return null;
 

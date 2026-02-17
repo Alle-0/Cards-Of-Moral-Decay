@@ -824,7 +824,7 @@ const GameScreen = ({ onStartLoading }) => {
                 avatar: isRando ? 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando' : roomData?.giocatori?.[rawName]?.avatar,
                 activeFrame: isRando ? 'glitch' : roomData?.giocatori?.[rawName]?.activeFrame,
                 rank: isRando ? 'rank_bot' : roomData?.giocatori?.[rawName]?.rank,
-                isOnline: (rawName === authUser?.username) || (isRando ? true : roomData?.giocatori?.[rawName]?.online) // [FIX] Always online for self
+                isOnline: (rawName === authUser?.username) || isRando || !!roomData?.giocatori?.[rawName]?.online // [FIX] Always online for self and Rando
             };
         });
 
@@ -844,7 +844,8 @@ const GameScreen = ({ onStartLoading }) => {
                 isDominus: false, // Rando is never Dominus
                 avatar: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando', // Bot Avatar
                 activeFrame: 'glitch', // Special cosmetic for Bot
-                rank: 'rank_bot' // Use key for translation
+                rank: 'rank_bot', // Use key for translation
+                isOnline: true // [FIX] Always online
             });
         }
 
@@ -1041,7 +1042,7 @@ const GameScreen = ({ onStartLoading }) => {
                                     width: 12,
                                     height: 12,
                                     borderRadius: 6,
-                                    backgroundColor: p.isOnline ? '#4ade80' : '#666',
+                                    backgroundColor: (p.isOnline || p.name === 'Rando') ? '#4ade80' : '#666',
                                     borderWidth: 2,
                                     borderColor: '#111' // Match background
                                 }} />

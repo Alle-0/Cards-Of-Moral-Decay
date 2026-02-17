@@ -5,8 +5,11 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import PremiumPressable from './PremiumPressable';
 import { DoorClosedIcon, PeopleIcon } from './Icons';
+import { RANK_COLORS } from '../constants/Ranks';
 
-const RoomItem = memo(({ roomName, playerCount, state, onJoin, onLongPress, creatorName, isOnline }) => {
+const getRankColor = (rank) => RANK_COLORS[rank] || '#888';
+
+const RoomItem = memo(({ roomName, playerCount, state, onJoin, onLongPress, creatorName, isOnline, creatorRank }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
 
@@ -42,9 +45,27 @@ const RoomItem = memo(({ roomName, playerCount, state, onJoin, onLongPress, crea
                     <View style={{ marginRight: 6 }}>
                         <PeopleIcon size={14} color="rgba(255,255,255,0.3)" />
                     </View>
-                    <Text style={[styles.playerCount]} numberOfLines={1} ellipsizeMode="tail">
-                        {playerCount} • {creatorName}
-                    </Text>
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={[styles.playerCount]} numberOfLines={1}>
+                            {playerCount} • {creatorName}
+                        </Text>
+                        {creatorRank && (
+                            <>
+                                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, marginHorizontal: 4 }}>•</Text>
+                                <Text style={{
+                                    fontSize: 10,
+                                    color: getRankColor(creatorRank),
+                                    fontFamily: 'Outfit',
+                                    fontWeight: 'bold',
+                                }} numberOfLines={1}>
+                                    {(() => {
+                                        const key = creatorRank.startsWith('rank_') ? creatorRank : 'rank_' + creatorRank.toLowerCase().replace(/ /g, '_');
+                                        return t(key, { defaultValue: creatorRank }).toUpperCase();
+                                    })()}
+                                </Text>
+                            </>
+                        )}
+                    </View>
 
                     {/* Online Dot */}
                     {isOnline !== undefined && (

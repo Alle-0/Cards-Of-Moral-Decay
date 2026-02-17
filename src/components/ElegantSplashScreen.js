@@ -14,6 +14,7 @@ import Animated, {
     ZoomIn
 } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { useTheme } from '../context/ThemeContext';
 
 const NATIVE_SPLASH_BG = '#0d0d0d'; // Must match app.json
@@ -68,7 +69,16 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false }) => {
 
         // [NEW] Sfumatura colore sfondo (solo al boot iniziale, per fondersi con la splash nativa)
         if (isThemeReady && !fastMode) {
-            bgProgress.value = withDelay(500, withTiming(1, { duration: 1500, easing: Easing.out(Easing.cubic) }));
+            // Scompare la splash nativa con un leggero margine per garantire che la JS view sia renderizzata
+            setTimeout(() => {
+                SplashScreen.hideAsync().catch(() => { });
+            }, 100);
+
+            // Transizione colore ultra-lenta (4s) con curva in-out per evitare scatti iniziali/finali
+            bgProgress.value = withTiming(1, {
+                duration: 4000,
+                easing: Easing.inOut(Easing.ease)
+            });
         }
 
         // 1. Respiro solenne (lento e impercettibile)
