@@ -45,7 +45,7 @@ const StaggeredWord = ({ text, style, color, baseDelay = 0 }) => {
 };
 // ------------------------
 
-const ElegantSplashScreen = ({ onFinish, fastMode = false }) => {
+const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = false }) => {
     const { theme, isThemeReady } = useTheme(); // [NEW] isThemeReady
     const [animationFinished, setAnimationFinished] = useState(false);
 
@@ -59,7 +59,9 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false }) => {
     const contentTranslateY = useSharedValue(0);
 
     // [NEW] Background transition
-    const bgProgress = useSharedValue(fastMode ? 1 : 0); // Start already accented if in-game transition
+    // If it's the initial launch (and not fast mode), start at 0 (native color). 
+    // Otherwise, start at 1 (accent color) to avoid dark flash.
+    const bgProgress = useSharedValue(isInitialLaunch && !fastMode ? 0 : 1);
 
     useEffect(() => {
         const totalEntranceTime = fastMode ? 1000 : 2000;
@@ -68,7 +70,7 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false }) => {
         const explosionDuration = fastMode ? 400 : 700;
 
         // [NEW] Sfumatura colore sfondo (solo al boot iniziale, per fondersi con la splash nativa)
-        if (isThemeReady && !fastMode) {
+        if (isThemeReady && !fastMode && isInitialLaunch) {
             // Scompare la splash nativa con un leggero margine per garantire che la JS view sia renderizzata
             setTimeout(() => {
                 SplashScreen.hideAsync().catch(() => { });

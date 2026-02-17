@@ -239,7 +239,6 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
                                 creatorName={item.creatore}
                                 isOnline={item.giocatori?.[item.creatore]?.online}
                                 creatorId={item.creatorUsername || item.creatore}
-                                creatorRank={item.giocatori?.[item.creatore]?.rank}
                             />
                         </Animated.View>
                     )}

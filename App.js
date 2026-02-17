@@ -97,7 +97,7 @@ export default function App() {
                                     <AudioProvider>
                                         {!splashAnimationFinished ? (
                                             <Animated.View style={{ flex: 1 }} exiting={FadeOut.duration(500)}>
-                                                <ElegantSplashScreen onFinish={() => setSplashAnimationFinished(true)} />
+                                                <ElegantSplashScreen onFinish={() => setSplashAnimationFinished(true)} isInitialLaunch={true} />
                                             </Animated.View>
                                         ) : (
                                             <NavigationContainer

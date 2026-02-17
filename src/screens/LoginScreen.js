@@ -16,13 +16,40 @@ import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withTiming,
-    Easing
+    Easing,
+    runOnJS,
+    interpolateColor,
+    withSpring,
+    interpolate
 } from 'react-native-reanimated';
+import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hooks/useLiquidAnimation';
+import HapticsService from '../services/HapticsService';
+import { PanResponder } from 'react-native';
 import ConfirmationModal from '../components/ConfirmationModal';
 import PremiumBackground from '../components/PremiumBackground';
 import EulaModal from '../components/EulaModal';
 
 const { width } = Dimensions.get('window');
+
+const TabItem = ({ label, index, dragX }) => {
+    const textStyle = useAnimatedStyle(() => {
+        const itemCenter = index * 50;
+        const color = interpolateColor(
+            dragX.value,
+            [itemCenter - 25, itemCenter, itemCenter + 25],
+            ['rgba(255,255,255,0.3)', '#FFFFFF', 'rgba(255,255,255,0.3)']
+        );
+        return { color, fontWeight: 'bold' };
+    });
+
+    return (
+        <View style={{ flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', zIndex: 2 }} pointerEvents="none">
+            <Animated.Text style={[{ fontSize: 13, letterSpacing: 0.5, fontFamily: 'Cinzel-Bold' }, textStyle]}>
+                {label}
+            </Animated.Text>
+        </View>
+    );
+};
 
 export default function LoginScreen() {
     const { signUp, recoverAccount, devLogin, loading: authLoading, user: authUserSession } = useAuth();
@@ -40,23 +67,96 @@ export default function LoginScreen() {
         }
     }, [authUserSession]);
 
-    // [NEW] Animated Tab Logic
-    const tabProgress = useSharedValue(0); // 0 = new, 1 = recover
+    // [NEW] Liquid Animation Logic
+    const dragXPercent = useSharedValue(0);
+    const startX = useSharedValue(0);
+    const targetX = useSharedValue(0);
+    const isDraggingSV = useSharedValue(false);
 
+    const tabScale = useLiquidScale(dragXPercent, startX, targetX, isDraggingSV, 1.05);
+
+    const gestureStartX = React.useRef(0);
+    const touchStartX = React.useRef(0);
+    const containerWidthRef = React.useRef(0);
+    const isGrabbingIndicator = React.useRef(false);
+    const activeTabRef = React.useRef(activeTab);
+
+    // Sync activeTab ref
     useEffect(() => {
-        tabProgress.value = withTiming(activeTab === 'new' ? 0 : 1, {
-            duration: 300,
-            easing: Easing.out(Easing.cubic)
-        });
+        activeTabRef.current = activeTab;
     }, [activeTab]);
 
-    const animatedTabStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: tabProgress.value * ((width * 0.9 - 48 - 8) / 2) }]
-    }));
+    // Animate tab change
+    useEffect(() => {
+        const target = activeTab === 'new' ? 0 : 50;
+        startX.value = dragXPercent.value;
+        targetX.value = target;
+        dragXPercent.value = withSpring(target, SNAP_SPRING_CONFIG);
+    }, [activeTab]);
+
+    const panResponder = React.useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: (evt) => {
+                gestureStartX.current = dragXPercent.value;
+                touchStartX.current = evt.nativeEvent.locationX;
+                const containerWidth = containerWidthRef.current || 300;
+                const halfWidth = containerWidth / 2;
+                const touchedSide = touchStartX.current < halfWidth ? 'new' : 'recover';
+                isGrabbingIndicator.current = (touchedSide === activeTabRef.current);
+                if (isGrabbingIndicator.current) {
+                    HapticsService.trigger('selection');
+                    isDraggingSV.value = true;
+                }
+            },
+            onPanResponderMove: (_, gestureState) => {
+                if (!isGrabbingIndicator.current) return;
+                const containerWidth = containerWidthRef.current || 300;
+                const deltaPercent = (gestureState.dx / containerWidth) * 100;
+                let newPercent = gestureStartX.current + deltaPercent;
+                // Rubber Banding
+                if (newPercent < 0) {
+                    newPercent = newPercent * 0.2;
+                } else if (newPercent > 50) {
+                    newPercent = 50 + (newPercent - 50) * 0.2;
+                }
+                dragXPercent.value = newPercent;
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                const isClick = Math.abs(gestureState.dx) < 10 && Math.abs(gestureState.dy) < 10;
+                let targetPercent;
+                if (isClick) {
+                    const containerWidth = containerWidthRef.current || 300;
+                    const clickedSide = touchStartX.current < (containerWidth / 2) ? 'new' : 'recover';
+                    targetPercent = clickedSide === 'new' ? 0 : 50;
+                } else {
+                    targetPercent = dragXPercent.value > 25 ? 50 : 0;
+                }
+                const newTab = targetPercent === 0 ? 'new' : 'recover';
+                setActiveTab(newTab);
+                if (newTab !== activeTabRef.current) {
+                    HapticsService.trigger('selection');
+                }
+                updateLiquidAnchors(startX, targetX, isDraggingSV, dragXPercent.value, targetPercent);
+                dragXPercent.value = withSpring(targetPercent, SNAP_SPRING_CONFIG);
+            },
+        })
+    ).current;
+
+    const indicatorStyle = useAnimatedStyle(() => {
+        return {
+            transform: [
+                { translateX: interpolate(dragXPercent.value, [0, 50], [2, -2]) },
+                { scale: tabScale.value }
+            ],
+            left: `${dragXPercent.value}%`
+        };
+    });
 
     const animatedContentStyle = useAnimatedStyle(() => ({
         // We must subtract the padding (24 * 2 = 48) from the width to get the correct inner width
-        transform: [{ translateX: -tabProgress.value * (width * 0.9 - 48) }]
+        transform: [{ translateX: -(dragXPercent.value / 50) * (width * 0.9 - 48) }]
     }));
 
     // Form States
@@ -157,21 +257,37 @@ export default function LoginScreen() {
                 <Text style={styles.title}>{t('login_title')}</Text>
 
                 {/* Tabs */}
-                <View style={styles.tabContainer}>
-                    <Animated.View style={[styles.tabIndicator, animatedTabStyle]} />
+                <View style={{ width: '100%', marginBottom: 24 }}>
+                    <View
+                        style={[
+                            styles.tabContainer,
+                            {
+                                marginBottom: 0,
+                                borderWidth: 1,
+                                borderColor: 'rgba(255,255,255,0.1)',
+                                padding: 2
+                            }
+                        ]}
+                        onLayout={(e) => {
+                            containerWidthRef.current = e.nativeEvent.layout.width;
+                        }}
+                    >
+                        <Animated.View
+                            pointerEvents="none"
+                            style={[
+                                styles.tabIndicator,
+                                indicatorStyle,
+                                { width: '50%', top: 2, bottom: 2, borderRadius: 10 }
+                            ]}
+                        />
+                        <TabItem label={t('login_new_player')} index={0} dragX={dragXPercent} />
+                        <TabItem label={t('login_recover')} index={1} dragX={dragXPercent} />
 
-                    <TouchableOpacity
-                        style={styles.tab}
-                        onPress={() => setActiveTab('new')}
-                    >
-                        <Animated.Text style={[styles.tabText, activeTab === 'new' && styles.activeTabText]}>{t('login_new_player')}</Animated.Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.tab}
-                        onPress={() => setActiveTab('recover')}
-                    >
-                        <Animated.Text style={[styles.tabText, activeTab === 'recover' && styles.activeTabText]}>{t('login_recover')}</Animated.Text>
-                    </TouchableOpacity>
+                        <View
+                            style={StyleSheet.absoluteFill}
+                            {...panResponder.panHandlers}
+                        />
+                    </View>
                 </View>
 
                 {/* Content Area - Carousel Wrapper */}

@@ -195,42 +195,42 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                                             })()}
                                         </Text>
                                     </View>
-                                    <Text style={[styles.score, { color: theme.colors.accent }]}>
-                                        {player.points || 0}
-                                    </Text>
+                                    <View style={{ width: 45, alignItems: 'flex-end', marginRight: 10 }}>
+                                        <Text style={[styles.score, { color: theme.colors.accent }]}>
+                                            {player.points || 0}
+                                        </Text>
+                                    </View>
 
-                                    {isCreator && (
-                                        player.name !== currentUserName && player.name !== 'Rando' ? (
+                                    <View style={{ flexDirection: 'row', width: isCreator ? 84 : 42, justifyContent: 'flex-end', alignItems: 'center' }}>
+                                        {isCreator && (
+                                            player.name !== currentUserName && player.name !== 'Rando' ? (
+                                                <PremiumIconButton
+                                                    icon={<TrashIcon size={18} color="#ff6b6b" />}
+                                                    size={32}
+                                                    onPress={() => onKick && onKick(player)}
+                                                    style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)', borderColor: 'rgba(255, 107, 107, 0.3)', borderWidth: 1, borderRadius: 20 }}
+                                                />
+                                            ) : (
+                                                <View style={{ width: 32 }} />
+                                            )
+                                        )}
+
+                                        {player.name !== currentUserName && player.name !== 'Rando' && (
                                             <PremiumIconButton
                                                 icon={
-                                                    <TrashIcon size={18} color="#ff6b6b" />
+                                                    <View style={{ transform: [{ rotate: '15deg' }] }}>
+                                                        <Text style={{ fontSize: 18 }}>🚩</Text>
+                                                    </View>
                                                 }
                                                 size={32}
                                                 onPress={() => {
-                                                    onKick && onKick(player);
+                                                    setPlayerToReport(player);
+                                                    setShowReportModal(true);
                                                 }}
-                                                style={{ marginLeft: 10, backgroundColor: 'rgba(255, 107, 107, 0.1)', borderColor: 'rgba(255, 107, 107, 0.3)', borderWidth: 1, borderRadius: 20 }}
+                                                style={{ marginLeft: 10, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 20 }}
                                             />
-                                        ) : (
-                                            <View style={{ width: 32, height: 32, marginLeft: 10 }} />
-                                        )
-                                    )}
-
-                                    {player.name !== currentUserName && player.name !== 'Rando' && (
-                                        <PremiumIconButton
-                                            icon={
-                                                <View style={{ transform: [{ rotate: '15deg' }] }}>
-                                                    <Text style={{ fontSize: 18 }}>🚩</Text>
-                                                </View>
-                                            }
-                                            size={32}
-                                            onPress={() => {
-                                                setPlayerToReport(player);
-                                                setShowReportModal(true);
-                                            }}
-                                            style={{ marginLeft: 10, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 20 }}
-                                        />
-                                    )}
+                                        )}
+                                    </View>
                                 </View>
                             ))}
                         </View>
