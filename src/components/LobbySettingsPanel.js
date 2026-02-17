@@ -12,7 +12,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../i18n/translations';
 import { useTheme } from '../context/ThemeContext'; // [NEW]
 
-const PointItem = ({ pts, index, dragX, theme }) => {
+const PointItem = ({ pts, index, dragX, theme, onPress }) => {
     const textStyle = useAnimatedStyle(() => {
         const itemCenter = index * 70;
         const color = interpolateColor(
@@ -24,32 +24,38 @@ const PointItem = ({ pts, index, dragX, theme }) => {
     });
 
     return (
-        <View style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center', borderRadius: 15, zIndex: 2 }} pointerEvents="none">
+        <Pressable
+            onPress={() => onPress && onPress(pts)}
+            style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center', borderRadius: 15, zIndex: 2 }}
+        >
             <Animated.Text style={[{ fontSize: 20, lineHeight: 22, marginTop: 2 }, textStyle]}>
                 {pts}
             </Animated.Text>
             <Animated.Text style={[{ fontSize: 8, fontWeight: 'bold', lineHeight: 10 }, textStyle]}>PTS</Animated.Text>
-        </View>
+        </Pressable>
     );
 };
 
-const LanguageItem = ({ lang, index, dragX, theme, displayLang }) => {
+const LanguageItem = ({ lang, index, dragX, theme, displayLang, onPress }) => {
     const textStyle = useAnimatedStyle(() => {
-        const itemCenter = index * 50;
+        const itemCenter = index * 52; // [FIX] Stride 52
         const color = interpolateColor(
             dragX.value,
-            [itemCenter - 50, itemCenter, itemCenter + 50],
+            [itemCenter - 52, itemCenter, itemCenter + 52], // [FIX] Stride 52
             ['rgba(255,255,255,0.3)', '#FFFFFF', 'rgba(255,255,255,0.3)']
         );
         return { color, fontWeight: 'bold' };
     });
 
     return (
-        <View style={{ width: 50, height: 36, alignItems: 'center', justifyContent: 'center', zIndex: 2 }} pointerEvents="none">
+        <Pressable
+            onPress={() => onPress && onPress(lang)}
+            style={{ width: 52, height: 36, alignItems: 'center', justifyContent: 'center', zIndex: 2 }} // [FIX] Width 52
+        >
             <Animated.Text style={[{ fontSize: 12 }, textStyle]}>
                 {displayLang}
             </Animated.Text>
-        </View>
+        </Pressable>
     );
 };
 
@@ -144,7 +150,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
 
     // [FIX] Initialize with correct positions based on current settings
     const dragXPoints = useSharedValue([3, 5, 7, 10].indexOf(settings.points) * 70);
-    const dragXLang = useSharedValue(settings.language === 'en' ? 50 : 0);
+    const dragXLang = useSharedValue(settings.language === 'en' ? 0 : 52); // [FIX] En=0(Left), Ita=52(Right)
 
     // [NEW] Anchors for Mid-Path Popping
     const startXPoints = useSharedValue(0);
@@ -194,7 +200,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
         // [CRITICAL] Host NEVER animates via useEffect - only Guest syncs
         if (isHost) return;
 
-        const targetX = settings.language === 'en' ? 50 : 0;
+        const targetX = settings.language === 'en' ? 0 : 52; // [FIX] En=0, Ita=52
 
         // [FIX] Anchors
         startXLang.value = dragXLang.value;
@@ -232,12 +238,22 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
         if (!isHost) return;
         SoundService.play('pop');
         updateSettings('language', lang);
+
+        // [FIX] Host needs to animate local UI manually (useEffect is skipped)
+        const targetPos = lang === 'en' ? 0 : 52;
+        dragXLang.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
     };
 
     const handlePointsChange = (pts) => {
         if (!isHost) return;
         SoundService.play('tap');
         updateSettings('points', pts);
+
+        // [FIX] Host needs to animate local UI manually (useEffect is skipped)
+        const targetIndex = [3, 5, 7, 10].indexOf(pts);
+        if (targetIndex !== -1) {
+            dragXPoints.value = withSpring(targetIndex * 70, SNAP_SPRING_CONFIG);
+        }
     }
 
     const handleChaosChange = (val) => {
@@ -254,33 +270,32 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
     // [NEW] Points Drag Logic
     const pointsPanResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => isHostRef.current,
-            onMoveShouldSetPanResponder: () => isHostRef.current,
+            // [FIX] ANDROID SCROLL: Do NOT claim immediately. Let Pressable receive touch.
+            onStartShouldSetPanResponder: () => false,
+            // [FIX] Capture ONLY if horizontal drag is significant > 10 AND > vertical drag
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                const { dx, dy } = gestureState;
+                return Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
+            },
             onPanResponderTerminationRequest: () => false,
             onShouldBlockNativeResponder: () => true,
-            onPanResponderGrant: (evt) => {
+            onPanResponderGrant: (evt, gestureState) => {
                 if (!isHostRef.current) return;
-                const { locationX } = evt.nativeEvent;
-                const touchedIdx = Math.max(0, Math.min(3, Math.floor(locationX / 70)));
-                touchedIndexPoints.current = touchedIdx;
 
+                // [FIX] If we capture late (after move), we need to set initial state correctly
                 const currentPtsIndex = [3, 5, 7, 10].indexOf(settingsRef.current.points);
                 gestureStartIndexPoints.current = currentPtsIndex;
+                isGrabbingIndicatorPoints.current = true;
 
-                // [NEW] Restrict drag start & scale to indicator
-                const isGrabbing = (touchedIdx === currentPtsIndex);
-                isGrabbingIndicatorPoints.current = isGrabbing;
-
-                if (isGrabbing) {
-                    // Scale up only on grabbing
-                    HapticsService.trigger('selection');
-                    isDraggingPointsSV.value = true;
-                }
+                HapticsService.trigger('selection');
+                isDraggingPointsSV.value = true;
             },
             onPanResponderMove: (_, gestureState) => {
-                if (!isHostRef.current || !isGrabbingIndicatorPoints.current) return; // [FIX] No drag from empty
+                if (!isHostRef.current) return;
                 const startX = (gestureStartIndexPoints.current ?? 0) * 70;
-                let newX = startX + gestureState.dx; // RELATIVE movement
+                let newX = startX + gestureState.dx;
+
+                // Clamp
                 if (newX < 0) newX = 0;
                 if (newX > 210) newX = 210;
                 dragXPoints.value = newX;
@@ -288,21 +303,10 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
             onPanResponderRelease: (_, gestureState) => {
                 if (!isHostRef.current) return;
 
-                let targetIndex;
-                const isClick = Math.abs(gestureState.dx) < 10 && Math.abs(gestureState.dy) < 10;
-
-                if (isClick) {
-                    // [CLICK] Slide to the touched number (always allowed)
-                    targetIndex = touchedIndexPoints.current;
-                } else if (isGrabbingIndicatorPoints.current) {
-                    // [DRAG] Snap to nearest from final position (only if grabbed indicator)
-                    const startX = (gestureStartIndexPoints.current ?? 0) * 70;
-                    const finalX = startX + gestureState.dx;
-                    targetIndex = Math.max(0, Math.min(3, Math.round(finalX / 70)));
-                } else {
-                    // Ignore drag from empty zone
-                    targetIndex = [3, 5, 7, 10].indexOf(settingsRef.current.points);
-                }
+                // [FIX] Only handle DRAG snap here. Clicks are handled by Pressable.
+                const startX = (gestureStartIndexPoints.current ?? 0) * 70;
+                const finalX = startX + gestureState.dx;
+                const targetIndex = Math.max(0, Math.min(3, Math.round(finalX / 70)));
 
                 const newPts = [3, 5, 7, 10][targetIndex];
                 const hasChanged = newPts !== settingsRef.current.points;
@@ -310,13 +314,11 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
                 if (hasChanged) {
                     skipSyncPoints.current = true;
                     handlePointsChange(newPts);
-                    if (isClick) HapticsService.trigger('selection'); // Feedback on valid click
                 }
 
                 // [FIX] Anchors on release
                 updateLiquidAnchors(startXPoints, targetXPoints, isDraggingPointsSV, dragXPoints.value, targetIndex * 70);
 
-                // [SUBTLE BOUNCE] Use subtle spring for clicks
                 dragXPoints.value = withSpring(targetIndex * 70, SNAP_SPRING_CONFIG);
 
                 gestureStartIndexPoints.current = undefined;
@@ -327,69 +329,60 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
     // [NEW] Language Drag Logic
     const langPanResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => isHostRef.current,
-            onMoveShouldSetPanResponder: () => isHostRef.current,
+            // [FIX] ANDROID SCROLL: Do NOT claim immediately. Let ScrollView decide.
+            onStartShouldSetPanResponder: () => false,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                // [FIX] Capture ONLY if horizontal drag is significant > 10 AND > vertical drag
+                if (!isHostRef.current) return false;
+                return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+            },
             onPanResponderTerminationRequest: () => false,
             onShouldBlockNativeResponder: () => true,
             onPanResponderGrant: (evt) => {
                 if (!isHostRef.current) return;
                 const { locationX } = evt.nativeEvent;
-                const hitLang = locationX > 50 ? 'en' : 'ita';
-                touchedLang.current = hitLang;
+                // const hitLang = locationX > 50 ? 'ita' : 'en'; // [FIX] Left=En, Right=Ita
+                // touchedLang.current = hitLang;
 
                 const currentLang = settingsRef.current.language;
                 gestureStartLang.current = currentLang;
 
-                // [NEW] Restrict drag start & scale to indicator
-                const isGrabbing = (hitLang === currentLang);
+                const isGrabbing = true; // Simply allow dragging if captured
                 isGrabbingIndicatorLang.current = isGrabbing;
 
                 if (isGrabbing) {
-                    // Scale up only on grabbing
                     HapticsService.trigger('selection');
                     isDraggingLangSV.value = true;
                 }
             },
             onPanResponderMove: (_, gestureState) => {
-                if (!isHostRef.current || !isGrabbingIndicatorLang.current) return; // [FIX] No drag from empty
-                const startX = gestureStartLang.current === 'en' ? 50 : 0;
+                if (!isHostRef.current) return;
+                const startX = gestureStartLang.current === 'en' ? 0 : 52; // [FIX] En=0
                 let newX = startX + gestureState.dx;
                 if (newX < 0) newX = 0;
-                if (newX > 50) newX = 50;
+                if (newX > 52) newX = 52;
                 dragXLang.value = newX;
             },
             onPanResponderRelease: (_, gestureState) => {
                 if (!isHostRef.current) return;
 
-                let targetLang;
-                const isClick = Math.abs(gestureState.dx) < 10 && Math.abs(gestureState.dy) < 10;
-
-                if (isClick) {
-                    // [CLICK] Move to hit lang
-                    targetLang = touchedLang.current;
-                } else if (isGrabbingIndicatorLang.current) {
-                    // [DRAG] Snap to nearest (only if grabbed indicator)
-                    const startX = gestureStartLang.current === 'en' ? 50 : 0;
-                    const finalX = startX + gestureState.dx;
-                    targetLang = finalX > 25 ? 'en' : 'ita';
-                } else {
-                    // Ignore drag from empty zone
-                    targetLang = settingsRef.current.language;
-                }
+                // [FIX] Only handle DRAG snap here. Clicks are handled by Pressable.
+                const startX = gestureStartLang.current === 'en' ? 0 : 52; // [FIX] En=0 e 52
+                const finalX = startX + gestureState.dx;
+                const targetLang = finalX > 26 ? 'ita' : 'en'; // [FIX] >26 is Ita
 
                 const hasChanged = targetLang !== settingsRef.current.language;
 
                 if (hasChanged) {
                     skipSyncLang.current = true;
                     handleLanguageChange(targetLang);
-                    if (isClick) HapticsService.trigger('selection'); // Feedback on valid click
                 }
 
                 // [FIX] Anchors on release
-                const targetPos = targetLang === 'en' ? 50 : 0;
+                const targetPos = targetLang === 'en' ? 0 : 52; // [FIX] En=0
                 updateLiquidAnchors(startXLang, targetXLang, isDraggingLangSV, dragXLang.value, targetPos);
 
-                // [SUBTLE BOUNCE] Use subtle spring for clicks
+                // [SUBTLE BOUNCE] Use subtle spring 
                 dragXLang.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
 
                 gestureStartLang.current = undefined;
@@ -413,7 +406,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
     const langIndicatorStyle = useAnimatedStyle(() => ({
         transform: [
             {
-                translateX: interpolate(dragXLang.value, [0, 50], [0, 50], 'clamp')
+                translateX: dragXLang.value // [FIX] Removed clamp to allow spring bounce
             },
             { scale: langScale.value }
         ]
@@ -424,7 +417,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
         return {
             transform: [
                 {
-                    translateX: interpolate(dragXPoints.value, [0, 210], [0, 210], 'clamp')
+                    translateX: dragXPoints.value // [FIX] Removed clamp to allow spring bounce
                 },
                 { scale: ptsScale.value } // [FIX] Now independent
             ]
@@ -464,6 +457,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
                             dragX={dragXLang}
                             theme={theme}
                             displayLang={lang === 'en' ? 'ENG' : 'ITA'}
+                            onPress={handleLanguageChange}
                         />
                     ))}
                 </View>
@@ -510,6 +504,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
                             index={index}
                             dragX={dragXPoints}
                             theme={theme}
+                            onPress={handlePointsChange}
                         />
                     ))}
                 </View>
@@ -548,7 +543,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(20, 20, 20, 0.39)',
         borderRadius: 24,
         borderWidth: 1.5,
-        padding: 20,
+        padding: 16, // [COMPACT] Reduced from 20
         width: '94%',
         alignSelf: 'center',
     },
@@ -571,10 +566,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 10, // [COMPACT] Reduced from 20
     },
     sectionBlock: {
-        marginBottom: 20,
+        marginBottom: 12, // [COMPACT] Reduced from 20
     },
 
     // LANGUAGE
@@ -587,7 +582,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
     },
     langOption: {
-        width: 50, // Fixed width for easier animation
+        width: 52, // [FIX] Width 52 to match stride
         alignItems: 'center',
         paddingVertical: 6,
         borderRadius: 18,
@@ -598,7 +593,7 @@ const styles = StyleSheet.create({
         top: 2,
         left: 2,
         bottom: 2,
-        width: 48,
+        width: 52, // [FIX] Width 52 to match stride
         backgroundColor: 'rgba(255,255,255,0.1)',
         borderRadius: 18,
         borderWidth: 1,
@@ -621,7 +616,7 @@ const styles = StyleSheet.create({
     packGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
+        gap: 8, // [COMPACT] Reduced from 10
     },
     packCard: {
         width: '48%', // 2 per riga
@@ -630,8 +625,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.3)',
         borderWidth: 1,
         borderRadius: 14, // [POLISH] More rounded
-        padding: 10,
-        gap: 10,
+        padding: 8, // [COMPACT] Reduced from 10
+        gap: 8, // [COMPACT] Reduced from 10
     },
     iconCircle: {
         width: 32, // [POLISH] Slightly bigger
@@ -708,7 +703,7 @@ const styles = StyleSheet.create({
         padding: 12, // [POLISH] More padding
         borderRadius: 16, // [POLISH] Matches containers
         borderWidth: 1.5,
-        marginTop: 10,
+        marginTop: 5, // [COMPACT] Reduced from 10
     },
     chaosRowActive: {
         borderColor: '#EF4444', // RED BORDER

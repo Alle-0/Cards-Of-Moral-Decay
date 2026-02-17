@@ -15,6 +15,7 @@ import SoundService from '../services/SoundService';
 const PremiumPressable = ({
     children,
     onPress,
+    onLongPress,
     style,
     disabled,
     rippleColor = 'rgba(255, 255, 255, 0.2)',
@@ -82,6 +83,7 @@ const PremiumPressable = ({
                 }}
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
+                onLongPress={onLongPress}
                 disabled={disabled}
                 hitSlop={hitSlop}
                 android_disableSound={true} // [FIX] Silence native Android touch sound

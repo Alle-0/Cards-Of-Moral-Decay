@@ -1,16 +1,18 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, PanResponder, FlatList, Platform } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, PanResponder, FlatList, Platform, Alert } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolateColor, withSequence, withTiming, useDerivedValue, LinearTransition, Easing, FadeIn, ZoomIn, interpolate } from 'react-native-reanimated';
 import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../../hooks/useLiquidAnimation';
 
 // ...
 
-
 import RoomItem from '../RoomItem';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext'; // [NEW]
+import { useGame } from '../../context/GameContext'; // [NEW]
 import HapticsService from '../../services/HapticsService';
 import PremiumSkeleton from '../PremiumSkeleton';
+import ConfirmationModal from '../ConfirmationModal';
 
 const TabItem = ({ label, index, dragX }) => {
     const textStyle = useAnimatedStyle(() => {
@@ -34,7 +36,7 @@ const TabItem = ({ label, index, dragX }) => {
 
 const SkeletonRoomItem = () => (
     <View style={{
-        paddingVertical: 10,
+        paddingVertical: 8, // Reduced from 10
         paddingHorizontal: 14,
         marginBottom: 6,
         borderRadius: 14,
@@ -45,34 +47,36 @@ const SkeletonRoomItem = () => (
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '80%',
-        alignSelf: 'center'
+        alignSelf: 'center',
+        height: 54 // Explicit height matching RoomItem (roughly)
     }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}>
             <View style={{ marginRight: 10 }}>
-                <PremiumSkeleton width={18} height={18} borderRadius={4} />
+                <PremiumSkeleton width={16} height={16} borderRadius={4} />
             </View>
-            <PremiumSkeleton width={60} height={12} borderRadius={6} />
-            <View style={{ width: 12 }} />
+            <PremiumSkeleton width={50} height={10} borderRadius={6} />
+            <View style={{ width: 8 }} />
             <View style={{ marginRight: 6 }}>
-                <PremiumSkeleton width={14} height={14} borderRadius={7} />
+                <PremiumSkeleton width={12} height={12} borderRadius={6} />
             </View>
-            <PremiumSkeleton width={100} height={10} borderRadius={5} />
+            <PremiumSkeleton width={80} height={8} borderRadius={4} />
         </View>
-        <PremiumSkeleton width={60} height={24} borderRadius={12} />
+        <PremiumSkeleton width={50} height={20} borderRadius={10} />
     </View>
 );
 
-const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = true, onHeightChange, isLoading = false }) => {
+const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = true, isLoading = false, currentTab, setCurrentTab }) => {
     const { t } = useLanguage();
     const { theme } = useTheme();
-    const [activeTab, setActiveTab] = React.useState('friends'); // 'friends' | 'public'
+    const { user } = useAuth();
+    const { deleteRoom } = useGame();
 
     // activeList calculation
     const activeList = React.useMemo(() => {
-        return activeTab === 'friends' ? (friendsRooms || []) : (publicRooms || []);
-    }, [activeTab, friendsRooms, publicRooms]);
+        return currentTab === 'friends' ? (friendsRooms || []) : (publicRooms || []);
+    }, [currentTab, friendsRooms, publicRooms]);
 
-    const isFetching = isLoading || (activeTab === 'friends' ? friendsRooms === null : publicRooms === null);
+    const isFetching = isLoading || (currentTab === 'friends' ? friendsRooms === null : publicRooms === null);
 
     // Animation Values (0 to 100 percentage)
     const dragXPercent = useSharedValue(0);
@@ -81,25 +85,25 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
     const isDraggingSV = useSharedValue(isFetching);
 
     const tabScale = useLiquidScale(dragXPercent, startX, targetX, isDraggingSV, 1.1);
-    // Refs
-    // ... (Keep existing refs and effects logic) ...
+
     const gestureStartX = useRef(0);
     const touchStartX = useRef(0);
     const containerWidthRef = useRef(0);
     const isGrabbingIndicator = useRef(false);
-    const activeTabRef = useRef(activeTab);
+    const activeTabRef = useRef(currentTab);
 
-    // ... (Keep existing useEffects and PanResponder) ...
+    // Sync activeTab ref
     useEffect(() => {
-        activeTabRef.current = activeTab;
-    }, [activeTab]);
+        activeTabRef.current = currentTab;
+    }, [currentTab]);
 
+    // Animate tab change
     useEffect(() => {
-        const target = activeTab === 'friends' ? 0 : 50;
+        const target = currentTab === 'friends' ? 0 : 50;
         startX.value = dragXPercent.value;
         targetX.value = target;
         dragXPercent.value = withSpring(target, SNAP_SPRING_CONFIG);
-    }, [activeTab]);
+    }, [currentTab]);
 
     const panResponder = useRef(
         PanResponder.create({
@@ -124,8 +128,12 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
                 const containerWidth = containerWidthRef.current || 300;
                 const deltaPercent = (gestureState.dx / containerWidth) * 100;
                 let newPercent = gestureStartX.current + deltaPercent;
-                if (newPercent < 0) newPercent = 0;
-                if (newPercent > 50) newPercent = 50;
+                // Rubber Banding
+                if (newPercent < 0) {
+                    newPercent = newPercent * 0.2;
+                } else if (newPercent > 50) {
+                    newPercent = 50 + (newPercent - 50) * 0.2;
+                }
                 dragXPercent.value = newPercent;
             },
             onPanResponderRelease: (evt, gestureState) => {
@@ -139,7 +147,7 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
                     targetPercent = dragXPercent.value > 25 ? 50 : 0;
                 }
                 const newTab = targetPercent === 0 ? 'friends' : 'public';
-                setActiveTab(newTab);
+                setCurrentTab(newTab);
                 if (newTab !== activeTabRef.current) {
                     HapticsService.trigger('selection');
                 }
@@ -159,9 +167,33 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
         };
     });
 
-    const renderHeader = () => (
-        <View>
-            <View style={{ width: '100%', marginTop: 20 }}>
+    const [roomToDelete, setRoomToDelete] = React.useState(null);
+
+    const handleLongPress = (room) => {
+        const isCreator = (room.creatorUsername && room.creatorUsername === user?.username) ||
+            (room.creatore === user?.name) ||
+            (room.creatore === user?.username);
+
+        if (isCreator) {
+            HapticsService.trigger('impactHeavy');
+            setRoomToDelete(room);
+        }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!roomToDelete) return;
+        try {
+            await deleteRoom(roomToDelete.id);
+        } catch (e) {
+            Alert.alert("Errore", "Impossibile eliminare la stanza.");
+        }
+        setRoomToDelete(null);
+    };
+
+    return (
+        <View style={{ flex: 1, width: '100%', overflow: 'hidden' }}>
+            {/* FIXED TABS HEADER */}
+            <View style={{ width: '100%', marginTop: 10, paddingBottom: 5 }}>
                 <View
                     style={[
                         styles.tabsContainer,
@@ -187,31 +219,29 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
                     />
                 </View>
             </View>
-        </View>
-    );
 
-    return (
-        <View
-            style={{ width: '100%', overflow: 'hidden' }}
-            onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
-        >
-            <View style={{ width: '100%' }}>
+            <View style={{ flex: 1, width: '100%' }}>
                 <FlatList
                     data={activeList}
                     keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <RoomItem
-                            roomName={`${item.id}`}
-                            playerCount={Object.keys(item.giocatori || {}).length}
-                            state={item.statoPartita === 'LOBBY' ? t('lobby_state') : t('playing_state')}
-                            onJoin={() => onJoinRoom(item.id)}
-                            joinText={t('join_btn')}
-                            creatorName={item.creatore}
-                            isOnline={item.giocatori?.[item.creatore]?.online}
-                            creatorId={item.creatorUsername || item.creatore}
-                        />
+                    renderItem={({ item, index }) => (
+                        <Animated.View
+                            entering={FadeIn.delay(index * 100).springify()}
+                            style={{ width: '100%' }}
+                        >
+                            <RoomItem
+                                roomName={`${item.id}`}
+                                playerCount={Object.keys(item.giocatori || {}).length}
+                                state={item.statoPartita === 'LOBBY' ? t('lobby_state') : t('playing_state')}
+                                onJoin={() => onJoinRoom(item.id)}
+                                onLongPress={() => handleLongPress(item)}
+                                joinText={t('join_btn')}
+                                creatorName={item.creatore}
+                                isOnline={item.giocatori?.[item.creatore]?.online}
+                                creatorId={item.creatorUsername || item.creatore}
+                            />
+                        </Animated.View>
                     )}
-                    ListHeaderComponent={renderHeader}
                     ListEmptyComponent={
                         isFetching ? (
                             <View style={{ padding: 10 }}>
@@ -219,29 +249,38 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
                             </View>
                         ) : (
                             <View
-                                style={{ paddingVertical: 20, justifyContent: 'center' }}
+                                style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 10 }}
                             >
                                 <Text style={styles.emptyText}>
-                                    {activeTab === 'friends' ? t('no_friends_rooms') : t('no_public_rooms')}
+                                    {currentTab === 'friends' ? t('no_friends_rooms') : t('no_public_rooms')}
                                 </Text>
                             </View>
                         )
                     }
                     scrollEnabled={scrollEnabled}
                     contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-                    showsVerticalScrollIndicator={true}
+                    showsVerticalScrollIndicator={false}
                     initialNumToRender={10}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={false}
                 />
             </View>
+
+            <ConfirmationModal
+                visible={!!roomToDelete}
+                title={t('delete_room_title')}
+                message={t('delete_room_confirm')}
+                confirmText={t('delete_room_btn')}
+                cancelText={t('cancel_btn')}
+                onConfirm={handleConfirmDelete}
+                onClose={() => setRoomToDelete(null)}
+            />
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    // DRAGGABLE TOGGLE (Matching LobbySettingsPanel)
     tabsContainer: {
         flexDirection: 'row',
         backgroundColor: 'rgba(0,0,0,0.3)',
@@ -262,14 +301,14 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.2)',
         zIndex: 1
     },
-
     roomList: {
+        flex: 1,
         width: '100%',
     },
     emptyText: {
         color: 'rgba(255,255,255,0.3)',
         textAlign: 'center',
-        marginTop: 40,
+        marginTop: 10,
         fontFamily: 'Outfit',
         fontStyle: 'italic',
         fontSize: 13

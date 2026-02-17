@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import PremiumPressable from './PremiumPressable';
 import { DoorClosedIcon, PeopleIcon } from './Icons';
 
-const RoomItem = memo(({ roomName, playerCount, state, onJoin, creatorName, isOnline }) => {
+const RoomItem = memo(({ roomName, playerCount, state, onJoin, onLongPress, creatorName, isOnline }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
 
@@ -21,6 +21,7 @@ const RoomItem = memo(({ roomName, playerCount, state, onJoin, creatorName, isOn
         <Animated.View entering={ZoomIn.duration(300)}>
             <PremiumPressable
                 onPress={onJoin}
+                onLongPress={onLongPress}
                 scaleDown={0.97}
                 style={[
                     styles.container,

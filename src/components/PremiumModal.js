@@ -1,6 +1,6 @@
 // Verified Reanimated usage
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Pressable, Platform, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Platform, ScrollView, Modal } from 'react-native';
 import EfficientBlurView from './EfficientBlurView';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, Easing, runOnJS, interpolate } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
@@ -70,103 +70,112 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
 
     if (!visible && !internalVisible) return null;
 
+    // [FIX] Use Native Modal to break out of parent overflow
     return (
-        <Animated.View style={[
-            StyleSheet.absoluteFill,
-            { zIndex: 10000, elevation: 10000 },
-            rootStyle
-        ]}>
-            <View style={styles.overlay}>
-                {/* 1. Backdrop Blur (Non-interactive visual) */}
-                <Animated.View style={[StyleSheet.absoluteFill, { zIndex: -1, backgroundColor: 'rgba(0,0,0,0.5)' }, backdropStyle]} pointerEvents="none">
-                    <EfficientBlurView
-                        intensity={10}
-                        tint="dark"
+        <Modal
+            transparent
+            visible={internalVisible}
+            onRequestClose={onClose}
+            animationType="none"
+            statusBarTranslucent
+        >
+            <Animated.View style={[
+                StyleSheet.absoluteFill,
+                { zIndex: 10000, elevation: 10000 },
+                rootStyle
+            ]}>
+                <View style={styles.overlay}>
+                    {/* 1. Backdrop Blur (Non-interactive visual) */}
+                    <Animated.View style={[StyleSheet.absoluteFill, { zIndex: -1, backgroundColor: 'rgba(0,0,0,0.5)' }, backdropStyle]} pointerEvents="none">
+                        <EfficientBlurView
+                            intensity={10}
+                            tint="dark"
+                            style={StyleSheet.absoluteFill}
+                        />
+                    </Animated.View>
+
+                    {/* 2. Dismiss Overlay (Interactive) */}
+                    <Pressable
                         style={StyleSheet.absoluteFill}
+                        onPress={onClose}
                     />
-                </Animated.View>
 
-                {/* 2. Dismiss Overlay (Interactive) */}
-                <Pressable
-                    style={StyleSheet.absoluteFill}
-                    onPress={onClose}
-                />
+                    {/* 3. Modal Content Wrapper */}
+                    <Animated.View
+                        pointerEvents="box-none"
+                        style={[{
+                            width: '85%', maxWidth: 500, maxHeight: '90%',
+                            alignItems: 'center', justifyContent: 'center'
+                        }, containerTransformStyle]}
+                    >
+                        {/* CONTAINER: constrained to parent size */}
+                        <View style={[{ width: '100%', alignItems: 'center' }, (modalHeight && modalHeight !== true) ? { height: modalHeight } : (modalHeight === true ? { height: '100%' } : { maxHeight: '100%' })]}>
 
-                {/* 3. Modal Content Wrapper */}
-                <Animated.View
-                    pointerEvents="box-none"
-                    style={[{
-                        width: '85%', maxWidth: 500, maxHeight: '90%',
-                        alignItems: 'center', justifyContent: 'center'
-                    }, containerTransformStyle]}
-                >
-                    {/* CONTAINER: constrained to parent size */}
-                    <View style={[{ width: '100%' }, (modalHeight && modalHeight !== true) ? { height: modalHeight } : (modalHeight === true ? { height: '100%' } : { maxHeight: '100%' })]}>
+                            {/* ACTUAL CONTENT BOX */}
+                            <AnimatedPressable
+                                activeOpacity={1}
+                                style={[
+                                    styles.modalBox,
+                                    {
+                                        backgroundColor: backgroundColor || 'rgba(30, 30, 30, 0.95)',
+                                        borderColor: borderColor || theme.colors.cardBorder,
+                                        shadowColor: glowColor || '#000',
+                                        shadowOpacity: glowColor ? 0.6 : 0.5,
+                                        shadowRadius: glowColor ? 35 : 30,
+                                        width: '100%',
+                                        height: modalHeight ? '100%' : undefined,
+                                        paddingBottom: 0
+                                    },
+                                    contentOpacityStyle // Appply opacity directly here
+                                ]}
+                            >
 
-                        {/* ACTUAL CONTENT BOX */}
-                        <AnimatedPressable
-                            activeOpacity={1}
-                            style={[
-                                styles.modalBox,
-                                {
-                                    backgroundColor: backgroundColor || 'rgba(30, 30, 30, 0.95)',
-                                    borderColor: borderColor || theme.colors.cardBorder,
-                                    shadowColor: glowColor || '#000',
-                                    shadowOpacity: glowColor ? 0.6 : 0.5,
-                                    shadowRadius: glowColor ? 35 : 30,
-                                    width: '100%',
-                                    height: modalHeight ? '100%' : undefined,
-                                    paddingBottom: 0
-                                },
-                                contentOpacityStyle // Appply opacity directly here
-                            ]}
-                        >
-
-                            {/* CONTENT: Rendered on top */}
-                            <View style={[{ width: '100%', zIndex: 1 }, modalHeight && { flex: 1 }]}>
-                                {/* Header */}
-                                {(title || showClose) && (
-                                    <View style={[styles.header, { paddingTop: 20, paddingHorizontal: 20 }]}>
-                                        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 10 }}>
-                                            <Text
-                                                style={[styles.title, {
-                                                    color: titleColor || theme.colors.accent,
-                                                    fontFamily: 'Cinzel-Bold',
-                                                    fontSize: 24,
-                                                    lineHeight: 32,
-                                                    textAlign: 'center',
-                                                    includeFontPadding: false
-                                                }]}
-                                                numberOfLines={2}
-                                            >
-                                                {title}
-                                            </Text>
-                                        </View>
-                                        {showClose && (
-                                            <View style={{ position: 'absolute', right: 5, top: 20, bottom: 0, justifyContent: 'center' }}>
-                                                <PremiumIconButton
-                                                    icon={<CrossIcon size={24} color={closeIconColor || "#888"} />}
-                                                    onPress={onClose}
-                                                    enableSound={false}
-                                                    size={32}
-                                                />
+                                {/* CONTENT: Rendered on top */}
+                                <View style={[{ width: '100%', zIndex: 1 }, modalHeight && { flex: 1 }]}>
+                                    {/* Header */}
+                                    {(title || showClose) && (
+                                        <View style={[styles.header, { paddingTop: 20, paddingHorizontal: 20 }]}>
+                                            <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 10 }}>
+                                                <Text
+                                                    style={[styles.title, {
+                                                        color: titleColor || theme.colors.accent,
+                                                        fontFamily: 'Cinzel-Bold',
+                                                        fontSize: 24,
+                                                        lineHeight: 32,
+                                                        textAlign: 'center',
+                                                        includeFontPadding: false
+                                                    }]}
+                                                    numberOfLines={2}
+                                                >
+                                                    {title}
+                                                </Text>
                                             </View>
-                                        )}
+                                            {showClose && (
+                                                <View style={{ position: 'absolute', right: 5, top: 20, bottom: 0, justifyContent: 'center' }}>
+                                                    <PremiumIconButton
+                                                        icon={<CrossIcon size={24} color={closeIconColor || "#888"} />}
+                                                        onPress={onClose}
+                                                        enableSound={false}
+                                                        size={32}
+                                                    />
+                                                </View>
+                                            )}
+                                        </View>
+                                    )}
+
+                                    {/* List Content */}
+                                    <View style={[styles.content, modalHeight && { flex: 1 }]}>
+                                        {children}
                                     </View>
-                                )}
 
-                                {/* List Content */}
-                                <View style={[styles.content, modalHeight && { flex: 1 }]}>
-                                    {children}
+                                    {!disableBottomSpacer && <View style={{ height: 20, width: '100%' }} />}
                                 </View>
-
-                                {!disableBottomSpacer && <View style={{ height: 20, width: '100%' }} />}
-                            </View>
-                        </AnimatedPressable>
-                    </View>
-                </Animated.View>
-            </View>
-        </Animated.View>
+                            </AnimatedPressable>
+                        </View>
+                    </Animated.View>
+                </View>
+            </Animated.View>
+        </Modal>
     );
 };
 

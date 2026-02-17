@@ -524,8 +524,9 @@ export const ThemeProvider = ({ children }) => {
         return inputTheme;
     };
 
-    const [currentTheme, setCurrentTheme] = useState(() => getThemeWithOverrides(THEMES.default)); // [FIX] Immediate web override
-    const [animationsEnabled, setAnimationsEnabled] = useState(true); // [NEW] Animation Toggle
+    const [currentTheme, setCurrentTheme] = useState(() => getThemeWithOverrides(THEMES.default));
+    const [animationsEnabled, setAnimationsEnabled] = useState(true);
+    const [isThemeReady, setIsThemeReady] = useState(false); // [NEW]
 
 
     useEffect(() => {
@@ -548,6 +549,8 @@ export const ThemeProvider = ({ children }) => {
             }
         } catch (e) {
             console.warn('Failed to load theme', e);
+        } finally {
+            setIsThemeReady(true); // [NEW] Ensure app can proceed
         }
     };
 
@@ -572,7 +575,14 @@ export const ThemeProvider = ({ children }) => {
     };
 
     return (
-        <ThemeContext.Provider value={{ theme: currentTheme, setTheme, themes: THEMES, animationsEnabled, toggleAnimations }}>
+        <ThemeContext.Provider value={{
+            theme: currentTheme,
+            setTheme,
+            themes: THEMES,
+            animationsEnabled,
+            toggleAnimations,
+            isThemeReady // [NEW]
+        }}>
             {children}
         </ThemeContext.Provider>
     );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, BackHandler, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet, BackHandler, Platform, ActivityIndicator, Dimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 import PremiumPressable from '../components/PremiumPressable';
@@ -88,7 +88,8 @@ const PersonalizationScreen = () => {
     const SkeletonThemeItem = () => (
         <View style={{
             width: '31%',
-            aspectRatio: 0.85,
+            aspectRatio: 0.83, // 1 / 1.2
+            marginBottom: 8,
             borderRadius: 12,
             marginTop: 15,
             backgroundColor: 'rgba(255,255,255,0.03)',
@@ -106,7 +107,8 @@ const PersonalizationScreen = () => {
     const SkeletonSkinItem = () => (
         <View style={{
             width: '31%',
-            aspectRatio: 0.65,
+            height: (Dimensions.get('window').width - 32) / 3 * 1.25, // Height logic kept similar for consistency
+            marginBottom: 8,
             borderRadius: 12,
             marginTop: 15,
             backgroundColor: 'rgba(255,255,255,0.03)',
@@ -114,9 +116,9 @@ const PersonalizationScreen = () => {
             borderColor: 'rgba(255,255,255,0.08)',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 15
+            gap: 12
         }}>
-            <PremiumSkeleton width={40} height={80} borderRadius={4} />
+            <PremiumSkeleton width={40} height={56} borderRadius={4} />
             <PremiumSkeleton width="70%" height={10} borderRadius={5} />
         </View>
     );
@@ -127,6 +129,7 @@ const PersonalizationScreen = () => {
             borderRadius: 12,
             marginTop: 15,
             paddingVertical: 15,
+            marginBottom: 8,
             backgroundColor: 'rgba(255,255,255,0.03)',
             borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.08)',

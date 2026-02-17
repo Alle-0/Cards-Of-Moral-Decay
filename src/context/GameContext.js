@@ -273,9 +273,16 @@ export const GameProvider = ({ children }) => {
         );
 
         if (candidates.length > 0) {
-            // Pick random or first
-            const randomRoom = candidates[Math.floor(Math.random() * candidates.length)];
-            return await joinRoom(randomRoom.id);
+            // [FIX] Sort by FEWEST players first
+            candidates.sort((a, b) => {
+                const countA = Object.keys(a.giocatori || {}).length;
+                const countB = Object.keys(b.giocatori || {}).length;
+                return countA - countB;
+            });
+
+            // Join the smallest room
+            const bestRoom = candidates[0];
+            return await joinRoom(bestRoom.id);
         } else {
             // No room found, maybe create one? Or just return null for UI to handle
             throw new Error("Nessuna stanza pubblica disponibile al momento.");
@@ -468,6 +475,33 @@ export const GameProvider = ({ children }) => {
             setRoomPlayerName(null);
             AsyncStorage.removeItem('lastRoomCode');
             AsyncStorage.removeItem('lastRoomPlayerName');
+        }
+    };
+
+    const deleteRoom = async (roomId) => {
+        if (!user) return;
+        try {
+            // [FIX] Robust check: Ensure user is creator
+            const roomRef = ref(db, `stanze/${roomId}`);
+            const snapshot = await get(roomRef);
+            if (snapshot.exists()) {
+                const room = snapshot.val();
+                const isCreator = (room.creatore === user.name) ||
+                    (room.creatorUsername && room.creatorUsername === user.username);
+
+                if (isCreator) {
+                    await set(roomRef, null); // Delete the room
+                    // If we were in it, local state cleanup happens via onValue or explicit leave
+                    if (roomCode === roomId) {
+                        leaveRoom();
+                    }
+                } else {
+                    throw new Error("Non autorizzato");
+                }
+            }
+        } catch (e) {
+            console.error("Delete Room Error:", e);
+            throw e;
         }
     };
 
@@ -1031,7 +1065,7 @@ export const GameProvider = ({ children }) => {
     const contextValue = useMemo(() => ({
         user, roomCode, roomData, loading, error, availableRooms,
         refreshRooms,
-        login, createRoom, joinRoom, leaveRoom, quickJoin, // [NEW]
+        login, createRoom, joinRoom, leaveRoom, quickJoin, deleteRoom, // [NEW]
         kickPlayer,
         updateRoomSettings,
         startGame, playCards, confirmDominusSelection, nextRound, discardCard, useAIJoker, forceReveal, bribeHand, dominusDiscardPlayerHand, // [NEW]

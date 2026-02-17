@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import Animated, { SlideInLeft, SlideOutLeft } from 'react-native-reanimated';
 import PremiumInput from '../PremiumInput';
 import PremiumButton from '../PremiumButton';
@@ -13,8 +13,7 @@ const IdentityStep = ({
     onNameChange,
     avatar,
     onEditAvatar,
-    onNext,
-    onHeightChange // [NEW] Callback for dynamic height synchronization
+    onNext
 }) => {
     // Props are now fully controlled by LobbyScreen
     const { t } = useLanguage();
@@ -24,9 +23,10 @@ const IdentityStep = ({
     };
 
     return (
-        <View
-            style={styles.stepContainer}
-            onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
+        <ScrollView
+            style={{ width: '100%', maxHeight: '100%' }}
+            contentContainerStyle={styles.stepContainer}
+            showsVerticalScrollIndicator={false}
         >
             {/* Title Section */}
             <View style={{ width: '100%', marginBottom: 20, marginTop: 10, paddingHorizontal: 20 }}>
@@ -74,7 +74,7 @@ const IdentityStep = ({
                     enableSound={false}
                     disabled={!name || !name.trim()}
                     style={{
-                        marginTop: 35, // [FIX] More breathing room
+                        marginTop: 20, // [FIX] Compact spacing
                         backgroundColor: theme.colors.accent,
                         borderColor: theme.colors.accent,
                         width: '100%'
@@ -87,7 +87,7 @@ const IdentityStep = ({
                 />
             </View>
 
-        </View>
+        </ScrollView>
     );
 };
 

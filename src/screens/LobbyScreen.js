@@ -80,6 +80,7 @@ const LobbyScreen = ({ onStartLoading }) => {
     const [isLoading, setIsLoading] = useState(false);
     const { width, height } = useWindowDimensions();
     const [roomToJoin, setRoomToJoin] = useState('');
+    const [showJoinInput, setShowJoinInput] = useState(false); // [NEW] Lifted state
     const [currentStep, setCurrentStep] = useState(authUser?.username ? STEPS.ACTION : STEPS.IDENTITY);
 
 
@@ -140,34 +141,7 @@ const LobbyScreen = ({ onStartLoading }) => {
         opacity: 1
     }));
 
-    useEffect(() => {
-        if (currentStep === STEPS.IDENTITY) {
-            stepProgress.value = 0;
-            frameMarginTop.value = 110;
-            activeHeight.value = 320; // [FIX] Increased from 280 for better balance
-        } else {
-            stepProgress.value = 1;
-            frameMarginTop.value = 5;
-            // [FIX] Reset height to a reasonable baseline when switching to Menu
-            // This ensures it doesn't stay trapped at Identity's 320px
-            if (activeHeight.value < 500) {
-                activeHeight.value = 500;
-            }
-        }
-    }, [currentStep]);
-
-    const [localPlayerName, setLocalPlayerName] = useState(authUser?.nickname || authUser?.username || '');
-    const [localAvatar, setLocalAvatar] = useState(authUser?.avatar || authUser?.avatar || MYSTERY_AVATAR);
-
-    const [showAvatarModal, setShowAvatarModal] = useState(false);
-    const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
-
-    // [NEW] Exit Modal State
-    const [showExitModal, setShowExitModal] = useState(false);
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [showCreateModal, setShowCreateModal] = useState(false); // [NEW]
-
-    // [NEW] Split Rooms Logic
+    // [MOVED UP] Split Rooms Logic
     const { friendsRooms, publicRooms } = React.useMemo(() => {
         if (availableRooms === null) return { friendsRooms: null, publicRooms: null };
 
@@ -210,6 +184,52 @@ const LobbyScreen = ({ onStartLoading }) => {
 
         return { friendsRooms: friends, publicRooms: publicR };
     }, [availableRooms, authUser]);
+
+    // [NEW] Tab State (Lifted from RoomListStep)
+    const [currentTab, setCurrentTab] = useState('friends');
+
+    useEffect(() => {
+        if (currentStep === STEPS.IDENTITY) {
+            stepProgress.value = 0;
+            frameMarginTop.value = height * 0.15; // Responsive margin
+            activeHeight.value = Math.min(300, height * 0.45); // [FIX] Reduced max height to fit content tightly
+        } else {
+            stepProgress.value = 1;
+            frameMarginTop.value = 10; // Minimal top margin for menu
+
+            // [NEW] Dynamic Height Logic based on CONTENT
+            const activeListLength = currentTab === 'friends' ? (friendsRooms?.length || 0) : (publicRooms?.length || 0);
+
+            const ITEM_HEIGHT = 50;  // More generous allowance per item
+            const BASE_HEIGHT = 360; // Increased base height for menu + tabs
+            const MIN_HEIGHT = 440;  // Minimum height prevents layout collapsing too much
+
+            // Calculate exact needed height
+            const calculatedHeight = BASE_HEIGHT + (activeListLength * ITEM_HEIGHT) + (showJoinInput ? 120 : 0);
+
+            // Clamp between MIN and MAX
+            // Max height considers top margin + bottom buffer (190)
+            const SAFE_MAX_HEIGHT = height - (insets.top + insets.bottom + 190);
+
+            // [FIX] Ensure container never exceeds SAFE_MAX_HEIGHT (avoids overlap with navbar)
+            // If screen is smaller than MIN_HEIGHT, we must respect SCREEN LIMIT.
+            activeHeight.value = Math.min(Math.max(calculatedHeight, MIN_HEIGHT), SAFE_MAX_HEIGHT);
+        }
+    }, [currentStep, height, friendsRooms, publicRooms, currentTab, showJoinInput]);
+
+    const [localPlayerName, setLocalPlayerName] = useState(authUser?.nickname || authUser?.username || '');
+    const [localAvatar, setLocalAvatar] = useState(authUser?.avatar || authUser?.avatar || MYSTERY_AVATAR);
+
+    const [showAvatarModal, setShowAvatarModal] = useState(false);
+    const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
+
+    // [NEW] Exit Modal State
+    const [showExitModal, setShowExitModal] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false); // [NEW]
+
+    // [NEW] Split Rooms Logic
+    // [MOVED UP] Logic was here
 
     // Custom Back Handler
     useFocusEffect(
@@ -486,12 +506,12 @@ const LobbyScreen = ({ onStartLoading }) => {
                                     zIndex: 1,
                                     backgroundColor: '#0d0d0d',
                                     overflow: 'hidden',
-                                    paddingHorizontal: 0, // [FIX] Move padding to children for carousel
+                                    paddingHorizontal: 0,
                                 }]}
                             >
-                                <Animated.View style={[{ flexDirection: 'row', width: (width - 40) * 2, alignItems: 'flex-start' }, animatedCarouselStyle]}>
+                                <Animated.View style={[{ flexDirection: 'row', width: (width - 40) * 2, height: '100%', alignItems: 'flex-start' }, animatedCarouselStyle]}>
                                     {/* STEP 0: IDENTITY */}
-                                    <Animated.View style={[{ width: width - 40, alignItems: 'flex-start' }, identityOpacity]}>
+                                    <Animated.View style={[{ width: width - 40, height: '100%', alignItems: 'flex-start' }, identityOpacity]}>
                                         <IdentityStep
                                             theme={theme}
                                             name={localPlayerName}
@@ -499,17 +519,11 @@ const LobbyScreen = ({ onStartLoading }) => {
                                             avatar={localAvatar}
                                             onEditAvatar={() => setShowAvatarModal(true)}
                                             onNext={() => handleNextToActions(localPlayerName, localAvatar)}
-                                            onHeightChange={() => {
-                                                if (currentStep === STEPS.IDENTITY) {
-                                                    // [FIX] Increased to 320 for better visual balance
-                                                    activeHeight.value = 320;
-                                                }
-                                            }}
                                         />
                                     </Animated.View>
 
                                     {/* STEP 1: ACTIONS */}
-                                    <Animated.View style={[{ width: width - 40, alignItems: 'flex-start' }, actionOpacity]}>
+                                    <Animated.View style={[{ width: width - 40, height: '100%', alignItems: 'flex-start' }, actionOpacity]}>
                                         <MainMenuStep
                                             theme={theme}
                                             roomToJoin={roomToJoin}
@@ -521,12 +535,10 @@ const LobbyScreen = ({ onStartLoading }) => {
                                             onQuickJoin={handleQuickJoin}
                                             friendsRooms={friendsRooms}
                                             publicRooms={publicRooms}
-                                            onHeightChange={(h) => {
-                                                if (currentStep !== STEPS.IDENTITY) {
-                                                    // [FIX] Ensure the Menu can grow and shrink dynamically without arbitrary caps
-                                                    activeHeight.value = h;
-                                                }
-                                            }}
+                                            currentTab={currentTab}
+                                            setCurrentTab={setCurrentTab}
+                                            showJoinInput={showJoinInput}
+                                            setShowJoinInput={setShowJoinInput}
                                         />
                                     </Animated.View>
                                 </Animated.View>

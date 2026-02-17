@@ -158,10 +158,14 @@ export default function ShopScreen() {
     // Skeleton Helpers
     const SkeletonCard = () => (
         <View style={styles.card}>
-            <PremiumSkeleton width={50} height={50} borderRadius={25} />
+            <PremiumSkeleton width={48} height={48} borderRadius={24} />
             <View style={{ flex: 1, marginLeft: 15, gap: 8 }}>
                 <PremiumSkeleton width="60%" height={12} borderRadius={6} />
                 <PremiumSkeleton width="40%" height={8} borderRadius={4} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <PremiumSkeleton width={60} height={30} borderRadius={8} />
+                <PremiumSkeleton width={32} height={32} borderRadius={8} />
             </View>
         </View>
     );
@@ -169,19 +173,28 @@ export default function ShopScreen() {
     const SkeletonGridItem = () => (
         <View style={styles.cardFrame}>
             <View style={{ marginBottom: 15, justifyContent: 'center', alignItems: 'center' }}>
-                <PremiumSkeleton width={60} height={60} borderRadius={30} />
+                <PremiumSkeleton width={65} height={65} borderRadius={32.5} />
             </View>
             <PremiumSkeleton width="70%" height={12} borderRadius={6} style={{ marginBottom: 8 }} />
-            <PremiumSkeleton width="40%" height={8} borderRadius={4} />
+            <PremiumSkeleton width="40%" height={8} borderRadius={4} style={{ marginBottom: 20 }} />
+            {/* Button Row Skeleton */}
+            <View style={{ flexDirection: 'row', gap: 5, width: '100%' }}>
+                <PremiumSkeleton width="70%" height={30} borderRadius={8} />
+                <PremiumSkeleton width="25%" height={30} borderRadius={8} />
+            </View>
         </View>
     );
 
     const SkeletonCardItem = () => (
-        <View style={[styles.card, { paddingVertical: 15 }]}>
+        <View style={[styles.card, { paddingVertical: 10 }]}>
             <PremiumSkeleton width={34} height={48} borderRadius={4} />
             <View style={{ flex: 1, marginLeft: 15, gap: 8 }}>
                 <PremiumSkeleton width="65%" height={12} borderRadius={6} />
                 <PremiumSkeleton width="30%" height={8} borderRadius={4} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <PremiumSkeleton width={60} height={30} borderRadius={8} />
+                <PremiumSkeleton width={32} height={32} borderRadius={8} />
             </View>
         </View>
     );

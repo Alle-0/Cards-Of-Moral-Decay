@@ -5,7 +5,7 @@ import PremiumModal from './PremiumModal';
 import LocalAvatar from './LocalAvatar';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { DiceIcon, SkipIcon } from './Icons';
+import { DiceIcon, SkipIcon, RefreshIcon } from './Icons';
 import { MYSTERY_AVATAR } from '../utils/constants';
 
 const AvatarSelectionModal = ({ visible, onClose, onSelect, currentAvatar, avatars }) => {
@@ -60,7 +60,7 @@ const AvatarSelectionModal = ({ visible, onClose, onSelect, currentAvatar, avata
                         onPress={scrambleAvatars}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8 }}
                     >
-                        <SkipIcon size={20} color={theme.colors.accent} />
+                        <RefreshIcon size={20} color={theme.colors.accent} />
                         <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 14 }}>{t('refresh_avatars_btn')}</Text>
                     </TouchableOpacity>
                 </View>

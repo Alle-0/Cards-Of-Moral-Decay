@@ -10,10 +10,13 @@ import Animated, {
     withRepeat,
     FadeInUp,
     interpolate,
+    interpolateColor,
     ZoomIn
 } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../context/ThemeContext';
+
+const NATIVE_SPLASH_BG = '#0d0d0d'; // Must match app.json
 
 const { width, height } = Dimensions.get('window');
 const MAX_SCALE = (Math.sqrt(width ** 2 + height ** 2) / 50) + 1;
@@ -42,7 +45,7 @@ const StaggeredWord = ({ text, style, color, baseDelay = 0 }) => {
 // ------------------------
 
 const ElegantSplashScreen = ({ onFinish, fastMode = false }) => {
-    const { theme } = useTheme();
+    const { theme, isThemeReady } = useTheme(); // [NEW] isThemeReady
     const [animationFinished, setAnimationFinished] = useState(false);
 
     // Shared Values
@@ -54,11 +57,19 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false }) => {
     const contentScale = useSharedValue(1);
     const contentTranslateY = useSharedValue(0);
 
+    // [NEW] Background transition
+    const bgProgress = useSharedValue(fastMode ? 1 : 0); // Start already accented if in-game transition
+
     useEffect(() => {
         const totalEntranceTime = fastMode ? 1000 : 2000;
         const breathingDuration = fastMode ? 300 : 2000; // Respiro più lento e solenne
         const exitDelay = fastMode ? 500 : totalEntranceTime + 500;
         const explosionDuration = fastMode ? 400 : 700;
+
+        // [NEW] Sfumatura colore sfondo (solo al boot iniziale, per fondersi con la splash nativa)
+        if (isThemeReady && !fastMode) {
+            bgProgress.value = withDelay(500, withTiming(1, { duration: 1500, easing: Easing.out(Easing.cubic) }));
+        }
 
         // 1. Respiro solenne (lento e impercettibile)
         setTimeout(() => {
@@ -94,7 +105,7 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false }) => {
         }, exitDelay);
 
         return () => clearTimeout(timer);
-    }, [fastMode]);
+    }, [fastMode, isThemeReady]); // [FIX] Added isThemeReady
 
 
     const rippleStyle = useAnimatedStyle(() => ({
@@ -114,12 +125,20 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false }) => {
         ]
     }));
 
+    const containerStyle = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(
+            bgProgress.value,
+            [0, 1],
+            [NATIVE_SPLASH_BG, theme.colors.accent]
+        )
+    }));
+
     if (animationFinished) return null;
 
     const darkColor = theme.colors.background && theme.colors.background.length > 0 ? theme.colors.background[0] : '#000';
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.accent }]}>
+        <Animated.View style={[styles.container, containerStyle]}>
             <StatusBar style="light" />
 
             <Animated.View style={[styles.circle, { backgroundColor: darkColor }, rippleStyle]} />
@@ -160,7 +179,7 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false }) => {
 
                 </Animated.View>
             </View>
-        </View>
+        </Animated.View>
     );
 };
 
@@ -182,19 +201,18 @@ const styles = StyleSheet.create({
     },
     logoText: {
         fontFamily: 'CinzelDecorative_700Bold',
-        fontSize: 62, // Ancora più grande
+        fontSize: 62,
         letterSpacing: 2,
         fontWeight: 'bold',
         textAlign: 'center',
         includeFontPadding: false,
         lineHeight: 75,
-        // Importante per l'animazione staggered:
-        marginHorizontal: -2, // Compensa leggermente il letterSpacing per tenerle unite
+        marginHorizontal: -2,
     },
     subText: {
         fontFamily: 'Outfit-Bold',
         fontSize: 14,
-        letterSpacing: 7, // Spaziatura estrema
+        letterSpacing: 7,
         textAlign: 'center',
         textTransform: 'uppercase',
     }

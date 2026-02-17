@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler, Share, Alert, Modal, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler, Share, Alert, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut, withRepeat, interpolate, withSequence } from 'react-native-reanimated';
 
@@ -991,182 +991,187 @@ const GameScreen = ({ onStartLoading }) => {
     };
 
     const renderLobbyContent = () => (
-        <View style={styles.lobbyCenter}>
-            <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'Cinzel-Bold' }, pulsatingStyle]}>
-                {t('waiting_title')}
-            </Animated.Text>
+        <ScrollView
+            style={{ flex: 1, width: '100%' }}
+            contentContainerStyle={styles.lobbyScrollViewContent}
+            showsVerticalScrollIndicator={false}
+        >
+            <View style={{ alignItems: 'center', width: '100%' }}>
+                <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'Cinzel-Bold' }, pulsatingStyle]}>
+                    {t('waiting_title')}
+                </Animated.Text>
 
-            <View style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                gap: 15,
-                marginVertical: 20,
-                width: '100%',
-                maxWidth: 400
-            }}>
-                {playersList.map((p, index) => (
-                    <Animated.View
-                        key={p.name}
-                        entering={ZoomIn.delay(index * 100).springify()}
-                        style={{ alignItems: 'center' }}
-                    >
-                        <View style={{ marginBottom: 8, position: 'relative' }}>
-                            <AvatarWithFrame
-                                avatar={p.avatar || p.name}
-                                frameId={p.activeFrame || 'basic'}
-                                size={54}
-                                isDominus={p.isDominus}
-                            />
-                            {/* [NEW] Online / Offline Badge on Avatar */}
-                            <View style={{
-                                position: 'absolute',
-                                bottom: 0,
-                                right: 0,
-                                width: 12,
-                                height: 12,
-                                borderRadius: 6,
-                                backgroundColor: p.isOnline ? '#4ade80' : '#666',
-                                borderWidth: 2,
-                                borderColor: '#111' // Match background
-                            }} />
-                        </View>
-                        <Text style={{
-                            color: '#e2e8f0',
-                            fontFamily: 'Outfit',
-                            fontSize: 11,
-                            textAlign: 'center',
-                            maxWidth: 60
-                        }} numberOfLines={1}>
-                            {p.name}
-                        </Text>
-                        {/* [NEW] Rank Display below name */}
-                        {p.rank && (
+                <View style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                    gap: 15,
+                    marginVertical: 20,
+                    width: '100%',
+                    maxWidth: 400
+                }}>
+                    {playersList.map((p, index) => (
+                        <Animated.View
+                            key={p.name}
+                            entering={ZoomIn.delay(index * 100).springify()}
+                            style={{ alignItems: 'center' }}
+                        >
+                            <View style={{ marginBottom: 8, position: 'relative' }}>
+                                <AvatarWithFrame
+                                    avatar={p.avatar || p.name}
+                                    frameId={p.activeFrame || 'basic'}
+                                    size={54}
+                                    isDominus={p.isDominus}
+                                />
+                                {/* [NEW] Online / Offline Badge on Avatar */}
+                                <View style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    right: 0,
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: 6,
+                                    backgroundColor: p.isOnline ? '#4ade80' : '#666',
+                                    borderWidth: 2,
+                                    borderColor: '#111' // Match background
+                                }} />
+                            </View>
                             <Text style={{
-                                color: p.name === 'Rando' ? '#ef4444' : (RANK_COLORS[getRankKey(p.rank)] || '#888'), // Dynamic Rank Color
+                                color: '#e2e8f0',
                                 fontFamily: 'Outfit',
-                                fontSize: 9,
-                                textAlign: 'center',
-                                maxWidth: 80,
-                                marginTop: 2
-                            }} numberOfLines={1}>
-                                {t(getRankKey(p.rank))}
-                            </Text>
-                        )}
-                    </Animated.View>
-                ))}
-            </View>
-
-            {/* --- INVITA AMICI (Condizionale < 3 giocatori) --- */}
-            {playersList.length < 2 && (
-                <View style={{ width: '100%', alignItems: 'center', marginBottom: 20 }}>
-                    <PremiumPressable
-                        onPress={handleShareRoom}
-                        style={{
-                            paddingVertical: 8,
-                            paddingHorizontal: 16,
-                            borderRadius: 20,
-                            backgroundColor: 'rgba(212, 175, 55, 0.05)',
-                            borderWidth: 1,
-                            borderColor: 'rgba(212, 175, 55, 0.2)'
-                        }}
-                        rippleColor="rgba(212, 175, 55, 0.1)"
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <ShareIcon size={12} color="#d4af37" />
-                            <Text style={{
-                                fontFamily: 'Cinzel-Bold',
                                 fontSize: 11,
-                                color: '#d4af37',
-                                letterSpacing: 1
-                            }}>
-                                {t('invite_friends_btn', { defaultValue: "INVITA" })}
+                                textAlign: 'center',
+                                maxWidth: 60
+                            }} numberOfLines={1}>
+                                {p.name}
                             </Text>
-                        </View>
-                    </PremiumPressable>
-                    <Text style={{
-                        fontFamily: 'Outfit',
-                        fontSize: 10,
-                        color: 'rgba(255,255,255,0.4)',
-                        marginTop: 6
-                    }}>
-                        {t('min_players_hint', { defaultValue: "Serve almeno 1 amico." })}
-                    </Text>
+                            {/* [NEW] Rank Display below name */}
+                            {p.rank && (
+                                <Text style={{
+                                    color: p.name === 'Rando' ? '#ef4444' : (RANK_COLORS[getRankKey(p.rank)] || '#888'), // Dynamic Rank Color
+                                    fontFamily: 'Outfit',
+                                    fontSize: 9,
+                                    textAlign: 'center',
+                                    maxWidth: 80,
+                                    marginTop: 2
+                                }} numberOfLines={1}>
+                                    {t(getRankKey(p.rank))}
+                                </Text>
+                            )}
+                        </Animated.View>
+                    ))}
                 </View>
-            )}
 
-            {/* --- IMPOSTAZIONI DEL CREATORE --- */}
-            {/* --- IMPOSTAZIONI DEL CREATORE --- */}
-            {isCreator && (
-                <View style={{ width: '100%', marginBottom: 10 }}>
-                    <LobbySettingsPanel
-                        isHost={true}
-                        settings={{
-                            language: roomLanguage,
-                            points: targetPoints,
-                            chaosMode: roomData?.chaosMode,
-                            packs: Object.keys(allowedPackages).filter(k => allowedPackages[k])
-                        }}
-                        unlockedPacks={authUser?.unlockedPacks || {}}
-                        updateSettings={(key, value) => {
-                            if (key === 'packs') {
-                                const newPackages = { base: false, dark: false, chill: false, spicy: false };
-                                value.forEach(p => newPackages[p] = true);
-                                setAllowedPackages(newPackages);
-                                updateRoomSettings({ allowedPackages: newPackages });
-                            } else if (key === 'language') {
-                                setRoomLanguage(value);
-                                updateRoomSettings({ roomLanguage: value });
-                            } else if (key === 'points') {
-                                setTargetPoints(value);
-                                updateRoomSettings({ puntiPerVincere: value });
-                            } else if (key === 'chaosMode') {
-                                updateRoomSettings({ chaosMode: value });
-                            }
-                        }}
-                        onPreviewPack={handlePreviewPack}
-                        onOpenChaosRules={() => {
-                            setInitialSettingsView('rules_chaos');
-                            setShowSettings(true);
-                        }}
-                    />
-                </View>
-            )}
-
-            {/* Pulsante Avvio */}
-            <View style={{ marginTop: 5 }}>
-                {isCreator ? (
-                    <PremiumButton
-                        title={(playersList.length === 2 || (playersList.length === 3 && playersList.some(p => p.name === 'Rando')))
-                            ? t('start_game_bot_btn', { defaultValue: 'AVVIA PARTITA CON 2 + BOT' })
-                            : t('start_game_btn')}
-                        haptic="heavy"
-                        disabled={playersList.length < 2 && !playersList.some(p => p.name === 'Rando' && playersList.length === 3)}
-                        onPress={() => {
-                            if (playersList.length < 2) return; // Should be handled by disabled but safety first
-                            AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
-                            startGame(targetPoints);
-                        }}
-                        style={{
-                            minWidth: 240,
-                            height: 54,
-                            borderRadius: 27,
-                            shadowColor: theme.colors?.accent || '#ffce6a',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 10,
-                            elevation: 8
-                        }}
-                        textStyle={{
-                            fontSize: 14,
-                            letterSpacing: 1.5
-                        }}
-                    />
-                ) : (
-                    renderGuestSettingsSummary()
+                {/* --- INVITA AMICI (Condizionale < 3 giocatori) --- */}
+                {playersList.length < 2 && (
+                    <View style={{ width: '100%', alignItems: 'center', marginBottom: 20 }}>
+                        <PremiumPressable
+                            onPress={handleShareRoom}
+                            style={{
+                                paddingVertical: 8,
+                                paddingHorizontal: 16,
+                                borderRadius: 20,
+                                backgroundColor: 'rgba(212, 175, 55, 0.05)',
+                                borderWidth: 1,
+                                borderColor: 'rgba(212, 175, 55, 0.2)'
+                            }}
+                            rippleColor="rgba(212, 175, 55, 0.1)"
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <ShareIcon size={12} color="#d4af37" />
+                                <Text style={{
+                                    fontFamily: 'Cinzel-Bold',
+                                    fontSize: 11,
+                                    color: '#d4af37',
+                                    letterSpacing: 1
+                                }}>
+                                    {t('invite_friends_btn', { defaultValue: "INVITA" })}
+                                </Text>
+                            </View>
+                        </PremiumPressable>
+                        <Text style={{
+                            fontFamily: 'Outfit',
+                            fontSize: 10,
+                            color: 'rgba(255,255,255,0.4)',
+                            marginTop: 6
+                        }}>
+                            {t('min_players_hint', { defaultValue: "Serve almeno 1 amico." })}
+                        </Text>
+                    </View>
                 )}
+
+                {/* --- IMPOSTAZIONI DEL CREATORE --- */}
+                {isCreator && (
+                    <View style={{ width: '100%', marginBottom: 10 }}>
+                        <LobbySettingsPanel
+                            isHost={true}
+                            settings={{
+                                language: roomLanguage,
+                                points: targetPoints,
+                                chaosMode: roomData?.chaosMode,
+                                packs: Object.keys(allowedPackages).filter(k => allowedPackages[k])
+                            }}
+                            unlockedPacks={authUser?.unlockedPacks || {}}
+                            updateSettings={(key, value) => {
+                                if (key === 'packs') {
+                                    const newPackages = { base: false, dark: false, chill: false, spicy: false };
+                                    value.forEach(p => newPackages[p] = true);
+                                    setAllowedPackages(newPackages);
+                                    updateRoomSettings({ allowedPackages: newPackages });
+                                } else if (key === 'language') {
+                                    setRoomLanguage(value);
+                                    updateRoomSettings({ roomLanguage: value });
+                                } else if (key === 'points') {
+                                    setTargetPoints(value);
+                                    updateRoomSettings({ puntiPerVincere: value });
+                                } else if (key === 'chaosMode') {
+                                    updateRoomSettings({ chaosMode: value });
+                                }
+                            }}
+                            onPreviewPack={handlePreviewPack}
+                            onOpenChaosRules={() => {
+                                setInitialSettingsView('rules_chaos');
+                                setShowSettings(true);
+                            }}
+                        />
+                    </View>
+                )}
+
+                {/* Pulsante Avvio */}
+                <View style={{ marginTop: 5 }}>
+                    {isCreator ? (
+                        <PremiumButton
+                            title={(playersList.length === 2 || (playersList.length === 3 && playersList.some(p => p.name === 'Rando')))
+                                ? t('start_game_bot_btn', { defaultValue: 'AVVIA PARTITA CON 2 + BOT' })
+                                : t('start_game_btn')}
+                            haptic="heavy"
+                            disabled={playersList.length < 2 && !playersList.some(p => p.name === 'Rando' && playersList.length === 3)}
+                            onPress={() => {
+                                if (playersList.length < 2) return; // Should be handled by disabled but safety first
+                                AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
+                                startGame(targetPoints);
+                            }}
+                            style={{
+                                minWidth: 240,
+                                height: 54,
+                                borderRadius: 27,
+                                shadowColor: theme.colors?.accent || '#ffce6a',
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 10,
+                                elevation: 8
+                            }}
+                            textStyle={{
+                                fontSize: 14,
+                                letterSpacing: 1.5
+                            }}
+                        />
+                    ) : (
+                        renderGuestSettingsSummary()
+                    )}
+                </View>
             </View>
-        </View>
+        </ScrollView>
     );
 
 
@@ -1934,12 +1939,17 @@ const styles = StyleSheet.create({
     roomCode: {
         fontSize: 18,
     },
+    lobbyScrollViewContent: {
+        flexGrow: 1,
+        alignItems: 'center',
+        paddingTop: 40,
+        paddingBottom: Platform.OS === 'android' ? 120 : 60, // Increased bottom padding for scroll
+    },
     lobbyCenter: {
+        // Keeps legacy prop if used elsewhere, but mainly replaced by lobbyScrollViewContent
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 40,
-        paddingBottom: Platform.OS === 'android' ? 80 : 20,
     },
     lobbyTitle: {
         fontSize: 32,

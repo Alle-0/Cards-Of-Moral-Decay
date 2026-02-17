@@ -28,28 +28,40 @@ export const AuthProvider = ({ children }) => {
     const PENDING_INVITE_KEY = 'pending_invite_deep_link'; // [NEW]
 
     // 1. Auto-Login (Init)
+    // 1. Auto-Login (Init)
     useEffect(() => {
+        let mounted = true;
+
+        // Safety Timeout to prevent infinite black screen
+        const safetyTimer = setTimeout(() => {
+            if (mounted) {
+                // console.warn("[AUTH] Safety timeout reached. Forcing app entry.");
+                setLoading(false);
+            }
+        }, 8000);
+
         // A. Load from Cache First (Offline Support)
         const loadCache = async () => {
             try {
                 const cached = await AsyncStorage.getItem(USER_CACHE_KEY);
                 if (cached) {
                     const parsed = JSON.parse(cached);
-                    setUser(parsed);
+                    if (mounted) {
+                        setUser(parsed);
+                        // [FIX] If we have cache, let user in immediately (Offline First)
+                        setLoading(false);
+                    }
                 }
 
                 // [NEW] Load pending deep link stuff
                 const savedRoom = await AsyncStorage.getItem(PENDING_ROOM_KEY);
-                if (savedRoom) setPendingRoom(savedRoom);
+                if (savedRoom && mounted) setPendingRoom(savedRoom);
 
                 const savedInvite = await AsyncStorage.getItem(PENDING_INVITE_KEY);
-                if (savedInvite) setPendingInvite(savedInvite);
+                if (savedInvite && mounted) setPendingInvite(savedInvite);
 
             } catch (e) {
                 console.warn("[AUTH] Cache load failed", e);
-            } finally {
-                // [FIX] No hardcoded 5s delay. Let Firebase Auth take over or finish if offline.
-                // If we have a cached user, we can show the UI. Firebase will sync later.
             }
         };
         loadCache();
@@ -67,11 +79,16 @@ export const AuthProvider = ({ children }) => {
                 } catch (e) {
                     console.error("Early Anonymous Login failed", e);
                     // Don't reset user if we have a cache
-                    setLoading(false);
+                    if (mounted) setLoading(false);
                 }
             }
         });
-        return () => unsubscribe();
+
+        return () => {
+            mounted = false;
+            clearTimeout(safetyTimer);
+            unsubscribe();
+        };
     }, []);
 
     // 1.5. Connectivity Listener

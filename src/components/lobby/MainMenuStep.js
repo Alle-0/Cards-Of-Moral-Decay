@@ -27,50 +27,22 @@ const MainMenuStep = ({
     onQuickJoin,
     friendsRooms,
     publicRooms,
+    currentTab,
+    setCurrentTab,
     scrollEnabled = true,
-    onHeightChange // [NEW]
+    showJoinInput, // [NEW] Lifted Prop
+    setShowJoinInput // [NEW] Lifted Prop
 }) => {
     const { t } = useLanguage();
-    const [showJoinInput, setShowJoinInput] = useState(false);
-    const contentRef = useRef(null);
-    const lastBaseHeight = useRef(200); // Baseline placeholder
-    const isToggling = useRef(false);
-
-    // [FIX] Stable height reporting without loops
-    const reportHeight = (predictedDelta = 0) => {
-        if (contentRef.current && !isToggling.current) {
-            contentRef.current.measure((x, y, width, height) => {
-                if (height > 0) {
-                    lastBaseHeight.current = height;
-                    onHeightChange?.(height + predictedDelta + 40);
-                }
-            });
-        }
-    };
-
-    const toggleJoinInput = () => {
-        isToggling.current = true;
-        const nextState = !showJoinInput;
-        setShowJoinInput(nextState);
-
-        const curve = Easing.bezier(0.33, 1, 0.68, 1);
-
-        // Immediate report with prediction to sync with parent
-        onHeightChange?.(lastBaseHeight.current + (nextState ? 75 : -75) + 40);
-
-        // After animation finishes, allow measurements again and sync final
-        setTimeout(() => {
-            isToggling.current = false;
-            reportHeight();
-        }, 350);
-    };
+    // const [showJoinInput, setShowJoinInput] = useState(false); // [REMOVED]
 
     useEffect(() => {
-        // Only report height when rooms change, but not during a toggle
-        if (!isToggling.current) {
-            reportHeight();
-        }
-    }, [publicRooms, friendsRooms, onHeightChange]);
+        // [EMPTY] Logic cleared
+    }, []);
+
+    const toggleJoinInput = () => {
+        setShowJoinInput(prev => !prev);
+    };
 
     // [NEW] Shared Value for Code Pulse (Static as per user request)
     const heightSV = useSharedValue(0);
@@ -82,11 +54,9 @@ const MainMenuStep = ({
         if (showJoinInput) {
             heightSV.value = withTiming(75, { duration: 300, easing: curve });
             opacitySV.value = withTiming(1, { duration: 250, easing: curve });
-            // translateSV.value = withTiming(0, { duration: 250, easing: Easing.out(Easing.cubic) }); // Removed as per instruction
         } else {
             heightSV.value = withTiming(0, { duration: 300, easing: curve });
             opacitySV.value = withTiming(0, { duration: 200, easing: curve });
-            // translateSV.value = withTiming(50, { duration: 200, easing: Easing.in(Easing.cubic) }); // Removed as per instruction
         }
     }, [showJoinInput]);
 
@@ -101,16 +71,9 @@ const MainMenuStep = ({
     }));
 
     return (
-        <View
-            style={styles.stepContainer}
-        >
-            <View
-                ref={contentRef}
-                style={{ width: '100%' }}
-            >
-                <View
-                    style={styles.contentWrapper}
-                >
+        <View style={styles.stepContainer}>
+            <View style={{ width: '100%', flex: 1 }}>
+                <View style={styles.contentWrapper}>
                     {/* BACK BUTTON */}
                     <TouchableOpacity onPress={onBack} style={styles.backButton}>
                         <Text style={styles.backButtonText}>{t('back_button')}</Text>
@@ -205,13 +168,17 @@ const MainMenuStep = ({
                 </View>
 
                 {/* ROOM LISTS - NOW WRAPS EVERYTHING */}
-                <RoomListStep
-                    friendsRooms={friendsRooms}
-                    publicRooms={publicRooms}
-                    onJoinRoom={onJoinRoom}
-                    scrollEnabled={scrollEnabled}
-                    isLoading={isLoading}
-                />
+                <View style={{ flex: 1, width: '100%', minHeight: 0 }}>
+                    <RoomListStep
+                        friendsRooms={friendsRooms}
+                        publicRooms={publicRooms}
+                        onJoinRoom={onJoinRoom}
+                        scrollEnabled={true}
+                        isLoading={isLoading}
+                        currentTab={currentTab}
+                        setCurrentTab={setCurrentTab}
+                    />
+                </View>
             </View>
         </View>
     );
@@ -219,10 +186,10 @@ const MainMenuStep = ({
 
 const styles = StyleSheet.create({
     stepContainer: {
+        flex: 1,
         width: '100%',
-        paddingBottom: 24, // [FIX] Consistent spacing
-        alignSelf: 'flex-start', // [FIX] Prevent vertical stretching
-        // flex: 1 removed to allow adaptive height
+        paddingBottom: 0,
+        alignSelf: 'stretch',
     },
     backButton: {
         alignSelf: 'flex-start',
