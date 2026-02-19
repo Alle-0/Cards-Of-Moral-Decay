@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, Modal, InteractionManager, BackHandler, Pressable, PanResponder } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, Modal, InteractionManager, BackHandler, Pressable, PanResponder } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import EfficientBlurView from '../components/EfficientBlurView';
 import CensoredText from '../components/CensoredText';
@@ -23,6 +23,7 @@ import PaymentResultModal from '../components/PaymentResultModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import GameDataService from '../services/GameDataService';
 import PremiumSkeleton from '../components/PremiumSkeleton';
+import { ShopThemeItem, ShopSkinItem, ShopFrameItem, ShopPackItem, ShopDCBundleItem } from '../components/ShopItems';
 
 const { width } = Dimensions.get('window');
 
@@ -111,15 +112,7 @@ export default function ShopScreen() {
                 {(!isReady || !visitedTabs.includes(index)) ? (
                     renderSkeleton()
                 ) : (
-                    <ScrollView
-                        style={{ flex: 1 }}
-                        contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
-                        overScrollMode="never"
-                    >
-                        {content}
-                    </ScrollView>
+                    content
                 )}
             </View>
         );
@@ -498,358 +491,19 @@ export default function ShopScreen() {
         setPreview(null);
     };
 
-    // Render Helpers
-    const renderThemeItem = (itemTheme, index) => {
-        const isUnlocked = user?.unlockedThemes?.[itemTheme.id];
-        const price = itemTheme.price || 500;
-
-        return (
-            <Animated.View
-                key={itemTheme.id}
-                entering={FadeIn.delay((index % 6) * 50).duration(400)}
-                style={[
-                    styles.card,
-                    {
-                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
-                        borderWidth: isUnlocked ? 2 : 1,
-                        backgroundColor: 'rgba(255,255,255,0.03)'
-                    }
-                ]}
-            >
-                <View style={[styles.previewCircle, { overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: '#000' }]}>
-                    <LinearGradient
-                        colors={itemTheme.colors.background}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={StyleSheet.absoluteFill}
-                    />
-                    <View style={{
-                        position: 'absolute', bottom: 6, right: 6,
-                        width: 14, height: 14, borderRadius: 7,
-                        backgroundColor: itemTheme.colors.accent,
-                        borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.3)',
-                    }} />
-                </View>
-
-                <View style={styles.infoContainer}>
-                    <Text style={[styles.itemName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
-                        {t('theme_' + itemTheme.id, itemTheme.label)}
-                    </Text>
-                    <Text style={styles.itemDesc}>{isUnlocked ? t('owned') : t('exclusive_theme')}</Text>
-                </View>
-
-                <View style={styles.actionRow}>
-                    {!isUnlocked ? (
-                        <TouchableOpacity
-                            style={[
-                                styles.buyButton,
-                                {
-                                    backgroundColor: user.balance >= price ? theme.colors.accent : 'rgba(255,255,255,0.05)',
-                                    borderColor: user.balance >= price ? theme.colors.accent : theme.colors.cardBorder
-                                }
-                            ]}
-                            onPress={() => handleBuy(itemTheme.id, price, t('theme_' + itemTheme.id, itemTheme.label))}
-                            disabled={buyingId === itemTheme.id || user.balance < price}
-                        >
-                            <Text style={[styles.buyText, { color: user.balance >= price ? '#000' : '#888' }]}>
-                                {buyingId === itemTheme.id ? "..." : price}
-                            </Text>
-                            {buyingId !== itemTheme.id && <DirtyCashIcon size={12} color={user.balance >= price ? "#000" : "#888"} />}
-                        </TouchableOpacity>
-                    ) : (
-                        <View style={styles.ownedBadge}>
-                            <CheckIcon size={24} color={theme.colors.accent} />
-                        </View>
-                    )}
-
-                    <TouchableOpacity style={styles.previewButtonIcon} onPress={() => handlePreview('theme', itemTheme)}>
-                        <EyeIcon size={20} color="#888" />
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
-        );
-    };
-
-    const renderSkinItem = (skin, index) => {
-        const isUnlocked = user?.unlockedSkins?.[skin.id];
-        return (
-            <Animated.View
-                key={skin.id}
-                entering={FadeIn.delay((index % 6) * 50).duration(400)}
-                style={[
-                    styles.card,
-                    {
-                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
-                        borderWidth: isUnlocked ? 2 : 1,
-                        backgroundColor: 'rgba(255,255,255,0.03)'
-                    }
-                ]}
-            >
-                <View style={[styles.skinPreview, {
-                    backgroundColor: skin.styles.bg,
-                    borderColor: skin.styles.border,
-                }]}>
-                    {skin.styles.texture && TEXTURES[skin.styles.texture] && (
-                        <Image source={TEXTURES[skin.styles.texture]} style={[StyleSheet.absoluteFill, { opacity: 0.15 }]} resizeMode="cover" />
-                    )}
-                    <View style={{ width: '60%', height: 2, backgroundColor: skin.styles.text, opacity: 0.3, borderRadius: 10 }} />
-                    <View style={{ width: '40%', height: 2, backgroundColor: skin.styles.text, opacity: 0.3, marginTop: 3, borderRadius: 10 }} />
-                </View>
-
-                <View style={styles.infoContainer}>
-                    <Text style={[styles.itemName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
-                        {t('skin_' + skin.id, skin.label)}
-                    </Text>
-                    <Text style={styles.itemDesc}>{isUnlocked ? t('owned') : t('skin_card')}</Text>
-                </View>
-
-                <View style={styles.actionRow}>
-                    {!isUnlocked ? (
-                        <TouchableOpacity
-                            style={[
-                                styles.buyButton,
-                                {
-                                    backgroundColor: user.balance >= skin.price ? theme.colors.accent : theme.colors.cardBg,
-                                    borderColor: user.balance >= skin.price ? theme.colors.accent : theme.colors.cardBorder
-                                }
-                            ]}
-                            onPress={() => handleBuySkin(skin.id, skin.price, t('skin_' + skin.id, skin.label))}
-                            disabled={buyingId === skin.id || user.balance < skin.price}
-                        >
-                            <Text style={[styles.buyText, { color: user.balance >= skin.price ? '#000' : '#888' }]}>
-                                {buyingId === skin.id ? "..." : skin.price}
-                            </Text>
-                            {buyingId !== skin.id && <DirtyCashIcon size={12} color={user.balance >= skin.price ? "#000" : "#888"} />}
-                        </TouchableOpacity>
-                    ) : (
-                        <View style={styles.ownedBadge}>
-                            <CheckIcon size={24} color={theme.colors.accent} />
-                        </View>
-                    )}
-
-                    <TouchableOpacity style={styles.previewButtonIcon} onPress={() => handlePreview('skin', skin)}>
-                        <EyeIcon size={20} color="#888" />
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
-        );
-    };
-
-    const renderFrameItem = (itemFrame, index) => {
-        const isUnlocked = user?.unlockedFrames?.[itemFrame.id] || parseFloat(itemFrame.price) === 0;
-        const price = itemFrame.price;
-
-        return (
-            <Animated.View
-                key={itemFrame.id}
-                entering={FadeIn.delay((index % 6) * 50).duration(400)}
-                style={[
-                    styles.cardFrame,
-                    {
-                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
-                        borderWidth: isUnlocked ? 2 : 1,
-                        backgroundColor: 'rgba(255,255,255,0.03)'
-                    }
-                ]}
-            >
-                <AvatarWithFrame avatar={user?.avatar || 'user'} frameId={itemFrame.id} size={65} style={{ marginBottom: 12 }} />
-                <Text style={[styles.itemName, { color: theme.colors.textPrimary, textAlign: 'center', fontSize: 13, marginBottom: 4 }]} numberOfLines={1}>
-                    {t('frame_' + itemFrame.id, itemFrame.label)}
-                </Text>
-                <Text style={[styles.itemDesc, { marginBottom: 10 }]}>{isUnlocked ? t('owned') : t('frame_label')}</Text>
-
-                {!isUnlocked ? (
-                    <View style={{ flexDirection: 'row', gap: 5, width: '100%' }}>
-                        <TouchableOpacity
-                            style={[
-                                styles.buyButton,
-                                {
-                                    flex: 1,
-                                    paddingHorizontal: 0,
-                                    backgroundColor: user.balance >= price ? theme.colors.accent : theme.colors.cardBg,
-                                    borderColor: user.balance >= price ? theme.colors.accent : theme.colors.cardBorder
-                                }
-                            ]}
-                            onPress={() => handleBuyFrame(itemFrame.id, price, t('frame_' + itemFrame.id, itemFrame.label))}
-                            disabled={buyingId === itemFrame.id || user.balance < price}
-                        >
-                            <Text style={[styles.buyText, { color: user.balance >= price ? '#000' : '#888' }]}>{buyingId === itemFrame.id ? "..." : price}</Text>
-                            {buyingId !== itemFrame.id && <DirtyCashIcon size={12} color={user.balance >= price ? "#000" : "#888"} />}
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.previewButtonIcon, { borderRadius: 8, padding: 8 }]} onPress={() => handlePreview('frame', itemFrame)}>
-                            <EyeIcon size={18} color="#888" />
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <View style={{ flexDirection: 'row', width: '100%', gap: 5 }}>
-                        <View style={{ flex: 1, height: 36, justifyContent: 'center', alignItems: 'center', borderRadius: 8 }}>
-                            <CheckIcon size={20} color={theme.colors.accent} />
-                        </View>
-                        <TouchableOpacity style={[styles.previewButtonIcon, { borderRadius: 8, padding: 8 }]} onPress={() => handlePreview('frame', itemFrame)}>
-                            <EyeIcon size={18} color="#888" />
-                        </TouchableOpacity>
-                    </View>
-                )
-                }
-            </Animated.View >
-        );
-    };
-
-    const renderPackItem = (pack, index) => {
-        const isUnlocked = user?.unlockedPacks?.[pack.id];
-        const price = pack.price;
-
-        return (
-            <Animated.View
-                key={pack.id}
-                entering={FadeIn.delay(index * 50).duration(400)}
-                style={[
-                    styles.card,
-                    {
-                        borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
-                        borderWidth: isUnlocked ? 2 : 1,
-                        backgroundColor: 'rgba(255,255,255,0.03)'
-                    }
-                ]}
-            >
-                <View style={[styles.skinPreview, { backgroundColor: pack.color || '#333', justifyContent: 'center', alignItems: 'center' }]}>
-                </View>
-
-                <View style={styles.infoContainer}>
-                    <Text style={[styles.itemName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
-                        {t('pack_' + pack.id)}
-                    </Text>
-                    <Text style={styles.itemDesc}>
-                        {isUnlocked ? t('owned') : t('pack_label')} • <Text style={{ color: theme.colors.accent }}>{t('cards_count', { count: pack.count })}</Text>
-                    </Text>
-                </View>
-
-                <View style={styles.actionRow}>
-                    {!isUnlocked ? (
-                        <>
-                            <TouchableOpacity
-                                style={[
-                                    styles.buyButton,
-                                    {
-                                        backgroundColor: theme.colors.accent,
-                                        borderColor: theme.colors.accent
-                                    }
-                                ]}
-                                onPress={() => {
-                                    if (pack.id === 'dark') {
-                                        buyItem('dark_pack');
-                                    } else if (pack.id === 'spicy') {
-                                        buyItem('spicy_pack_10');
-                                    } else {
-                                        handleBuyPack(pack.id, price, t('pack_' + pack.id));
-                                    }
-                                }}
-                                disabled={isProcessing || ((pack.id !== 'dark' && pack.id !== 'spicy') && user.balance < price)}
-                            >
-                                <Text style={[styles.buyText, { color: '#000' }]}>
-                                    {isProcessing && (pack.id === 'dark' || pack.id === 'spicy') ? "..." :
-                                        (pack.id === 'dark' ? "4.99€" : (pack.id === 'spicy' ? "2.99€" : price))
-                                    }
-                                </Text>
-                                {(!isProcessing || (pack.id !== 'dark' && pack.id !== 'spicy')) && (pack.id !== 'dark' && pack.id !== 'spicy') && <DirtyCashIcon size={12} color="#000" />}
-                            </TouchableOpacity>
-                            {(pack.id === 'dark' || pack.id === 'chill' || pack.id === 'spicy') && ( // Allow preview for all
-                                <TouchableOpacity
-                                    style={[styles.previewButtonIcon, { marginLeft: 0 }]}
-                                    onPress={() => handlePreview('pack', pack)}
-                                >
-                                    <EyeIcon size={20} color="#888" />
-                                </TouchableOpacity>
-                            )}
-                        </>
-                    ) : (
-                        <View style={styles.ownedBadge}>
-                            <CheckIcon size={24} color={theme.colors.accent} />
-                        </View>
-                    )}
-                </View>
-            </Animated.View>
-        );
-    };
-
-    const renderDCBundle = (bundle, index) => {
-        const isBuying = buyingId === bundle.id; // [FIX] Use buyingId instead of processingBundleId
-        return (
-            <Animated.View
-                key={bundle.id}
-                entering={FadeIn.delay((index % 6) * 50).duration(400)}
-                style={[
-                    styles.card,
-                    {
-                        marginBottom: 10,
-                        padding: 0,
-                        overflow: 'hidden',
-                        borderColor: bundle.bestValue ? theme.colors.accent : 'rgba(255,255,255,0.1)',
-                        borderWidth: bundle.bestValue ? 2 : 1,
-                        backgroundColor: 'rgba(255,255,255,0.03)'
-                    }
-                ]} // Remove default padding for full control
-            >
-                {/* Best Value Badge */}
-                {bundle.bestValue && (
-                    <View style={{
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        backgroundColor: theme.colors.accent,
-                        paddingHorizontal: 8,
-                        paddingVertical: 2,
-                        borderBottomLeftRadius: 8,
-                        zIndex: 10
-                    }}>
-                        <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 10, color: '#000' }}>BEST VALUE</Text>
-                    </View>
-                )}
-                <LinearGradient
-                    colors={['#2c2c2c', '#1a1a1a']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                        width: 80,
-                        height: 80,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        borderRightWidth: 1,
-                        borderRightColor: 'rgba(255,255,255,0.05)'
-                    }}
-                >
-                    <DirtyCashIcon size={42} color={theme.colors.accent} />
-                </LinearGradient>
-
-                <View style={[styles.infoContainer, { paddingLeft: 15, paddingVertical: 10 }]}>
-                    <Text style={[styles.itemName, { color: theme.colors.accent, fontSize: 16 }]} numberOfLines={1}>
-                        {t('dc_bundle_title', { amount: bundle.amount })}
-                    </Text>
-                    <Text style={[styles.itemDesc, { marginTop: 4 }]}>{t('dc_bundle_desc')}</Text>
-                </View>
-
-                <View style={[styles.actionRow, { paddingRight: 15 }]}>
-                    <TouchableOpacity
-                        style={[
-                            styles.buyButton,
-                            {
-                                backgroundColor: isBuying ? theme.colors.accentWeak : theme.colors.accent,
-                                borderColor: theme.colors.accent,
-                                height: 36,
-                                paddingHorizontal: 15
-                            }
-                        ]}
-                        onPress={() => buyItem(bundle.id)}
-                        disabled={isBuying || isProcessing}
-                    >
-                        <Text style={[styles.buyText, { color: '#000' }]}>
-                            {isBuying ? "..." : bundle.priceLabel}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
-        );
-    };
+    const themeData = React.useMemo(() => Object.values(THEMES).filter(t => !['default', 'onice', 'ghiaccio'].includes(t.id)), []);
+    const skinData = React.useMemo(() => Object.values(CARD_SKINS).filter(s => s.id !== 'classic'), []);
+    const frameData = React.useMemo(() => Object.values(AVATAR_FRAMES).filter(f => !['basic', 'capo'].includes(f.id)), []);
+    const packData = React.useMemo(() => [
+        { id: 'dark', price: 1000, color: '#ef4444', count: (GameDataService.darkPack?.nere?.length || 0) + (GameDataService.darkPack?.bianche?.length || 0) },
+        { id: 'chill', price: 5000, color: '#38bdf8', count: (GameDataService.chillPack?.nere?.length || 0) + (GameDataService.chillPack?.bianche?.length || 0) },
+        { id: 'spicy', price: 1000, color: '#d946ef', count: (GameDataService.spicyPack?.nere?.length || 0) + (GameDataService.spicyPack?.bianche?.length || 0) }
+    ], [language]);
+    const bundleData = React.useMemo(() => [
+        { id: 'dc_500', amount: 500, price: 0.99, priceLabel: '0.99€' },
+        { id: 'dc_3000', amount: 3000, price: 4.99, priceLabel: '4.99€' },
+        { id: 'dc_12000', amount: 12000, price: 14.99, priceLabel: '14.99€', bestValue: true }
+    ], []);
 
     return (
         // [MODIFIED] Removed LinearGradient/ThemeBackground - Now handled globally in AppNavigator
@@ -914,74 +568,158 @@ export default function ShopScreen() {
                     <View style={{ flex: 1 }}>
                         {/* TAB 0: THEMES */}
                         {renderTabContent(0, (
-                            <View>
-                                {Object.values(THEMES).map((t, index) => {
-                                    if (['default', 'onice', 'ghiaccio'].includes(t.id)) return null;
-                                    return renderThemeItem(t, index);
-                                })}
-                            </View>
+                            <FlatList
+                                data={themeData}
+                                keyExtractor={(item) => item.id}
+                                renderItem={({ item, index }) => (
+                                    <ShopThemeItem
+                                        item={item}
+                                        index={index}
+                                        isUnlocked={user?.unlockedThemes?.[item.id]}
+                                        userBalance={user.balance}
+                                        buyingId={buyingId}
+                                        onBuy={handleBuy}
+                                        onPreview={handlePreview}
+                                        t={t}
+                                        theme={theme}
+                                    />
+                                )}
+                                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
+                                showsVerticalScrollIndicator={false}
+                                removeClippedSubviews={true}
+                                initialNumToRender={6}
+                                windowSize={5}
+                            />
                         ))}
 
                         {/* TAB 1: SKINS */}
                         {renderTabContent(1, (
-                            <View>
-                                {Object.values(CARD_SKINS).map((s, index) => {
-                                    if (s.id === 'classic') return null;
-                                    return renderSkinItem(s, index);
-                                })}
-                            </View>
+                            <FlatList
+                                data={skinData}
+                                keyExtractor={(item) => item.id}
+                                renderItem={({ item, index }) => (
+                                    <ShopSkinItem
+                                        item={item}
+                                        index={index}
+                                        isUnlocked={user?.unlockedSkins?.[item.id]}
+                                        userBalance={user.balance}
+                                        buyingId={buyingId}
+                                        onBuy={handleBuySkin}
+                                        onPreview={handlePreview}
+                                        t={t}
+                                        theme={theme}
+                                    />
+                                )}
+                                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
+                                showsVerticalScrollIndicator={false}
+                                removeClippedSubviews={true}
+                                initialNumToRender={6}
+                                windowSize={5}
+                            />
                         ))}
 
                         {/* TAB 2: FRAMES */}
                         {renderTabContent(2, (
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                                {Object.values(AVATAR_FRAMES).map((f, index) => {
-                                    if (['basic', 'capo'].includes(f.id)) return null;
-                                    return renderFrameItem(f, index);
-                                })}
-                            </View>
+                            <FlatList
+                                data={frameData}
+                                keyExtractor={(item) => item.id}
+                                renderItem={({ item, index }) => (
+                                    <ShopFrameItem
+                                        item={item}
+                                        index={index}
+                                        isUnlocked={user?.unlockedFrames?.[item.id] || parseFloat(item.price) === 0}
+                                        userBalance={user.balance}
+                                        buyingId={buyingId}
+                                        onBuy={handleBuyFrame}
+                                        onPreview={handlePreview}
+                                        t={t}
+                                        theme={theme}
+                                        userAvatar={user?.avatar}
+                                    />
+                                )}
+                                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
+                                showsVerticalScrollIndicator={false}
+                                numColumns={2}
+                                columnWrapperStyle={{ justifyContent: 'space-between' }}
+                                removeClippedSubviews={true}
+                                initialNumToRender={6}
+                                windowSize={5}
+                            />
                         ))}
 
                         {/* TAB 3: PACKS */}
                         {renderTabContent(3, (
-                            <View>
-                                <Text style={{
-                                    fontFamily: 'Outfit',
-                                    fontSize: 12,
-                                    color: '#888',
-                                    textAlign: 'center',
-                                    marginBottom: 15,
-                                    paddingHorizontal: 10,
-                                    lineHeight: 18
-                                }}>
-                                    {t('shop_pack_info')}
-                                </Text>
-                                {[
-                                    { id: 'dark', price: 1000, color: '#ef4444', count: (GameDataService.darkPack?.nere?.length || 0) + (GameDataService.darkPack?.bianche?.length || 0) },
-                                    { id: 'chill', price: 5000, color: '#38bdf8', count: (GameDataService.chillPack?.nere?.length || 0) + (GameDataService.chillPack?.bianche?.length || 0) },
-                                    { id: 'spicy', price: 1000, color: '#d946ef', count: (GameDataService.spicyPack?.nere?.length || 0) + (GameDataService.spicyPack?.bianche?.length || 0) }
-                                ].map((p, index) => renderPackItem(p, index))}
-                            </View>
+                            <FlatList
+                                data={packData}
+                                keyExtractor={(item) => item.id}
+                                ListHeaderComponent={() => (
+                                    <Text style={{
+                                        fontFamily: 'Outfit',
+                                        fontSize: 12,
+                                        color: '#888',
+                                        textAlign: 'center',
+                                        marginBottom: 15,
+                                        paddingHorizontal: 10,
+                                        lineHeight: 18
+                                    }}>
+                                        {t('shop_pack_info')}
+                                    </Text>
+                                )}
+                                renderItem={({ item, index }) => (
+                                    <ShopPackItem
+                                        item={item}
+                                        index={index}
+                                        isUnlocked={user?.unlockedPacks?.[item.id]}
+                                        userBalance={user.balance}
+                                        isProcessing={isProcessing}
+                                        onBuy={(id, price, name) => {
+                                            if (id === 'dark') {
+                                                buyItem('dark_pack');
+                                            } else if (id === 'spicy') {
+                                                buyItem('spicy_pack_10');
+                                            } else {
+                                                handleBuyPack(id, price, name);
+                                            }
+                                        }}
+                                        onPreview={handlePreview}
+                                        t={t}
+                                        theme={theme}
+                                    />
+                                )}
+                                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
+                                showsVerticalScrollIndicator={false}
+                            />
                         ))}
 
                         {/* TAB 4: DC BUNDLES */}
                         {renderTabContent(4, (
-                            <View style={{ paddingBottom: 20 }}>
-                                <Text style={{
-                                    fontFamily: 'Cinzel-Bold',
-                                    fontSize: 20,
-                                    color: theme.colors.accent,
-                                    textAlign: 'center',
-                                    marginBottom: 20
-                                }}>
-                                    {t('tab_dc')}
-                                </Text>
-                                {[
-                                    { id: 'dc_500', amount: 500, price: 0.99, priceLabel: '0.99€' },
-                                    { id: 'dc_3000', amount: 3000, price: 4.99, priceLabel: '4.99€' },
-                                    { id: 'dc_12000', amount: 12000, price: 14.99, priceLabel: '14.99€', bestValue: true }
-                                ].map((bundle, index) => renderDCBundle(bundle, index))}
-                            </View>
+                            <FlatList
+                                data={bundleData}
+                                keyExtractor={(item) => item.id}
+                                ListHeaderComponent={() => (
+                                    <Text style={{
+                                        fontFamily: 'Cinzel-Bold',
+                                        fontSize: 20,
+                                        color: theme.colors.accent,
+                                        textAlign: 'center',
+                                        marginBottom: 20
+                                    }}>
+                                        {t('tab_dc')}
+                                    </Text>
+                                )}
+                                renderItem={({ item, index }) => (
+                                    <ShopDCBundleItem
+                                        item={item}
+                                        index={index}
+                                        buyingId={buyingId}
+                                        onBuy={buyItem}
+                                        t={t}
+                                        theme={theme}
+                                    />
+                                )}
+                                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
+                                showsVerticalScrollIndicator={false}
+                            />
                         ))}
                     </View>
                 )}

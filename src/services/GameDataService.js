@@ -23,8 +23,9 @@ class GameDataService {
         this.spicyPack = { nere: [], bianche: [] }; // [NEW] Spicy (NSFW Legal)
 
         this.isLoaded = false;
-        this.minVersion = "4.7.2";
+        this.minVersion = "4.8.0";
         this.downloadUrl = null;
+        this.cachedAllCards = { it: null, en: null }; // [NEW] Cache
     }
 
     // Initialize data: Fetch from Firebase (Memory Only)
@@ -129,6 +130,9 @@ class GameDataService {
 
                 // console.log('Packs (IT/EN) synced from Firebase.');
 
+                // Reset Cache
+                this.cachedAllCards = { it: null, en: null };
+
                 // Update active packs based on current language
                 this.updateActivePacks();
             }
@@ -188,35 +192,44 @@ class GameDataService {
     }
 
     setLanguage(lang) {
-        this.language = lang;
-        this.updateActivePacks();
-        // console.log(`[GameDataService] Language set to ${lang}`);
+        if (this.language !== lang) {
+            this.language = lang;
+            this.updateActivePacks();
+        }
     }
 
     // --- NANO DATA UTILITIES (Operates on Base + Loaded Dark) ---
     // Helper to get ALL currently loaded cards available in memory
     getAllCards(forcedLang = null) {
-        let base = this.basePack;
-        let dark = this.darkPack;
-        let chill = this.chillPack;
-        let spicy = this.spicyPack;
+        const langTarget = forcedLang || this.language;
 
-        if (forcedLang === 'en') {
+        // [OPTIMIZATION] Return cached if available
+        if (this.cachedAllCards[langTarget]) {
+            return this.cachedAllCards[langTarget];
+        }
+
+        let base, dark, chill, spicy;
+
+        if (langTarget === 'en') {
             base = this.basePackEN;
             dark = this.darkPackEN;
             chill = this.chillPackEN;
             spicy = this.spicyPackEN;
-        } else if (forcedLang === 'it') {
+        } else {
             base = this.basePackIT;
             dark = this.darkPackIT;
             chill = this.chillPackIT;
             spicy = this.spicyPackIT;
         }
 
-        return {
+        const result = {
             nere: [...(base?.nere || []), ...(dark?.nere || []), ...(chill?.nere || []), ...(spicy?.nere || [])],
             bianche: [...(base?.bianche || []), ...(dark?.bianche || []), ...(chill?.bianche || []), ...(spicy?.bianche || [])]
         };
+
+        // Cache the result
+        this.cachedAllCards[langTarget] = result;
+        return result;
     }
 
     getWhiteCardIndex(text, forcedLang = null) {

@@ -23,7 +23,7 @@ const AvatarWithFrame = ({
         <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
 
             {/* GLOW LAYER (Background) */}
-            {Platform.OS === 'android' && (
+            {(Platform.OS === 'android' || Platform.OS === 'web') && (
                 <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }]}>
                     {frameId === 'neon' && (
                         <Svg height="150%" width="150%" viewBox="0 0 100 100">
@@ -71,6 +71,30 @@ const AvatarWithFrame = ({
                                 </RadialGradient>
                             </Defs>
                             <Circle cx="50" cy="50" r="50" fill="url(#capo_grad)" />
+                        </Svg>
+                    )}
+                    {frameId === 'midas_touch' && (
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                            <Defs>
+                                <RadialGradient id="midas_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
+                                    <Stop offset="0.55" stopColor="#f59e0b" stopOpacity="0" />
+                                    <Stop offset="0.7" stopColor="#f59e0b" stopOpacity="0.4" />
+                                    <Stop offset="0.85" stopColor="#f59e0b" stopOpacity="0" />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx="50" cy="50" r="50" fill="url(#midas_grad)" />
+                        </Svg>
+                    )}
+                    {frameId === 'ice_king' && (
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                            <Defs>
+                                <RadialGradient id="ice_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
+                                    <Stop offset="0.55" stopColor="#06b6d4" stopOpacity="0" />
+                                    <Stop offset="0.7" stopColor="#06b6d4" stopOpacity="0.5" />
+                                    <Stop offset="0.85" stopColor="#06b6d4" stopOpacity="0" />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx="50" cy="50" r="50" fill="url(#ice_grad)" />
                         </Svg>
                     )}
                 </View>
@@ -240,4 +264,4 @@ const AvatarWithFrame = ({
 
 
 
-export default AvatarWithFrame;
+export default React.memo(AvatarWithFrame);

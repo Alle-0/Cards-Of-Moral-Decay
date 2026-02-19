@@ -437,7 +437,7 @@ export default function LoginScreen() {
         return (
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#0f0c29' }]}>
                 <Text style={{ color: '#FFD700', fontFamily: 'Cinzel-Bold', fontSize: 16 }}>
-                    Caricamento...
+                    {t('loading')}
                 </Text>
             </View>
         );

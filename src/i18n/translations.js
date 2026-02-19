@@ -38,6 +38,10 @@ export const translations = {
         particles_effects: "Particelle ed effetti",
         sound_effects: "EFFETTI SONORI",
         sounds_notifs: "Suoni e notifiche",
+        notifications_label: "NOTIFICHE", // [NEW]
+        notifications_sub: "Inviti amici e stanze", // [NEW]
+        notify_room_title: "Nuova Stanza Creata!", // [NEW]
+        notify_room_body: "%{user} ha creato una stanza! Codice: %{code}", // [NEW]
         music_label: "MUSICA",
         music_sub: "Sottofondo",
         audio_anim_lang: "AUDIO, ANIMAZIONI E LINGUA",
@@ -347,7 +351,7 @@ export const translations = {
         judging_title: "GIUDIZIO IN CORSO",
         dominus_waiting_msg: "Sei il Dominus. Attendi le risposte...",
         dominus_choosing_msg: "Tocca a te scegliere il vincitore!",
-        skip_btn: "SALTA",
+        skip_btn: "SALTA TURNO",
         reveal_btn: "SVELA",
         waiting_cards: "IN ATTESA DELLE CARTE...",
 
@@ -608,6 +612,10 @@ export const translations = {
         particles_effects: "Particles and effects",
         sound_effects: "SOUND EFFECTS",
         sounds_notifs: "Sounds and notifications",
+        notifications_label: "NOTIFICATIONS", // [NEW]
+        notifications_sub: "Friend and room invites", // [NEW]
+        notify_room_title: "New Room Created!", // [NEW]
+        notify_room_body: "%{user} created a room! Join code: %{code}", // [NEW]
         music_label: "MUSIC",
         music_sub: "Background Score",
         audio_anim_lang: "AUDIO, ANIMATIONS & LANGUAGE",
@@ -916,7 +924,7 @@ export const translations = {
         judging_title: "JUDGING IN PROGRESS",
         dominus_waiting_msg: "You are the Dominus. Wait for responses...",
         dominus_choosing_msg: "It's your turn to pick the winner!",
-        skip_btn: "SKIP",
+        skip_btn: "SKIP TURN",
         reveal_btn: "REVEAL",
         waiting_cards: "WAITING FOR CARDS...",
 

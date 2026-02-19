@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }) => {
             if (!user?.username) return;
 
             try {
-                const token = await NotificationService.registerForPushNotificationsAsync();
+                const token = await NotificationService.registerForPushNotificationsAsync(true);
                 if (token && user.pushToken !== token) {
                     await update(ref(db, `users/${user.username}`), {
                         pushToken: token
@@ -826,6 +826,21 @@ export const AuthProvider = ({ children }) => {
         await update(userRef, updates);
     }, [user?.username]);
 
+    // [NEW] Toggle Notifications Preference
+    const toggleNotifications = useCallback(async () => {
+        if (!user?.username) return;
+        const newValue = !(user.notificationsEnabled !== false); // Default true
+        try {
+            await update(ref(db, `users/${user.username}`), {
+                notificationsEnabled: newValue
+            });
+            // Optional: If disabling, maybe we want to unregister? 
+            // For now, we just rely on the sender checking this flag.
+        } catch (e) {
+            console.error("[AUTH] Error toggling notifications:", e);
+        }
+    }, [user]);
+
     // --- Action: Friends System (Mutual) ---
     const sendFriendRequest = useCallback(async (friendUsername) => {
         if (!user || !user.username) throw new Error("Devi essere loggato.");
@@ -840,6 +855,8 @@ export const AuthProvider = ({ children }) => {
             throw new Error("Utente non trovato.");
         }
 
+        const targetData = snapshot.val();
+
         // Check if already friends
         if (user.friends && user.friends[target]) {
             throw new Error("Siete già amici!");
@@ -847,10 +864,31 @@ export const AuthProvider = ({ children }) => {
 
         // Send request to target
         await update(ref(db, `users/${target}/friendRequests`), {
-            [user.username]: true
+            [user.username]: 'pending' // Changed to 'pending' status
         });
 
-        AnalyticsService.logSocialInteraction('send_request', target); // [NEW]
+        // [NEW] Push Notification to Target (if enabled)
+        try {
+            if (targetData.pushToken && targetData.notificationsEnabled !== false) { // Check notificationsEnabled
+                // Determine language (default to 'en' if missing)
+                const targetLang = targetData.language || 'en';
+                const title = targetLang === 'en' ? 'New Friend Request' : 'Nuova Richiesta di Amicizia';
+                const body = targetLang === 'en'
+                    ? `${user.username} wants to be your friend!`
+                    : `${user.username} vuole essere tuo amico!`;
+
+                await NotificationService.sendPushNotification(
+                    targetData.pushToken,
+                    title,
+                    body,
+                    { type: 'FRIEND_REQUEST', from: user.username }
+                );
+            }
+        } catch (e) {
+            console.warn("[PUSH] Failed to send friend request notification", e);
+        }
+
+        AnalyticsService.logSocialInteraction('send_request', target);
 
         return true;
     }, [user]);
@@ -1036,7 +1074,8 @@ export const AuthProvider = ({ children }) => {
         acceptEula,
         reportPlayer,
         deleteAccount,
-        isConnected
+        isConnected,
+        toggleNotifications // [NEW]
     ]);
 
     return (

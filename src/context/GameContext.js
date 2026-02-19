@@ -7,8 +7,9 @@ import { PLAYER_AVATARS, PLAYER_COLORS, shuffleArray, pickColor } from '../utils
 import SoundService from '../services/SoundService';
 import GameDataService from '../services/GameDataService';
 import { useAuth } from './AuthContext';
-import AnalyticsService from '../services/AnalyticsService'; // [NEW]
-import { CHAOS_EVENTS } from '../constants/ChaosEvents'; // [NEW]
+import AnalyticsService from '../services/AnalyticsService';
+import NotificationService from '../services/NotificationService'; // [NEW]
+import { CHAOS_EVENTS } from '../constants/ChaosEvents';
 
 // Context
 const GameContext = createContext();
@@ -19,7 +20,6 @@ export const GameProvider = ({ children }) => {
     const { user: authUser, loading: authLoading } = useAuth();
 
     // --- STATE ---
-    console.log("GameProvider initializing...");
     const [roomCode, setRoomCode] = useState(null);
     const [roomData, setRoomData] = useState(null);
     const [availableRooms, setAvailableRooms] = useState(null);
@@ -65,11 +65,29 @@ export const GameProvider = ({ children }) => {
                     setRoomCode(storedCode);
                     setRoomPlayerName(storedName);
                     subscribeToRoom(storedCode);
+                    // [FIX] Re-assert presence immediately
+                    setPresence(storedCode, storedName);
                 }
             } catch (e) { console.warn("Room recovery failed", e); }
         };
         recoverRoom();
     }, []);
+
+    // [FIX] Re-assert presence on connection restore
+    useEffect(() => {
+        const connectedRef = ref(db, ".info/connected");
+        const unsub = onValue(connectedRef, (snap) => {
+            const isOnline = snap.val() === true;
+            if (isOnline && roomCode) {
+                const name = roomPlayerName || user?.name;
+                if (name) {
+                    // console.log("[GAME] Connection restored. Refreshing presence.");
+                    setPresence(roomCode, name);
+                }
+            }
+        });
+        return () => unsub();
+    }, [roomCode, roomPlayerName, user?.name]);
 
     // Cleanup
     useEffect(() => {
@@ -141,7 +159,7 @@ export const GameProvider = ({ children }) => {
     const hydrateRoom = (room) => {
         if (!room) return room;
         const newRoom = { ...room };
-        const forcedLang = newRoom.roomLanguage || null;
+        const forcedLang = newRoom.language || newRoom.roomLanguage || null;
 
         // 1. Black Card
         if (typeof newRoom.cartaNera === 'number') {
@@ -149,16 +167,9 @@ export const GameProvider = ({ children }) => {
         }
 
         // 2. Decks (Optional, mostly for internal state if needed)
-        if (newRoom.blackDeck && Array.isArray(newRoom.blackDeck)) {
-            newRoom.blackDeck = newRoom.blackDeck.map(item =>
-                typeof item === 'number' ? GameDataService.getBlackCardByIndex(item, forcedLang) : item
-            );
-        }
-        if (newRoom.whiteDeck && Array.isArray(newRoom.whiteDeck)) {
-            newRoom.whiteDeck = newRoom.whiteDeck.map(item =>
-                typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item, forcedLang) : item
-            );
-        }
+        // [OPTIMIZATION] Skip hydrating full decks for performance
+        // Clients only need to know cards in hand or played.
+        // newRoom.blackDeck and newRoom.whiteDeck remain as arrays of IDs (numbers).
 
         // 3. Players Hands
         if (newRoom.giocatori) {
@@ -385,12 +396,53 @@ export const GameProvider = ({ children }) => {
             AsyncStorage.setItem('lastRoomCode', code);
             AsyncStorage.setItem('lastRoomPlayerName', currentName || '');
             subscribeToRoom(code);
+
+            // [NEW] Notify Friends (Background)
+            if (user?.friends) {
+                // Don't await this to keep UI snappy
+                notifyFriendsOfRoomArgs(user, code).catch(err => console.warn("[PUSH] Friend notify failed", err));
+            }
+
             return code;
         } catch (e) {
             setError(e.message);
             throw e;
         } finally {
             setLoading(false);
+        }
+    };
+
+    // [NEW] Helper to notify friends
+    const notifyFriendsOfRoomArgs = async (currentUser, roomCode) => {
+        if (!currentUser || !currentUser.friends) return;
+        const friendUsernames = Object.keys(currentUser.friends);
+        console.log(`[PUSH] Notifying ${friendUsernames.length} friends about room ${roomCode}`);
+
+        for (const friendName of friendUsernames) {
+            try {
+                const friendRef = ref(db, `users/${friendName}`);
+                const snap = await get(friendRef);
+                if (snap.exists()) {
+                    const friendData = snap.val();
+                    if (friendData.pushToken && friendData.notificationsEnabled !== false) {
+                        const targetLang = friendData.language || 'en';
+                        // Manually picking strings since we are outside React component for t()
+                        const title = targetLang === 'en' ? 'New Room Created!' : 'Nuova Stanza Creata!';
+                        const body = targetLang === 'en'
+                            ? `${currentUser.username} created a room! Join code: ${roomCode}`
+                            : `${currentUser.username} ha creato una stanza! Codice: ${roomCode}`;
+
+                        await NotificationService.sendPushNotification(
+                            friendData.pushToken,
+                            title,
+                            body,
+                            { type: 'ROOM_CREATE', room: roomCode, host: currentUser.username }
+                        );
+                    }
+                }
+            } catch (e) {
+                console.error(`[PUSH] Failed to notify friend ${friendName}`, e);
+            }
         }
     };
 
@@ -459,6 +511,36 @@ export const GameProvider = ({ children }) => {
             AsyncStorage.setItem('lastRoomCode', code);
             AsyncStorage.setItem('lastRoomPlayerName', currentName || '');
             subscribeToRoom(code);
+
+            // [NEW] Push Notification to Room Creator
+            try {
+                const creatorUsername = data.creatorUsername || data.creatore;
+                // Only notify if we are not the creator
+                if (user.username !== creatorUsername) {
+                    const creatorRef = ref(db, `users/${creatorUsername}`);
+                    const creatorSnap = await get(creatorRef);
+                    if (creatorSnap.exists()) {
+                        const creatorData = creatorSnap.val();
+                        if (creatorData.pushToken) {
+                            const targetLang = creatorData.language || 'en';
+                            const title = targetLang === 'en' ? 'New Player Joined!' : 'Nuovo Giocatore!';
+                            const body = targetLang === 'en'
+                                ? `${currentName} has entered your room.`
+                                : `${currentName} è entrato nella tua stanza.`;
+
+                            await NotificationService.sendPushNotification(
+                                creatorData.pushToken,
+                                title,
+                                body,
+                                { type: 'ROOM_JOIN', roomId: code }
+                            );
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("[PUSH] Failed to send room join notification", e);
+            }
+
             return code;
         } catch (e) {
             setError(e.message);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { StyleSheet, View, Text, ScrollView, FlatList, Pressable, Dimensions, Image, TouchableWithoutFeedback } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, withDelay, withSequence, ZoomIn, FadeOut, Easing, runOnJS, LinearTransition, interpolate, interpolateColor } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -411,7 +411,7 @@ const PlayerHand = ({
     }));
 
     // [OPTIMIZATION] Stable renderItem
-    const renderCard = ({ item, index }) => {
+    const renderCard = useCallback(({ item, index }) => {
         const sIdx = selectedCards.indexOf(item);
         return (
             <Animated.View
@@ -438,18 +438,18 @@ const PlayerHand = ({
                 />
             </Animated.View>
         );
-    };
+    }, [selectedCards, isSmallScreen, onSelectCard, disabled, isPlaying, onPlay, onDiscard, maxSelection, hasDiscarded, skin, t, isBlackout]);
 
     // [OPTIMIZATION] Stable keyExtractor
-    const keyExtractor = (item, index) => `${item}-${index}`;
+    const keyExtractor = useCallback((item, index) => `${item}-${index}`, []);
 
     // [OPTIMIZATION] Layout calculation
-    const getItemLayout = (data, index) => {
+    const getItemLayout = useCallback((data, index) => {
         const itemHeight = isSmallScreen ? 120 : 140;
         const gap = 30;
         const totalHeight = itemHeight + gap;
         return { length: totalHeight, offset: totalHeight * index, index };
-    };
+    }, [isSmallScreen]);
 
     return (
         <Animated.View

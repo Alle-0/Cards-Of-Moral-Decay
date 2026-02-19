@@ -3,7 +3,7 @@
     "name": "Cards of Moral Decay",
     "slug": "cards-of-moral-decay",
     "scheme": "comd",
-    "version": "4.7.2",
+    "version": "4.8.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -16,7 +16,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.anonymous.cardsofmoraldecay",
-      "versionCode": 32,
+      "versionCode": 33,
       "googleServicesFile": "./google-services.json",
       "splash": {
         "image": "./assets/splash-custom.png",
@@ -47,6 +47,10 @@
             "DEFAULT"
           ]
         }
+      ],
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
@@ -81,6 +85,16 @@
         }
       ],
       "expo-localization"
-    ]
+    ],
+    "notification": {
+      "vapidPublicKey": "BHtpaAjLI_hZZ5_rBCGfNYNptI--WlJuxoHvn3KqKovN_E7ivp2jT7_vfE4RsIgHl940yiUgYSXNeXCmjN2i08A",
+      "serviceWorkerPath": "expo-service-worker.js"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8c868844-d7e8-47a3-9017-197534e8f07e"
+      }
+    },
+    "owner": "alle-0"
   }
 }

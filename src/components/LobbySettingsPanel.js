@@ -298,7 +298,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
                 // Clamp
                 if (newX < 0) newX = 0;
                 if (newX > 210) newX = 210;
-                dragXPoints.value = newX;
+                dragXPoints.value = newX; // [OPTIMIZATION]
             },
             onPanResponderRelease: (_, gestureState) => {
                 if (!isHostRef.current) return;
@@ -314,12 +314,13 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
                 if (hasChanged) {
                     skipSyncPoints.current = true;
                     handlePointsChange(newPts);
+                } else {
+                    // Snap back
+                    dragXPoints.value = withSpring(targetIndex * 70, SNAP_SPRING_CONFIG);
                 }
 
                 // [FIX] Anchors on release
                 updateLiquidAnchors(startXPoints, targetXPoints, isDraggingPointsSV, dragXPoints.value, targetIndex * 70);
-
-                dragXPoints.value = withSpring(targetIndex * 70, SNAP_SPRING_CONFIG);
 
                 gestureStartIndexPoints.current = undefined;
             }
@@ -340,14 +341,11 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
             onShouldBlockNativeResponder: () => true,
             onPanResponderGrant: (evt) => {
                 if (!isHostRef.current) return;
-                const { locationX } = evt.nativeEvent;
-                // const hitLang = locationX > 50 ? 'ita' : 'en'; // [FIX] Left=En, Right=Ita
-                // touchedLang.current = hitLang;
-
+                // [OPTIMIZATION] Avoid unnecessary state updates / refs if possible
                 const currentLang = settingsRef.current.language;
                 gestureStartLang.current = currentLang;
 
-                const isGrabbing = true; // Simply allow dragging if captured
+                const isGrabbing = true;
                 isGrabbingIndicatorLang.current = isGrabbing;
 
                 if (isGrabbing) {
@@ -357,34 +355,31 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
             },
             onPanResponderMove: (_, gestureState) => {
                 if (!isHostRef.current) return;
-                const startX = gestureStartLang.current === 'en' ? 0 : 52; // [FIX] En=0
+                const startX = gestureStartLang.current === 'en' ? 0 : 52;
                 let newX = startX + gestureState.dx;
                 if (newX < 0) newX = 0;
                 if (newX > 52) newX = 52;
-                dragXLang.value = newX;
+                dragXLang.value = newX; // [OPTIMIZATION] Directly setting SharedValue (UI Thread)
             },
             onPanResponderRelease: (_, gestureState) => {
                 if (!isHostRef.current) return;
 
-                // [FIX] Only handle DRAG snap here. Clicks are handled by Pressable.
-                const startX = gestureStartLang.current === 'en' ? 0 : 52; // [FIX] En=0 e 52
+                const startX = gestureStartLang.current === 'en' ? 0 : 52;
                 const finalX = startX + gestureState.dx;
-                const targetLang = finalX > 26 ? 'ita' : 'en'; // [FIX] >26 is Ita
+                const targetLang = finalX > 26 ? 'ita' : 'en';
 
                 const hasChanged = targetLang !== settingsRef.current.language;
 
                 if (hasChanged) {
                     skipSyncLang.current = true;
-                    handleLanguageChange(targetLang);
+                    handleLanguageChange(targetLang); // Triggers JS state update
+                } else {
+                    // [FIX] If no change, snap back logic
+                    const targetPos = targetLang === 'en' ? 0 : 52;
+                    dragXLang.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
                 }
 
-                // [FIX] Anchors on release
-                const targetPos = targetLang === 'en' ? 0 : 52; // [FIX] En=0
-                updateLiquidAnchors(startXLang, targetXLang, isDraggingLangSV, dragXLang.value, targetPos);
-
-                // [SUBTLE BOUNCE] Use subtle spring 
-                dragXLang.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
-
+                updateLiquidAnchors(startXLang, targetXLang, isDraggingLangSV, dragXLang.value, targetLang === 'en' ? 0 : 52);
                 gestureStartLang.current = undefined;
             }
         })

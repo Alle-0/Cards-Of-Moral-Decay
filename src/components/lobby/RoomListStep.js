@@ -226,7 +226,8 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
                     keyExtractor={(item) => item.id}
                     renderItem={({ item, index }) => (
                         <Animated.View
-                            entering={FadeIn.delay(index * 100).springify()}
+                            // [OPTIMIZATION] Simplified entry animation for list items
+                            // entering={FadeIn.delay(index * 50).springify()} // Reduced delay/complexity
                             style={{ width: '100%' }}
                         >
                             <RoomItem
@@ -241,6 +242,9 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
                                 creatorId={item.creatorUsername || item.creatore}
                             />
                         </Animated.View>
+                    )}
+                    getItemLayout={(data, index) => (
+                        { length: 70, offset: 70 * index, index } // [OPTIMIZATION] Fixed height approx 70px (64 item + 6 margin)
                     )}
                     ListEmptyComponent={
                         isFetching ? (
@@ -260,10 +264,11 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
                     scrollEnabled={scrollEnabled}
                     contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
                     showsVerticalScrollIndicator={false}
-                    initialNumToRender={10}
-                    maxToRenderPerBatch={10}
-                    windowSize={5}
-                    removeClippedSubviews={false}
+                    initialNumToRender={8} // [OPTIMIZATION] Reduced from 10
+                    maxToRenderPerBatch={5} // [OPTIMIZATION] Reduced from 10
+                    windowSize={3} // [OPTIMIZATION] Reduced from 5
+                    removeClippedSubviews={Platform.OS === 'android'} // [OPTIMIZATION] Explicit true for Android
+                    updateCellsBatchingPeriod={50} // [OPTIMIZATION]
                 />
             </View>
 

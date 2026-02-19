@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
+import { StyleSheet, Text, View, Platform } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import PremiumPressable from './PremiumPressable';
@@ -21,7 +21,7 @@ const RoomItem = memo(({ roomName, playerCount, state, onJoin, onLongPress, crea
     const displayCode = roomName.replace('Stanza ', '').toUpperCase();
 
     return (
-        <Animated.View entering={ZoomIn.duration(300)}>
+        <Animated.View entering={FadeIn.duration(200)}>
             <PremiumPressable
                 onPress={onJoin}
                 onLongPress={onLongPress}
@@ -106,6 +106,9 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: 'rgba(255,255,255,0.5)',
         flex: 1,
+        includeFontPadding: false, // [FIX] Android vertical alignment
+        textAlignVertical: 'center', // [FIX] Ensure centering
+        marginTop: Platform.OS === 'android' ? 2 : 0 // [FIX] Fine-tune offset
     },
     badge: {
         paddingHorizontal: 10,

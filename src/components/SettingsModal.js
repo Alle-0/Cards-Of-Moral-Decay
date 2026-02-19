@@ -84,7 +84,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
     const { theme, themes, setTheme, animationsEnabled, toggleAnimations } = useTheme();
     const { isPlaying, toggleMusic } = useAudio();
     const { leaveRoom, roomCode } = useGame();
-    const { logout, user: authUser } = useAuth();
+    const { logout, user: authUser, toggleNotifications } = useAuth();
     const { t, language, setLanguage } = useLanguage();
 
     const [soundEnabled, setSoundEnabled] = useState(true);
@@ -110,12 +110,12 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
     });
 
     // [NEW] Language Selector Animation
-    const dragXLang = useSharedValue(language === 'en' ? 50 : 0);
+    const dragXLang = useSharedValue(language === 'en' ? 47 : 0);
     const isGrabbingSV = useSharedValue(false); // [FIX] SharedValue for reactivity
 
     // [NEW] Anchors for hook
-    const startX = useSharedValue(language === 'en' ? 50 : 0);
-    const targetX = useSharedValue(language === 'en' ? 50 : 0);
+    const startX = useSharedValue(language === 'en' ? 47 : 0);
+    const targetX = useSharedValue(language === 'en' ? 47 : 0);
 
     // [FIX] Liquid Scale logic for Language Toggle
     const langScale = useLiquidScale(dragXLang, startX, targetX, isGrabbingSV, 1.15);
@@ -140,7 +140,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
             return;
         }
 
-        const targetX = language === 'en' ? 50 : 0;
+        const targetX = language === 'en' ? 47 : 0;
         dragXLang.value = withSpring(targetX, SNAP_SPRING_CONFIG);
     }, [language]);
 
@@ -735,6 +735,17 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                 <PremiumToggle
                                     value={soundEnabled}
                                     onValueChange={toggleSound}
+                                />
+                            </View>
+
+                            <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
+                                <View>
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('notifications_label')}</Text>
+                                    <Text style={styles.rowSub}>{t('notifications_sub')}</Text>
+                                </View>
+                                <PremiumToggle
+                                    value={authUser?.notificationsEnabled !== false}
+                                    onValueChange={toggleNotifications}
                                 />
                             </View>
 

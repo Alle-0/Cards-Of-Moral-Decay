@@ -21,6 +21,7 @@ import { useAudio } from '../context/AudioContext'; // [NEW]
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService';
 import { APP_VERSION } from '../constants/Config';
+import NotificationService from '../services/NotificationService'; // [NEW]
 import Animated, { SlideInRight, SlideOutRight, SlideInLeft, SlideOutLeft, Easing, useSharedValue, withSpring, useAnimatedStyle, withTiming, withSequence, runOnJS, interpolateColor, useDerivedValue } from 'react-native-reanimated';
 import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hooks/useLiquidAnimation';
 
@@ -55,7 +56,7 @@ const SettingsLanguageItem = ({ lang, translateX, theme }) => {
         const isIt = lang === 'it';
         const color = interpolateColor(
             translateX.value,
-            [2, 52],
+            [2, 50],
             isIt
                 ? ['#000000', theme.colors.textPrimary + '88']
                 : [theme.colors.textPrimary + '88', '#000000']
@@ -77,7 +78,7 @@ const SettingsScreen = ({ navigation }) => {
     const { isPlaying, toggleMusic } = useAudio(); // [NEW] Music Control
     const { leaveRoom, roomCode } = useGame();
     const { t, language, setLanguage } = useLanguage();
-    const { logout, deleteAccount, user: authUser } = useAuth();
+    const { logout, user, toggleNotifications } = useAuth();
     const insets = useSafeAreaInsets();
 
     const languageRef = useRef(language);
@@ -86,11 +87,11 @@ const SettingsScreen = ({ navigation }) => {
     const isDraggingLang = useRef(false);
     const isGrabbingIndicatorLang = useRef(false);
     const isGrabbingSV = useSharedValue(false); // [FIX] Reactivity
-    const langTranslateX = useSharedValue(language === 'en' ? 52 : 2);
+    const langTranslateX = useSharedValue(language === 'en' ? 50 : 2);
 
     // [NEW] Anchors for hook
-    const startX = useSharedValue(language === 'en' ? 52 : 2);
-    const targetX = useSharedValue(language === 'en' ? 52 : 2);
+    const startX = useSharedValue(language === 'en' ? 50 : 2);
+    const targetX = useSharedValue(language === 'en' ? 50 : 2);
 
     const langScale = useLiquidScale(langTranslateX, startX, targetX, isGrabbingSV, 1.15);
     const lastValidLang = useRef(language);
@@ -99,7 +100,7 @@ const SettingsScreen = ({ navigation }) => {
     useEffect(() => {
         languageRef.current = language;
         lastValidLang.current = language;
-        langTranslateX.value = withSpring(language === 'en' ? 52 : 2, { damping: 200, stiffness: 250 });
+        langTranslateX.value = withSpring(language === 'en' ? 50 : 2, { damping: 200, stiffness: 250 });
     }, [language]);
 
     const langPanResponder = useRef(
@@ -135,9 +136,9 @@ const SettingsScreen = ({ navigation }) => {
                 const isGrabbing = isGrabbingIndicatorLang.current;
 
                 if (isGrabbing) {
-                    const startX = currentLang === 'en' ? 52 : 2;
+                    const startX = currentLang === 'en' ? 50 : 2;
                     let newX = startX + gestureState.dx;
-                    newX = Math.max(2, Math.min(newX, 52));
+                    newX = Math.max(2, Math.min(newX, 50));
                     langTranslateX.value = newX;
                 }
             },
@@ -167,7 +168,7 @@ const SettingsScreen = ({ navigation }) => {
                 }
 
                 // [FIX] Anchors and Snap
-                const targetPos = (targetLang || currentLang) === 'en' ? 52 : 2;
+                const targetPos = (targetLang || currentLang) === 'en' ? 50 : 2;
                 updateLiquidAnchors(startX, targetX, isGrabbingSV, langTranslateX.value, targetPos);
 
                 langTranslateX.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
@@ -565,6 +566,30 @@ const SettingsScreen = ({ navigation }) => {
                                     onValueChange={toggleMusic}
                                 />
                             </View>
+
+                            <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
+                                <View>
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('notifications_label')}</Text>
+                                    <Text style={styles.rowSub}>{t('notifications_sub')}</Text>
+                                </View>
+                                <PremiumToggle
+                                    value={user?.notificationsEnabled !== false}
+                                    onValueChange={toggleNotifications}
+                                />
+                            </View>
+
+                            {/* [DEV] Test Notification Button */}
+                            {__DEV__ && (
+                                <PremiumPressable
+                                    onPress={() => NotificationService.testNotification()}
+                                    style={{ marginTop: 20, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 12, paddingVertical: 12 }}
+                                    contentContainerStyle={{ alignItems: 'center' }}
+                                >
+                                    <Text style={{ color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 14 }}>
+                                        Test Notifica (DEV)
+                                    </Text>
+                                </PremiumPressable>
+                            )}
                         </View >
 
                         <PremiumPressable

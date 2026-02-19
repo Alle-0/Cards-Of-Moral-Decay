@@ -693,4 +693,4 @@ const styles = StyleSheet.create({
     ripple: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 2, left: -50, top: -50 }
 });
 
-export default ThemeBackground;
+export default React.memo(ThemeBackground);
