@@ -27,7 +27,7 @@ import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hook
 
 import { useRef } from 'react';
 
-import { RulesIcon, SettingsIcon, LinkIcon, OpenDoorIcon, EyeIcon, EyeOffIcon, ArrowLeftIcon, ShieldIcon, CheckIcon, HornsIcon, CardsIcon } from '../components/Icons';
+import { RulesIcon, SettingsIcon, LinkIcon, OpenDoorIcon, EyeIcon, EyeOffIcon, ArrowLeftIcon, ShieldIcon, CheckIcon, HornsIcon, CardsIcon, CopyIcon } from '../components/Icons';
 import CardSuggestionModal from '../components/CardSuggestionModal';
 import InfoScreen from './InfoScreen';
 
@@ -48,6 +48,19 @@ const getRankKey = (rank) => {
     if (!rank) return 'rank_anima_candida';
     const cleanRank = rank.trim();
     return RANK_KEY_MAP[cleanRank] || `rank_${cleanRank.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_')}`;
+};
+
+const getRankColor = (r) => {
+    if (!r) return '#888';
+    const clean = r.trim();
+    // 1. Try exact/trimmed match
+    if (RANK_COLORS[r]) return RANK_COLORS[r];
+    if (RANK_COLORS[clean]) return RANK_COLORS[clean];
+    // 2. Try Case-Insensitive Match
+    const lower = clean.toLowerCase();
+    const match = Object.keys(RANK_COLORS).find(k => k.toLowerCase() === lower);
+    if (match) return RANK_COLORS[match];
+    return '#888';
 };
 
 // Helper component for dynamic text color
@@ -73,6 +86,18 @@ const SettingsLanguageItem = ({ lang, translateX, theme }) => {
     );
 };
 
+// Helper to safely add alpha to a hex string
+const addAlpha = (hex, alpha) => {
+    if (!hex) return '#ffffff00';
+    if (hex.startsWith('#') && hex.length === 9) {
+        return hex.substring(0, 7) + alpha;
+    }
+    if (hex.startsWith('#')) {
+        return hex + alpha;
+    }
+    return hex;
+};
+
 const SettingsScreen = ({ navigation }) => {
     const { theme, animationsEnabled, toggleAnimations } = useTheme();
     const { isPlaying, toggleMusic } = useAudio(); // [NEW] Music Control
@@ -85,6 +110,10 @@ const SettingsScreen = ({ navigation }) => {
     const touchedLang = useRef(null);
     const gestureStartLang = useRef(null);
     const isDraggingLang = useRef(false);
+
+    // [FIX] Toast State
+    const [toastVisible, setToastVisible] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
     const isGrabbingIndicatorLang = useRef(false);
     const isGrabbingSV = useSharedValue(false); // [FIX] Reactivity
     const langTranslateX = useSharedValue(language === 'en' ? 50 : 2);
@@ -612,8 +641,8 @@ const SettingsScreen = ({ navigation }) => {
                         {/* Profile Header */}
                         <View style={{ alignItems: 'center', marginBottom: 10 }}>
                             <AvatarWithFrame
-                                avatar={authUser?.avatar || 'user'}
-                                frameId={authUser?.activeFrame || 'basic'}
+                                avatar={user?.avatar || 'user'}
+                                frameId={user?.activeFrame || 'basic'}
                                 size={80}
                             />
                             <Text style={{
@@ -626,30 +655,17 @@ const SettingsScreen = ({ navigation }) => {
                                 textShadowOffset: { width: 0, height: 2 },
                                 textShadowRadius: 4
                             }}>
-                                {authUser?.username || "Incognito"}
+                                {user?.username || "Incognito"}
                             </Text>
 
                             {/* Rank Display */}
                             {(() => {
-                                const score = authUser?.totalScore || 0;
-                                const currentRankIdx = RANK_THRESHOLDS.findIndex(r => r.name.toLowerCase() === (authUser?.rank || '').toLowerCase().trim());
+                                const score = user?.totalScore || 0;
+                                const currentRankIdx = RANK_THRESHOLDS.findIndex(r => r.name.toLowerCase() === (user?.rank || '').toLowerCase().trim());
                                 const nextRank = currentRankIdx !== -1 && currentRankIdx < RANK_THRESHOLDS.length - 1 ? RANK_THRESHOLDS[currentRankIdx + 1] : null;
                                 const currentRankMin = RANK_THRESHOLDS[currentRankIdx]?.min || 0;
 
-                                // [FIX] Robust Color Lookup
-                                const getRankColor = (r) => {
-                                    if (!r) return '#888';
-                                    const clean = r.trim();
-                                    // 1. Try exact/trimmed match
-                                    if (RANK_COLORS[r]) return RANK_COLORS[r];
-                                    if (RANK_COLORS[clean]) return RANK_COLORS[clean];
-                                    // 2. Try Case-Insensitive Match
-                                    const lower = clean.toLowerCase();
-                                    const match = Object.keys(RANK_COLORS).find(k => k.toLowerCase() === lower);
-                                    if (match) return RANK_COLORS[match];
-                                    return '#888';
-                                };
-                                const rankColor = getRankColor(authUser?.rank);
+                                const rankColor = getRankColor(user?.rank);
 
                                 let progress = 0;
                                 let pointsLeft = 0;
@@ -685,7 +701,7 @@ const SettingsScreen = ({ navigation }) => {
                                                     letterSpacing: 1,
                                                     includeFontPadding: false
                                                 }}>
-                                                    {t(getRankKey(authUser?.rank))}
+                                                    {t(getRankKey(user?.rank))}
                                                 </Text>
                                             </View>
 
@@ -713,42 +729,114 @@ const SettingsScreen = ({ navigation }) => {
                             })()}
                         </View>
 
-                        {authUser?.recoveryCode && (
-                            <View style={{ padding: 16, backgroundColor: 'rgba(220, 38, 38, 0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.3)' }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 10 }}>
-                                    {showRecoveryCode ? (
-                                        <EyeOffIcon size={20} color="#ef4444" />
-                                    ) : (
-                                        <EyeIcon size={20} color="#ef4444" />
-                                    )}
-                                    <Text style={{ color: '#ef4444', fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 1 }}>{t('recovery_zone')}</Text>
-                                </View>
-                                <Text style={{ color: '#aaa', fontFamily: 'Outfit', fontSize: 11, marginBottom: 15 }}>
-                                    {t('recovery_warning')}
+
+                        {/* [FIX] Recovery Code Logic - Premium Style v3 (User Request - High Class) */}
+                        {user?.recoveryCode && (
+                            <View style={{ marginTop: 24, marginBottom: 16 }}>
+                                {/* L'etichetta sopra è più elegante e visibile di una nota a pié di pagina microscopica */}
+                                <Text style={{
+                                    color: '#A0A0A0',
+                                    fontSize: 13,
+                                    marginBottom: 8,
+                                    marginLeft: 4,
+                                    fontFamily: 'Outfit',
+                                    fontWeight: '500'
+                                }}>
+                                    {t('recovery_zone') || "Codice di Recupero 🔐"}
                                 </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.2)', alignItems: 'center' }}>
-                                        <Text style={{ color: '#fff', fontFamily: 'Courier New', fontSize: 15, letterSpacing: 2 }}>
-                                            {showRecoveryCode ? authUser.recoveryCode : "•••-••••"}
+
+                                <View style={{
+                                    flexDirection: 'row',
+                                    backgroundColor: '#121212', // Leggermente più chiaro del nero assoluto per dare profondità
+                                    borderRadius: 12, // Curvatura più morbida, molto iOS
+                                    borderWidth: 1.5,
+                                    // Il bordo "prende vita" (oro acceso) solo quando il codice è visibile
+                                    borderColor: showRecoveryCode ? addAlpha(theme.colors.accent, '66') : '#333',
+                                    height: 56, // Area touch più generosa
+                                    alignItems: 'center',
+                                    paddingLeft: 20,
+                                    paddingRight: 8,
+                                    // Effetto bagliore stile "oggetto leggendario" quando rivelato
+                                    shadowColor: theme.colors.accent,
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: showRecoveryCode ? 0.1 : 0,
+                                    shadowRadius: 12,
+                                    elevation: showRecoveryCode ? 4 : 0, // Per i disperati su Android
+                                }}>
+                                    {/* Display del codice */}
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{
+                                            color: showRecoveryCode ? '#FFF' : '#666',
+                                            fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', // Niente Courier New, per pietà
+                                            fontSize: 18,
+                                            letterSpacing: showRecoveryCode ? 3 : 5,
+                                            fontWeight: '700',
+                                            // Un leggero glow sul testo per simulare uno schermo hacker
+                                            textShadowColor: showRecoveryCode ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                                            textShadowOffset: { width: 0, height: 0 },
+                                            textShadowRadius: 8
+                                        }}>
+                                            {showRecoveryCode ? user.recoveryCode : "•••-••••"}
                                         </Text>
                                     </View>
-                                    <PremiumPressable
-                                        style={{ width: 60, height: 45, borderRadius: 8, overflow: 'hidden' }}
-                                        pressableStyle={{ backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}
-                                        onPress={() => {
-                                            if (showRecoveryCode) {
-                                                Clipboard.setStringAsync(authUser.recoveryCode);
-                                                showModal(t('copied_title'), t('recovery_saved_msg'));
-                                            } else {
-                                                setShowRecoveryCode(true);
-                                            }
-                                        }}
-                                    >
-                                        <Text style={{ color: '#fff', fontFamily: 'Outfit-Bold', fontSize: 11, textAlign: 'center', includeFontPadding: false }}>
-                                            {showRecoveryCode ? t('recovery_copy_btn') : t('recovery_view_btn')}
-                                        </Text>
-                                    </PremiumPressable>
+
+                                    {/* Gruppo Bottoni */}
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        {/* Reveal Toggle */}
+                                        <PremiumPressable
+                                            style={{
+                                                width: 44,
+                                                height: 44,
+                                                borderRadius: 12,
+                                                backgroundColor: showRecoveryCode ? 'rgba(255,255,255,0.08)' : 'transparent',
+                                                borderWidth: 1,
+                                                borderColor: showRecoveryCode ? 'rgba(255,255,255,0.1)' : 'transparent'
+                                            }}
+                                            contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}
+                                            onPress={() => setShowRecoveryCode(!showRecoveryCode)}
+                                        >
+                                            {showRecoveryCode ? (
+                                                // Quando è visibile, l'icona prende il colore di accento
+                                                <EyeOffIcon size={20} color={theme.colors.accent} />
+                                            ) : (
+                                                <EyeIcon size={20} color="#666" />
+                                            )}
+                                        </PremiumPressable>
+
+                                        {/* Copy Button - Balanced */}
+                                        <PremiumPressable
+                                            style={{
+                                                width: 44,
+                                                height: 44,
+                                                marginLeft: 4,
+                                                borderRadius: 12,
+                                                backgroundColor: 'transparent', // No more "Lego brick" block
+                                                borderWidth: 1,
+                                                borderColor: addAlpha(theme.colors.accent, '33') // Subtle accent ring instead
+                                            }}
+                                            contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}
+                                            onPress={() => {
+                                                Clipboard.setStringAsync(user.recoveryCode);
+                                                // [FIX] Use state instead of non-existent .show() method
+                                                setToastMessage(t('copied_toast_title') || "Codice copiato negli appunti!");
+                                                setToastVisible(true);
+                                            }}
+                                        >
+                                            <CopyIcon size={18} color={theme.colors.accent} />
+                                        </PremiumPressable>
+                                    </View>
                                 </View>
+
+                                {/* Minimal Label below - resa leggibile agli esseri umani */}
+                                <Text style={{
+                                    color: '#777',
+                                    fontSize: 11,
+                                    marginTop: 8,
+                                    textAlign: 'center',
+                                    fontFamily: 'Outfit'
+                                }}>
+                                    {t('recovery_tap_reveal')}
+                                </Text>
                             </View>
                         )}
 
@@ -921,11 +1009,12 @@ const SettingsScreen = ({ navigation }) => {
                     onClose={() => setShowSuccessToast(false)}
                 />
 
+                {/* [FIX] Toast Component Rendered Here */}
                 <ToastNotification
-                    visible={toast.visible}
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+                    visible={toastVisible}
+                    message={toastMessage}
+                    type="success"
+                    onClose={() => setToastVisible(false)}
                 />
             </View >
         </View >
@@ -935,18 +1024,6 @@ const SettingsScreen = ({ navigation }) => {
 const CategoryTile = ({ title, subtitle, icon, color, onPress }) => {
     const { theme } = useTheme();
     const effectiveColor = color || theme.colors.accent;
-    // Helper to safely add alpha to a hex string
-    const addAlpha = (hex, alpha) => {
-        if (!hex) return '#ffffff00';
-        if (hex.startsWith('#') && hex.length === 9) {
-            // Trim existing alpha if present (format #RRGGBBAA)
-            return hex.substring(0, 7) + alpha;
-        }
-        if (hex.startsWith('#')) {
-            return hex + alpha;
-        }
-        return hex; // Trigger fallback for rgba/others if needed, or handle differently.
-    };
 
     return (
         <PremiumPressable

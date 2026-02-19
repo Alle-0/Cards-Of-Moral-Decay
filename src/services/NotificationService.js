@@ -21,7 +21,44 @@ if (!isExpoGo) {
 }
 
 // [NEW] Send Push Notification (Client-Side Trigger)
-async function sendPushNotification(expoPushToken, title, body, data = {}) {
+const sendPushNotification = async (expoPushToken, title, body, data = {}) => {
+    // [WEB-FIX] Prevent CORS Error on Web by using Backend Proxy (Vercel)
+    if (Platform.OS === 'web') {
+        try {
+            // [FIX] In local dev, localhost:3000 might not be running the Vercel function.
+            // If it fails, we catch it. But to avoid spamming the console with ERR_CONNECTION_REFUSED,
+            // we will only try localhost if we are sure, or just warn.
+            // For now, let's try the relative path if in Production, and log a warning in Dev if not configured.
+
+            let apiUrl = '/api/send-push';
+
+            if (__DEV__) {
+                // Check if we are likely running with Vercel Dev or just Expo
+                // If just Expo (port 8081 usually), /api/send-push won't exist.
+                // We can try to hit the production URL if CORS allows, OR just warn the user.
+                // User asked to remove the error. So we will simply log a warning and return if not on Vercel.
+                console.warn("[PUSH] Web Push in Local Dev requires a running backend (Vercel Dev or Proxy). Skipping fetch to avoid error.");
+                return;
+            }
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ pushToken: expoPushToken, title, body, data }),
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const result = await response.json();
+            console.log("[PUSH] Sent via Vercel Backend:", result);
+            return;
+        } catch (error) {
+            console.error("[PUSH] Backend Error:", error);
+            return;
+        }
+    }
+
     const message = {
         to: expoPushToken,
         sound: 'default',
@@ -31,20 +68,24 @@ async function sendPushNotification(expoPushToken, title, body, data = {}) {
     };
 
     try {
-        await fetch('https://exp.host/--/api/v2/push/send', {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Accept-encoding': 'gzip, deflate',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(message),
-        });
+        try {
+            await fetch('https://exp.host/--/api/v2/push/send', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Accept-encoding': 'gzip, deflate',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(message),
+            });
+        } catch (e) {
+            console.warn("[PUSH] Error sending notification:", e);
+        }
         // console.log("[PUSH] Sent successfully to", expoPushToken);
     } catch (error) {
         console.error("[PUSH] Error sending notification:", error);
     }
-}
+};
 
 async function registerForPushNotificationsAsync(vapidKey = 'BHtpaAjLI_hZZ5_rBCGfNYNptI--WlJuxoHvn3KqKovN_E7ivp2jT7_vfE4RsIgHl940yiUgYSXNeXCmjN2i08A') {
     if (isExpoGo && Platform.OS !== 'web') {
@@ -72,7 +113,7 @@ async function registerForPushNotificationsAsync(vapidKey = 'BHtpaAjLI_hZZ5_rBCG
         }
         if (finalStatus !== 'granted') {
             console.log('Failed to get push token for push notification!');
-            alert("Permesso Notifiche NON concesso! Controlla l'icona del lucchetto nel browser.");
+            // alert("Permesso Notifiche NON concesso! Controlla l'icona del lucchetto nel browser.");
             return;
         }
 
@@ -93,11 +134,11 @@ async function registerForPushNotificationsAsync(vapidKey = 'BHtpaAjLI_hZZ5_rBCG
             console.log("Expo Push Token:", token);
         } catch (e) {
             console.error("Error getting Expo push token:", e);
-            alert("Errore Token: " + e.message); // [DEBUG] Show user
+            // alert("Errore Token: " + e.message); // [DEBUG] Show user
         }
     } else {
         console.log('Must use physical device for Push Notifications');
-        alert("Must use physical device for Push Notifications"); // [DEBUG]
+        // alert("Must use physical device for Push Notifications"); // [DEBUG]
     }
 
     return token;
