@@ -34,7 +34,9 @@ export const GameProvider = ({ children }) => {
         return {
             username: authUser.username, // [FIX] Expose canonical username for logic
             name: authUser.nickname || authUser.username, // [FIX] Prioritize secondary nickname
-            avatar: authUser.avatar || authUser.activeAvatar || 'User' // Fallback
+            avatar: authUser.avatar || authUser.activeAvatar || 'User', // Fallback
+            friends: authUser.friends || {}, // [NEW] Required for room notifications
+            friendRequests: authUser.friendRequests || {} // [NEW]
         };
     }, [authUser]);
 
