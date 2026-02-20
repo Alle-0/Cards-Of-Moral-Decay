@@ -20,13 +20,15 @@ self.addEventListener('push', (event) => {
         const data = event.data.json();
         console.log('Push data:', data);
 
-        const title = data.title || 'Notification';
+        const title = data.title || 'Cards of Moral Decay';
         const options = {
             body: data.body || '',
-            icon: '/assets/icon.png', // Adjust path if needed
-            badge: '/assets/icon.png',
-            data: data.data,
-            vibrate: data.vibrate || [200, 100, 200]
+            icon: data.icon || '/icon-192.png',
+            badge: data.badge || '/icon-192.png',
+            image: data.image || undefined,
+            data: data.data || {},
+            vibrate: data.vibrate || [200, 100, 200],
+            actions: data.actions || []
         };
 
         event.waitUntil(self.registration.showNotification(title, options));
@@ -37,12 +39,23 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
+
+    const data = event.notification.data || {};
+    const urlToOpen = data.url || '/';
+
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            if (clientList.length > 0) {
-                return clientList[0].focus();
+            // Check if there is already a window of this app open
+            for (const client of clientList) {
+                if (client.url.includes(self.location.origin) && 'navigate' in client) {
+                    client.focus();
+                    return client.navigate(urlToOpen);
+                }
             }
-            return clients.openWindow('/');
+            // If no window is open, open a new one
+            if (clients.openWindow) {
+                return clients.openWindow(urlToOpen);
+            }
         })
     );
 });

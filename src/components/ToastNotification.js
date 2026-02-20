@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: 15,
-        zIndex: 1000,
+        zIndex: 5000,
         shadowColor: "#000",
         shadowOffset: {
             width: 0,

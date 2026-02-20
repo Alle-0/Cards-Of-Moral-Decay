@@ -20,3 +20,4 @@ google-services.json
 service-account.json
 *-firebase-adminsdk-*.json
 *.keystore
+.vercel

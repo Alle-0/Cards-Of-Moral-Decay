@@ -22,42 +22,51 @@ if (!isExpoGo) {
 
 // [NEW] Send Push Notification (Client-Side Trigger)
 const sendPushNotification = async (expoPushToken, title, body, data = {}) => {
-    // [WEB-FIX] Prevent CORS Error on Web by using Backend Proxy (Vercel)
+    // [WEB] Use Vercel Backend Proxy to avoid CORS errors and hide keys
     if (Platform.OS === 'web') {
         try {
-            // [FIX] In local dev, localhost:3000 might not be running the Vercel function.
-            // If it fails, we catch it. But to avoid spamming the console with ERR_CONNECTION_REFUSED,
-            // we will only try localhost if we are sure, or just warn.
-            // For now, let's try the relative path if in Production, and log a warning in Dev if not configured.
-
-            let apiUrl = '/api/send-push';
+            // [WEB] Use External Vercel Backend for Push Notifications
+            const apiUrl = 'https://cards-of-moral-decay-backend.vercel.app/api/send-push';
 
             if (__DEV__) {
-                // Check if we are likely running with Vercel Dev or just Expo
-                // If just Expo (port 8081 usually), /api/send-push won't exist.
-                // We can try to hit the production URL if CORS allows, OR just warn the user.
-                // User asked to remove the error. So we will simply log a warning and return if not on Vercel.
-                console.warn("[PUSH] Web Push in Local Dev requires a running backend (Vercel Dev or Proxy). Skipping fetch to avoid error.");
-                return;
+                const tokenSnippet = typeof expoPushToken === 'string'
+                    ? expoPushToken.substring(0, 15)
+                    : "NativeObject";
+                console.log("[PUSH] Target Token Snippet:", tokenSnippet);
+                console.log("[PUSH] apiUrl:", apiUrl);
             }
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
+                mode: 'cors',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ pushToken: expoPushToken, title, body, data }),
+                body: JSON.stringify({
+                    pushToken: expoPushToken,
+                    title,
+                    body,
+                    data: data || {}
+                }),
             });
 
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.ok) {
+                const text = await response.text();
+                console.error("[PUSH] Backend Error (Status):", response.status);
+                console.error("[PUSH] Backend Error Body:", text);
+                throw new Error(`HTTP error! status: ${response.status}, body: ${text.substring(0, 100)}...`);
+            }
+
             const result = await response.json();
-            console.log("[PUSH] Sent via Vercel Backend:", result);
+            console.log("[PUSH] Sent via Vercel Backend Success:", result);
             return;
         } catch (error) {
             console.error("[PUSH] Backend Error:", error);
-            return;
+            // Fallback to client-side if backend fails (optional, but good for robustness)
+            console.log("[PUSH] Falling back to client-side send...");
         }
     }
+
 
     const message = {
         to: expoPushToken,
@@ -87,7 +96,7 @@ const sendPushNotification = async (expoPushToken, title, body, data = {}) => {
     }
 };
 
-async function registerForPushNotificationsAsync(vapidKey = 'BHtpaAjLI_hZZ5_rBCGfNYNptI--WlJuxoHvn3KqKovN_E7ivp2jT7_vfE4RsIgHl940yiUgYSXNeXCmjN2i08A') {
+async function registerForPushNotificationsAsync(vapidKey = 'BMcF2h_kIAUPpErVAh-PWLUjSCupQB31njN8pWlrs__jER2Z1womE3DQjkScH5UuuDAWAmRjm2jzoVB2_Lo6-5eo') {
     if (isExpoGo && Platform.OS !== 'web') {
         console.log("Push Notifications are not fully supported in Expo Go (simulators).");
         // return null; // [DEV] Commented out to allow testing logic flow if needed, but usually returns null
@@ -107,38 +116,74 @@ async function registerForPushNotificationsAsync(vapidKey = 'BHtpaAjLI_hZZ5_rBCG
     if (Device.isDevice || Platform.OS === 'web') {
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
+
+        console.log(`[PUSH] Current permission status: ${existingStatus}`);
+
         if (existingStatus !== 'granted') {
             const { status } = await Notifications.requestPermissionsAsync();
             finalStatus = status;
+            console.log(`[PUSH] Requested permission status: ${status}`);
         }
+
         if (finalStatus !== 'granted') {
-            console.log('Failed to get push token for push notification!');
-            // alert("Permesso Notifiche NON concesso! Controlla l'icona del lucchetto nel browser.");
+            console.warn('[PUSH] Permission NOT granted for push notifications.');
             return;
         }
 
         try {
-            // [WEB] VAPID Key required for Web Push
-            const projectId = Constants.expoConfig?.extra?.eas?.projectId || Constants.expoConfig?.slug || "8c868844-d7e8-47a3-9017-197534e8f07e";
-            // console.log("Project ID:", projectId);
+            const projectId = Constants.expoConfig?.extra?.eas?.projectId ||
+                Constants.easConfig?.projectId ||
+                "8c868844-d7e8-47a3-9017-197534e8f07e";
 
-            const options = {
+            const slug = Constants.expoConfig?.slug || "cards-of-moral-decay";
+            const owner = Constants.expoConfig?.owner || "alle-0";
+            const experienceId = `@${owner}/${slug}`;
+
+            console.log(`[PUSH] Using ProjectID: ${projectId}`);
+
+            // Strategy 1: ProjectID + ExperienceID (Recommended for Web)
+            let options = {
                 projectId,
-                applicationId: projectId, // [WEB-FIX] Required if Application.applicationId is null
             };
-            if (Platform.OS === 'web' && vapidKey) {
+
+            if (Platform.OS === 'web') {
                 options.vapidPublicKey = vapidKey;
+                options.applicationId = experienceId;
             }
 
-            token = (await Notifications.getExpoPushTokenAsync(options)).data;
-            console.log("Expo Push Token:", token);
+            console.log("[PUSH] Attempting Registration (Strategy 1)...");
+            try {
+                const tokenResponse = await Notifications.getExpoPushTokenAsync(options);
+                token = tokenResponse.data;
+                console.log("[PUSH] Success! Expo Push Token (S1):", token);
+            } catch (s1Error) {
+                console.warn("[PUSH] Strategy 1 failed (likely CORS):", s1Error.message);
+
+                // Strategy 2: ProjectID as ApplicationID (Fallback)
+                console.log("[PUSH] Attempting Registration (Strategy 2)...");
+                try {
+                    options.applicationId = projectId;
+                    const tokenResponse = await Notifications.getExpoPushTokenAsync(options);
+                    token = tokenResponse.data;
+                    console.log("[PUSH] Success! Expo Push Token (S2):", token);
+                } catch (s2Error) {
+                    console.warn("[PUSH] Strategy 2 failed. Falling back to Native Browser Token.");
+
+                    // Strategy 3: NATIVE FALLBACK (Crucial for bypass CORS)
+                    try {
+                        const deviceToken = await Notifications.getDevicePushTokenAsync();
+                        token = deviceToken; // This is an object: { type, data }
+                        console.log("[PUSH] Using Native Browser Token (Success):", JSON.stringify(token));
+                    } catch (deviceError) {
+                        console.error("[PUSH] All registration strategies failed.", deviceError);
+                    }
+                }
+            }
         } catch (e) {
-            console.error("Error getting Expo push token:", e);
-            // alert("Errore Token: " + e.message); // [DEBUG] Show user
+            console.error("[PUSH] Unexpected error in registration logic:", e);
         }
     } else {
-        console.log('Must use physical device for Push Notifications');
-        // alert("Must use physical device for Push Notifications"); // [DEBUG]
+        console.log('[PUSH] Must use physical device or Web for Push Notifications');
     }
 
     return token;

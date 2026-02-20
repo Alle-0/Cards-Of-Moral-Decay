@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 
-// ⚠️ METTI IL TUO LINK VERCEL QUI (senza slash finale)
+// ⚠️ LINK VERCEL DI PRODUZIONE
 const API_URL = "https://cards-of-moral-decay-backend.vercel.app";
 
 export const useStripePayment = () => {

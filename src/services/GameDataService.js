@@ -2,7 +2,7 @@
 import { ref, get } from 'firebase/database';
 import { db } from './firebase'; // Import initialized DB
 
-const CACHE_KEY = 'cah_game_data_v4'; // Bumped version
+const CACHE_KEY = 'cah_game_data_v5'; // Bumped version
 const DARK_CACHE_KEY = 'cah_dark_data_v1';
 const DB_PATH = 'game_data';
 
@@ -23,19 +23,19 @@ class GameDataService {
         this.spicyPack = { nere: [], bianche: [] }; // [NEW] Spicy (NSFW Legal)
 
         this.isLoaded = false;
-        this.minVersion = "4.8.1";
+        this.minVersion = "4.8.2";
         this.downloadUrl = null;
         this.cachedAllCards = { it: null, en: null }; // [NEW] Cache
     }
 
     // Initialize data: Fetch from Firebase (Memory Only)
     async initialize() {
-        // Fetch fresh data in background
-        this.fetchAndCache();
+        return this.fetchAndCache();
     }
 
     async fetchAndCache() {
         try {
+            this.isLoaded = false; // Reset if re-fetching
             // [OPTIMIZATION] 1. First, only fetch small control fields
             const versionRef = ref(db, 'game_data/version'); // Legacy version check, kept for compatibility
             const minVerRef = ref(db, 'game_data/min_version');
@@ -135,6 +135,7 @@ class GameDataService {
 
                 // Update active packs based on current language
                 this.updateActivePacks();
+                this.isLoaded = true;
             }
 
         } catch (e) {

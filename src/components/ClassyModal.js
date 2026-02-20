@@ -12,7 +12,8 @@ import Animated, {
     LinearTransition,
     ZoomIn,
     ZoomOut,
-    interpolate
+    interpolate,
+    useDerivedValue
 } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
 import PremiumIconButton from './PremiumIconButton';
@@ -32,17 +33,24 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
     const fallbackSV = useSharedValue(0);
     const sensorX = (parallaxResult && parallaxResult.sensorX) ? parallaxResult.sensorX : fallbackSV;
     const sensorY = (parallaxResult && parallaxResult.sensorY) ? parallaxResult.sensorY : fallbackSV;
+    const [isAnimating, setIsAnimating] = React.useState(false); // [NEW] Track animation state
 
     // Default icon color to theme accent if not provided
     const finalIconColor = iconColor || theme.colors.accent;
 
     useEffect(() => {
         if (visible) {
+            setIsAnimating(true); // [NEW]
             SoundService.play('tap'); // [NEW] Pop sound on open
-            opacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) });
+            opacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) }, (finished) => {
+                if (finished) runOnJS(setIsAnimating)(false);
+            });
             scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) });
         } else {
-            opacity.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.quad) });
+            setIsAnimating(true); // [NEW]
+            opacity.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.quad) }, (finished) => {
+                if (finished) runOnJS(setIsAnimating)(false);
+            });
             scale.value = withTiming(0.8, { duration: 200, easing: Easing.in(Easing.quad) });
         }
     }, [visible]);
@@ -64,11 +72,14 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
         };
     });
 
+    // [FIX] Derive visibility to avoid evaluating .value during Component Render
+    const isVisibleDerived = useDerivedValue(() => {
+        return (visible || opacity.value > 0);
+    });
+
     // Reactive root style to handle visibility and touch blocking
     const rootStyle = useAnimatedStyle(() => {
-        // We remain "active" (visible + interactable) if visible prop is true 
-        // OR if the fade-out animation is still playing (opacity > 0)
-        const isActive = visible || opacity.value > 0;
+        const isActive = isVisibleDerived.value;
 
         return {
             opacity: isActive ? 1 : 0,
@@ -91,10 +102,12 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
         >
             <View style={styles.overlay}>
 
-                {visible && (
-                    <View style={[StyleSheet.absoluteFill, { zIndex: -1 }]} pointerEvents="none">
-                        <EfficientBlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill} />
-                    </View>
+                {(visible || isAnimating) && (
+                    <Animated.View style={[StyleSheet.absoluteFill, { zIndex: -1, backgroundColor: 'rgba(0,0,0,0.5)' }, backdropStyle]} pointerEvents="none">
+                        {(!isAnimating || Platform.OS === 'ios') && (
+                            <EfficientBlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill} />
+                        )}
+                    </Animated.View>
                 )}
 
                 <Pressable
@@ -193,10 +206,12 @@ const styles = StyleSheet.create({
         shadowRadius: 25,
         elevation: 20,
         position: 'relative',
+        overflow: 'visible', // [FIX] Required for floating icon to sbordare
     },
     innerContainer: {
         width: '100%',
         alignItems: 'center',
+        overflow: 'visible', // [FIX] Ensure icon isn't clipped
     },
     closeButton: {
         position: 'absolute',

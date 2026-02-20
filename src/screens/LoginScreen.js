@@ -147,7 +147,7 @@ export default function LoginScreen() {
     const indicatorStyle = useAnimatedStyle(() => {
         return {
             transform: [
-                { translateX: interpolate(dragXPercent.value, [0, 50], [2, -2]) },
+                { translateX: interpolate(dragXPercent.value, [0, 50], [2, 2]) },
                 { scale: tabScale.value }
             ],
             left: `${dragXPercent.value}%`

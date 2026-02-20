@@ -78,7 +78,9 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
 
                 {/* 1. GLASS BACKGROUND */}
                 <View style={[StyleSheet.absoluteFill, { borderRadius: 20, overflow: 'hidden', zIndex: -1 }]}>
-                    <EfficientBlurView intensity={45} tint="dark" style={StyleSheet.absoluteFill} />
+                    {visible && (
+                        <EfficientBlurView intensity={45} tint="dark" style={StyleSheet.absoluteFill} />
+                    )}
                     <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10, 10, 10, 0.8)' }]} />
                 </View>
 

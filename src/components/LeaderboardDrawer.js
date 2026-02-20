@@ -34,6 +34,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
     const height = useSharedValue(0);
     const opacity = useSharedValue(0);
     const [isDragging, setIsDragging] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false); // [NEW] Track animation state
 
     const startHeight = useRef(0);
     const [playerToKick, setPlayerToKick] = useState(null); // Data
@@ -51,10 +52,16 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
 
     useEffect(() => {
         if (visible) {
-            height.value = withTiming(defaultHeight, ANIM_CONFIG);
+            setIsAnimating(true);
+            height.value = withTiming(defaultHeight, ANIM_CONFIG, (finished) => {
+                if (finished) runOnJS(setIsAnimating)(false);
+            });
             opacity.value = withTiming(1, { duration: 200 });
         } else {
-            height.value = withTiming(0, { duration: 250 });
+            setIsAnimating(true);
+            height.value = withTiming(0, { duration: 250 }, (finished) => {
+                if (finished) runOnJS(setIsAnimating)(false);
+            });
             opacity.value = withTiming(0, { duration: 200 });
         }
     }, [visible, defaultHeight]);
@@ -109,6 +116,10 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
         };
     });
 
+    const backdropStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+    }));
+
     // Handle Opacity: Fade out when approaching full screen
     const handleStyle = useAnimatedStyle(() => {
         const op = interpolate(
@@ -126,9 +137,11 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
         <>
             {visible && (
                 <>
-                    <View style={styles.backdrop} pointerEvents="none">
-                        <EfficientBlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill} />
-                    </View>
+                    <Animated.View style={[styles.backdrop, { backgroundColor: 'rgba(0,0,0,0.5)' }, backdropStyle]} pointerEvents="none">
+                        {(!isAnimating || Platform.OS === 'ios') && (
+                            <EfficientBlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill} />
+                        )}
+                    </Animated.View>
                     <Pressable
                         style={StyleSheet.absoluteFill}
                         onPress={onClose}
@@ -142,6 +155,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
             <Animated.View
                 style={[styles.drawer, animatedStyle]}
                 pointerEvents={visible ? 'auto' : 'none'}
+                renderToHardwareTextureAndroid={true} // [NEW] Smooth optimization
             >
                 <View style={styles.header}>
                     <Text style={[styles.title, { color: theme.colors.accent, fontFamily: 'Cinzel-Bold' }]}>
@@ -272,7 +286,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
 const styles = StyleSheet.create({
     backdrop: {
         ...StyleSheet.absoluteFillObject,
-        zIndex: 1000, // Higher than GameScreen header (999)
+        zIndex: 3000, // Higher than GameScreen header (2000)
     },
     drawer: {
         position: 'absolute',
@@ -284,7 +298,7 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 24,
         paddingHorizontal: 20,
         paddingTop: 50,
-        zIndex: 1001, // Higher than backdrop and header
+        zIndex: 3100, // Higher than backdrop and header
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.3,
@@ -388,11 +402,23 @@ const AvatarItem = memo(({ player, isThinking, theme }) => {
     }, [isThinking]);
 
     const ringStyle = useAnimatedStyle(() => {
+        // The thickness of the pulse ring grows from 0 to 6
+        const thickness = interpolate(ringProgress.value, [0, 1], [0, 8]);
+        const opacity = interpolate(ringProgress.value, [0, 0.7, 1], [0.6, 0.3, 0]);
+        // To keep the hole exactly at the avatar's border, 
+        // we pull the container outward by the same amount as the border thickness
+        const offset = -thickness;
+        // Base avatar size is 36, so base radius is 18.
+        const radius = 18 + thickness;
+
         return {
-            opacity: interpolate(ringProgress.value, [0, 0.7, 1], [0.6, 0.3, 0]),
-            transform: [
-                { scale: interpolate(ringProgress.value, [0, 1], [1, 1.5]) } // Expands to 1.5x
-            ],
+            opacity,
+            top: offset,
+            bottom: offset,
+            left: offset,
+            right: offset,
+            borderWidth: thickness,
+            borderRadius: radius,
         };
     });
 
@@ -402,10 +428,10 @@ const AvatarItem = memo(({ player, isThinking, theme }) => {
             {isThinking && (
                 <Animated.View
                     style={[
-                        StyleSheet.absoluteFill,
                         {
-                            backgroundColor: theme.colors.accent,
-                            borderRadius: 20,
+                            position: 'absolute',
+                            backgroundColor: 'transparent',
+                            borderColor: theme.colors.accent,
                             zIndex: -1,
                         },
                         ringStyle

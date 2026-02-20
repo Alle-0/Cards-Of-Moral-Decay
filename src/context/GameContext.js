@@ -26,6 +26,7 @@ export const GameProvider = ({ children }) => {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [roomPlayerName, setRoomPlayerName] = useState(null); // [NEW] Track the specific name used in current room
+    const [gameDataLoaded, setGameDataLoaded] = useState(GameDataService.isLoaded); // [NEW]
 
     // [NEW] Computed user state from AuthContext
     const user = useMemo(() => {
@@ -43,9 +44,25 @@ export const GameProvider = ({ children }) => {
     // [NEW] Initialize Game Data (Waiting for Auth)
     useEffect(() => {
         if (!authLoading) {
-            GameDataService.initialize();
+            GameDataService.initialize().then(() => {
+                setGameDataLoaded(true);
+            });
         }
     }, [authLoading]);
+
+    // [NEW] Trigger re-hydration when GameDataService finally loads
+    useEffect(() => {
+        if (gameDataLoaded && roomCode && roomData) {
+            // Check if roomData contains nulls in cards that should be there
+            // Actually, simpler: just re-subscribe or re-hydrate current state
+            const roomRef = ref(db, `stanze/${roomCode}`);
+            get(roomRef).then(snap => {
+                if (snap.exists()) {
+                    setRoomData(hydrateRoom(snap.val()));
+                }
+            });
+        }
+    }, [gameDataLoaded]);
 
     // Load User (Refactored to only handle legacy or non-auth essentials if needed)
     // Actually, AuthContext handles everything now. 
@@ -436,7 +453,7 @@ export const GameProvider = ({ children }) => {
                             friendData.pushToken,
                             title,
                             body,
-                            { type: 'ROOM_CREATE', room: roomCode, host: currentUser.username }
+                            { type: 'ROOM_CREATE', roomCode: roomCode, screen: 'Lobby', host: currentUser.username }
                         );
                     }
                 }
@@ -532,7 +549,7 @@ export const GameProvider = ({ children }) => {
                                 creatorData.pushToken,
                                 title,
                                 body,
-                                { type: 'ROOM_JOIN', roomId: code }
+                                { type: 'ROOM_JOIN', roomCode: code, screen: 'Lobby' }
                             );
                         }
                     }
@@ -1151,10 +1168,10 @@ export const GameProvider = ({ children }) => {
         kickPlayer,
         updateRoomSettings,
         startGame, playCards, confirmDominusSelection, nextRound, discardCard, useAIJoker, forceReveal, bribeHand, dominusDiscardPlayerHand, // [NEW]
-        isCreator, isDominus, myHand, roomPlayerName
+        isCreator, isDominus, myHand, roomPlayerName, gameDataLoaded
     }), [
         user, roomCode, roomData, loading, error, availableRooms,
-        isCreator, isDominus, myHand, roomPlayerName
+        isCreator, isDominus, myHand, roomPlayerName, gameDataLoaded
     ]);
 
     return (

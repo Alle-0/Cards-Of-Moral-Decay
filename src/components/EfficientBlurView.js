@@ -11,29 +11,28 @@ const EfficientBlurView = ({ style, intensity = 30, tint = 'dark', children }) =
         return (
             <View style={[styles.container, style]}>
                 {/* 1. IL PARACADUTE (Fallback Layer) 
-                    Questo è fondamentale. Se il Blur fallisce nell'APK, 
-                    questo sfondo assicura che il testo sia leggibile. 
+                    Ottimizzato: Usiamo un'opacità base che garantisce leggibilità 
+                    senza pesare sulla GPU.
                 */}
                 <View
                     style={[
                         StyleSheet.absoluteFill,
                         {
                             backgroundColor: tint === 'light'
-                                ? 'rgba(255, 255, 255, 0.85)'
-                                : 'rgba(15, 15, 15, 0.3)' // Molto scuro per coprire la mancanza di blur
+                                ? 'rgba(255, 255, 255, 0.9)'
+                                : 'rgba(12, 12, 15, 0.75)' // Più opaco così il blur può essere più leggero
                         }
                     ]}
                 />
 
                 {/* 2. IL BLUR SPERIMENTALE
-                    Su Android recenti funziona, su quelli vecchi viene ignorato 
-                    ma c'è il paracadute sotto.
+                    Limitato a 15 su Android per massima fluidità.
                 */}
                 <BlurView
-                    intensity={safeIntensity}
+                    intensity={Math.min(safeIntensity, 15)}
                     tint={tint}
                     style={StyleSheet.absoluteFill}
-                    experimentalBlurMethod="dimezisBlurView" // Forza il metodo migliore su Android
+                    experimentalBlurMethod="dimezisBlurView"
                 />
 
                 {/* 3. IL CONTENUTO */}

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { View, Text, StatusBar } from 'react-native';
 import StripeAppWrapper from './src/components/StripeAppWrapper';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -10,6 +10,7 @@ import {
     Cinzel_400Regular,
     Cinzel_700Bold
 } from '@expo-google-fonts/cinzel';
+import * as Notifications from 'expo-notifications'; // [NEW] Notification listener
 import {
     CinzelDecorative_400Regular,
     CinzelDecorative_700Bold
@@ -54,6 +55,8 @@ const TransparentTheme = {
         background: 'transparent',
     },
 };
+
+const navigationRef = React.createRef(); // [NEW] Global ref for deep link navigation
 
 export default function App() {
     const [appIsReady, setAppIsReady] = useState(false);
@@ -101,6 +104,7 @@ export default function App() {
                                             </Animated.View>
                                         ) : (
                                             <NavigationContainer
+                                                ref={navigationRef}
                                                 theme={TransparentTheme}
                                                 documentTitle={{
                                                     formatter: (options, route) => "Cards of Moral Decay"
@@ -149,8 +153,8 @@ export default function App() {
 }
 
 const AppContent = () => {
-    const { roomCode } = useGame();
-    const { user, loading: authLoading, isConnected } = useAuth();
+    const { roomCode, joinRoom } = useGame();
+    const { user, loading: authLoading, isConnected, pendingTab, setPendingTab } = useAuth();
     const { playMusic } = useAudio(); // [NEW]
     const { t } = useLanguage();
     const [showGameSplash, setShowGameSplash] = useState(false);
@@ -229,6 +233,39 @@ const AppContent = () => {
 
         return () => unsub();
     }, []);
+
+    // [NEW] Notification click listener
+    useEffect(() => {
+        const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+            const data = response.notification.request.content.data;
+            console.log("[PUSH] Click detected. Data:", data);
+
+            if (data?.roomCode || data?.room || data?.roomId) {
+                const code = data.roomCode || data.room || data.roomId;
+                // GameContext's joinRoom will handle setting roomCode which navigates to GameScreen
+                joinRoom(code).catch(e => console.warn("Auto-join failed:", e));
+            } else if (data?.screen) {
+                // Navigate to specific tab
+                if (navigationRef.current) {
+                    navigationRef.current.navigate(data.screen);
+                }
+            }
+        });
+        return () => subscription.remove();
+    }, [joinRoom]);
+
+    // [NEW] Handle pending tab from Deep Link
+    useEffect(() => {
+        if (pendingTab && navigationRef.current) {
+            console.log(`[DEEP LINK] Navigating to pending tab: ${pendingTab}`);
+            navigationRef.current.navigate(pendingTab);
+            setPendingTab(null);
+
+            // Clean persistence
+            const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+            AsyncStorage.removeItem('pending_tab_deep_link');
+        }
+    }, [pendingTab, setPendingTab]);
 
     const handleStartLoading = (fast = false) => {
         setIsFastSplash(fast);

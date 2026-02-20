@@ -159,15 +159,14 @@ const FriendsScreen = () => {
                             value={friendInput}
                             onChangeText={setFriendInput}
                             label={t('friend_id_label')}
-                            style={{ flex: 1, marginBottom: 0 }}
-                            containerStyle={{ marginBottom: 0 }}
+                            style={{ flex: 1, marginVertical: 0, height: 60 }}
                         />
                         <PremiumButton
                             title={t('send_btn')}
                             onPress={handleSend}
                             disabled={loading || !friendInput.trim()}
-                            style={{ width: 80, marginLeft: 10, height: 50, backgroundColor: theme.colors.accent, marginVertical: 0, marginTop: 10 }}
-                            textStyle={{ color: '#000', fontSize: 12, fontFamily: 'Cinzel-Bold' }}
+                            style={{ width: 90, marginLeft: 12, height: 60, backgroundColor: theme.colors.accent, marginVertical: 0, borderRadius: 20 }}
+                            textStyle={{ color: '#000', fontSize: 13, fontFamily: 'Cinzel-Bold' }}
                         />
                     </View>
 

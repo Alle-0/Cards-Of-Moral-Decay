@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Image, Pressable } from 'react-native';
-import Animated, { FadeInDown, FadeOutDown, useAnimatedStyle, useSharedValue, withTiming, interpolate, Easing } from 'react-native-reanimated';
+import { StyleSheet, View, Text, Image, Pressable, Dimensions } from 'react-native';
+import Animated, { FadeInDown, FadeOutDown, useAnimatedStyle, useSharedValue, withTiming, interpolate, Easing, useDerivedValue } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -46,13 +46,21 @@ const DominusOverlay = ({ status, onSkip, onReveal }) => {
         opacity: withTiming(isExpanded ? 0 : 1, { duration: 200 })
     }));
 
+    const isShowingRoot = useDerivedValue(() => {
+        return (expansion.value > 0);
+    });
+
+    const rootStyle = useAnimatedStyle(() => ({
+        top: isShowingRoot.value ? 0 : undefined,
+    }));
+
     const toggleExpanded = () => {
         if (!isExpanded) SoundService.play('woosh_soft');
         setIsExpanded(!isExpanded);
     };
 
     return (
-        <View style={styles.rootContainer} pointerEvents="box-none">
+        <Animated.View style={[styles.rootContainer, rootStyle]} pointerEvents="box-none">
             {/* 0. BACKDROP */}
             <Animated.View
                 pointerEvents={isExpanded ? 'auto' : 'none'}
@@ -62,7 +70,10 @@ const DominusOverlay = ({ status, onSkip, onReveal }) => {
             </Animated.View>
 
             {/* 1. TRIGGER BUTTON */}
-            <Animated.View style={[styles.triggerContainer, triggerStyle]}>
+            <Animated.View
+                style={[styles.triggerContainer, triggerStyle]}
+                pointerEvents={isExpanded ? 'none' : 'auto'} // Hide trigger when expanded to let close button work
+            >
                 <PremiumPressable
                     onPress={toggleExpanded}
                     style={[styles.triggerButton, {
@@ -80,7 +91,10 @@ const DominusOverlay = ({ status, onSkip, onReveal }) => {
             </Animated.View>
 
             {/* 2. EXPANDED CARD */}
-            <Animated.View style={[styles.cardContainer, cardStyle]}>
+            <Animated.View
+                style={[styles.cardContainer, cardStyle]}
+                pointerEvents={isExpanded ? 'auto' : 'none'} // [FIX] Critical: prevent blocking touches when collapsed
+            >
                 <View style={[styles.card, { borderColor: theme.colors.accent }]}>
                     <Pressable
                         onPress={() => setIsExpanded(false)}
@@ -141,14 +155,17 @@ const DominusOverlay = ({ status, onSkip, onReveal }) => {
                     </View>
                 </View>
             </Animated.View>
-        </View>
+        </Animated.View>
     );
 };
 
 const styles = StyleSheet.create({
     rootContainer: {
         position: 'absolute',
-        bottom: 0, left: 0, right: 0, top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        // [FIX] Removed top: 0 to avoid blocking the whole screen when collapsed
         zIndex: 100,
         pointerEvents: 'box-none'
     },
@@ -183,7 +200,11 @@ const styles = StyleSheet.create({
         zIndex: 100, // [FIX] Ensure it sits above backdrop (zIndex 99)
     },
     backdrop: {
-        ...StyleSheet.absoluteFillObject,
+        position: 'absolute',
+        top: -Dimensions.get('window').height, // Ensure it covers upwards
+        left: 0,
+        right: 0,
+        bottom: 0,
         backgroundColor: 'rgba(0,0,0,0.3)', // Subtle darkening
         zIndex: 99,
     },

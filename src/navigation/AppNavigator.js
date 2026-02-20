@@ -13,7 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const Tab = createMaterialTopTabNavigator();
 
-export default function AppNavigator({ onStartLoading }) {
+export default function AppNavigator({ onStartLoading, initialTab = 'Lobby' }) {
     const { theme } = useTheme();
 
     return (
@@ -28,7 +28,7 @@ export default function AppNavigator({ onStartLoading }) {
             <ThemeBackground />
 
             <Tab.Navigator
-                initialRouteName="Lobby"
+                initialRouteName={initialTab}
                 backBehavior="none"
                 tabBar={props => <PremiumTabBar {...props} />}
                 tabBarPosition="bottom"

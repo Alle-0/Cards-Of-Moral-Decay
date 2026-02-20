@@ -22,12 +22,14 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [pendingRoom, setPendingRoom] = useState(null); // [NEW] Store room from deep link
     const [pendingInvite, setPendingInvite] = useState(null); // [NEW] Store inviter from deep link
+    const [pendingTab, setPendingTab] = useState(null); // [NEW] Store specific tab (e.g. Friends)
     const [loading, setLoading] = useState(true);
     const [isConnected, setIsConnected] = useState(true); // Default to true to avoid flash
 
     const USER_CACHE_KEY = 'cached_user_profile';
     const PENDING_ROOM_KEY = 'pending_room_deep_link'; // [NEW]
     const PENDING_INVITE_KEY = 'pending_invite_deep_link'; // [NEW]
+    const PENDING_TAB_KEY = 'pending_tab_deep_link'; // [NEW]
 
     // 1. Auto-Login (Init)
     // 1. Auto-Login (Init)
@@ -61,6 +63,9 @@ export const AuthProvider = ({ children }) => {
 
                 const savedInvite = await AsyncStorage.getItem(PENDING_INVITE_KEY);
                 if (savedInvite && mounted) setPendingInvite(savedInvite);
+
+                const savedTab = await AsyncStorage.getItem(PENDING_TAB_KEY);
+                if (savedTab && mounted) setPendingTab(savedTab);
 
             } catch (e) {
                 console.warn("[AUTH] Cache load failed", e);
@@ -151,12 +156,26 @@ export const AuthProvider = ({ children }) => {
         const registerPushToken = async () => {
             if (!user?.username) return;
 
+            if (__DEV__) console.log(`[PUSH] Starting registration for ${user.username}...`);
+
             try {
-                const token = await NotificationService.registerForPushNotificationsAsync(true);
-                if (token && user.pushToken !== token) {
-                    await update(ref(db, `users/${user.username}`), {
-                        pushToken: token
-                    });
+                // [FIX] Don't pass 'true' as VAPID key. Let the service use its default or handle it internally.
+                const token = await NotificationService.registerForPushNotificationsAsync();
+
+                if (token) {
+                    const currentTokenStr = typeof user.pushToken === 'string' ? user.pushToken : JSON.stringify(user.pushToken);
+                    const newTokenStr = typeof token === 'string' ? token : JSON.stringify(token);
+
+                    if (currentTokenStr !== newTokenStr) {
+                        console.log(`[PUSH] Updating token for ${user.username}...`);
+                        await update(ref(db, `users/${user.username}`), {
+                            pushToken: token
+                        });
+                    } else if (__DEV__) {
+                        console.log(`[PUSH] Token for ${user.username} is already up to date.`);
+                    }
+                } else {
+                    if (__DEV__) console.warn(`[PUSH] Could not obtain token for ${user.username} (User might have denied permission).`);
                 }
             } catch (error) {
                 console.error("[PUSH] Error registering token:", error);
@@ -197,7 +216,18 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
 
-                // 3. Immediate reciprocal add if logged in
+                // 3. Parse Tab
+                if (url.includes('tab=')) {
+                    const tabMatch = url.match(/[?&]tab=([^&]+)/);
+                    if (tabMatch && tabMatch[1]) {
+                        const tabName = tabMatch[1].trim();
+                        console.log(`[DEEP LINK] Detected tab: ${tabName}`);
+                        setPendingTab(tabName);
+                        AsyncStorage.setItem(PENDING_TAB_KEY, tabName);
+                    }
+                }
+
+                // 4. Immediate reciprocal add if logged in
                 if (user?.username && inviteName && inviteName !== user.username) {
                     if (user.friends && user.friends[inviteName]) return;
 
@@ -881,7 +911,7 @@ export const AuthProvider = ({ children }) => {
                     targetData.pushToken,
                     title,
                     body,
-                    { type: 'FRIEND_REQUEST', from: user.username }
+                    { type: 'FRIEND_REQUEST', from: user.username, screen: 'Friends' }
                 );
             }
         } catch (e) {
@@ -1015,6 +1045,8 @@ export const AuthProvider = ({ children }) => {
         setPendingRoom,
         pendingInvite,
         setPendingInvite,
+        pendingTab,
+        setPendingTab,
         loading,
         isConnected, // [NEW] Exposed for UI usage
         signUp,

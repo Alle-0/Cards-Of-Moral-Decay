@@ -137,6 +137,13 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
         };
     });
 
+    const badgeAnimatedStyle = useAnimatedStyle(() => {
+        return {
+            opacity: selectionProgress.value,
+            transform: [{ scale: selectionProgress.value }]
+        };
+    });
+
     const eliminaPillAnimatedStyle = useAnimatedStyle(() => {
         return {
             opacity: slideElimina.value > 0.01 ? 1 : 0,
@@ -289,12 +296,7 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
                     <Animated.View
                         style={[
                             mutableSelectionBadge,
-                            {
-                                opacity: selectionProgress, // 0 -> 1
-                                transform: [
-                                    { scale: selectionProgress } // 0 -> 1
-                                ]
-                            }
+                            badgeAnimatedStyle
                         ]}
                     >
                         <Text style={styles.selectionBadgeText}>{selectionOrder > 0 ? selectionOrder : ''}</Text>

@@ -269,7 +269,7 @@ const GameScreen = ({ onStartLoading }) => {
         isCreator, isDominus, myHand,
         leaveRoom, startGame, playCards, confirmDominusSelection, nextRound,
         discardCard, useAIJoker, forceReveal, kickPlayer, bribeHand, dominusDiscardPlayerHand, // [NEW]
-        updateRoomSettings, roomPlayerName
+        updateRoomSettings, roomPlayerName, gameDataLoaded
     } = useGame();
     const { theme } = useTheme();
     const { bribe: payBribe, awardMoney, logout, user: authUser } = useAuth(); // [NEW] get authUser for skins
@@ -393,7 +393,7 @@ const GameScreen = ({ onStartLoading }) => {
             SoundService.play('success'); // Play a sound for prominence
             const timer = setTimeout(() => {
                 setShowDominusAlert(false);
-            }, 3000);
+            }, 4500); // Increased from 3000ms
             return () => clearTimeout(timer);
         } else {
             setShowDominusAlert(false);
@@ -1413,14 +1413,21 @@ const GameScreen = ({ onStartLoading }) => {
 
                 <View style={styles.container}>
                     <ConfettiSystem ref={confettiRef} />
-                    {!roomData ? (
+                    {(!roomData || !gameDataLoaded) ? (
                         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                            <Text style={{ color: 'white', fontFamily: 'Outfit' }}>{t('loading')}</Text>
+                            <Text style={{ color: 'white', fontFamily: 'Outfit', marginBottom: 10 }}>{t('loading')}</Text>
+                            {/* Fallback button if stuck */}
+                            <Pressable
+                                onPress={() => window.location.reload()}
+                                style={{ padding: 10, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 10 }}
+                            >
+                                <Text style={{ color: theme.colors.accent, fontSize: 12 }}>RELOAD</Text>
+                            </Pressable>
                         </View>
                     ) : (roomData.statoPartita === 'GAME_OVER' && !showWinnerModal) ? (
                         <VictoryScreen winnerName={roomData.vincitorePartita} />
                     ) : (
-                        <>
+                        <View style={{ flex: 1 }}>
                             {renderHeader()}
                             <ChaosBanner event={roomData?.activeChaosEvent} roomData={roomData} t={t} />
                             {roomData.statoPartita === 'LOBBY' ? (
@@ -1432,20 +1439,18 @@ const GameScreen = ({ onStartLoading }) => {
                                     {renderGameContent()}
                                 </Animated.View>
                             )}
-                        </>
+
+                            {/* OVERLAYS MOVED INSIDE CONTAINER FOR BETTER Z-INDEX HANDLING */}
+                            {isDominus && roomData?.statoPartita !== 'GAME_OVER' && (roomData?.statoTurno === 'WAITING_CARDS' || roomData?.statoTurno === 'DOMINUS_CHOOSING') && (
+                                <DominusOverlay
+                                    status={roomData?.statoTurno}
+                                    onSkip={nextRound}
+                                    onReveal={forceReveal}
+                                />
+                            )}
+                        </View>
                     )}
                 </View>
-
-                {/* --- FULL SCREEN OVERLAYS --- */}
-
-                {/* [FIX] Dominus Overlay rendered BEFORE modals so they cover it */}
-                {isDominus && roomData?.statoPartita !== 'GAME_OVER' && (roomData?.statoTurno === 'WAITING_CARDS' || roomData?.statoTurno === 'DOMINUS_CHOOSING') && (
-                    <DominusOverlay
-                        status={roomData?.statoTurno}
-                        onSkip={nextRound}
-                        onReveal={forceReveal}
-                    />
-                )}
 
                 {/* [NEW] Dictatorship Modal */}
                 <PremiumModal
@@ -1660,7 +1665,7 @@ const GameScreen = ({ onStartLoading }) => {
 
                 {/* [NEW] Dominus Alert Overlay */}
                 {showDominusAlert && (
-                    <View style={[StyleSheet.absoluteFill, { zIndex: 9999, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)', pointerEvents: 'none' }]}>
+                    <View style={[StyleSheet.absoluteFill, { zIndex: 9999, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.85)', pointerEvents: 'none', top: -50 }]}>
                         <Animated.View
                             entering={ZoomIn.duration(600).springify()}
                             exiting={ZoomOut.duration(400)}
@@ -1668,61 +1673,52 @@ const GameScreen = ({ onStartLoading }) => {
                                 alignItems: 'center',
                                 paddingVertical: 20,
                                 paddingHorizontal: 30,
-                                borderRadius: 20,
-                                borderWidth: 1.5,
-                                borderColor: '#ffd700',
-                                shadowColor: '#ffd700',
-                                shadowOffset: { width: 0, height: 6 },
-                                shadowOpacity: 0.6,
-                                shadowRadius: 15,
-                                elevation: 15,
-                                overflow: 'hidden'
+                                borderRadius: 16, // Softer radius for a smaller box
+                                borderWidth: 1.5, // Slightly thinner
+                                borderColor: theme.colors.accent, // Using theme accent
+                                backgroundColor: '#202020', // Clean dark gray
+                                shadowColor: theme.colors.accent,
+                                shadowOffset: { width: 0, height: 4 }, // Much less shadow
+                                shadowOpacity: 0.4,
+                                shadowRadius: 10,
+                                elevation: 8,
                             }}
                         >
-                            {/* Gradient Background */}
-                            <LinearGradient
-                                colors={['#1a1a1a', '#2a2a2a', '#1a1a1a']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                style={StyleSheet.absoluteFill}
-                            />
-
-                            {/* Gold Glow Overlay */}
+                            {/* Crown Icon Container (Absolute Floating) */}
                             <View style={{
-                                ...StyleSheet.absoluteFillObject,
-                                backgroundColor: '#ffd70015',
-                                borderRadius: 24,
-                            }} />
-
-                            {/* Crown Icon */}
-                            <View style={{
-                                marginBottom: 12,
-                                padding: 10,
+                                position: 'absolute',
+                                top: -20, // Adjusted for new padding/sizes
+                                backgroundColor: '#282828',
+                                padding: 8,
                                 borderRadius: 30,
-                                backgroundColor: '#ffd70020',
-                                borderWidth: 1,
-                                borderColor: '#ffd700',
-                                shadowColor: '#ffd700',
+                                borderWidth: 1.5,
+                                borderColor: theme.colors.accent,
+                                shadowColor: theme.colors.accent,
                                 shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.4,
-                                shadowRadius: 6,
-                                elevation: 4
+                                shadowOpacity: 0.3, // Less shadow
+                                shadowRadius: 4,
+                                elevation: 4,
+                                alignItems: 'center',
+                                justifyContent: 'center'
                             }}>
-                                <CrownIcon size={24} color="#ffd700" />
+                                <CrownIcon size={20} color={theme.colors.accent} />
                             </View>
+
+                            {/* Spacing for floating icon */}
+                            <View style={{ height: 12 }} />
 
                             {/* Title */}
                             <Text style={{
-                                color: '#ffd700',
+                                color: theme.colors.accent,
                                 fontFamily: 'Cinzel-Bold',
-                                fontSize: 22,
+                                fontSize: 18, // Smaller
                                 textAlign: 'center',
                                 letterSpacing: 1.5,
                                 textTransform: 'uppercase',
-                                textShadowColor: '#ffd700',
+                                textShadowColor: theme.colors.accent,
                                 textShadowOffset: { width: 0, height: 0 },
-                                textShadowRadius: 10,
-                                marginBottom: 2
+                                textShadowRadius: 6, // Reduced glow
+                                marginBottom: 4
                             }}>
                                 {t('you_are_dominus')}
                             </Text>
@@ -1731,11 +1727,11 @@ const GameScreen = ({ onStartLoading }) => {
                             <Text style={{
                                 color: '#ccc',
                                 fontFamily: 'Outfit',
-                                fontSize: 13,
+                                fontSize: 13, // Standard subtitle size
                                 textAlign: 'center',
                                 letterSpacing: 0.8
                             }}>
-                                {t('dominus_subtitle', { defaultValue: 'Scegli il vincitore del round' })}
+                                {t('dominus_subtitle', { defaultValue: 'Choose the round winner' })}
                             </Text>
                         </Animated.View>
                     </View>
@@ -1899,8 +1895,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 15,
         paddingTop: 50, // Increased for safe area
-        zIndex: 999, // Ensure it's above everything else
-        elevation: 10, // For Android
+        zIndex: 2000, // [FIX] Boosted to be absolute top
+        elevation: 20, // For Android
     },
     headerLogo: {
         fontFamily: 'Cinzel-Bold',

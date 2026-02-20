@@ -205,6 +205,8 @@ const ShopFrameItem = React.memo(({ item, index, isUnlocked, userBalance, buying
 const ShopPackItem = React.memo(({ item, index, isUnlocked, userBalance, isProcessing, onBuy, onPreview, t, theme }) => {
     const price = item.price;
     const isBuying = isProcessing && (item.id === 'dark' || item.id === 'spicy'); // Simplified logic
+    const isFiat = item.id === 'dark' || item.id === 'spicy';
+    const canAfford = isFiat || userBalance >= price;
 
     return (
         <Animated.View
@@ -237,19 +239,17 @@ const ShopPackItem = React.memo(({ item, index, isUnlocked, userBalance, isProce
                             style={[
                                 styles.buyButton,
                                 {
-                                    backgroundColor: theme.colors.accent,
-                                    borderColor: theme.colors.accent
+                                    backgroundColor: canAfford ? theme.colors.accent : 'rgba(255,255,255,0.05)',
+                                    borderColor: canAfford ? theme.colors.accent : theme.colors.cardBorder
                                 }
                             ]}
                             onPress={() => onBuy(item.id, price, t('pack_' + item.id))}
-                            disabled={isProcessing || ((item.id !== 'dark' && item.id !== 'spicy') && userBalance < price)}
+                            disabled={isProcessing || !canAfford}
                         >
-                            <Text style={[styles.buyText, { color: '#000' }]}>
-                                {isBuying ? "..." :
-                                    (item.id === 'dark' ? "4.99€" : (item.id === 'spicy' ? "2.99€" : price))
-                                }
+                            <Text style={[styles.buyText, { color: canAfford ? '#000' : '#888' }]}>
+                                {isBuying ? "..." : (isFiat ? (item.id === 'dark' ? "4.99€" : "2.99€") : price)}
                             </Text>
-                            {(!isProcessing || (item.id !== 'dark' && item.id !== 'spicy')) && (item.id !== 'dark' && item.id !== 'spicy') && <DirtyCashIcon size={12} color="#000" />}
+                            {!isBuying && !isFiat && <DirtyCashIcon size={12} color={canAfford ? "#000" : "#888"} />}
                         </TouchableOpacity>
                         {(item.id === 'dark' || item.id === 'chill' || item.id === 'spicy') && (
                             <TouchableOpacity

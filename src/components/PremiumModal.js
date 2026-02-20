@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Pressable, Platform, ScrollView, Modal } from 'react-native';
 import EfficientBlurView from './EfficientBlurView';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming, Easing, runOnJS, interpolate } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, Easing, runOnJS, interpolate, useDerivedValue } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
 import PremiumIconButton from './PremiumIconButton';
 import { CrossIcon } from './Icons';
@@ -17,17 +17,23 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
     const scale = useSharedValue(0.9);
 
     const [internalVisible, setInternalVisible] = useState(visible);
+    const [isAnimating, setIsAnimating] = useState(false); // [NEW] Track animation state
 
     useEffect(() => {
         if (visible) {
             setInternalVisible(true);
+            setIsAnimating(true); // [NEW]
             SoundService.play('tap');
-            opacity.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.quad) });
+            opacity.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.quad) }, (finished) => {
+                if (finished) runOnJS(setIsAnimating)(false); // [NEW] Blur can start now
+            });
             scale.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.quad) });
         } else {
+            setIsAnimating(true); // [NEW] Hide blur during exit
             opacity.value = withTiming(0, { duration: 350, easing: Easing.in(Easing.quad) }, (finished) => {
                 if (finished) {
                     runOnJS(setInternalVisible)(false);
+                    runOnJS(setIsAnimating)(false);
                 }
             });
             scale.value = withTiming(0.9, { duration: 350, easing: Easing.in(Easing.quad) });
@@ -58,14 +64,22 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
         opacity: opacity.value,
     }));
 
+    // [FIX] Derive visibility to avoid evaluating .value during Component Render
+    const isVisibleDerived = useDerivedValue(() => {
+        return (visible || opacity.value > 0);
+    });
+
     const rootStyle = useAnimatedStyle(() => {
-        // [FIX] Avoid local const outside if possible, though this is usually fine in worklets
-        // The warning might be because 'visible' is used?
+        const isV = isVisibleDerived.value;
         return {
-            opacity: (visible || opacity.value > 0) ? 1 : 0,
-            pointerEvents: (visible || opacity.value > 0) ? 'auto' : 'none',
-            zIndex: (visible || opacity.value > 0) ? 9999 : -1,
+            opacity: isV ? 1 : 0,
+            zIndex: isV ? 9999 : -1,
         };
+    });
+
+    // Separated pointerEvents since it's used in the View prop directly
+    const pointerEventsDerived = useDerivedValue(() => {
+        return (visible || opacity.value > 0) ? 'auto' : 'none';
     });
 
     if (!visible && !internalVisible) return null;
@@ -79,19 +93,24 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
             animationType="none"
             statusBarTranslucent
         >
-            <Animated.View style={[
-                StyleSheet.absoluteFill,
-                { zIndex: 10000, elevation: 10000 },
-                rootStyle
-            ]}>
+            <Animated.View
+                style={[
+                    StyleSheet.absoluteFill,
+                    { zIndex: 10000, elevation: 10000 },
+                    rootStyle
+                ]}
+                pointerEvents={internalVisible ? 'auto' : 'none'}
+            >
                 <View style={styles.overlay}>
                     {/* 1. Backdrop Blur (Non-interactive visual) */}
                     <Animated.View style={[StyleSheet.absoluteFill, { zIndex: -1, backgroundColor: 'rgba(0,0,0,0.5)' }, backdropStyle]} pointerEvents="none">
-                        <EfficientBlurView
-                            intensity={10}
-                            tint="dark"
-                            style={StyleSheet.absoluteFill}
-                        />
+                        {(!isAnimating || Platform.OS === 'ios') && (
+                            <EfficientBlurView
+                                intensity={10}
+                                tint="dark"
+                                style={StyleSheet.absoluteFill}
+                            />
+                        )}
                     </Animated.View>
 
                     {/* 2. Dismiss Overlay (Interactive) */}
@@ -128,6 +147,7 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                                     },
                                     contentOpacityStyle // Appply opacity directly here
                                 ]}
+                                renderToHardwareTextureAndroid={true} // [NEW] Smooth optimization
                             >
 
                                 {/* CONTENT: Rendered on top */}

@@ -148,30 +148,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                 ]} pointerEvents="none" />
 
 
-                {/* RANDO VISUAL DISTINCTION - ONLY WHEN IDENTITY IS REVEALED */}
-                {playerName === 'Rando' && revealed && showIdentity && (
-                    <View style={{
-                        position: 'absolute',
-                        top: -10,
-                        right: -10,
-                        backgroundColor: '#ff6b6b',
-                        borderRadius: 12,
-                        width: 24,
-                        height: 24,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        zIndex: 10,
-                        borderWidth: 1,
-                        borderColor: '#fff',
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 3.84,
-                        elevation: 5
-                    }}>
-                        <Text style={{ fontSize: 14 }}>🤖</Text>
-                    </View>
-                )}
+                {/* RANDO VISUAL DISTINCTION - REMOVED TO KEEP IT ANONYMOUS */}
 
                 {revealed ? (
                     <View style={{
