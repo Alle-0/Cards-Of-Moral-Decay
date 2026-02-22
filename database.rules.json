@@ -26,7 +26,7 @@
                 },
                 "friends": {
                     "$friend": {
-                        ".write": "auth != null && root.child('uids').child(auth.uid).val() === $friend && ((!data.exists() && newData.exists() && (root.child('users').child($friend).child('friendRequests').child($username).exists() || root.child('users').child($username).child('friendRequests').child($friend).exists())) || (data.exists() && !newData.exists()))"
+                        ".write": "auth != null && root.child('uids').child(auth.uid).val() === $friend && ((!data.exists() && newData.exists() && (root.child('users').child($friend).child('friendRequests').child($username).exists() || root.child('users').child($username).child('friendRequests').child($friend).exists() || root.child('users').child($username).child('friends').child($friend).exists())) || (data.exists() && !newData.exists()))"
                     }
                 }
             }
@@ -50,6 +50,12 @@
                 ".indexOn": [
                     "timestamp"
                 ]
+            }
+        },
+        "reports": {
+            "$reportId": {
+                ".write": "auth != null && !data.exists() && newData.exists()",
+                ".read": "false"
             }
         }
     }

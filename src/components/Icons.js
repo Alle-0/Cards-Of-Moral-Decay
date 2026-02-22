@@ -417,3 +417,9 @@ export const CopyIcon = ({ size = 24, color = "#FFCE6A" }) => (
     </Svg>
 );
 
+export const ReportIcon = ({ size = 24, color = "#ef4444" }) => (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <Path d="M16 7V42" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M16 7L40 17L16 27Z" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill={color} fillOpacity="0.25" />
+    </Svg>
+);

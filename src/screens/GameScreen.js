@@ -393,12 +393,25 @@ const GameScreen = ({ onStartLoading }) => {
             SoundService.play('success'); // Play a sound for prominence
             const timer = setTimeout(() => {
                 setShowDominusAlert(false);
-            }, 4500); // Increased from 3000ms
+            }, 4000); // Increased from 3000ms
             return () => clearTimeout(timer);
         } else {
             setShowDominusAlert(false);
         }
     }, [roomData?.dominus, user?.name, roomData?.statoTurno]);
+
+    // [NEW] Arrival Notification Listener
+    const { joinNotification, clearJoinNotification } = useGame();
+    useEffect(() => {
+        if (joinNotification?.name) {
+            setToast({
+                visible: true,
+                message: t('player_joined_toast', { name: joinNotification.name, defaultValue: `${joinNotification.name} SI È UNITO ALLA STANZA` }),
+                type: 'success'
+            });
+            clearJoinNotification();
+        }
+    }, [joinNotification]);
 
 
 
@@ -824,7 +837,7 @@ const GameScreen = ({ onStartLoading }) => {
                 avatar: isRando ? 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando' : roomData?.giocatori?.[rawName]?.avatar,
                 activeFrame: isRando ? 'glitch' : roomData?.giocatori?.[rawName]?.activeFrame,
                 rank: isRando ? 'rank_bot' : roomData?.giocatori?.[rawName]?.rank,
-                isOnline: (rawName === authUser?.username) || isRando || !!roomData?.giocatori?.[rawName]?.online // [FIX] Always online for self and Rando
+                isOnline: (name.toLowerCase() === (authUser?.username || '').trim().toLowerCase()) || isRando || !!roomData?.giocatori?.[rawName]?.online // [FIX] Robust normalized check
             };
         });
 
@@ -1320,21 +1333,31 @@ const GameScreen = ({ onStartLoading }) => {
                                             paddingTop: 5, // [FIX] Balance centering
                                         }}>
                                             <Text
-                                                style={{
-                                                    color: skin ? skin.styles.text : '#222',
-                                                    fontFamily: skin?.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') :
-                                                        skin?.id === 'omissis' ? (Platform.OS === 'ios' ? 'Courier-Bold' : 'serif') : 'Outfit',
-                                                    fontWeight: 'bold',
-                                                    fontSize: 16,
-                                                    textAlign: 'center',
-                                                    width: '100%',
-                                                    lineHeight: 18, // [FIX] Tighter line height to prevent vertical clipping
-                                                }}
+                                                style={[
+                                                    styles.cardText,
+                                                    skin ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {},
+                                                    {
+                                                        textAlign: 'center',
+                                                        fontSize: (() => {
+                                                            const len = playedText?.length || 0;
+                                                            const words = (playedText || '').split(/\s+/);
+                                                            const maxWord = Math.max(...words.map(w => w.length));
+
+                                                            // Start smaller if total text is very long
+                                                            let base = len > 60 ? 14 : 16;
+
+                                                            if (maxWord >= 14) return Math.min(base, 14);
+                                                            if (maxWord >= 13) return Math.min(base, 15);
+                                                            return base;
+                                                        })(),
+                                                        paddingBottom: 15
+                                                    }
+                                                ]}
                                                 numberOfLines={10}
                                                 adjustsFontSizeToFit={true}
-                                                minimumFontScale={0.4} // [FIX] More freedom to scale down
+                                                minimumFontScale={0.4}
                                             >
-                                                {playedText}
+                                                {playedText || ''}
                                             </Text>
                                         </View>
 

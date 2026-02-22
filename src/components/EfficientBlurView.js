@@ -3,45 +3,34 @@ import { View, Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 
 const EfficientBlurView = ({ style, intensity = 30, tint = 'dark', children }) => {
-    // Android fa fatica con intensity > 100 o con valori strani. 
-    // Normalizziamo per evitare crash grafici.
-    const safeIntensity = Platform.OS === 'android' ? Math.min(intensity, 30) : intensity;
-
     if (Platform.OS === 'android') {
+        // On Android we use a solid backing layer + a very low intensity BlurView.
+        // This keeps a frosted-glass feel while avoiding the GPU cost of high intensity.
         return (
             <View style={[styles.container, style]}>
-                {/* 1. IL PARACADUTE (Fallback Layer) 
-                    Ottimizzato: Usiamo un'opacità base che garantisce leggibilità 
-                    senza pesare sulla GPU.
-                */}
+                {/* Solid base for readability */}
                 <View
                     style={[
                         StyleSheet.absoluteFill,
                         {
                             backgroundColor: tint === 'light'
-                                ? 'rgba(255, 255, 255, 0.9)'
-                                : 'rgba(12, 12, 15, 0.75)' // Più opaco così il blur può essere più leggero
+                                ? 'rgba(255, 255, 255, 0.85)'
+                                : 'rgba(10, 10, 14, 0.78)'
                         }
                     ]}
                 />
-
-                {/* 2. IL BLUR SPERIMENTALE
-                    Limitato a 15 su Android per massima fluidità.
-                */}
+                {/* Light blur on top — intensity capped at 8 to stay fast */}
                 <BlurView
-                    intensity={Math.min(safeIntensity, 15)}
+                    intensity={Math.min(intensity, 8)}
                     tint={tint}
                     style={StyleSheet.absoluteFill}
-                    experimentalBlurMethod="dimezisBlurView"
                 />
-
-                {/* 3. IL CONTENUTO */}
                 {children}
             </View>
         );
     }
 
-    // SU IOS: Lusso sfrenato, blur nativo perfetto.
+    // iOS: native blur, runs on GPU compositor thread
     return (
         <BlurView intensity={intensity} tint={tint} style={style}>
             {children}

@@ -127,7 +127,7 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
                 [0, 1],
                 [skin?.styles?.border || 'rgba(0,0,0,0.1)', theme.colors.accent]
             ),
-            borderWidth: isSelected ? 3 : 1,
+            borderWidth: 3, // [FIX] Always 3 to prevent text reflow on selection
             backgroundColor: skin ? skin.styles.bg : '#fff',
         };
     });
@@ -280,9 +280,25 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
                                 style={[
                                     styles.cardText,
                                     skin ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {},
-                                    { fontSize: (text?.length || 0) > 50 ? 14 : ((text?.length || 0) > 30 ? 16 : 18) }
+                                    {
+                                        textAlign: 'center',
+                                        fontSize: (() => {
+                                            const len = text?.length || 0;
+                                            const words = (text || '').split(/\s+/);
+                                            const maxWord = Math.max(...words.map(w => w.length));
+
+                                            // Start smaller if total text is very long
+                                            let base = len > 60 ? 15 : 18;
+
+                                            if (maxWord >= 14) return Math.min(base, 15);
+                                            if (maxWord >= 13) return Math.min(base, 16);
+                                            return base;
+                                        })(),
+                                    }
                                 ]}
                                 numberOfLines={10}
+                                adjustsFontSizeToFit={true}
+                                minimumFontScale={0.4}
                             >
                                 {displayText || ''}
                             </Text>
@@ -397,14 +413,10 @@ const PlayerHand = ({
 
     useEffect(() => {
         if (isPlaying || disabled) {
-            const targetOffset = containerHeight > 0 ? containerHeight - 55 : 300;
-            if (Math.abs(handOffset.value - targetOffset) > 1) {
-                handOffset.value = withTiming(targetOffset, { duration: 500, easing: Easing.out(Easing.quad) });
-            }
+            const targetOffset = containerHeight > 0 ? containerHeight - 48 : 600;
+            handOffset.value = withTiming(targetOffset, { duration: 500, easing: Easing.out(Easing.quad) });
         } else {
-            if (handOffset.value !== 40) {
-                handOffset.value = withTiming(40, { duration: 300 });
-            }
+            handOffset.value = withTiming(40, { duration: 300 });
         }
     }, [isPlaying, disabled, containerHeight]);
 

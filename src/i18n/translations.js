@@ -230,9 +230,10 @@ export const translations = {
         // LEADERBOARD
         leaderboard_title: "CLASSIFICA",
         kick_player_title: "Eliminare Giocatore?",
-        kick_player_msg: "Sei sicuro di voler rimuovere %{name} dalla stanza?",
+        kick_player_msg: "Rimuovere %{name} dalla stanza? Non potranno rientrare con lo stesso nickname per tutta la sessione.",
         kick_btn: "ELIMINA",
         kick_cancel_btn: "ANNULLA",
+        kicked_error: "Sei stato espulso da questa stanza. Non puoi rientrare con lo stesso nickname per tutta la sessione.",
 
         // CONFIRMATION MODAL defaults
         default_confirm: "OK",
@@ -808,9 +809,10 @@ export const translations = {
         // LEADERBOARD
         leaderboard_title: "LEADERBOARD",
         kick_player_title: "Kick Player?",
-        kick_player_msg: "Are you sure you want to remove %{name} from the room?",
+        kick_player_msg: "Remove %{name} from the room? They won't be able to rejoin with the same name for the rest of this session.",
         kick_btn: "KICK",
         kick_cancel_btn: "CANCEL",
+        kicked_error: "You were kicked from this room. You cannot rejoin with the same nickname for the rest of this session.",
 
         // CONFIRMATION MODAL defaults
         default_confirm: "OK",

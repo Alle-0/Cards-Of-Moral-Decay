@@ -11,6 +11,8 @@ import AnalyticsService from '../services/AnalyticsService';
 import NotificationService from '../services/NotificationService'; // [NEW]
 import { CHAOS_EVENTS } from '../constants/ChaosEvents';
 
+const KICK_COOLOFF_MS = 8000;
+
 // Context
 const GameContext = createContext();
 
@@ -27,13 +29,17 @@ export const GameProvider = ({ children }) => {
     const [loading, setLoading] = useState(false);
     const [roomPlayerName, setRoomPlayerName] = useState(null); // [NEW] Track the specific name used in current room
     const [gameDataLoaded, setGameDataLoaded] = useState(GameDataService.isLoaded); // [NEW]
+    const [joinNotification, setJoinNotification] = useState(null); // [NEW] Track arrival of new players
+    const prevPlayersRef = useRef({}); // [NEW] Track previous player list for arrival logic
 
     // [NEW] Computed user state from AuthContext
     const user = useMemo(() => {
         if (!authUser) return null;
         return {
+            uid: authUser.uid, // [FIX] Include UID for session tracking
             username: authUser.username, // [FIX] Expose canonical username for logic
-            name: authUser.nickname || authUser.username, // [FIX] Prioritize secondary nickname
+            nickname: authUser.nickname, // [FIX] Keep raw nickname if needed
+            name: (authUser.nickname || authUser.username || '').trim(), // [FIX] Prioritize secondary nickname
             avatar: authUser.avatar || authUser.activeAvatar || 'User', // Fallback
             friends: authUser.friends || {}, // [NEW] Required for room notifications
             friendRequests: authUser.friendRequests || {} // [NEW]
@@ -106,7 +112,7 @@ export const GameProvider = ({ children }) => {
             }
         });
         return () => unsub();
-    }, [roomCode, roomPlayerName, user?.name]);
+    }, [roomCode, roomPlayerName, user?.nickname, user?.username]);
 
     // Cleanup
     useEffect(() => {
@@ -180,15 +186,49 @@ export const GameProvider = ({ children }) => {
         const newRoom = { ...room };
         const forcedLang = newRoom.language || newRoom.roomLanguage || null;
 
+        // [FIX] Global Key Normalization (Trim names)
+        const normalizeKeys = (obj) => {
+            if (!obj) return obj;
+            const normalized = {};
+            Object.keys(obj).forEach(key => {
+                normalized[key.trim()] = obj[key];
+            });
+            return normalized;
+        };
+
+        if (newRoom.giocatori) newRoom.giocatori = normalizeKeys(newRoom.giocatori);
+        if (newRoom.punti) newRoom.punti = normalizeKeys(newRoom.punti);
+        if (newRoom.carteGiocate) newRoom.carteGiocate = normalizeKeys(newRoom.carteGiocate);
+        if (newRoom.connessi) newRoom.connessi = normalizeKeys(newRoom.connessi);
+        if (newRoom.dominus) newRoom.dominus = newRoom.dominus.trim();
+        if (newRoom.creatore) newRoom.creatore = newRoom.creatore.trim();
+
+        // [IRON FIST] Ghost Slayer: Permanently filter out any KICKED player
+        if (newRoom.kickedPlayers && newRoom.giocatori) {
+            Object.keys(newRoom.kickedPlayers).forEach(kName => {
+                if (newRoom.kickedPlayers[kName]) { // Any truthy value = kicked
+                    // Scrub from everywhere in the local object
+                    Object.keys(newRoom.giocatori).forEach(p => {
+                        if (p.trim().toLowerCase() === kName) delete newRoom.giocatori[p];
+                    });
+                    if (newRoom.punti) {
+                        Object.keys(newRoom.punti).forEach(p => {
+                            if (p.trim().toLowerCase() === kName) delete newRoom.punti[p];
+                        });
+                    }
+                    if (newRoom.connessi) {
+                        Object.keys(newRoom.connessi).forEach(p => {
+                            if (p.trim().toLowerCase() === kName) delete newRoom.connessi[p];
+                        });
+                    }
+                }
+            });
+        }
+
         // 1. Black Card
         if (typeof newRoom.cartaNera === 'number') {
             newRoom.cartaNera = GameDataService.getBlackCardByIndex(newRoom.cartaNera, forcedLang);
         }
-
-        // 2. Decks (Optional, mostly for internal state if needed)
-        // [OPTIMIZATION] Skip hydrating full decks for performance
-        // Clients only need to know cards in hand or played.
-        // newRoom.blackDeck and newRoom.whiteDeck remain as arrays of IDs (numbers).
 
         // 3. Players Hands
         if (newRoom.giocatori) {
@@ -223,12 +263,29 @@ export const GameProvider = ({ children }) => {
         const newRoom = { ...room };
         const forcedLang = newRoom.roomLanguage || null;
 
+        // [FIX] Global Key Normalization (Ensure keys remain trimmed in DB)
+        const normalizeKeys = (obj) => {
+            if (!obj) return obj;
+            const normalized = {};
+            Object.keys(obj).forEach(key => {
+                normalized[key.trim()] = obj[key];
+            });
+            return normalized;
+        };
+
+        if (newRoom.giocatori) newRoom.giocatori = normalizeKeys(newRoom.giocatori);
+        if (newRoom.punti) newRoom.punti = normalizeKeys(newRoom.punti);
+        if (newRoom.carteGiocate) newRoom.carteGiocate = normalizeKeys(newRoom.carteGiocate);
+        if (newRoom.connessi) newRoom.connessi = normalizeKeys(newRoom.connessi);
+        if (newRoom.dominus) newRoom.dominus = newRoom.dominus.trim();
+        if (newRoom.creatore) newRoom.creatore = newRoom.creatore.trim();
+
         // 1. Black Card
         if (newRoom.cartaNera && typeof newRoom.cartaNera === 'object') {
             newRoom.cartaNera = GameDataService.getBlackCardIndex(newRoom.cartaNera, forcedLang);
         }
 
-        // 2. Decks
+        // 2. Decks (truncated deck logic skipped as it was before)
         if (newRoom.blackDeck && Array.isArray(newRoom.blackDeck)) {
             newRoom.blackDeck = newRoom.blackDeck.map(item =>
                 typeof item === 'object' ? GameDataService.getBlackCardIndex(item, forcedLang) : item
@@ -278,12 +335,57 @@ export const GameProvider = ({ children }) => {
     };
 
     const setPresence = async (code, name) => {
+        if (!code || !name) return;
         try {
+            const trimmedName = name.trim();
+            const normalizedName = trimmedName.toLowerCase();
+            const rRef = ref(db, `stanze/${code}`);
+
+            // 1. Pre-check: Don't even start if we were recently kicked
+            const rSnap = await get(rRef);
+            if (!rSnap.exists()) return;
+            const room = rSnap.val();
+
+            const kickTime = room.kickedPlayers?.[normalizedName];
+            if (kickTime) {
+                return; // Permanently blocked until re-join clears the ban
+            }
+
+            // 2. Existence Check: hydrateRoom trims keys. 
+            // We check against the RAW giocatori object to be 100% sure.
+            const rawGiocatori = room.giocatori || {};
+            const exists = Object.keys(rawGiocatori).some(k => k.trim() === trimmedName);
+
+            if (!exists) {
+                // [DEBUG] console.log(`[setPresence] Aborting: player ${trimmedName} not found in room.`);
+                return;
+            }
+
             const playerRef = ref(db, `stanze/${code}/giocatori/${name}`);
-            await update(playerRef, { online: true, lastSeen: Date.now() });
-            const od = onDisconnect(playerRef);
-            await od.update({ online: false, lastSeen: Date.now() });
-        } catch (e) { console.warn("Presence failed", e); }
+            const result = await runTransaction(playerRef, (current) => {
+                if (current) {
+                    // [GHOST-BUSTER] If it exists but lacks critical data, delete it.
+                    if (!current.avatar && !current.uid) {
+                        return null;
+                    }
+                    return {
+                        ...current,
+                        online: true,
+                        lastSeen: Date.now()
+                    };
+                }
+                return current; // Stay deleted if null
+            });
+
+            // 3. Conditional onDisconnect: ONLY if the node is healthy
+            if (result.committed && result.snapshot.exists() && result.snapshot.val()?.avatar) {
+                const od = onDisconnect(playerRef);
+                await od.update({ online: false, lastSeen: Date.now() });
+            }
+
+        } catch (e) {
+            // Silently fail
+        }
     };
 
     const subscribeToRoom = (code) => {
@@ -299,6 +401,39 @@ export const GameProvider = ({ children }) => {
             }
         });
     };
+
+    // [NEW] Arrival Notification Tracking
+    useEffect(() => {
+        if (!roomCode) {
+            prevPlayersRef.current = {};
+            return;
+        }
+
+        if (roomData?.giocatori) {
+            const currentPlayers = roomData.giocatori;
+            const prevPlayers = prevPlayersRef.current || {};
+
+            // Find players in current that weren't in prev
+            Object.keys(currentPlayers).forEach(pName => {
+                const isNew = !prevPlayers[pName];
+                // Only notify for OTHER players, and ignore if it's the first load (prevPlayers empty)
+                const me = (roomPlayerName || user?.name || user?.username || '').trim().toLowerCase();
+                const pNameLower = pName.trim().toLowerCase();
+                const isNotMe = pNameLower !== me && pNameLower !== (user?.name || '').trim().toLowerCase();
+                if (isNew && isNotMe && Object.keys(prevPlayers).length > 0) {
+                    console.log(`[GAME] Player joined: ${pName}`);
+                    setJoinNotification({ name: pName, timestamp: Date.now() });
+                }
+            });
+
+            // Update ref
+            prevPlayersRef.current = currentPlayers;
+        } else {
+            prevPlayersRef.current = {};
+        }
+    }, [roomData?.giocatori, roomPlayerName, user?.name, user?.username, roomCode]);
+
+    const clearJoinNotification = () => setJoinNotification(null);
     // [NEW] Quick Join Logic
     const quickJoin = async () => {
         // Find a suitable public room
@@ -334,38 +469,97 @@ export const GameProvider = ({ children }) => {
         console.log(`[DEBUG] GameContext.login called for ${name}. AuthContext handles identity.`);
     };
 
-    const kickPlayer = async (targetName) => {
-        const isCreatorCheck = user && roomData && roomData.creatore === user.name;
-        if (!roomCode || !isCreatorCheck || !targetName) return;
+    const kickPlayer = async (targetNameInput) => {
+        const isCreatorCheck = user && roomData && (
+            (roomData.creatore === user.name) ||
+            (roomData.creatorUsername && roomData.creatorUsername === user.username)
+        );
+        if (!roomCode || !isCreatorCheck || !targetNameInput) return;
+
+        const targetNormalized = targetNameInput.trim().toLowerCase();
 
         try {
-            const updates = {};
-            updates[`stanze/${roomCode}/giocatori/${targetName}`] = null;
-            updates[`stanze/${roomCode}/punti/${targetName}`] = null;
-            updates[`stanze/${roomCode}/carteGiocate/${targetName}`] = null;
-            updates[`stanze/${roomCode}/connessi/${targetName}`] = null;
+            await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
+                if (!rawRoom) return rawRoom;
+                const room = hydrateRoom(rawRoom);
 
-            await update(ref(db), updates);
+                // [FIX] Robust normalized cleanup for ALL keys
+                const findAndRemove = (obj) => {
+                    if (!obj) return;
+                    Object.keys(obj).forEach(key => {
+                        if (key.trim().toLowerCase() === targetNormalized) {
+                            delete obj[key];
+                        }
+                    });
+                };
 
-            const roomRef = ref(db, `stanze/${roomCode}`);
-            const snapshot = await get(roomRef);
+                findAndRemove(room.giocatori);
+                findAndRemove(room.punti);
+                findAndRemove(room.carteGiocate);
+                findAndRemove(room.connessi);
 
-            if (snapshot.exists()) {
-                const room = hydrateRoom(snapshot.val());
-                if (room.statoPartita === "IN_GIOCO" && room.statoTurno === "WAITING_CARDS") {
-                    const activePlayers = Object.keys(room.giocatori || {}).filter(name => name !== room.dominus).length;
+                // [NEW] Robust Winner Cleanup
+                if ((room.vincitoreTurno || '').trim().toLowerCase() === targetNormalized) {
+                    room.vincitoreTurno = null;
+                }
+
+                // 2. Handle Case: Kicked Player was Dominus
+                const dominusNormalized = (room.dominus || '').trim().toLowerCase();
+                const players = Object.keys(room.giocatori || {});
+
+                if (dominusNormalized === targetNormalized) {
+                    if (players.length > 0) {
+                        // Reassign Dominus
+                        const nextIdx = (room.dominusIndex || 0) % players.length;
+                        room.dominus = players[nextIdx];
+                        room.dominusIndex = nextIdx;
+
+                        if (room.statoPartita === "IN_GIOCO") {
+                            // Force Next Round (to avoid stuck turns)
+                            room.carteGiocate = {};
+                            room.vincitoreTurno = null;
+
+                            // Get new Black Card
+                            if (!room.blackDeck || room.blackDeck.length === 0) {
+                                const forcedLang = room.roomLanguage || null;
+                                const { carteNere } = GameDataService.getPackages(room.allowedPackages || { base: true });
+                                room.blackDeck = shuffleArray([...carteNere]);
+                            }
+                            room.cartaNera = room.blackDeck.pop();
+                            room.statoTurno = "WAITING_CARDS";
+                        }
+                    } else if (room.statoPartita === "LOBBY") {
+                        // No players left or no dominus in lobby? This shouldn't happen but for safety:
+                        room.dominus = null;
+                    }
+                } else if (room.statoPartita === "IN_GIOCO" && room.statoTurno === "WAITING_CARDS") {
+                    // Check if current turn can proceed after player removal
+                    const activePlayers = players.filter(name => {
+                        return name.trim().toLowerCase() !== (room.dominus || '').trim().toLowerCase();
+                    }).length;
                     const playedCount = Object.keys(room.carteGiocate || {}).length;
                     if (activePlayers > 0 && playedCount >= activePlayers) {
-                        await update(roomRef, { statoTurno: "DOMINUS_CHOOSING" });
+                        room.statoTurno = "DOMINUS_CHOOSING";
                     }
                 }
-            }
+
+                // Final safety: if no players left, room is effectively dead
+                if (players.length === 0 && room.statoPartita === "LOBBY") {
+                    return null; // Delete room
+                }
+
+                // [NEW] Permanent ban in kickedPlayers - cleared only on explicit rejoin
+                room.kickedPlayers = room.kickedPlayers || {};
+                room.kickedPlayers[targetNormalized] = true;
+
+                return dehydrateRoom(room);
+            });
         } catch (e) { console.error("Kick Player Error:", e); }
     };
 
     const createRoom = async (extraData = {}) => {
-        const currentName = user?.name;
-        const currentUsername = user?.username;
+        const currentName = (user?.nickname || user?.username || '').trim();
+        const currentUsername = (user?.username || '').trim();
         if (!currentName || !currentUsername) throw new Error("User not logged in or name missing");
         setLoading(true);
         try {
@@ -394,6 +588,7 @@ export const GameProvider = ({ children }) => {
                 puntiPerVincere: 7,
                 giocatori: {
                     [currentName]: {
+                        uid: user?.uid, // [NEW] Track unique ID for session recovery
                         carte: [],
                         jokers: 3,
                         bribes: 5,
@@ -406,6 +601,7 @@ export const GameProvider = ({ children }) => {
                     }
                 },
                 statoPartita: "LOBBY",
+                kickedPlayers: {}, // [NEW] Track recently kicked
                 timestamp: Date.now()
             }));
 
@@ -466,7 +662,7 @@ export const GameProvider = ({ children }) => {
     };
 
     const joinRoom = async (codeInput, extraData = {}) => {
-        const currentName = user?.name;
+        const currentName = (user?.nickname || user?.username || '').trim();
         if (!currentName) throw new Error("Login necessario");
         const code = codeInput.trim().toUpperCase();
         setLoading(true);
@@ -477,12 +673,39 @@ export const GameProvider = ({ children }) => {
             if (!snapshot.exists()) throw new Error("Stanza non trovata");
 
             const data = snapshot.val();
+
+            // [NEW] Kick Check: Kicked players cannot rejoin (ban cleared below if host allows)
+            const isKicked = data.kickedPlayers?.[currentName.trim().toLowerCase()];
+            if (isKicked) {
+                throw new Error('kicked_error');
+            }
+            const myUid = user?.uid;
             const existingPlayer = data.giocatori?.[currentName];
             const avatarToUse = extraData.avatar || user?.avatar || 'RANDOM';
             const usedColors = new Set(Object.values(data.giocatori || {}).map(p => p.color));
 
+            // [NEW] Check for UID Collision (Duplicate Session with different name)
+            const duplicateName = Object.keys(data.giocatori || {}).find(name =>
+                name !== currentName && data.giocatori[name].uid === myUid
+            );
+
+            if (duplicateName) {
+                console.log(`[JOIN] Found duplicate session for UID ${myUid} as "${duplicateName}". Cleaning up...`);
+                await runTransaction(roomRef, (rawRoom) => {
+                    if (!rawRoom) return rawRoom;
+                    const r = hydrateRoom(rawRoom);
+                    if (r.giocatori) delete r.giocatori[duplicateName];
+                    if (r.punti) delete r.punti[duplicateName];
+                    if (r.connessi) delete r.connessi[duplicateName];
+                    if (r.carteGiocate) delete r.carteGiocate[duplicateName];
+                    // Add new player below
+                    return dehydrateRoom(r);
+                });
+            }
+
             if (existingPlayer) {
                 await update(ref(db, `stanze/${code}/giocatori/${currentName}`), {
+                    uid: user?.uid, // [NEW] Ensure UID is stored
                     online: true,
                     lastSeen: Date.now(),
                     avatar: avatarToUse,
@@ -498,6 +721,7 @@ export const GameProvider = ({ children }) => {
                     for (let i = 0; i < 10; i++) { if (room.whiteDeck.length > 0) hand.push(room.whiteDeck.pop()); }
                     room.giocatori = room.giocatori || {};
                     room.giocatori[currentName] = {
+                        uid: user?.uid, // [NEW] Track UID
                         carte: hand, jokers: 3, bribes: 5, avatar: avatarToUse, color: pickColor(usedColors),
                         online: true, lastSeen: Date.now(), joinedAt: Date.now(), hasDiscarded: false,
                         activeFrame: extraData.activeFrame || 'basic', rank: extraData.rank || 'Anima Candida'
@@ -508,6 +732,7 @@ export const GameProvider = ({ children }) => {
                 });
             } else {
                 const playerObj = {
+                    uid: user?.uid, // [NEW] Track UID
                     carte: [],
                     jokers: 3,
                     bribes: 5,
@@ -571,17 +796,59 @@ export const GameProvider = ({ children }) => {
 
     const leaveRoom = async () => {
         if (roomCode && user) {
+            const currentCode = roomCode;
+            const currentName = roomPlayerName || (user?.nickname || user?.username);
+
             try {
-                const playerRef = ref(db, `stanze/${roomCode}/giocatori/${user.name}`);
+                // [FIX] Cancel onDisconnect BEFORE clearing local state
+                const playerRef = ref(db, `stanze/${currentCode}/giocatori/${currentName}`);
                 await onDisconnect(playerRef).cancel();
-                await update(playerRef, { online: false, lastSeen: Date.now() });
-            } catch (e) { console.warn(e); }
-            if (roomUnsubscribe.current) roomUnsubscribe.current();
-            setRoomCode(null);
-            setRoomData(null);
-            setRoomPlayerName(null);
-            AsyncStorage.removeItem('lastRoomCode');
-            AsyncStorage.removeItem('lastRoomPlayerName');
+
+                // [FIX] IMMEDIATE State Clearing to prevent presence/listener race conditions
+                if (roomUnsubscribe.current) roomUnsubscribe.current();
+                setRoomCode(null);
+                setRoomData(null);
+                setRoomPlayerName(null);
+                AsyncStorage.removeItem('lastRoomCode');
+                AsyncStorage.removeItem('lastRoomPlayerName');
+
+                const rRef = ref(db, `stanze/${currentCode}`);
+                const snap = await get(rRef);
+                if (snap.exists()) {
+                    const room = snap.val();
+                    if (room.statoPartita === 'LOBBY' || room.statoPartita === undefined) {
+                        await runTransaction(rRef, (rawRoom) => {
+                            if (!rawRoom) return rawRoom;
+                            const r = hydrateRoom(rawRoom);
+                            if (r.giocatori) delete r.giocatori[currentName];
+                            if (r.punti) delete r.punti[currentName];
+                            if (r.connessi) delete r.connessi[currentName];
+
+                            const remaining = Object.keys(r.giocatori || {});
+                            if (remaining.length === 0) return null;
+
+                            if (r.creatore === currentName) {
+                                const nextHost = remaining[0];
+                                r.creatore = nextHost;
+                                r.creatorUsername = r.giocatori[nextHost]?.username || nextHost;
+                            }
+                            if (r.dominus === currentName) {
+                                r.dominus = remaining[0];
+                            }
+
+                            return dehydrateRoom(r);
+                        });
+                    } else {
+                        // In Game: Just set offline
+                        await update(playerRef, { online: false, lastSeen: Date.now() });
+                    }
+                }
+            } catch (e) {
+                // Secondary fallback: ensure local state is cleared even on network error
+                setRoomCode(null);
+                setRoomData(null);
+                AsyncStorage.removeItem('lastRoomCode');
+            }
         }
     };
 
@@ -594,7 +861,7 @@ export const GameProvider = ({ children }) => {
             if (snapshot.exists()) {
                 const room = snapshot.val();
                 const isCreator = (room.creatore === user.name) ||
-                    (room.creatorUsername && room.creatorUsername === user.username);
+                    (room.creatorUsername && room.creatorUsername === user?.username);
 
                 if (isCreator) {
                     await set(roomRef, null); // Delete the room
@@ -612,12 +879,24 @@ export const GameProvider = ({ children }) => {
         }
     };
 
-    // Auto-Eject if kicked
     useEffect(() => {
         if (roomCode && roomData && user && !loading) {
-            if (roomData.giocatori && !roomData.giocatori[roomPlayerName || user.name]) { leaveRoom(); }
+            const myNameTrimmed = (roomPlayerName || user.name || '').trim();
+            const myNameNormalized = myNameTrimmed.toLowerCase();
+            const players = Object.keys(roomData.giocatori || {});
+
+            // 1. Check if still in giocatori (case-sensitive check on hydrated/trimmed keys)
+            const stillInRoom = roomData.giocatori && !!roomData.giocatori[myNameTrimmed];
+
+            // 2. [NEW] Permanently kicked? Leave immediately.
+            const isKicked = roomData.kickedPlayers?.[myNameNormalized];
+
+            if ((roomData.giocatori && !stillInRoom) || isKicked) {
+                // console.log(`[GAME] Ejected: ${isKickedActive ? 'kicked active' : 'missing'}`);
+                leaveRoom();
+            }
         }
-    }, [roomData, user, roomCode, loading, roomPlayerName]);
+    }, [roomData?.giocatori, roomData?.kickedPlayers, user?.name, roomCode, loading, roomPlayerName]);
 
     const startGame = async (targetPoints = 7) => {
         if (!roomCode || !roomData) return;
@@ -1170,7 +1449,8 @@ export const GameProvider = ({ children }) => {
         kickPlayer,
         updateRoomSettings,
         startGame, playCards, confirmDominusSelection, nextRound, discardCard, useAIJoker, forceReveal, bribeHand, dominusDiscardPlayerHand, // [NEW]
-        isCreator, isDominus, myHand, roomPlayerName, gameDataLoaded
+        isCreator, isDominus, myHand, roomPlayerName, gameDataLoaded,
+        joinNotification, clearJoinNotification // [NEW]
     }), [
         user, roomCode, roomData, loading, error, availableRooms,
         isCreator, isDominus, myHand, roomPlayerName, gameDataLoaded

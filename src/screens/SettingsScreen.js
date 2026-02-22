@@ -12,10 +12,12 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import PremiumBackground from '../components/PremiumBackground';
 import { useGame } from '../context/GameContext';
 import ToastNotification from '../components/ToastNotification';
-import AvatarWithFrame from '../components/AvatarWithFrame'; // [NEW] // [NEW]
+import AvatarWithFrame from '../components/AvatarWithFrame'; // [NEW]
+import AvatarSelectionModal from '../components/AvatarSelectionModal'; // [NEW]
 
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, RANK_COLORS, RANK_THRESHOLDS } from '../context/AuthContext';
+import { PLAYER_AVATARS } from '../utils/constants'; // [NEW]
 import { useLanguage } from '../context/LanguageContext';
 import { useAudio } from '../context/AudioContext'; // [NEW]
 import SoundService from '../services/SoundService';
@@ -103,7 +105,7 @@ const SettingsScreen = ({ navigation }) => {
     const { isPlaying, toggleMusic } = useAudio(); // [NEW] Music Control
     const { leaveRoom, roomCode } = useGame();
     const { t, language, setLanguage } = useLanguage();
-    const { logout, user, toggleNotifications } = useAuth();
+    const { logout, user, toggleNotifications, updateProfile } = useAuth();
     const insets = useSafeAreaInsets();
 
     const languageRef = useRef(language);
@@ -222,6 +224,7 @@ const SettingsScreen = ({ navigation }) => {
     const [showInfo, setShowInfo] = useState(false);
     const [suggestionModalVisible, setSuggestionModalVisible] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [avatarModalVisible, setAvatarModalVisible] = useState(false); // [NEW]
 
     const [modalConfig, setModalConfig] = useState({
         visible: false,
@@ -400,6 +403,17 @@ const SettingsScreen = ({ navigation }) => {
         setShowRecoveryCode(false); // [FIX] Re-hide recovery code when going back
     };
 
+    // [NEW] Handle avatar selection from modal
+    const handleAvatarSelect = async (seed) => {
+        try {
+            await updateProfile({ avatar: seed });
+            setAvatarModalVisible(false);
+            setToast({ visible: true, message: t('avatar_changed', { defaultValue: 'Avatar aggiornato!' }), type: 'success' });
+        } catch (e) {
+            console.warn('Avatar update failed', e);
+        }
+    };
+
     return (
         <View style={{ flex: 1, backgroundColor: 'transparent' }}>
             <View style={styles.container}>
@@ -410,7 +424,14 @@ const SettingsScreen = ({ navigation }) => {
                     onClose={() => setToast({ ...toast, visible: false })}
                 />
 
-
+                {/* [NEW] Avatar Selection Modal */}
+                <AvatarSelectionModal
+                    visible={avatarModalVisible}
+                    onClose={() => setAvatarModalVisible(false)}
+                    onSelect={handleAvatarSelect}
+                    currentAvatar={user?.avatar || 'user'}
+                    avatars={PLAYER_AVATARS}
+                />
 
                 {showRules ? (
                     <Animated.View
@@ -640,11 +661,33 @@ const SettingsScreen = ({ navigation }) => {
                     >
                         {/* Profile Header */}
                         <View style={{ alignItems: 'center', marginBottom: 10 }}>
-                            <AvatarWithFrame
-                                avatar={user?.avatar || 'user'}
-                                frameId={user?.activeFrame || 'basic'}
-                                size={80}
-                            />
+                            <TouchableOpacity
+                                onPress={() => setAvatarModalVisible(true)}
+                                activeOpacity={0.8}
+                                style={{ position: 'relative' }}
+                            >
+                                <AvatarWithFrame
+                                    avatar={user?.avatar || 'user'}
+                                    frameId={user?.activeFrame || 'basic'}
+                                    size={80}
+                                />
+                                {/* Edit badge */}
+                                <View style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    right: 0,
+                                    backgroundColor: theme.colors.accent,
+                                    borderRadius: 10,
+                                    width: 22,
+                                    height: 22,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderWidth: 1.5,
+                                    borderColor: '#000'
+                                }}>
+                                    <Text style={{ fontSize: 11, color: '#000' }}>✎</Text>
+                                </View>
+                            </TouchableOpacity>
                             <Text style={{
                                 color: theme.colors.accent,
                                 fontFamily: 'Cinzel-Bold',
@@ -747,21 +790,21 @@ const SettingsScreen = ({ navigation }) => {
 
                                 <View style={{
                                     flexDirection: 'row',
-                                    backgroundColor: '#121212', // Leggermente più chiaro del nero assoluto per dare profondità
-                                    borderRadius: 12, // Curvatura più morbida, molto iOS
+                                    backgroundColor: theme.colors.surface || 'rgba(0,0,0,0.35)',
+                                    borderRadius: 12,
                                     borderWidth: 1.5,
-                                    // Il bordo "prende vita" (oro acceso) solo quando il codice è visibile
-                                    borderColor: showRecoveryCode ? addAlpha(theme.colors.accent, '66') : '#333',
-                                    height: 56, // Area touch più generosa
+                                    borderColor: showRecoveryCode
+                                        ? addAlpha(theme.colors.accent, '66')
+                                        : addAlpha(theme.colors.textPrimary || '#fff', '22'),
+                                    height: 56,
                                     alignItems: 'center',
                                     paddingLeft: 20,
                                     paddingRight: 8,
-                                    // Effetto bagliore stile "oggetto leggendario" quando rivelato
-                                    shadowColor: theme.colors.accent,
-                                    shadowOffset: { width: 0, height: 4 },
-                                    shadowOpacity: showRecoveryCode ? 0.1 : 0,
-                                    shadowRadius: 12,
-                                    elevation: showRecoveryCode ? 4 : 0, // Per i disperati su Android
+                                    shadowColor: 'transparent',
+                                    shadowOffset: { width: 0, height: 0 },
+                                    shadowOpacity: 0,
+                                    shadowRadius: 0,
+                                    elevation: 0,
                                 }}>
                                     {/* Display del codice */}
                                     <View style={{ flex: 1 }}>

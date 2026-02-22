@@ -231,9 +231,10 @@ export const AuthProvider = ({ children }) => {
                 if (user?.username && inviteName && inviteName !== user.username) {
                     if (user.friends && user.friends[inviteName]) return;
 
+                    // [FIX] Add both users as friends directly (bilateral), no friendRequests needed
                     const updates = {};
                     updates[`users/${user.username}/friends/${inviteName}`] = true;
-                    updates[`users/${inviteName}/friendRequests/${user.username}`] = 'invite';
+                    updates[`users/${inviteName}/friends/${user.username}`] = true;
                     await update(ref(db), updates);
                     setPendingInvite(null);
                     AsyncStorage.removeItem(PENDING_INVITE_KEY);
@@ -267,9 +268,10 @@ export const AuthProvider = ({ children }) => {
                         return;
                     }
 
+                    // [FIX] Add both users as friends directly (bilateral), no friendRequests needed
                     const updates = {};
                     updates[`users/${user.username}/friends/${pendingInvite}`] = true;
-                    updates[`users/${pendingInvite}/friendRequests/${user.username}`] = 'invite';
+                    updates[`users/${pendingInvite}/friends/${user.username}`] = true;
 
                     await update(ref(db), updates);
                     setPendingInvite(null);
@@ -1073,7 +1075,8 @@ export const AuthProvider = ({ children }) => {
         addFriendDirectly,
         acceptEula,
         reportPlayer,
-        deleteAccount
+        deleteAccount,
+        toggleNotifications
     }), [
         user,
         pendingRoom,

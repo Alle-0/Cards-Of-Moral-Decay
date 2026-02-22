@@ -223,6 +223,19 @@ const LobbyScreen = ({ onStartLoading }) => {
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
 
+    // [NEW] Arrival Notification Listener
+    const { joinNotification, clearJoinNotification } = useGame();
+    useEffect(() => {
+        if (joinNotification?.name) {
+            setToast({
+                visible: true,
+                message: t('player_joined_toast', { name: joinNotification.name, defaultValue: `${joinNotification.name} SI È UNITO ALLA STANZA` }),
+                type: 'success'
+            });
+            clearJoinNotification();
+        }
+    }, [joinNotification]);
+
     // [NEW] Exit Modal State
     const [showExitModal, setShowExitModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -284,7 +297,21 @@ const LobbyScreen = ({ onStartLoading }) => {
     const handleNextToActions = async (name, avatar) => {
         if (!name || !name.trim()) {
             SoundService.play('error');
-            setToast({ visible: true, message: "Inserisci un nome!" });
+            setToast({ visible: true, message: t('login_error_missing_name', { defaultValue: 'Inserisci un nome!' }), type: 'error' });
+            return;
+        }
+
+        // [NEW] Validate nickname for offensive/invalid content
+        const { validateUsername } = require('../utils/ValidationUtils');
+        const validation = validateUsername(name.trim());
+        if (!validation.valid) {
+            SoundService.play('error');
+            let errorMsg = t('login_error_missing_name');
+            if (validation.error === 'username_too_short') errorMsg = t('error_username_too_short', { defaultValue: 'Nome troppo corto.' });
+            else if (validation.error === 'username_too_long') errorMsg = t('error_username_too_long', { defaultValue: 'Nome troppo lungo.' });
+            else if (validation.error === 'username_invalid_chars') errorMsg = t('error_username_invalid_chars', { defaultValue: 'Caratteri non validi.' });
+            else if (validation.error === 'username_offensive') errorMsg = t('error_offensive_name', { defaultValue: 'Nome non consentito.' });
+            setToast({ visible: true, message: errorMsg, type: 'error' });
             return;
         }
 
@@ -311,7 +338,7 @@ const LobbyScreen = ({ onStartLoading }) => {
         } catch (e) {
             console.error("Identity sync failed", e);
             SoundService.play('error');
-            setToast({ visible: true, message: e.message || "Errore durante il salvataggio." });
+            setToast({ visible: true, message: e.message || "Errore durante il salvataggio.", type: 'error' });
         } finally {
             setIsLoading(false);
         }
@@ -408,7 +435,10 @@ const LobbyScreen = ({ onStartLoading }) => {
         } catch (e) {
             if (onStartLoading) onStartLoading(false);
             SoundService.play('error');
-            setToast({ visible: true, message: "Stanza non trovata o piena." });
+            const msg = e.message === 'kicked_error'
+                ? t('kicked_error', { defaultValue: 'Sei stato espulso da questa stanza.' })
+                : t('room_not_found_error', { defaultValue: 'Stanza non trovata o piena.' });
+            setToast({ visible: true, message: msg });
         } finally {
             setIsLoading(false);
         }

@@ -20,11 +20,13 @@ const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers, t, isSma
                     styles.blackCardText,
                     {
                         fontSize: isSmallScreen
-                            ? ((text?.length || 0) > 80 ? 12 : ((text?.length || 0) > 40 ? 14 : 16))
-                            : ((text?.length || 0) > 80 ? 13 : ((text?.length || 0) > 40 ? 15 : 18))
+                            ? ((text?.length || 0) > 80 ? 14 : ((text?.length || 0) > 40 ? 16 : 18))
+                            : ((text?.length || 0) > 80 ? 16 : ((text?.length || 0) > 40 ? 18 : 20))
                     }
                 ]}
-                numberOfLines={isSmallScreen ? 6 : 10}
+                numberOfLines={isSmallScreen ? 8 : 10}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.7}
             >
                 {text || ''}
             </Text>
@@ -154,7 +156,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                     <View style={{
                         flex: 1,
                         width: '100%',
-                        padding: 15,
+                        padding: 8,
                         justifyContent: 'center',
                         alignItems: 'center',
                         backgroundColor: (playerName === 'Rando' && showIdentity) ? '#e2e8f0' : (skin?.styles?.bg ? skin.styles.bg : '#d1d1d1'),
@@ -193,11 +195,26 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
                         <Text
                             style={[
                                 styles.whiteCardText,
-                                skin?.styles?.text ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {}
+                                skin?.styles?.text ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {},
+                                {
+                                    fontSize: (() => {
+                                        const len = combinedText?.length || 0;
+                                        const words = (combinedText || '').split(/\s+/);
+                                        const maxWord = Math.max(...words.map(w => w.length));
+
+                                        // Start smaller if total text is very long
+                                        let base = len > 60 ? 15 : 16;
+
+                                        if (maxWord >= 14) return Math.min(base, 15);
+                                        if (maxWord >= 13) return Math.min(base, 16);
+                                        return base;
+                                    })(),
+                                    paddingBottom: 10
+                                }
                             ]}
-                            numberOfLines={12}
+                            numberOfLines={10}
                             adjustsFontSizeToFit={true}
-                            minimumFontScale={0.5}
+                            minimumFontScale={0.4}
                         >
                             {combinedText}
                         </Text>
@@ -286,6 +303,11 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
     const { t } = useLanguage();
     const { user } = useAuth(); // [NEW] Get user for skins
     const [selectedCandidate, setSelectedCandidate] = useState(null);
+    const [shuffledOrder, setShuffledOrder] = useState([]);
+
+    // Only reveal cards if:
+    // 2. OR It's the choosing phase AND I am the Dominus - Only Dominus sees to choose
+    const cardsRevealed = status === 'SHOWING_WINNER' || (isDominus && status === 'DOMINUS_CHOOSING');
 
     // [FIX] Reset selection when a new round starts or status changes
     useEffect(() => {
@@ -300,13 +322,32 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
         return true;
     }), [playedCards]);
 
+    // [NEW] Shuffle cards once when they become visible to the Dominus
+    // Uses Fisher-Yates shuffle, stable per round (resets when blackCard changes)
+    useEffect(() => {
+        if (cardsRevealed && validPlayedCards.length > 0) {
+            const keys = validPlayedCards.map(([player]) => player);
+            // Fisher-Yates shuffle
+            for (let i = keys.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [keys[i], keys[j]] = [keys[j], keys[i]];
+            }
+            setShuffledOrder(keys);
+        }
+    }, [cardsRevealed, blackCard?.testo || blackCard]);
+
+    // Apply shuffle order if available
+    const displayedCards = useMemo(() => {
+        if (shuffledOrder.length === 0 || !cardsRevealed) return validPlayedCards;
+        const map = Object.fromEntries(validPlayedCards);
+        return shuffledOrder
+            .filter(k => map[k] !== undefined)
+            .map(k => [k, map[k]]);
+    }, [validPlayedCards, shuffledOrder, cardsRevealed]);
+
     const answerCount = validPlayedCards.length;
     // Total answers expected (players - 1 czar)
     const totalAnswers = useMemo(() => Math.max(0, playerCount - 1), [playerCount]);
-
-    // Only reveal cards if:
-    // 2. OR It's the choosing phase AND I am the Dominus - Only Dominus sees to choose
-    const cardsRevealed = status === 'SHOWING_WINNER' || (isDominus && status === 'DOMINUS_CHOOSING');
 
     return (
         <View style={[styles.container, { flex: showPlayedArea ? 1 : 0 }, style]}>
@@ -340,7 +381,7 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
                                     </View>
                                 )}
 
-                                {validPlayedCards.map(([player, cards]) => {
+                                {displayedCards.map(([player, cards]) => {
                                     const isSelected = (selectedCandidate || '').toString().trim().toLowerCase() === (player || '').toString().trim().toLowerCase();
                                     const isWinning = (optimisticWinner || '').toString().trim().toLowerCase() === (player || '').toString().trim().toLowerCase();
                                     const sanitizedPlayerName = (player || '').toString().trim().toLowerCase();

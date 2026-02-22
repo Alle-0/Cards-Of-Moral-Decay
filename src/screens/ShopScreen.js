@@ -743,27 +743,27 @@ export default function ShopScreen() {
                 hardwareAccelerated={true}
             >
                 {preview && (
-                    <View style={styles.previewOverlayContainer}>
+                    <Pressable
+                        style={styles.previewOverlayContainer}
+                        onPress={handleClosePreview}
+                    >
+                        {/* Blur backdrop */}
                         <Animated.View
                             entering={FadeIn.duration(300)}
                             exiting={FadeOut.duration(300)}
                             style={StyleSheet.absoluteFill}
+                            pointerEvents="none"
                         >
-                            <EfficientBlurView intensity={Platform.OS === 'android' ? 20 : 40} tint="dark" style={StyleSheet.absoluteFill}>
-                                <TouchableOpacity
-                                    style={styles.backdropClick}
-                                    activeOpacity={1}
-                                    onPress={handleClosePreview}
-                                />
-                            </EfficientBlurView>
+                            <EfficientBlurView intensity={Platform.OS === 'android' ? 20 : 40} tint="dark" style={StyleSheet.absoluteFill} />
                         </Animated.View>
 
-                        <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center' }, { pointerEvents: 'box-none' }]}>
-                            <Animated.View
-                                entering={ZoomIn.delay(50).duration(300)}
-                                exiting={ZoomOut.duration(200)}
-                                style={[styles.previewModal, { backgroundColor: theme.colors.background[0] === 'transparent' ? '#111' : theme.colors.background[0], borderColor: theme.colors.accent, shadowOpacity: 0, elevation: 0 }]}
-                            >
+                        {/* Modal content — stops propagation so tapping inside doesn't close */}
+                        <Animated.View
+                            entering={ZoomIn.delay(50).duration(300)}
+                            exiting={ZoomOut.duration(200)}
+                            style={[styles.previewModal, { backgroundColor: theme.colors.background[0] === 'transparent' ? '#111' : theme.colors.background[0], borderColor: theme.colors.accent, shadowOpacity: 0, elevation: 0 }]}
+                        >
+                            <Pressable onPress={(e) => e.stopPropagation()} style={{ width: '100%', alignItems: 'center' }}>
                                 <View style={styles.previewHeaderNew}>
                                     <Text style={[styles.previewSubtitle, { color: theme.colors.accent }]}>
                                         {preview?.type === 'skin' ? t('preview_subtitle_skin') :
@@ -820,17 +820,15 @@ export default function ShopScreen() {
                                                 {((preview.item.id === 'chill' ? (CHILL_PACK_PREVIEW[language] || CHILL_PACK_PREVIEW['en']) :
                                                     (preview.item.id === 'spicy' ? (SPICY_PACK_PREVIEW[language] || SPICY_PACK_PREVIEW['en']) :
                                                         (DARK_PACK_PREVIEW[language] || DARK_PACK_PREVIEW['en'])))).map((text, index) => {
-                                                            // Extract censored words (e.g., "{word}")
                                                             const censoredMatches = text.match(/\{[^}]+\}/g) || [];
-
                                                             return (
                                                                 <View key={index} style={[styles.largeCard, {
-                                                                    backgroundColor: '#f5f5f5', // White Answer Card
+                                                                    backgroundColor: '#f5f5f5',
                                                                     borderColor: '#ddd',
                                                                     borderWidth: 1,
-                                                                    width: (width * 0.85 - 60) / 2, // Safe width: Millimectric fit (85% modal - 40 padding - 10 gap - 10 buffer)
-                                                                    height: ((width * 0.85 - 60) / 2) * 1.4, // Aspect ratio
-                                                                    padding: 8 // Reduced padding
+                                                                    width: (width * 0.85 - 60) / 2,
+                                                                    height: ((width * 0.85 - 60) / 2) * 1.4,
+                                                                    padding: 8
                                                                 }]}>
                                                                     <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 4 }}>
                                                                         <CensoredText
@@ -902,10 +900,9 @@ export default function ShopScreen() {
                                 >
                                     <Text style={styles.closeButtonText}>{t('close_preview')}</Text>
                                 </TouchableOpacity>
-
-                            </Animated.View>
-                        </View>
-                    </View>
+                            </Pressable>
+                        </Animated.View>
+                    </Pressable>
                 )}
             </Modal>
 

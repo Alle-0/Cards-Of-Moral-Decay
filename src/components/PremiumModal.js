@@ -45,8 +45,11 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
     const sensorX = (parallaxResult && parallaxResult.sensorX) ? parallaxResult.sensorX : fallbackSV;
     const sensorY = (parallaxResult && parallaxResult.sensorY) ? parallaxResult.sensorY : fallbackSV;
 
-    // Transform only for the wrapper
+    // Transform only for the wrapper — parallax disabled on Android for performance
     const containerTransformStyle = useAnimatedStyle(() => {
+        if (Platform.OS === 'android') {
+            return { transform: [{ scale: scale.value }] };
+        }
         return {
             transform: [
                 { scale: scale.value },
@@ -141,13 +144,15 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                                         shadowColor: glowColor || '#000',
                                         shadowOpacity: glowColor ? 0.6 : 0.5,
                                         shadowRadius: glowColor ? 35 : 30,
+                                        // [PERF] Reduce elevation cost on Android
+                                        elevation: Platform.OS === 'android' ? 3 : 10,
                                         width: '100%',
                                         height: modalHeight ? '100%' : undefined,
                                         paddingBottom: 0
                                     },
-                                    contentOpacityStyle // Appply opacity directly here
+                                    contentOpacityStyle
                                 ]}
-                                renderToHardwareTextureAndroid={true} // [NEW] Smooth optimization
+                                renderToHardwareTextureAndroid={true}
                             >
 
                                 {/* CONTENT: Rendered on top */}
@@ -215,7 +220,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.5,
         shadowRadius: 30,
-        elevation: 10,
+        elevation: 3, // [PERF] Lower elevation = cheaper shadow on Android
     },
     header: {
         width: '100%',

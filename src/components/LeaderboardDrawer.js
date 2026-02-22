@@ -11,7 +11,7 @@ import PremiumButton from './PremiumButton';
 import ConfirmationModal from './ConfirmationModal';
 
 import LocalAvatar from './LocalAvatar';
-import { TrashIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ThornsIcon, CrossIcon } from './Icons';
+import { TrashIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ThornsIcon, CrossIcon, ReportIcon } from './Icons';
 import AvatarWithFrame from './AvatarWithFrame'; // [NEW] Standardized
 import { useAuth, RANK_COLORS } from '../context/AuthContext'; // [FIX] Added useAuth
 
@@ -41,6 +41,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
     const [showKickModal, setShowKickModal] = useState(false); // Visibility
 
     const [playerToReport, setPlayerToReport] = useState(null);
+    const [reportedPlayerName, setReportedPlayerName] = useState(''); // [FIX] Stable name for modal
     const [showReportModal, setShowReportModal] = useState(false);
 
     const ANIM_CONFIG = {
@@ -174,7 +175,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                     >
                         <View style={styles.list}>
                             {players.map((player, index) => (
-                                <View key={player.name} style={[styles.playerRow, { borderColor: player.name === currentUserName ? theme.colors.accent : 'rgba(255,255,255,0.1)' }]}>
+                                <View key={player.name} style={[styles.playerRow, { borderColor: (player.name || '').trim().toLowerCase() === (currentUserName || '').trim().toLowerCase() ? theme.colors.accent : 'rgba(255,255,255,0.1)' }]}>
                                     {/* ... rank and avatar ... */}
                                     <View style={styles.rankContainer}>
                                         <Text style={[styles.rank, { color: index === 0 ? '#ffd700' : '#888' }]}>
@@ -217,7 +218,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
 
                                     <View style={{ flexDirection: 'row', width: isCreator ? 84 : 42, justifyContent: 'flex-end', alignItems: 'center' }}>
                                         {isCreator && (
-                                            player.name !== currentUserName && player.name !== 'Rando' ? (
+                                            (player.name || '').trim().toLowerCase() !== (currentUserName || '').trim().toLowerCase() && player.name !== 'Rando' ? (
                                                 <PremiumIconButton
                                                     icon={<TrashIcon size={18} color="#ff6b6b" />}
                                                     size={32}
@@ -229,19 +230,16 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                                             )
                                         )}
 
-                                        {player.name !== currentUserName && player.name !== 'Rando' && (
+                                        {(player.name || '').trim().toLowerCase() !== (currentUserName || '').trim().toLowerCase() && player.name !== 'Rando' && (
                                             <PremiumIconButton
-                                                icon={
-                                                    <View style={{ transform: [{ rotate: '15deg' }] }}>
-                                                        <Text style={{ fontSize: 18 }}>🚩</Text>
-                                                    </View>
-                                                }
+                                                icon={<ReportIcon size={18} color="#ef4444" />}
                                                 size={32}
                                                 onPress={() => {
                                                     setPlayerToReport(player);
+                                                    setReportedPlayerName(player.name); // [FIX]
                                                     setShowReportModal(true);
                                                 }}
-                                                style={{ marginLeft: 10, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 20 }}
+                                                style={{ marginLeft: 10, backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)', borderWidth: 1, borderRadius: 20 }}
                                             />
                                         )}
                                     </View>
@@ -263,13 +261,19 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                 <ConfirmationModal
                     visible={showReportModal}
                     title={t('report_player_title', { defaultValue: 'SEGNALA GIOCATORE' })}
-                    message={t('report_player_msg', { name: playerToReport?.name })}
+                    message={t('report_player_msg', { name: reportedPlayerName })}
                     confirmText={t('report_btn', { defaultValue: 'SEGNALA' })}
                     onConfirm={async () => {
                         if (playerToReport) {
-                            await reportPlayer(playerToReport.name);
+                            try {
+                                await reportPlayer(playerToReport.name);
+                            } catch (e) {
+                                console.error("[REPORT] Failed:", e);
+                            }
                             setShowReportModal(false);
-                            setPlayerToReport(null);
+                            // We don't clear playerToReport here immediately to avoid "undefined" 
+                            // flashes if the modal takes time to unmount.
+                            // The onClose or a timeout can handle it.
                         }
                     }}
                     onClose={() => {
@@ -303,7 +307,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.3,
         shadowRadius: 10,
-        elevation: 20,
+        elevation: Platform.OS === 'android' ? 4 : 20, // [PERF] Lower elevation on Android
         overflow: 'hidden',
     },
     header: {

@@ -46,8 +46,8 @@ const ConfirmationModal = ({
                         title={confirmText}
                         variant={singleButton ? "primary" : "danger"}
                         enableSound={false}
-                        onPress={() => {
-                            if (onConfirm) onConfirm();
+                        onPress={async () => {
+                            if (onConfirm) await onConfirm();
                             onClose();
                         }}
                         style={{ flex: 1, maxWidth: '100%', width: 'auto' }}
