@@ -40,7 +40,7 @@ export const CHAOS_EVENT_DETAILS = {
         id: CHAOS_EVENTS.ROBIN_HOOD,
         titleKey: 'chaos_event_robin_hood_title',
         descKey: 'chaos_event_robin_hood_desc',
-        icon: 'CrownIcon', // Recycling Crown or use another if available
+        icon: 'BowIcon', // Changed from CrownIcon
         color: '#10b981' // Green
     },
     [CHAOS_EVENTS.DIRTY_WIN]: {
