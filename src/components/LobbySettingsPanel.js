@@ -458,7 +458,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
                     <Text style={[styles.sectionLabel, { marginBottom: 0 }]}>{t.select_packages || "CONTENT PACKS"}</Text>
                     {(!settings.packs || settings.packs.length === 0) && (
                         <Text style={{ color: '#EF4444', fontSize: 10, fontFamily: 'Outfit-Bold' }}>
-                            Seleziona almeno un pack
+                            {t.select_at_least_one_pack || "Seleziona almeno un pack"}
                         </Text>
                     )}
                 </View>
