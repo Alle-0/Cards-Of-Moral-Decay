@@ -12,21 +12,21 @@ export const CHAOS_EVENT_DETAILS = {
         id: CHAOS_EVENTS.INFLATION,
         titleKey: 'chaos_event_inflation_title',
         descKey: 'chaos_event_inflation_desc',
-        icon: 'DirtyCashIcon',
+        icon: 'StonksIcon',
         color: '#10b981'
     },
     [CHAOS_EVENTS.BLACKOUT]: {
         id: CHAOS_EVENTS.BLACKOUT,
         titleKey: 'chaos_event_blackout_title',
         descKey: 'chaos_event_blackout_desc',
-        icon: 'EyeOffIcon',
+        icon: 'BlackoutIcon',
         color: '#ef4444'
     },
     [CHAOS_EVENTS.DICTATORSHIP]: {
         id: CHAOS_EVENTS.DICTATORSHIP,
         titleKey: 'chaos_event_dictatorship_title',
         descKey: 'chaos_event_dictatorship_desc',
-        icon: 'CrownIcon',
+        icon: 'DictatorshipIcon',
         color: '#8b5cf6'
     },
     [CHAOS_EVENTS.IDENTITY_SWAP]: {

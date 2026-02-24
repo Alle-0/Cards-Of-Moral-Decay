@@ -2,10 +2,24 @@ import React from 'react';
 import { View, Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 
-const EfficientBlurView = ({ style, intensity = 30, tint = 'dark', children }) => {
+const EfficientBlurView = ({ style, intensity = 30, tint = 'dark', force = false, children }) => {
     if (Platform.OS === 'android') {
-        // On Android we use a solid backing layer + a very low intensity BlurView.
-        // This keeps a frosted-glass feel while avoiding the GPU cost of high intensity.
+        // If force is true, we allow the full blur intensity on Android.
+        // This is used for critical UI elements like the navbar where quality > perf.
+        if (force) {
+            return (
+                <View style={[styles.container, style]}>
+                    <BlurView
+                        intensity={intensity}
+                        tint={tint}
+                        style={StyleSheet.absoluteFill}
+                    />
+                    {children}
+                </View>
+            );
+        }
+
+        // Default Android behavior: solid backing + very light blur for performance.
         return (
             <View style={[styles.container, style]}>
                 {/* Solid base for readability */}

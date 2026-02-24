@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useRef, useMemo } from 'react';
-import { Alert, Platform } from 'react-native'; // Alert kept for fatal errors if absolutely needed, but avoiding user facing ones
+import { Alert, Platform, AppState } from 'react-native'; // Alert kept for fatal errors if absolutely needed, but avoiding user facing ones
 import { db } from '../services/firebase';
 import { ref, set, get, update, onValue, runTransaction, onDisconnect, child } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -113,6 +113,45 @@ export const GameProvider = ({ children }) => {
         });
         return () => unsub();
     }, [roomCode, roomPlayerName, user?.nickname, user?.username]);
+
+    // [FIX] Eager Disconnect on Web Tab Close & App Background
+    useEffect(() => {
+        let appStateSub;
+
+        // 1. AppState covers RN background/inactive and Web visibilitychange
+        const handleAppStateChange = (nextAppState) => {
+            if (nextAppState === 'background' || nextAppState === 'inactive') {
+                if (roomCode && roomPlayerName) {
+                    const playerRef = ref(db, `stanze/${roomCode}/giocatori/${roomPlayerName}`);
+                    update(playerRef, { online: false, lastSeen: Date.now() }).catch(() => { });
+                }
+            } else if (nextAppState === 'active') {
+                if (roomCode && roomPlayerName) {
+                    setPresence(roomCode, roomPlayerName);
+                }
+            }
+        };
+
+        appStateSub = AppState.addEventListener('change', handleAppStateChange);
+
+        // 2. Web specific Tab Close / Navigate Away to force immediate onDisconnect
+        const handleBeforeUnload = () => {
+            if (roomCode && roomPlayerName) {
+                import('firebase/database').then(({ goOffline }) => goOffline(db));
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            window.addEventListener('beforeunload', handleBeforeUnload);
+        }
+
+        return () => {
+            appStateSub?.remove();
+            if (Platform.OS === 'web') {
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+            }
+        };
+    }, [roomCode, roomPlayerName]);
 
     // Cleanup
     useEffect(() => {
@@ -825,9 +864,9 @@ export const GameProvider = ({ children }) => {
                             if (r.connessi) delete r.connessi[currentName];
 
                             const remaining = Object.keys(r.giocatori || {});
-                            if (remaining.length === 0) return null;
+                            // [FIX] Do NOT return null. Rooms persist until manually deleted or cleaned up by scheduled job.
 
-                            if (r.creatore === currentName) {
+                            if (remaining.length > 0 && r.creatore === currentName) {
                                 const nextHost = remaining[0];
                                 r.creatore = nextHost;
                                 r.creatorUsername = r.giocatori[nextHost]?.username || nextHost;

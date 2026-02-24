@@ -3,7 +3,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { isProfane, validateUsername } from '../utils/ValidationUtils';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ScrollView, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
+import { ref, get } from 'firebase/database';
 import { signOut } from 'firebase/auth';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -147,7 +148,7 @@ export default function LoginScreen() {
     const indicatorStyle = useAnimatedStyle(() => {
         return {
             transform: [
-                { translateX: interpolate(dragXPercent.value, [0, 50], [2, 2]) },
+                { translateX: interpolate(dragXPercent.value, [0, 50], [2, -2]) },
                 { scale: tabScale.value }
             ],
             left: `${dragXPercent.value}%`
@@ -167,6 +168,72 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [modal, setModal] = useState({ visible: false, title: '', message: '' });
     const [showEula, setShowEula] = useState(false);
+    const [validationStatus, setValidationStatus] = useState(null); // { type: 'error'|'success'|'checking', message: string }
+    const borderAnimation = useSharedValue(0); // 0: neutral, 1: success, 2: error
+
+    const animatedInputStyle = useAnimatedStyle(() => {
+        const borderColor = interpolateColor(
+            borderAnimation.value,
+            [0, 1, 2],
+            ['rgba(255,255,255,0.1)', '#4ade80', '#ff4444']
+        );
+
+        return {
+            borderColor,
+            borderWidth: borderAnimation.value > 0 ? 1.5 : 1,
+        };
+    });
+
+    // [NEW] Real-time Validation Effect
+    useEffect(() => {
+        if (!username.trim()) {
+            setValidationStatus(null);
+            return;
+        }
+
+        const handler = setTimeout(async () => {
+            // 1. Local Validation
+            const validation = validateUsername(username.trim());
+            if (!validation.valid) {
+                let errorMsg = t('login_error_missing_name');
+                if (validation.error === 'username_too_short') errorMsg = t('error_username_too_short');
+                else if (validation.error === 'username_too_long') errorMsg = t('error_username_too_long');
+                else if (validation.error === 'username_invalid_chars') errorMsg = t('error_username_invalid_chars');
+                else if (validation.error === 'username_offensive') errorMsg = t('error_offensive_name');
+
+                setValidationStatus({ type: 'error', message: errorMsg });
+                borderAnimation.value = withTiming(2, { duration: 300 });
+                return;
+            }
+
+            // 2. Firebase Availability Check
+            setValidationStatus({ type: 'checking', message: '...' });
+            borderAnimation.value = withTiming(0, { duration: 300 });
+            try {
+                const snapshot = await get(ref(db, `users/${username.trim()}`));
+                if (snapshot.exists()) {
+                    setValidationStatus({ type: 'error', message: t('error_username_taken') });
+                    borderAnimation.value = withTiming(2, { duration: 300 });
+                } else {
+                    setValidationStatus({ type: 'success', message: t('valid_username') });
+                    borderAnimation.value = withTiming(1, { duration: 300 });
+                }
+            } catch (e) {
+                console.warn("[Validation] Check failed:", e);
+                setValidationStatus(null);
+                borderAnimation.value = withTiming(0, { duration: 300 });
+            }
+        }, 500);
+
+        return () => clearTimeout(handler);
+    }, [username, t]);
+
+    // Reset border when input cleared
+    useEffect(() => {
+        if (!username.trim()) {
+            borderAnimation.value = withTiming(0, { duration: 200 });
+        }
+    }, [username]);
 
     // --- Actions ---
 
@@ -301,14 +368,28 @@ export default function LoginScreen() {
 
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>{t('login_alias_label')}</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder={t('login_alias_placeholder')}
-                                    placeholderTextColor="#666"
-                                    value={username}
-                                    onChangeText={setUsername}
-                                    autoCapitalize="none"
-                                />
+                                <Animated.View style={[styles.inputWrapper, animatedInputStyle]}>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder={t('login_alias_placeholder')}
+                                        placeholderTextColor="#666"
+                                        value={username}
+                                        onChangeText={setUsername}
+                                        autoCapitalize="none"
+                                    />
+                                </Animated.View>
+                                {validationStatus && (
+                                    <Animated.Text
+                                        entering={FadeInDown.duration(200)}
+                                        style={[
+                                            styles.validationText,
+                                            validationStatus.type === 'error' ? styles.errorText :
+                                                validationStatus.type === 'success' ? styles.successText : styles.checkingText
+                                        ]}
+                                    >
+                                        {validationStatus.message}
+                                    </Animated.Text>
+                                )}
                             </View>
 
                             <TouchableOpacity
@@ -340,36 +421,40 @@ export default function LoginScreen() {
 
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>{t('login_alias_label')}</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder={t('login_old_alias_placeholder')}
-                                    placeholderTextColor="#666"
-                                    value={recoverUsername}
-                                    onChangeText={setRecoverUsername}
-                                    autoCapitalize="none"
-                                />
+                                <Animated.View style={styles.inputWrapper}>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder={t('login_old_alias_placeholder')}
+                                        placeholderTextColor="#666"
+                                        value={recoverUsername}
+                                        onChangeText={setRecoverUsername}
+                                        autoCapitalize="none"
+                                    />
+                                </Animated.View>
                             </View>
 
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>{t('login_secret_code_label')}</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder={t('login_secret_code_placeholder')}
-                                    placeholderTextColor="#666"
-                                    value={recoveryCode}
-                                    onChangeText={(text) => {
-                                        const cleaned = text.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-                                        let formatted = cleaned;
-                                        if (cleaned.length === 3 && text.length > recoveryCode.length) {
-                                            formatted = cleaned + '-';
-                                        } else if (cleaned.length > 3) {
-                                            formatted = cleaned.slice(0, 3) + '-' + cleaned.slice(3, 7);
-                                        }
-                                        setRecoveryCode(formatted);
-                                    }}
-                                    autoCapitalize="characters"
-                                    maxLength={8}
-                                />
+                                <Animated.View style={styles.inputWrapper}>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder={t('login_secret_code_placeholder')}
+                                        placeholderTextColor="#666"
+                                        value={recoveryCode}
+                                        onChangeText={(text) => {
+                                            const cleaned = text.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                                            let formatted = cleaned;
+                                            if (cleaned.length === 3 && text.length > recoveryCode.length) {
+                                                formatted = cleaned + '-';
+                                            } else if (cleaned.length > 3) {
+                                                formatted = cleaned.slice(0, 3) + '-' + cleaned.slice(3, 7);
+                                            }
+                                            setRecoveryCode(formatted);
+                                        }}
+                                        autoCapitalize="characters"
+                                        maxLength={8}
+                                    />
+                                </Animated.View>
                             </View>
 
                             <TouchableOpacity
@@ -561,14 +646,19 @@ const styles = StyleSheet.create({
     },
     input: {
         backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 12,
         padding: 16,
         color: '#fff',
         fontFamily: 'Outfit',
         fontSize: 16,
+        outlineStyle: 'none',
+        flex: 1,
+    },
+    inputWrapper: {
+        borderRadius: 12,
+        overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
-        outlineStyle: 'none',
+        flexDirection: 'row',
     },
     button: {
         width: '100%',
@@ -638,5 +728,20 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontFamily: 'Cinzel-Bold',
         fontSize: 12
+    },
+    validationText: {
+        fontFamily: 'Outfit',
+        fontSize: 11,
+        marginTop: 6,
+        marginLeft: 4,
+    },
+    errorText: {
+        color: '#ff4444',
+    },
+    successText: {
+        color: '#4ade80',
+    },
+    checkingText: {
+        color: '#aaa',
     }
 });

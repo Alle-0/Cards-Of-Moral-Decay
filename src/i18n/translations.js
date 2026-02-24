@@ -84,6 +84,7 @@ export const translations = {
         rank_eminenza_grigia: "Eminenza Grigia",
         rank_entita_apocalittica: "Entità Apocalittica",
         rank_bot: "BOT",
+        robot_icon_label: "ROBOT",
         rank_capo_supremo: "Capo Supremo",
         next_rank_points: "%{points} DC per %{rank}", // [NEW] Use 'per' in Italian
         max_rank_reached: "Rank Massimo Raggiunto!",
@@ -544,6 +545,8 @@ export const translations = {
         error_username_too_short: "Il nome è troppo corto (minimo 2 caratteri).",
         error_username_too_long: "Il nome è troppo lungo (massimo 20 caratteri).",
         error_username_invalid_chars: "Il nome contiene caratteri non validi.",
+        error_username_taken: "Nome già occupato.",
+        valid_username: "Nome disponibile.",
 
         // EULA
         eula_title: "Termini e Condizioni",
@@ -662,6 +665,7 @@ export const translations = {
         rank_eminenza_grigia: "Grey Eminence",
         rank_entita_apocalittica: "Apocalyptic Entity",
         rank_bot: "BOT",
+        robot_icon_label: "ROBOT",
         rank_capo_supremo: "Supreme Boss",
         next_rank_points: "%{points} DC to %{rank}", // [NEW] Use 'to' in English
         max_rank_reached: "Max Rank Reached!",
@@ -1093,6 +1097,8 @@ export const translations = {
         error_username_too_short: "The name is too short (minimum 2 characters).",
         error_username_too_long: "The name is too long (maximum 20 characters).",
         error_username_invalid_chars: "The name contains invalid characters.",
+        error_username_taken: "Username already taken.",
+        valid_username: "Username available.",
 
         // EULA
         eula_title: "Terms and Conditions",
