@@ -47,7 +47,7 @@ export const CHAOS_EVENT_DETAILS = {
         id: CHAOS_EVENTS.DIRTY_WIN,
         titleKey: 'chaos_event_dirty_win_title',
         descKey: 'chaos_event_dirty_win_desc',
-        icon: 'DirtyCashIcon',
+        icon: 'CashBagIcon',
         color: '#000000' // Dark/Black
     }
 };
