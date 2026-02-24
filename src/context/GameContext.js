@@ -873,11 +873,6 @@ export const GameProvider = ({ children }) => {
                                 r.dominus = remaining.length > 0 ? remaining[0] : null;
                             }
 
-                            // If room is empty, we force mark it as stale so the cleanup catches it visually faster
-                            if (remaining.length === 0) {
-                                r.timestamp = 0; // Marks it for immediate deletion in the listener
-                            }
-
                             return dehydrateRoom(r);
                         });
                         // Secondary direct delete just in case transaction merged weirdly
