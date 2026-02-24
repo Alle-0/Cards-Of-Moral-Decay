@@ -149,6 +149,15 @@ export const ErrorIcon = ({ size = 24, color = "#FFCE6A" }) => (
     </Svg>
 );
 
+export const SwapIcon = ({ size = 24, color = "#FFCE6A" }) => (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <Path d="M38.5 23.5V23C38.5 18.5817 34.9183 15 30.5 15H14C13.4477 15 13 14.5523 13 14V11.8921C13 11.0887 12.1005 10.6133 11.4367 11.0659L3.17311 16.7002C2.60156 17.0898 2.58882 17.9282 3.14828 18.3351L11.4118 24.345C12.0728 24.8257 13 24.3535 13 23.5362V21.5C13 20.9477 13.4477 20.5 14 20.5H15" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M21 20.5H30.5C31.8807 20.5 33 21.6193 33 23" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M9 26V26.5C9 30.9183 12.5817 34.5 17 34.5H33.5C34.0523 34.5 34.5 34.9477 34.5 35.5V37.5568C34.5 38.3702 35.4194 38.8433 36.0812 38.3705L38 37" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M43.5 33.5L44.4168 32.8124C44.9551 32.4087 44.9491 31.5994 44.405 31.2036L36.0882 25.155C35.4272 24.6743 34.5 25.1465 34.5 25.9638V28C34.5 28.5523 34.0523 29 33.5 29H17C15.6193 29 14.5 27.8807 14.5 26.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+    </Svg>
+);
+
 export const RankIcon = ({ size = 24, color = "#FFCE6A" }) => (
     <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
         <Path d="M17.5 20V18.5C17.5 16.8431 18.8431 15.5 20.5 15.5L27 15.5C28.6569 15.5 30 16.8431 30 18.5V41.5C30 43.1569 28.6569 44.5 27 44.5H20.5C18.8431 44.5 17.5 43.1569 17.5 41.5V26.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />

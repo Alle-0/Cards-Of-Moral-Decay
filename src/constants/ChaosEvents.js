@@ -33,7 +33,7 @@ export const CHAOS_EVENT_DETAILS = {
         id: CHAOS_EVENTS.IDENTITY_SWAP,
         titleKey: 'chaos_event_identity_swap_title',
         descKey: 'chaos_event_identity_swap_desc',
-        icon: 'DiceIcon', // Represents randomness/shuffle
+        icon: 'SwapIcon', // Changed from DiceIcon
         color: '#f59e0b'
     },
     [CHAOS_EVENTS.ROBIN_HOOD]: {
