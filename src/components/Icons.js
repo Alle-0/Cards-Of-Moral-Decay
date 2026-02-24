@@ -252,6 +252,16 @@ export const ScaleIcon = ({ size = 24, color = "#FFCE6A" }) => (
     </Svg>
 );
 
+export const CashBagIcon = ({ size = 24, color = "#FFCE6A" }) => (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <Path d="M30.7677 11.4194L29.8956 14.9145C29.6557 15.8759 30.0222 16.8802 30.7726 17.5274C38.0188 23.7767 40.6991 33.2814 38.6544 39.2778C37.7209 42.0154 34.6529 43 31.7605 43H16.4573C13.7311 43 10.8178 42.1603 9.79089 39.6349C7.38126 33.7091 10.2578 24.0475 17.5596 17.6704C18.3902 16.945 18.7443 15.7928 18.3693 14.7557L17.3717 11.9969C16.8589 10.5785 18.459 9.33148 19.7091 10.1753C20.4523 10.677 21.4645 10.4495 21.9216 9.6781L22.3968 8.87635C23.2442 7.44631 25.3139 7.44631 26.1613 8.87635L26.6925 9.77264C27.1041 10.4673 28.0412 10.6257 28.6583 10.105C29.6268 9.28787 31.0745 10.19 30.7677 11.4194Z" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M21 16.5H27.5" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Circle cx="24" cy="31" r="7.25" stroke={color} strokeWidth="2.5" />
+        <Path d="M27 29C25.8954 29 25 29.8954 25 31C25 32.1046 25.8954 33 27 33" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M20.5999 29.0024C21.6869 29.0538 23 29.9285 23 31C23 32.0715 21.6869 32.9462 20.5999 32.9976C20.5448 33.0002 20.5 32.9552 20.5 32.9V29.1C20.5 29.0448 20.5448 28.9998 20.5999 29.0024Z" stroke={color} strokeWidth="2.5" />
+    </Svg>
+);
+
 export const DirtyCashIcon = ({ size = 24, color = "#FFCE6A" }) => (
     <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
         <Path d="M28 32H39C40.6569 32 42 30.6569 42 29V16C42 14.3431 40.6569 13 39 13H28" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
