@@ -6,7 +6,7 @@ import { useTheme, TEXTURES } from '../context/ThemeContext';
 import HapticsService from '../services/HapticsService';
 import PremiumIconButton from './PremiumIconButton';
 import PremiumPressable from './PremiumPressable';
-import { CardsIcon, RobotIcon, TrashIcon, DirtyCashIcon, EyeOffIcon } from './Icons'; // [NEW] DirtyCashIcon, EyeOffIcon
+import { CardsIcon, RobotIcon, TrashIcon, CashBagIcon, EyeOffIcon } from './Icons'; // [NEW] CashBagIcon, EyeOffIcon
 import { useWebScroll } from '../hooks/useWebScroll';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -501,7 +501,7 @@ const PlayerHand = ({
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, position: 'absolute', right: 20 }}>
                     {onBribe && (
                         <PremiumIconButton
-                            icon={<DirtyCashIcon size={isSmallScreen ? 24 : 30} color="#FFD700" />}
+                            icon={<CashBagIcon size={isSmallScreen ? 24 : 30} color="#FFD700" />}
                             onPress={onBribe}
                             badge={bribes > 0 ? bribes : null}
                             badgeStyle={bribes <= 0 ? { backgroundColor: '#ef4444', borderColor: '#000', borderWidth: 1.5 } : { backgroundColor: '#FFD700', borderColor: '#000', borderWidth: 1.5 }}

@@ -31,7 +31,7 @@ import HapticsService from '../services/HapticsService'; // [FIX] Import added
 import * as Clipboard from 'expo-clipboard';
 import ToastNotification from '../components/ToastNotification';
 import EfficientBlurView from '../components/EfficientBlurView'; // [NEW]
-import { CardsIcon, CheckIcon, ThornsIcon, LockIcon, RankIcon, SettingsIcon, RobotIcon, DirtyCashIcon, ScaleIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ShareIcon, EyeIcon, EyeOffIcon, InfoIcon } from '../components/Icons';
+import { CardsIcon, CheckIcon, ThornsIcon, LockIcon, RankIcon, SettingsIcon, RobotIcon, DirtyCashIcon, CashBagIcon, ScaleIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ShareIcon, EyeIcon, EyeOffIcon, InfoIcon } from '../components/Icons';
 import ShopScreen from './ShopScreen'; // [NEW]
 import AnalyticsService from '../services/AnalyticsService';
 import { BASE_URL } from '../constants/Config';

@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, LayoutAn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     ArrowLeftIcon,
-    DirtyCashIcon,
+    CashBagIcon,
     CrownIcon,
     PeopleIcon,
     EyeIcon,
