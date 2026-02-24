@@ -9,11 +9,13 @@
 
 <br/>
 
-[![Github Latest Release](https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?style=for-the-badge&label=VERSION&color=D4AF37&labelColor=000000)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
-[![Platform](https://img.shields.io/badge/PLATFORM-ANDROID_%26_WEB-D4AF37?style=for-the-badge&labelColor=000000&logo=android&logoColor=D4AF37)](https://carte-vs-umani.web.app)
-[![License](https://img.shields.io/badge/RATING-18%2B-D4AF37?style=for-the-badge&labelColor=000000)](https://github.com/Alle-0/Cards-Of-Moral-Decay)
+<div align="center">
 
-<br/><br/>
+[![Github Latest Release](https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?style=for-the-badge&label=VERSION&color=D4AF37&labelColor=000000&logo=github&logoColor=D4AF37)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
+[![Platform](https://img.shields.io/badge/PLATFORM-ANDROID_%26_WEB-D4AF37?style=for-the-badge&labelColor=000000&logo=googlechrome&logoColor=D4AF37)](https://carte-vs-umani.web.app)
+[![License](https://img.shields.io/badge/RATING-18%2B-D4AF37?style=for-the-badge&labelColor=000000&logo=adblock&logoColor=D4AF37)](https://github.com/Alle-0/Cards-Of-Moral-Decay)
+
+<br/>
 
 > [!WARNING]
 > ### 🔞 MATURE CONTENT
@@ -24,13 +26,14 @@
 
 ## 🚀 JOIN THE DECAY
 
-<a href="https://carte-vs-umani.web.app">
-  <img src="https://img.shields.io/badge/🌐_PLAY_ONLINE-E6C25D?style=for-the-badge&logo=google-chrome&logoColor=black&labelColor=000000" height="50" />
-</a>
+<div align="center">
 
-<a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest">
-  <img src="https://img.shields.io/badge/⬇_DOWNLOAD_LATEST_APK-D4AF37?style=for-the-badge&logo=android&logoColor=black&labelColor=000000" height="50" />
-</a>
+[![Play Online](https://img.shields.io/static/v1?label=PLAY%20ONLINE&message=https://carte-vs-umani.web.app&color=111111&labelColor=D4AF37&style=flat-square&logo=googlechrome&logoColor=black)](https://carte-vs-umani.web.app)
+&nbsp;&nbsp;
+[![Download APK](https://img.shields.io/badge/Download_APK-Android-111111?style=flat-square&logo=android&logoColor=black&labelColor=D4AF37)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
+
+</div>
+</div>
 
 <p align="center">
   <i>(The Web version is optimized for Mobile Devices)</i>
