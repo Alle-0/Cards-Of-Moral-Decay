@@ -267,6 +267,8 @@ export const DirtyCashIcon = ({ size = 24, color = "#FFCE6A" }) => (
         <Path d="M18 28C16.7769 26.8006 16 25.0058 16 23C16 20.9942 16.7769 19.1994 18 18" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
     </Svg>
 );
+
+
 // [NEW] Halo Icon for Angel Frame
 export const HaloIcon = ({ size = 24, color = "#FFCE6A" }) => (
     <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
