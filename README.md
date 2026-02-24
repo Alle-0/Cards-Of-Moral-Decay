@@ -28,7 +28,7 @@
 
 <div align="center">
 
-[![Play Online](https://img.shields.io/static/v1?label=PLAY%20ONLINE&message=https://carte-vs-umani.web.app&color=111111&labelColor=D4AF37&style=flat-square&logo=googlechrome&logoColor=black)](https://carte-vs-umani.web.app)
+[![Play Online](https://img.shields.io/badge/Play_Online-Web_Browser-111111?style=flat-square&logo=googlechrome&logoColor=black&labelColor=D4AF37)](https://carte-vs-umani.web.app)
 &nbsp;&nbsp;
 [![Download APK](https://img.shields.io/badge/Download_APK-Android-111111?style=flat-square&logo=android&logoColor=black&labelColor=D4AF37)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
 
@@ -36,7 +36,7 @@
 </div>
 
 <p align="center">
-  <i>(The Web version is optimized for Mobile Devices)</i>
+  <i>(The Web version (https://carte-vs-umani.web.app) is optimized for Mobile Devices)</i>
 </p>
 
 ---
