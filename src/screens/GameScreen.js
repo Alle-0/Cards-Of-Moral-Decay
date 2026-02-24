@@ -1556,7 +1556,7 @@ const GameScreen = ({ onStartLoading }) => {
                 >
                     <View style={{ alignItems: 'center', paddingVertical: 5, paddingHorizontal: 20, paddingBottom: 20 }}>
                         <View style={{ marginBottom: 15 }}>
-                            <DirtyCashIcon size={64} color="#10b981" />
+                            <CashBagIcon size={64} color="#10b981" />
                         </View>
                         <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16, marginBottom: 15 }}>
                             {t('bribe_desc')}
