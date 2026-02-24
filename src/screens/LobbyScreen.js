@@ -223,18 +223,20 @@ const LobbyScreen = ({ onStartLoading }) => {
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
 
-    // [NEW] Arrival Notification Listener
+    // [NEW] Arrival and Offline Notification Listener
     const { joinNotification, clearJoinNotification } = useGame();
     useEffect(() => {
         if (joinNotification?.name) {
             setToast({
                 visible: true,
-                message: t('player_joined_toast', { name: joinNotification.name, defaultValue: `${joinNotification.name} SI È UNITO ALLA STANZA` }),
-                type: 'success'
+                message: joinNotification.type === 'offline'
+                    ? t('player_offline_toast', { name: joinNotification.name, defaultValue: `${joinNotification.name} È ANDATO OFFLINE` })
+                    : t('player_joined_toast', { name: joinNotification.name, defaultValue: `${joinNotification.name} SI È UNITO ALLA STANZA` }),
+                type: joinNotification.type === 'offline' ? 'error' : 'success'
             });
             clearJoinNotification();
         }
-    }, [joinNotification]);
+    }, [joinNotification, t]);
 
     // [NEW] Exit Modal State
     const [showExitModal, setShowExitModal] = useState(false);

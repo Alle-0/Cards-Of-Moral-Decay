@@ -127,6 +127,8 @@ export const translations = {
         toast_room_link_copied: "Link stanza copiato!",
         room_joined_success: "Ti sei unito alla partita!",
         toast_auto_friend: "Ti sei unito alla banda di %{name}!",
+        player_joined_toast: "%{name} SI È UNITO ALLA STANZA",
+        player_offline_toast: "%{name} È ANDATO OFFLINE",
 
         // LOBBY / IDENTITY
         who_are_you: "CHI SEI?",
@@ -708,6 +710,8 @@ export const translations = {
         toast_room_link_copied: "Room link copied!",
         room_joined_success: "You joined the game!",
         toast_auto_friend: "You joined %{name}'s gang!",
+        player_joined_toast: "%{name} JOINED THE ROOM",
+        player_offline_toast: "%{name} WENT OFFLINE",
 
         // LOBBY / IDENTITY
         who_are_you: "WHO ARE YOU?",

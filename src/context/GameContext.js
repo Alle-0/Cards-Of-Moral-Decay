@@ -435,7 +435,7 @@ export const GameProvider = ({ children }) => {
         });
     };
 
-    // [NEW] Arrival Notification Tracking
+    // [NEW] Arrival and Offline Notification Tracking
     useEffect(() => {
         if (!roomCode) {
             prevPlayersRef.current = {};
@@ -455,7 +455,22 @@ export const GameProvider = ({ children }) => {
                 const isNotMe = pNameLower !== me && pNameLower !== (user?.name || '').trim().toLowerCase();
                 if (isNew && isNotMe && Object.keys(prevPlayers).length > 0) {
                     console.log(`[GAME] Player joined: ${pName}`);
-                    setJoinNotification({ name: pName, timestamp: Date.now() });
+                    setJoinNotification({ name: pName, type: 'join', timestamp: Date.now() });
+                }
+            });
+
+            // Find players that went offline
+            Object.keys(prevPlayers).forEach(pName => {
+                const wasOnline = prevPlayers[pName]?.online;
+                const isNowOffline = currentPlayers[pName] && currentPlayers[pName].online === false;
+                if (wasOnline && isNowOffline) {
+                    const me = (roomPlayerName || user?.name || user?.username || '').trim().toLowerCase();
+                    const pNameLower = pName.trim().toLowerCase();
+                    const isNotMe = pNameLower !== me && pNameLower !== (user?.name || '').trim().toLowerCase();
+                    if (isNotMe) {
+                        console.log(`[GAME] Player went offline: ${pName}`);
+                        setJoinNotification({ name: pName, type: 'offline', timestamp: Date.now() });
+                    }
                 }
             });
 
@@ -845,36 +860,11 @@ export const GameProvider = ({ children }) => {
                 AsyncStorage.removeItem('lastRoomCode');
                 AsyncStorage.removeItem('lastRoomPlayerName');
 
+                // [MODIFIED] Always just mark offline. Never delete players so host can ban them.
                 const rRef = ref(db, `stanze/${currentCode}`);
                 const snap = await get(rRef);
                 if (snap.exists()) {
-                    const room = snap.val();
-                    if (room.statoPartita === 'LOBBY' || room.statoPartita === undefined) {
-                        await runTransaction(rRef, (rawRoom) => {
-                            if (!rawRoom) return rawRoom;
-                            const r = hydrateRoom(rawRoom);
-                            if (r.giocatori) delete r.giocatori[currentName];
-                            if (r.punti) delete r.punti[currentName];
-                            if (r.connessi) delete r.connessi[currentName];
-
-                            const remaining = Object.keys(r.giocatori || {});
-                            if (remaining.length > 0 && r.creatore === currentName) {
-                                const nextHost = remaining[0];
-                                r.creatore = nextHost;
-                                r.creatorUsername = r.giocatori[nextHost]?.username || nextHost;
-                            }
-                            if (r.dominus === currentName) {
-                                r.dominus = remaining.length > 0 ? remaining[0] : null;
-                            }
-
-                            return dehydrateRoom(r);
-                        });
-                        // Secondary direct delete just in case transaction merged weirdly
-                        set(playerRef, null).catch(() => { });
-                    } else {
-                        // In Game: Just set offline
-                        await update(playerRef, { online: false, lastSeen: Date.now() });
-                    }
+                    await update(playerRef, { online: false, lastSeen: Date.now() });
                 }
             } catch (e) {
                 // Secondary fallback: ensure local state is cleared even on network error
