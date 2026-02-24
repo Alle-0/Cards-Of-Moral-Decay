@@ -25,7 +25,7 @@
 ## 🚀 JOIN THE DECAY
 
 <a href="https://carte-vs-umani.web.app">
-  <img src="https://img.shields.io/badge/🌐_PLAY_ONLINE_(https://carte-vs-umani.web.app)-E6C25D?style=for-the-badge&logo=google-chrome&logoColor=black&labelColor=000000" height="50" />
+  <img src="https://img.shields.io/badge/🌐_PLAY_ONLINE-E6C25D?style=for-the-badge&logo=google-chrome&logoColor=black&labelColor=000000" height="50" />
 </a>
 
 <a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest">
