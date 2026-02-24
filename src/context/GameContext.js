@@ -483,7 +483,7 @@ export const GameProvider = ({ children }) => {
 
     const clearJoinNotification = () => setJoinNotification(null);
     // [NEW] Quick Join Logic
-    const quickJoin = async () => {
+    const quickJoin = async (onValidationSuccess = null) => {
         // Find a suitable public room
         const candidates = availableRooms.filter(r =>
             r.visibility === 'public' &&
@@ -501,7 +501,7 @@ export const GameProvider = ({ children }) => {
 
             // Join the smallest room
             const bestRoom = candidates[0];
-            return await joinRoom(bestRoom.id);
+            return await joinRoom(bestRoom.id, {}, onValidationSuccess);
         } else {
             // No room found, maybe create one? Or just return null for UI to handle
             throw new Error("Nessuna stanza pubblica disponibile al momento.");
@@ -709,7 +709,7 @@ export const GameProvider = ({ children }) => {
         }
     };
 
-    const joinRoom = async (codeInput, extraData = {}) => {
+    const joinRoom = async (codeInput, extraData = {}, onValidationSuccess = null) => {
         const currentName = (user?.nickname || user?.username || '').trim();
         if (!currentName) throw new Error("Login necessario");
         const code = codeInput.trim().toUpperCase();
@@ -727,6 +727,8 @@ export const GameProvider = ({ children }) => {
             if (isKicked) {
                 throw new Error('kicked_error');
             }
+            if (onValidationSuccess) onValidationSuccess();
+
             const myUid = user?.uid;
             const existingPlayer = data.giocatori?.[currentName];
             const avatarToUse = extraData.avatar || user?.avatar || 'RANDOM';

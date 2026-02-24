@@ -13,6 +13,7 @@ const EfficientBlurView = ({ style, intensity = 30, tint = 'dark', force = false
                         intensity={intensity}
                         tint={tint}
                         style={StyleSheet.absoluteFill}
+                        experimentalBlurMethod="dimezisBlurView"
                     />
                     {children}
                 </View>

@@ -299,9 +299,13 @@ const AppContent = () => {
         }
     }, [pendingTab, setPendingTab]);
 
-    const handleStartLoading = (fast = false) => {
-        setIsFastSplash(fast);
-        setShowGameSplash(true);
+    const handleStartLoading = (action = undefined) => {
+        if (action === false) {
+            setShowGameSplash(false);
+        } else {
+            setIsFastSplash(action === true);
+            setShowGameSplash(true);
+        }
     };
 
     const handleGameSplashFinish = () => {
@@ -314,7 +318,7 @@ const AppContent = () => {
     return (
         <View style={{ flex: 1 }}>
             {roomCode ? (
-                <GameScreen onStartLoading={() => handleStartLoading(true)} />
+                <GameScreen onStartLoading={handleStartLoading} />
             ) : (
                 <AppNavigator onStartLoading={handleStartLoading} />
             )}

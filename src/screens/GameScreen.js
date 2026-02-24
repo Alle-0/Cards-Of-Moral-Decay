@@ -1174,6 +1174,15 @@ const GameScreen = ({ onStartLoading }) => {
                             disabled={playersList.length < 2 && !playersList.some(p => p.name === 'Rando' && playersList.length === 3)}
                             onPress={() => {
                                 if (playersList.length < 2) return; // Should be handled by disabled but safety first
+
+                                // [NEW] Prevent starting without packs
+                                const selectedPacks = Object.keys(allowedPackages || {}).filter(k => allowedPackages[k]);
+                                if (selectedPacks.length === 0) {
+                                    import('../services/SoundService').then(m => m.default.play('error'));
+                                    setToast({ visible: true, message: t('select_at_least_one_pack') || "Seleziona almeno un pack!", type: 'error' });
+                                    return;
+                                }
+
                                 AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
                                 startGame(targetPoints);
                             }}

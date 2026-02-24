@@ -496,7 +496,7 @@ export default function ShopScreen() {
     const frameData = React.useMemo(() => Object.values(AVATAR_FRAMES).filter(f => !['basic', 'capo'].includes(f.id)), []);
     const packData = React.useMemo(() => [
         { id: 'dark', price: 1000, color: '#ef4444', count: (GameDataService.darkPack?.nere?.length || 0) + (GameDataService.darkPack?.bianche?.length || 0) },
-        { id: 'chill', price: 5000, color: '#38bdf8', count: (GameDataService.chillPack?.nere?.length || 0) + (GameDataService.chillPack?.bianche?.length || 0) },
+        { id: 'chill', price: 500, color: '#38bdf8', count: (GameDataService.chillPack?.nere?.length || 0) + (GameDataService.chillPack?.bianche?.length || 0) },
         { id: 'spicy', price: 1000, color: '#d946ef', count: (GameDataService.spicyPack?.nere?.length || 0) + (GameDataService.spicyPack?.bianche?.length || 0) }
     ], [language]);
     const bundleData = React.useMemo(() => [

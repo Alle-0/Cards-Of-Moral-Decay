@@ -375,7 +375,6 @@ const LobbyScreen = ({ onStartLoading }) => {
         }
     };
 
-    // [NEW] Quick Join Logic
     const handleQuickJoin = async () => {
         // [FIX] Immediate check to avoid splash screen if no rooms
         if (!publicRooms || publicRooms.length === 0) {
@@ -384,7 +383,6 @@ const LobbyScreen = ({ onStartLoading }) => {
             return;
         }
 
-        if (onStartLoading) onStartLoading();
         setIsLoading(true);
         try {
             // Ensure avatar is set
@@ -397,10 +395,9 @@ const LobbyScreen = ({ onStartLoading }) => {
                 }
             }
 
-            await quickJoin();
+            await quickJoin(() => { if (onStartLoading) onStartLoading(); });
         } catch (e) {
             console.warn(e);
-            if (onStartLoading) onStartLoading(false);
             SoundService.play('error');
             setToast({ visible: true, message: t('no_public_rooms') || "Nessuna stanza disponibile." });
         } finally {
@@ -414,8 +411,6 @@ const LobbyScreen = ({ onStartLoading }) => {
     };
 
     const handleJoinSpecific = async (roomId) => {
-        if (onStartLoading) onStartLoading();
-
         setIsLoading(true);
         try {
             // [NEW] If joining via deep link/auto, ensure we don't have a mystery avatar
@@ -430,12 +425,12 @@ const LobbyScreen = ({ onStartLoading }) => {
                 activeCardSkin: authUser?.activeCardSkin || 'classic',
                 activeFrame: authUser?.activeFrame || 'basic',
                 rank: authUser?.rank || 'Anima Candida'
-            });
+            }, () => { if (onStartLoading) onStartLoading(); });
+
             if (code) {
                 AnalyticsService.log('lobby_join', { room_code: code });
             }
         } catch (e) {
-            if (onStartLoading) onStartLoading(false);
             SoundService.play('error');
             const msg = e.message === 'kicked_error'
                 ? t('kicked_error', { defaultValue: 'Sei stato espulso da questa stanza.' })
@@ -583,7 +578,12 @@ const LobbyScreen = ({ onStartLoading }) => {
             <AvatarSelectionModal
                 visible={showAvatarModal}
                 onClose={() => setShowAvatarModal(false)}
-                onSelect={setLocalAvatar}
+                onSelect={(avatar) => {
+                    setLocalAvatar(avatar);
+                    if (authUser?.name) {
+                        updateProfile({ avatar }).catch(console.error);
+                    }
+                }}
                 currentAvatar={localAvatar}
                 avatars={[MYSTERY_AVATAR, ...PLAYER_AVATARS]}
             />

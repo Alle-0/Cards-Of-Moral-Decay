@@ -212,12 +212,6 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
     const togglePack = (packId) => {
         if (!isHost) return;
 
-        // [RULE] Base Set cannot be deselected
-        if (packId === 'base') {
-            SoundService.play('error');
-            return;
-        }
-
         // [CHECK] Check ownership
         const isOwned = packId === 'base' || unlockedPacks[packId];
 
@@ -460,7 +454,14 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
 
             {/* 2. PACKS GRID */}
             <View style={styles.sectionBlock}>
-                <Text style={styles.sectionLabel}>{t.select_packages || "CONTENT PACKS"}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                    <Text style={[styles.sectionLabel, { marginBottom: 0 }]}>{t.select_packages || "CONTENT PACKS"}</Text>
+                    {(!settings.packs || settings.packs.length === 0) && (
+                        <Text style={{ color: '#EF4444', fontSize: 10, fontFamily: 'Outfit-Bold' }}>
+                            Seleziona almeno un pack
+                        </Text>
+                    )}
+                </View>
                 <View style={styles.packGrid}>
                     {packData.map((pack) => (
                         <PackCard
