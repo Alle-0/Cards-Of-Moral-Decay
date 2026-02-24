@@ -255,26 +255,36 @@ const AppContent = () => {
     }, [joinRoom]);
 
     // [NEW] Notification click listener (Cold Start)
-    const lastNotificationResponse = Notifications.useLastNotificationResponse();
     useEffect(() => {
-        if (
-            lastNotificationResponse &&
-            lastNotificationResponse.notification.request.content.data &&
-            lastNotificationResponse.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
-        ) {
-            const data = lastNotificationResponse.notification.request.content.data;
-            console.log("[PUSH] Cold Start Click detected. Data:", data);
+        if (Platform.OS === 'web') return;
 
-            if (data?.roomCode || data?.room || data?.roomId) {
-                const code = data.roomCode || data.room || data.roomId;
-                joinRoom(code).catch(e => console.warn("Cold start auto-join failed:", e));
-            } else if (data?.screen) {
-                if (navigationRef.current) {
-                    navigationRef.current.navigate(data.screen);
+        const checkColdStart = async () => {
+            try {
+                const response = await Notifications.getLastNotificationResponseAsync();
+                if (
+                    response &&
+                    response.notification.request.content.data &&
+                    response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
+                ) {
+                    const data = response.notification.request.content.data;
+                    console.log("[PUSH] Cold Start Click detected. Data:", data);
+
+                    if (data?.roomCode || data?.room || data?.roomId) {
+                        const code = data.roomCode || data.room || data.roomId;
+                        joinRoom(code).catch(e => console.warn("Cold start auto-join failed:", e));
+                    } else if (data?.screen) {
+                        if (navigationRef.current) {
+                            navigationRef.current.navigate(data.screen);
+                        }
+                    }
                 }
+            } catch (e) {
+                console.warn("[PUSH] Could not fetch cold start notification", e);
             }
-        }
-    }, [lastNotificationResponse, joinRoom]);
+        };
+
+        checkColdStart();
+    }, [joinRoom]);
 
     // [NEW] Handle pending tab from Deep Link
     useEffect(() => {
