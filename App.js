@@ -234,11 +234,11 @@ const AppContent = () => {
         return () => unsub();
     }, []);
 
-    // [NEW] Notification click listener
+    // [NEW] Notification click listener (Background / Foreground)
     useEffect(() => {
         const subscription = Notifications.addNotificationResponseReceivedListener(response => {
             const data = response.notification.request.content.data;
-            console.log("[PUSH] Click detected. Data:", data);
+            console.log("[PUSH] Click detected (Listener). Data:", data);
 
             if (data?.roomCode || data?.room || data?.roomId) {
                 const code = data.roomCode || data.room || data.roomId;
@@ -253,6 +253,28 @@ const AppContent = () => {
         });
         return () => subscription.remove();
     }, [joinRoom]);
+
+    // [NEW] Notification click listener (Cold Start)
+    const lastNotificationResponse = Notifications.useLastNotificationResponse();
+    useEffect(() => {
+        if (
+            lastNotificationResponse &&
+            lastNotificationResponse.notification.request.content.data &&
+            lastNotificationResponse.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
+        ) {
+            const data = lastNotificationResponse.notification.request.content.data;
+            console.log("[PUSH] Cold Start Click detected. Data:", data);
+
+            if (data?.roomCode || data?.room || data?.roomId) {
+                const code = data.roomCode || data.room || data.roomId;
+                joinRoom(code).catch(e => console.warn("Cold start auto-join failed:", e));
+            } else if (data?.screen) {
+                if (navigationRef.current) {
+                    navigationRef.current.navigate(data.screen);
+                }
+            }
+        }
+    }, [lastNotificationResponse, joinRoom]);
 
     // [NEW] Handle pending tab from Deep Link
     useEffect(() => {
