@@ -839,9 +839,9 @@ export const GameProvider = ({ children }) => {
             const currentName = roomPlayerName || (user?.nickname || user?.username);
 
             try {
-                // [FIX] Cancel onDisconnect BEFORE clearing local state
+                // [FIX] Cancel onDisconnect without blocking state cleanup
                 const playerRef = ref(db, `stanze/${currentCode}/giocatori/${currentName}`);
-                await onDisconnect(playerRef).cancel();
+                onDisconnect(playerRef).cancel().catch(() => { });
 
                 // [FIX] IMMEDIATE State Clearing to prevent presence/listener race conditions
                 if (roomUnsubscribe.current) roomUnsubscribe.current();
@@ -864,19 +864,24 @@ export const GameProvider = ({ children }) => {
                             if (r.connessi) delete r.connessi[currentName];
 
                             const remaining = Object.keys(r.giocatori || {});
-                            // [FIX] Do NOT return null. Rooms persist until manually deleted or cleaned up by scheduled job.
-
                             if (remaining.length > 0 && r.creatore === currentName) {
                                 const nextHost = remaining[0];
                                 r.creatore = nextHost;
                                 r.creatorUsername = r.giocatori[nextHost]?.username || nextHost;
                             }
                             if (r.dominus === currentName) {
-                                r.dominus = remaining[0];
+                                r.dominus = remaining.length > 0 ? remaining[0] : null;
+                            }
+
+                            // If room is empty, we force mark it as stale so the cleanup catches it visually faster
+                            if (remaining.length === 0) {
+                                r.timestamp = 0; // Marks it for immediate deletion in the listener
                             }
 
                             return dehydrateRoom(r);
                         });
+                        // Secondary direct delete just in case transaction merged weirdly
+                        set(playerRef, null).catch(() => { });
                     } else {
                         // In Game: Just set offline
                         await update(playerRef, { online: false, lastSeen: Date.now() });
