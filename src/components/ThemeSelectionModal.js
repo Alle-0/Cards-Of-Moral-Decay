@@ -127,7 +127,7 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
     const themeList = React.useMemo(() => Object.values(themes), [themes]);
 
     return (
-        <View style={{ flex: 1, maxHeight: 450 }}>
+        <View style={{ flex: 1, maxHeight: hideBackButton ? '100%' : 450 }}>
             <Animated.FlatList
                 ref={scrollRef}
                 data={themeList}
@@ -137,7 +137,7 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
                 columnWrapperStyle={{ justifyContent: 'space-between' }}
                 contentContainerStyle={{
                     flexGrow: 1,
-                    paddingBottom: 40,
+                    paddingBottom: 110,
                     paddingHorizontal: 5,
                     paddingTop: 10
                 }}

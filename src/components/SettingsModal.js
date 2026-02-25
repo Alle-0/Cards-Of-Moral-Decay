@@ -18,7 +18,7 @@ import { useAudio } from '../context/AudioContext'; // [NEW]
 import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService';
 import { APP_VERSION, BASE_URL } from '../constants/Config';
-import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutRight, SlideInLeft, SlideOutLeft, Easing, useSharedValue, useAnimatedStyle, withSpring, withTiming, useAnimatedRef, withSequence, interpolateColor } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, FadeInRight, FadeOutRight, FadeInLeft, FadeOutLeft, Easing, useSharedValue, useAnimatedStyle, withSpring, withTiming, useAnimatedRef, withSequence, interpolateColor } from 'react-native-reanimated';
 import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hooks/useLiquidAnimation';
 import { PanResponder } from 'react-native';
 
@@ -100,11 +100,16 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
     const [navDir, setNavDir] = useState('forward');
     const modalHeight = useSharedValue(400); // Initial fallback
 
+    // Debounce state
+    const isAnimatingRef = useRef(false);
+    const targetHeightRef = useRef(0);
+
     const handleContentLayout = (event, isActive) => {
         if (!isActive) return;
         const h = event.nativeEvent.layout.height;
-        if (h > 0 && Math.abs(modalHeight.value - h) > 1) {
-            modalHeight.value = withTiming(h, { duration: 300, easing: Easing.out(Easing.quad) });
+        targetHeightRef.current = h;
+        if (h > 0 && Math.abs(modalHeight.value - h) > 2 && !isAnimatingRef.current) {
+            modalHeight.value = withTiming(h, { duration: 150, easing: Easing.out(Easing.quad) });
         }
     };
 
@@ -267,34 +272,47 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
         if (!readyViews.includes(viewName)) {
             setTimeout(() => {
                 setReadyViews(prev => [...prev, viewName]);
-            }, 500); // 500ms to allow the user to see the skeletons sliding in
+            }, 300); // 300ms so it updates state AFTER the 250ms slide animation finishes
         }
     };
 
+    // Block height calcs during transition
+    const blockLayoutDuringTransition = () => {
+        isAnimatingRef.current = true;
+        setTimeout(() => {
+            isAnimatingRef.current = false;
+            // Flush any missed layout changes
+            if (targetHeightRef.current > 0 && Math.abs(modalHeight.value - targetHeightRef.current) > 2) {
+                modalHeight.value = withTiming(targetHeightRef.current, { duration: 150, easing: Easing.out(Easing.quad) });
+            }
+        }, 200);
+    };
+
     const handleShowRules = (val) => {
-        if (val) triggerSkeleton('rules');
+        if (val) { triggerSkeleton('rules'); blockLayoutDuringTransition(); }
         setShowRules(val);
     };
 
     const handleShowPersonalization = (val) => {
         if (val) {
             triggerSkeleton(`style_${activeTab}`); // Trigger for default tab
+            blockLayoutDuringTransition();
         }
         setShowPersonalization(val);
     };
 
     const handleShowPreferences = (val) => {
-        if (val) triggerSkeleton('audio');
+        if (val) { triggerSkeleton('audio'); blockLayoutDuringTransition(); }
         setShowPreferences(val);
     };
 
     const handleShowNotifications = (val) => {
-        if (val) triggerSkeleton('notifications');
+        if (val) { triggerSkeleton('notifications'); blockLayoutDuringTransition(); }
         setShowNotifications(val);
     };
 
     const handleShowAccount = (val) => {
-        if (val) triggerSkeleton('account');
+        if (val) { triggerSkeleton('account'); blockLayoutDuringTransition(); }
         setShowAccount(val);
     };
 
@@ -537,10 +555,12 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
     );
 
     const renderPersonalizationSkeleton = () => {
-        if (activeTab === 0) return (<View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonThemeItem key={i} />)}</View>);
-        if (activeTab === 1) return (<View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonSkinItem key={i} />)}</View>);
-        if (activeTab === 2) return (<View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonFrameItem key={i} />)}</View>);
-        return null;
+        let content = null;
+        if (activeTab === 0) content = (<View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonThemeItem key={i} />)}</View>);
+        else if (activeTab === 1) content = (<View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonSkinItem key={i} />)}</View>);
+        else if (activeTab === 2) content = (<View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <SkeletonFrameItem key={i} />)}</View>);
+
+        return <View style={{ flex: 1, overflow: 'hidden' }}>{content}</View>;
     };
 
     return (
@@ -584,8 +604,8 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     {showPersonalization ? (
                         <Animated.View
                             key="personalization"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? FadeInRight : FadeInLeft).duration(250).easing(Easing.out(Easing.quad))}
+                            exiting={(navDir === 'forward' ? FadeOutLeft : FadeOutRight).duration(250).easing(Easing.out(Easing.quad))}
                             style={{ width: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                         >
                             <View onLayout={(e) => handleContentLayout(e, showPersonalization)} style={{ gap: 15 }}>
@@ -608,7 +628,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                     ))}
                                 </View>
 
-                                <View style={{ minHeight: 200 }}>
+                                <View style={{ height: Dimensions.get('window').height * 0.40 }}>
                                     {!readyViews.includes(`style_${activeTab}`) ? (
                                         renderPersonalizationSkeleton()
                                     ) : (
@@ -634,13 +654,13 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     ) : showRules ? (
                         <Animated.View
                             key="rules"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? FadeInRight : FadeInLeft).duration(250).easing(Easing.out(Easing.quad))}
+                            exiting={(navDir === 'forward' ? FadeOutLeft : FadeOutRight).duration(250).easing(Easing.out(Easing.quad))}
                             style={{ width: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                         >
-                            <View onLayout={(e) => handleContentLayout(e, showRules)} style={{ flex: 1 }}>
+                            <View onLayout={(e) => handleContentLayout(e, showRules)} style={{ gap: 15 }}>
                                 {!readyViews.includes('rules') ? (
-                                    <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 10, gap: 20 }}>
+                                    <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 20, minHeight: 200 }}>
                                         {[1, 2, 3].map(i => (
                                             <View key={i} style={{ gap: 10 }}>
                                                 <PremiumSkeleton width="40%" height={24} borderRadius={6} />
@@ -655,7 +675,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                         <ScrollView
                                             ref={rulesScrollRef}
                                             showsVerticalScrollIndicator={false}
-                                            style={{ flex: 1, marginBottom: 15 }}
+                                            style={{ flexGrow: 1, maxHeight: Dimensions.get('window').height * 0.45, marginBottom: 15 }}
                                             contentContainerStyle={{ paddingBottom: 30 }}
                                         >
                                             <View style={{ gap: 20 }}>
@@ -790,8 +810,8 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     ) : showNotifications ? (
                         <Animated.View
                             key="notifications"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? FadeInRight : FadeInLeft).duration(250).easing(Easing.out(Easing.quad))}
+                            exiting={(navDir === 'forward' ? FadeOutLeft : FadeOutRight).duration(250).easing(Easing.out(Easing.quad))}
                             style={{ width: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                         >
                             <View onLayout={(e) => handleContentLayout(e, showNotifications)} style={{ gap: 15 }}>
@@ -851,8 +871,8 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     ) : showPreferences ? (
                         <Animated.View
                             key="preferences"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? FadeInRight : FadeInLeft).duration(250).easing(Easing.out(Easing.quad))}
+                            exiting={(navDir === 'forward' ? FadeOutLeft : FadeOutRight).duration(250).easing(Easing.out(Easing.quad))}
                             style={{ width: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                         >
                             <View onLayout={(e) => handleContentLayout(e, showPreferences)} style={{ gap: 15 }}>
@@ -983,8 +1003,8 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     ) : showAccount ? (
                         <Animated.View
                             key="account"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? FadeInRight : FadeInLeft).duration(250).easing(Easing.out(Easing.quad))}
+                            exiting={(navDir === 'forward' ? FadeOutLeft : FadeOutRight).duration(250).easing(Easing.out(Easing.quad))}
                             style={{ width: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                         >
                             <View onLayout={(e) => handleContentLayout(e, showAccount)} style={{ gap: 15 }}>
@@ -1071,8 +1091,8 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                     ) : (
                         <Animated.View
                             key="main"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? FadeInRight : FadeInLeft).duration(250).easing(Easing.out(Easing.quad))}
+                            exiting={(navDir === 'forward' ? FadeOutLeft : FadeOutRight).duration(250).easing(Easing.out(Easing.quad))}
                             style={{ width: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                         >
                             <View onLayout={(e) => handleContentLayout(e, !showRules && !showPersonalization && !showPreferences && !showNotifications && !showAccount)} style={{ gap: 8 }}>

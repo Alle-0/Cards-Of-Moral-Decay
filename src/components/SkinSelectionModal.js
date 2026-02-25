@@ -61,14 +61,14 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
     const numericItemWidth = (windowWidth - 32) / 3;
 
     return (
-        <View style={{ flex: 1, maxHeight: 450 }}>
+        <View style={{ flex: 1, maxHeight: hideBackButton ? '100%' : 450 }}>
             <ScrollView
                 ref={scrollRef} // [NEW] Attach ref
                 {...panHandlers} // [FIX] helper for web drag
                 style={{ flex: 1 }}
                 contentContainerStyle={{
                     flexGrow: 1,
-                    paddingBottom: 40,
+                    paddingBottom: 110,
                     paddingHorizontal: 4,
                 }}
                 showsVerticalScrollIndicator={false}

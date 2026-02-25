@@ -23,7 +23,7 @@ class GameDataService {
         this.spicyPack = { nere: [], bianche: [] }; // [NEW] Spicy (NSFW Legal)
 
         this.isLoaded = false;
-        this.minVersion = "4.10.0";
+        this.minVersion = "4.10.1";
         this.downloadUrl = null;
         this.cachedAllCards = { it: null, en: null }; // [NEW] Cache
     }

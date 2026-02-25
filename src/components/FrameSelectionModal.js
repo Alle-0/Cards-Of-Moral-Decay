@@ -56,14 +56,14 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
     const itemWidth = '31%'; // 3 columns
 
     return (
-        <View style={{ flex: 1, maxHeight: 450 }}>
+        <View style={{ flex: 1, maxHeight: hideBackButton ? '100%' : 450 }}>
             <ScrollView
                 ref={scrollRef}
                 {...panHandlers}
                 style={{ flex: 1 }}
                 contentContainerStyle={{
                     flexGrow: 1,
-                    paddingBottom: 40,
+                    paddingBottom: 110,
                     paddingHorizontal: 4
                 }}
                 showsVerticalScrollIndicator={false}

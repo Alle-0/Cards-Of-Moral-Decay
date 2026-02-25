@@ -339,13 +339,13 @@ const ShopDCBundleItem = React.memo(({ item, index, buyingId, onBuy, t, theme })
 
                 <View style={[styles.infoContainer, { paddingLeft: 15, paddingVertical: 10 }]}>
                     <Text style={[styles.itemName, { color: item.isFreeDaily ? '#4ade80' : theme.colors.accent, fontSize: 16 }]} numberOfLines={1}>
-                        {item.isFreeDaily ? t('shop_label_free', { defaultValue: "GRATIS" }) : t('dc_bundle_title', { amount: item.amount })}
+                        {item.isFreeDaily ? t('shop_desc_daily_dc', { defaultValue: "50 DC al giorno" }) : t('dc_bundle_title', { amount: item.amount })}
                     </Text>
                     <Text style={[styles.itemDesc, { marginTop: 4 }]}>
                         {isClaimed && timeLeft ? (
                             <Text style={{ color: '#888' }}>{t('shop_refresh_in', { time: timeLeft })}</Text>
                         ) : (
-                            item.isFreeDaily ? t('shop_desc_daily_dc', { defaultValue: "50 DC al giorno" }) : t('dc_bundle_desc')
+                            item.isFreeDaily ? t('shop_label_free', { defaultValue: "GRATIS" }) : t('dc_bundle_desc')
                         )}
                     </Text>
                 </View>
