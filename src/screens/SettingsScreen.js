@@ -29,7 +29,7 @@ import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hook
 
 import { useRef } from 'react';
 
-import { RulesIcon, SettingsIcon, LinkIcon, OpenDoorIcon, EyeIcon, EyeOffIcon, ArrowLeftIcon, ShieldIcon, CheckIcon, HornsIcon, CardsIcon, CopyIcon } from '../components/Icons';
+import { RulesIcon, SettingsIcon, LinkIcon, OpenDoorIcon, EyeIcon, EyeOffIcon, ArrowLeftIcon, ShieldIcon, CheckIcon, HornsIcon, CardsIcon, CopyIcon, BellIcon } from '../components/Icons';
 import CardSuggestionModal from '../components/CardSuggestionModal';
 import InfoScreen from './InfoScreen';
 
@@ -105,7 +105,7 @@ const SettingsScreen = ({ navigation }) => {
     const { isPlaying, toggleMusic } = useAudio(); // [NEW] Music Control
     const { leaveRoom, roomCode } = useGame();
     const { t, language, setLanguage } = useLanguage();
-    const { logout, user, toggleNotifications, updateProfile } = useAuth();
+    const { logout, user, toggleNotificationSetting, updateProfile } = useAuth();
     const insets = useSafeAreaInsets();
 
     const languageRef = useRef(language);
@@ -219,6 +219,7 @@ const SettingsScreen = ({ navigation }) => {
     const [hapticsEnabled, setHapticsEnabled] = useState(true);
     const [showRules, setShowRules] = useState(false);
     const [showPreferences, setShowPreferences] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
     const [showAccount, setShowAccount] = useState(false);
     const [showRecoveryCode, setShowRecoveryCode] = useState(false);
     const [showInfo, setShowInfo] = useState(false);
@@ -236,6 +237,7 @@ const SettingsScreen = ({ navigation }) => {
     });
     const [showExitAppModal, setShowExitAppModal] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' }); // [NEW] Toast State
+    const [navDir, setNavDir] = useState('forward');
 
     useEffect(() => {
         loadSettings();
@@ -353,6 +355,7 @@ const SettingsScreen = ({ navigation }) => {
             return () => {
                 setShowRules(false);
                 setShowPreferences(false);
+                setShowNotifications(false);
                 setShowAccount(false);
                 setShowInfo(false);
                 setShowRecoveryCode(false); // [FIX] Re-hide recovery code when leaving screen
@@ -366,6 +369,10 @@ const SettingsScreen = ({ navigation }) => {
 
             const backAction = () => {
                 // If sub-preferences are open, go back to main settings
+                if (showNotifications) {
+                    setShowNotifications(false);
+                    return true;
+                }
                 if (showRules || showPreferences || showAccount || showInfo) {
                     handleBack();
                     return true;
@@ -380,7 +387,7 @@ const SettingsScreen = ({ navigation }) => {
             );
 
             return () => backHandler.remove();
-        }, [showRules, showPreferences, showAccount, showInfo])
+        }, [showRules, showPreferences, showNotifications, showAccount, showInfo])
     );
 
     // [FIX] Reset sub-sections when leaving the screen
@@ -396,11 +403,15 @@ const SettingsScreen = ({ navigation }) => {
     );
 
     const handleBack = () => {
-        setShowRules(false);
-        setShowPreferences(false);
-        setShowAccount(false);
-        setShowInfo(false);
-        setShowRecoveryCode(false); // [FIX] Re-hide recovery code when going back
+        setNavDir('back');
+        setTimeout(() => {
+            setShowRules(false);
+            setShowPreferences(false);
+            setShowNotifications(false);
+            setShowAccount(false);
+            setShowInfo(false);
+            setShowRecoveryCode(false); // [FIX] Re-hide recovery code when going back
+        }, 0);
     };
 
     // [NEW] Handle avatar selection from modal
@@ -436,9 +447,9 @@ const SettingsScreen = ({ navigation }) => {
                 {showRules ? (
                     <Animated.View
                         key="rules"
-                        entering={SlideInRight.duration(500).easing(Easing.out(Easing.quad))}
-                        exiting={SlideOutRight.duration(300).easing(Easing.out(Easing.quad))}
-                        style={{ flex: 1, width: '100%', paddingTop: 50, paddingBottom: 80 + insets.bottom }}
+                        entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
+                        exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.quad))}
+                        style={[StyleSheet.absoluteFill, { padding: 20, paddingTop: 50, paddingBottom: 80 + insets.bottom }]}
                     >
                         <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, marginBottom: 15 }} contentContainerStyle={{ paddingBottom: 30 }}>
                             <View style={{ gap: 20 }}>
@@ -523,12 +534,88 @@ const SettingsScreen = ({ navigation }) => {
                             <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back')}</Text>
                         </PremiumPressable>
                     </Animated.View>
+                ) : showNotifications ? (
+                    <Animated.View
+                        key="notifications"
+                        entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
+                        exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.quad))}
+                        style={[StyleSheet.absoluteFill, { padding: 20, paddingTop: 50, gap: 15, paddingBottom: 80 + insets.bottom }]}
+                    >
+                        <View style={[styles.settingsGroup, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+                            <View style={[styles.row, { borderTopWidth: 0, paddingTop: 6 }]}>
+                                <View>
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('notify_friend_room')}</Text>
+                                    <Text style={styles.rowSub}>{t('notify_friend_room_desc', { defaultValue: 'Ricevi una notifica quando un amico crea una stanza.' })}</Text>
+                                </View>
+                                <PremiumToggle
+                                    value={user?.notificationSettings?.notifyFriendRoom !== false}
+                                    onValueChange={() => toggleNotificationSetting('notifyFriendRoom', user?.notificationSettings?.notifyFriendRoom !== false)}
+                                />
+                            </View>
+
+                            <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
+                                <View>
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('notify_room_join')}</Text>
+                                    <Text style={styles.rowSub}>{t('notify_room_join_desc', { defaultValue: 'Ricevi una notifica quando qualcuno entra nella tua stanza.' })}</Text>
+                                </View>
+                                <PremiumToggle
+                                    value={user?.notificationSettings?.notifyRoomJoin !== false}
+                                    onValueChange={() => toggleNotificationSetting('notifyRoomJoin', user?.notificationSettings?.notifyRoomJoin !== false)}
+                                />
+                            </View>
+
+                            <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
+                                <View>
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('notify_daily_dc')}</Text>
+                                    <Text style={styles.rowSub}>{t('notify_daily_dc_desc', { defaultValue: 'Ricevi un promemoria per il tuo bonus quotidiano 24h dopo averlo riscosso.' })}</Text>
+                                </View>
+                                <PremiumToggle
+                                    value={user?.notificationSettings?.notifyDailyDc !== false}
+                                    onValueChange={() => toggleNotificationSetting('notifyDailyDc', user?.notificationSettings?.notifyDailyDc !== false)}
+                                />
+                            </View>
+
+                            <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
+                                <View>
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('notify_friend_request')}</Text>
+                                    <Text style={styles.rowSub}>{t('notify_friend_request_desc', { defaultValue: 'Ricevi una notifica quando qualcuno ti invia una richiesta di amicizia.' })}</Text>
+                                </View>
+                                <PremiumToggle
+                                    value={user?.notificationSettings?.notifyFriendRequest !== false}
+                                    onValueChange={() => toggleNotificationSetting('notifyFriendRequest', user?.notificationSettings?.notifyFriendRequest !== false)}
+                                />
+                            </View>
+
+                            {/* [DEV] Test Notification Button */}
+                            {__DEV__ && (
+                                <PremiumPressable
+                                    onPress={() => NotificationService.testNotification()}
+                                    style={{ marginTop: 20, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 12, paddingVertical: 12 }}
+                                    contentContainerStyle={{ alignItems: 'center' }}
+                                >
+                                    <Text style={{ color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 14 }}>
+                                        Test Notifica (DEV)
+                                    </Text>
+                                </PremiumPressable>
+                            )}
+                        </View>
+
+                        <PremiumPressable
+                            onPress={() => { setNavDir('back'); setTimeout(() => setShowNotifications(false), 0); }}
+                            enableSound={false}
+                            style={[styles.backButton, { backgroundColor: 'rgba(255,255,255,0.05)', zIndex: 20, elevation: 20, paddingVertical: 0 }]}
+                            rippleColor="rgba(255, 255, 255, 0.2)"
+                            contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }}
+                        >
+                            <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back')}</Text>
+                        </PremiumPressable>
+                    </Animated.View>
                 ) : showPreferences ? (
                     <Animated.View
                         key="preferences"
-                        entering={SlideInRight.duration(500).easing(Easing.out(Easing.quad))}
-                        exiting={SlideOutRight.duration(300).easing(Easing.out(Easing.quad))}
-                        style={{ flex: 1, width: '100%', paddingTop: 50, gap: 15, paddingBottom: 80 + insets.bottom }}
+                        entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
+                        exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.quad))}
+                        style={[StyleSheet.absoluteFill, { padding: 20, paddingTop: 50, gap: 15, paddingBottom: 80 + insets.bottom }]}
                     >
                         <View style={[styles.settingsGroup, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
 
@@ -617,31 +704,22 @@ const SettingsScreen = ({ navigation }) => {
                                 />
                             </View>
 
-                            <View style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}>
+                            {/* Notifications Sub-row → lateral slide */}
+                            {/* Notifications Sub-row → lateral slide */}
+                            <TouchableOpacity
+                                onPress={() => { setNavDir('forward'); setTimeout(() => setShowNotifications(true), 0); }}
+                                activeOpacity={0.7}
+                                style={[styles.row, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12 }]}
+                            >
                                 <View>
-                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>{t('notifications_label')}</Text>
-                                    <Text style={styles.rowSub}>{t('notifications_sub')}</Text>
-                                </View>
-                                <PremiumToggle
-                                    value={user?.notificationsEnabled !== false}
-                                    onValueChange={toggleNotifications}
-                                />
-                            </View>
-
-                            {/* [DEV] Test Notification Button */}
-                            {__DEV__ && (
-                                <PremiumPressable
-                                    onPress={() => NotificationService.testNotification()}
-                                    style={{ marginTop: 20, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 12, paddingVertical: 12 }}
-                                    contentContainerStyle={{ alignItems: 'center' }}
-                                >
-                                    <Text style={{ color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 14 }}>
-                                        Test Notifica (DEV)
+                                    <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
+                                        {t('notifications_label', { defaultValue: 'NOTIFICHE' })}
                                     </Text>
-                                </PremiumPressable>
-                            )}
-                        </View >
-
+                                    <Text style={styles.rowSub}>{t('notifications_sub', { defaultValue: 'Inviti amici e stanze' })}</Text>
+                                </View>
+                                <Text style={{ color: theme.colors.textPrimary, fontSize: 24, opacity: 0.2, marginRight: 4 }}>›</Text>
+                            </TouchableOpacity>
+                        </View>
                         <PremiumPressable
                             onPress={handleBack}
                             enableSound={false}
@@ -651,13 +729,14 @@ const SettingsScreen = ({ navigation }) => {
                         >
                             <Text style={[styles.backButtonText, { color: theme.colors.textPrimary }]}>{t('back')}</Text>
                         </PremiumPressable>
-                    </Animated.View >
+                    </Animated.View>
+
                 ) : showAccount ? (
                     <Animated.View
                         key="account"
-                        entering={SlideInRight.duration(500).easing(Easing.out(Easing.quad))}
-                        exiting={SlideOutRight.duration(300).easing(Easing.out(Easing.quad))}
-                        style={{ flex: 1, width: '100%', paddingTop: 50, gap: 15, paddingBottom: 80 + insets.bottom }}
+                        entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
+                        exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.quad))}
+                        style={[StyleSheet.absoluteFill, { padding: 20, paddingTop: 50, gap: 15, paddingBottom: 80 + insets.bottom }]}
                     >
                         {/* Profile Header */}
                         <View style={{ alignItems: 'center', marginBottom: 10 }}>
@@ -932,9 +1011,9 @@ const SettingsScreen = ({ navigation }) => {
                 ) : (
                     <Animated.View
                         key="main"
-                        exiting={SlideOutLeft.duration(300).easing(Easing.out(Easing.linear))}
-                        entering={SlideInLeft.duration(300).easing(Easing.out(Easing.quad))}
-                        style={{ flex: 1, width: '100%' }}
+                        entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(500).easing(Easing.out(Easing.quad))}
+                        exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(500).easing(Easing.out(Easing.linear))}
+                        style={[StyleSheet.absoluteFill, { padding: 20 }]}
                     >
                         <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
                             {t('settings')}
@@ -946,7 +1025,7 @@ const SettingsScreen = ({ navigation }) => {
                                 subtitle={t('subj_audio_anim_lang')}
                                 icon={<SettingsIcon size={24} color={theme.colors.accent} />}
                                 color={theme.colors.accent}
-                                onPress={() => setShowPreferences(true)}
+                                onPress={() => { setNavDir('forward'); setTimeout(() => setShowPreferences(true), 0); }}
                             />
                             {!roomCode && (
                                 <CategoryTile
@@ -954,7 +1033,7 @@ const SettingsScreen = ({ navigation }) => {
                                     subtitle={t('recovery_security')}
                                     icon={<EyeIcon size={24} color="#ef4444" />}
                                     color="#ef4444"
-                                    onPress={() => setShowAccount(true)}
+                                    onPress={() => { setNavDir('forward'); setTimeout(() => setShowAccount(true), 0); }}
                                 />
                             )}
                             <CategoryTile
@@ -962,7 +1041,7 @@ const SettingsScreen = ({ navigation }) => {
                                 subtitle={t('criminal_manual')}
                                 icon={<RulesIcon size={24} color="#3b82f6" />}
                                 color="#3b82f6"
-                                onPress={() => setShowRules(true)}
+                                onPress={() => { setNavDir('forward'); setTimeout(() => setShowRules(true), 0); }}
                             />
                             <CategoryTile
                                 title={t('suggest_card_title') || "Consiglio Carte"}

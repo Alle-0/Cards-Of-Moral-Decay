@@ -247,7 +247,7 @@ const AppContent = () => {
             } else if (data?.screen) {
                 // Navigate to specific tab
                 if (navigationRef.current) {
-                    navigationRef.current.navigate(data.screen);
+                    navigationRef.current.navigate(data.screen, data.params || {});
                 }
             }
         });
@@ -274,7 +274,7 @@ const AppContent = () => {
                         joinRoom(code).catch(e => console.warn("Cold start auto-join failed:", e));
                     } else if (data?.screen) {
                         if (navigationRef.current) {
-                            navigationRef.current.navigate(data.screen);
+                            navigationRef.current.navigate(data.screen, data.params || {});
                         }
                     }
                 }

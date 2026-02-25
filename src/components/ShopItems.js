@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -272,79 +272,137 @@ const ShopPackItem = React.memo(({ item, index, isUnlocked, userBalance, isProce
 
 const ShopDCBundleItem = React.memo(({ item, index, buyingId, onBuy, t, theme }) => {
     const isBuying = buyingId === item.id;
+    const isClaimed = item.isFreeDaily && item.isClaimed;
 
+    const [timeLeft, setTimeLeft] = useState("");
+
+    useEffect(() => {
+        if (!isClaimed) return;
+
+        const calculateTimeLeft = () => {
+            const now = new Date();
+            const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+            const diff = tomorrow - now;
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            setTimeLeft(`${hours}h ${minutes}m`);
+        };
+
+        calculateTimeLeft();
+        const timer = setInterval(calculateTimeLeft, 60000); // Update every minute
+
+        return () => clearInterval(timer);
+    }, [isClaimed]);
+
+    // Use a layered approach:
+    // 1. Outer container (no border, no overflow hidden)
+    // 2. Inner container (with border, overflow hidden)
+    // 3. Badges (on top of inner container's corner)
     return (
         <Animated.View
             entering={FadeIn.delay((index % 6) * 50).duration(400)}
-            style={[
-                styles.card,
-                {
-                    marginBottom: 10,
-                    padding: 0,
-                    overflow: 'hidden',
-                    borderColor: item.bestValue ? theme.colors.accent : 'rgba(255,255,255,0.1)',
-                    borderWidth: item.bestValue ? 2 : 1,
-                    backgroundColor: 'rgba(255,255,255,0.03)'
-                }
-            ]}
+            style={{
+                marginBottom: 10,
+                height: 84, // Fixed height to handle absolute layers (80 content + 4 border)
+                opacity: isClaimed ? 0.7 : 1, // [FIX] Increased opacity slightly for better readability of the timer
+            }}
         >
-            {/* Best Value Badge */}
+            {/* Inner Bordered Container */}
+            <View style={{
+                position: 'absolute',
+                top: 0, bottom: 0, left: 0, right: 0,
+                borderRadius: 16,
+                borderWidth: item.bestValue || (item.isFreeDaily && !isClaimed) ? 2 : 1,
+                borderColor: item.bestValue ? theme.colors.accent : (item.isFreeDaily && !isClaimed ? '#4ade80' : 'rgba(255,255,255,0.1)'),
+                backgroundColor: 'rgba(255,255,255,0.03)',
+                overflow: 'hidden',
+                flexDirection: 'row',
+                alignItems: 'center'
+            }}>
+                <LinearGradient
+                    colors={['#2c2c2c', '#1a1a1a']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                        width: 80,
+                        height: '100%',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderRightWidth: 1,
+                        borderRightColor: 'rgba(255,255,255,0.05)'
+                    }}
+                >
+                    <DirtyCashIcon size={42} color={item.isFreeDaily ? '#4ade80' : theme.colors.accent} />
+                </LinearGradient>
+
+                <View style={[styles.infoContainer, { paddingLeft: 15, paddingVertical: 10 }]}>
+                    <Text style={[styles.itemName, { color: item.isFreeDaily ? '#4ade80' : theme.colors.accent, fontSize: 16 }]} numberOfLines={1}>
+                        {item.isFreeDaily ? t('shop_label_free', { defaultValue: "GRATIS" }) : t('dc_bundle_title', { amount: item.amount })}
+                    </Text>
+                    <Text style={[styles.itemDesc, { marginTop: 4 }]}>
+                        {isClaimed && timeLeft ? (
+                            <Text style={{ color: '#888' }}>{t('shop_refresh_in', { time: timeLeft })}</Text>
+                        ) : (
+                            item.isFreeDaily ? t('shop_desc_daily_dc', { defaultValue: "50 DC al giorno" }) : t('dc_bundle_desc')
+                        )}
+                    </Text>
+                </View>
+
+                <View style={[styles.actionRow, { paddingRight: 15 }]}>
+                    <TouchableOpacity
+                        style={[
+                            styles.buyButton,
+                            {
+                                backgroundColor: isClaimed ? '#444' : (isBuying ? theme.colors.accentWeak : (item.isFreeDaily ? '#4ade80' : theme.colors.accent)),
+                                borderColor: isClaimed ? '#555' : (item.isFreeDaily ? '#4ade80' : theme.colors.accent),
+                                height: 36,
+                                paddingHorizontal: 15,
+                                opacity: isClaimed ? 0.6 : 1
+                            }
+                        ]}
+                        onPress={() => onBuy(item.id)}
+                        disabled={isBuying || isClaimed}
+                    >
+                        <Text style={[styles.buyText, { color: isClaimed ? '#888' : '#000' }]}>
+                            {isBuying ? "..." : (isClaimed ? t('shop_btn_claimed', { defaultValue: "PRESO" }) : item.priceLabel)}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {/* Badges Overlapping the Corners Perfectly */}
             {item.bestValue && (
                 <View style={{
                     position: 'absolute',
                     top: 0,
                     right: 0,
                     backgroundColor: theme.colors.accent,
-                    paddingHorizontal: 8,
-                    paddingVertical: 2,
-                    borderBottomLeftRadius: 8,
-                    zIndex: 10
+                    paddingHorizontal: 12,
+                    paddingVertical: 3,
+                    borderTopRightRadius: 16,
+                    borderBottomLeftRadius: 12,
+                    zIndex: 20
                 }}>
                     <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 10, color: '#000' }}>BEST VALUE</Text>
                 </View>
             )}
-            <LinearGradient
-                colors={['#2c2c2c', '#1a1a1a']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                    width: 80,
-                    height: 80,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    borderRightWidth: 1,
-                    borderRightColor: 'rgba(255,255,255,0.05)'
-                }}
-            >
-                <DirtyCashIcon size={42} color={theme.colors.accent} />
-            </LinearGradient>
-
-            <View style={[styles.infoContainer, { paddingLeft: 15, paddingVertical: 10 }]}>
-                <Text style={[styles.itemName, { color: theme.colors.accent, fontSize: 16 }]} numberOfLines={1}>
-                    {t('dc_bundle_title', { amount: item.amount })}
-                </Text>
-                <Text style={[styles.itemDesc, { marginTop: 4 }]}>{t('dc_bundle_desc')}</Text>
-            </View>
-
-            <View style={[styles.actionRow, { paddingRight: 15 }]}>
-                <TouchableOpacity
-                    style={[
-                        styles.buyButton,
-                        {
-                            backgroundColor: isBuying ? theme.colors.accentWeak : theme.colors.accent,
-                            borderColor: theme.colors.accent,
-                            height: 36,
-                            paddingHorizontal: 15
-                        }
-                    ]}
-                    onPress={() => onBuy(item.id)}
-                    disabled={isBuying}
-                >
-                    <Text style={[styles.buyText, { color: '#000' }]}>
-                        {isBuying ? "..." : item.priceLabel}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+            {item.isFreeDaily && !isClaimed && (
+                <View style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    backgroundColor: '#4ade80',
+                    paddingHorizontal: 12,
+                    paddingVertical: 3,
+                    borderTopRightRadius: 16,
+                    borderBottomLeftRadius: 12,
+                    zIndex: 20
+                }}>
+                    <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 10, color: '#000' }}>{t('shop_label_daily', { defaultValue: 'DAILY' })}</Text>
+                </View>
+            )}
         </Animated.View>
     );
 });

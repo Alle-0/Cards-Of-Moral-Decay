@@ -4,11 +4,15 @@ import { useTheme } from '../../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScaleIcon, PaletteIcon, PlayIcon, PeopleIcon, SettingsIcon } from '../../components/Icons';
 import EfficientBlurView from '../EfficientBlurView';
+import { useAuth } from '../../context/AuthContext';
 
 const PremiumTabBar = ({ state, descriptors, navigation }) => {
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
     const { width } = Dimensions.get('window');
+    const { user } = useAuth();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const hasDailyDC = user?.lastFreeDCAwardDate !== todayStr;
 
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom > 0 ? insets.bottom : 10 }]}>
@@ -90,10 +94,25 @@ const PremiumTabBar = ({ state, descriptors, navigation }) => {
                                 transform: isCenter ? [{ translateY: -0 }] : []
                             }}>
                                 {/* Less flashy center button: Just the SVG itself, larger. No extra gold block. */}
-                                <IconComponent
-                                    size={isCenter ? 58 : 24}
-                                    color={isCenter ? theme.colors.accent : color}
-                                />
+                                <View style={{ position: 'relative' }}>
+                                    <IconComponent
+                                        size={isCenter ? 58 : 24}
+                                        color={isCenter ? theme.colors.accent : color}
+                                    />
+                                    {route.name === 'Shop' && hasDailyDC && (
+                                        <View style={{
+                                            position: 'absolute',
+                                            top: -2,
+                                            right: -4,
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: 5,
+                                            backgroundColor: theme.colors.accent,
+                                            borderWidth: 1.5,
+                                            borderColor: '#000'
+                                        }} />
+                                    )}
+                                </View>
                             </View>
                         </TouchableOpacity>
                     );

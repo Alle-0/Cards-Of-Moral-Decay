@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, Text, Pressable, StatusBar, Platform, Dimensions, useWindowDimensions, TouchableWithoutFeedback, Image, BackHandler, Share, Alert, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut, withRepeat, interpolate, withSequence } from 'react-native-reanimated';
@@ -386,6 +386,21 @@ const GameScreen = ({ onStartLoading }) => {
         }
     }, [roomData?.vincitoreTurno, roomData?.statoTurno, roomData?.statoPartita]);
 
+    // [NEW] Dictator Victim Client Effect
+    const lastDictatorTime = useRef(0);
+    useEffect(() => {
+        if (roomData?.dictatorVictim && roomData.dictatorVictim.name === (roomPlayerName || user?.name) && roomData.dictatorVictim.timestamp > lastDictatorTime.current) {
+            lastDictatorTime.current = roomData.dictatorVictim.timestamp;
+            triggerShake();
+            HapticsService.trigger('heavy');
+            setToast({
+                visible: true,
+                message: t('dictator_victim_msg', { defaultValue: 'Il Dominus ha scartato la tua mano!' }),
+                type: 'error'
+            });
+        }
+    }, [roomData?.dictatorVictim, roomPlayerName, user?.name]);
+
     // [NEW] Dominus Detection Alert
     useEffect(() => {
         if (roomData?.dominus === user?.name && roomData?.statoTurno === 'WAITING_CARDS' && roomData?.statoPartita !== 'GAME_OVER') {
@@ -530,6 +545,8 @@ const GameScreen = ({ onStartLoading }) => {
             confirmText: t('exit_btn'),
             onConfirm: async () => {
                 if (onStartLoading) onStartLoading(true);
+                // Add small delay to let splash cover the UI
+                await new Promise(resolve => setTimeout(resolve, 500));
                 await leaveRoom();
                 setModalConfig(prev => ({ ...prev, visible: false }));
             }
@@ -545,6 +562,8 @@ const GameScreen = ({ onStartLoading }) => {
             confirmText: t('exit_btn'),
             onConfirm: async () => {
                 if (onStartLoading) onStartLoading(true); // Optional splash
+                // Add small delay to let splash cover the UI
+                await new Promise(resolve => setTimeout(resolve, 500));
                 await logout();
                 setModalConfig(prev => ({ ...prev, visible: false }));
             }
@@ -774,6 +793,7 @@ const GameScreen = ({ onStartLoading }) => {
             setOptimisticWinner(null);
             SoundService.play('error');
             HapticsService.trigger('error');
+            triggerShake();
             setModalConfig({
                 visible: true,
                 title: t('error_title'),
@@ -1179,6 +1199,7 @@ const GameScreen = ({ onStartLoading }) => {
                                 const selectedPacks = Object.keys(allowedPackages || {}).filter(k => allowedPackages[k]);
                                 if (selectedPacks.length === 0) {
                                     import('../services/SoundService').then(m => m.default.play('error'));
+                                    triggerShake();
                                     setToast({ visible: true, message: t('select_at_least_one_pack') || "Seleziona almeno un pack!", type: 'error' });
                                     return;
                                 }

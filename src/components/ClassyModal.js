@@ -124,6 +124,7 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
                             backgroundColor: '#121214',
                             borderColor: theme.colors.cardBorder,
                             borderWidth: 1.5,
+                            maxHeight: Platform.OS === 'web' ? '90%' : '90%', // Ensure it doesn't overflow screen
                         },
                         animatedStyle
                     ]}

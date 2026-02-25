@@ -748,6 +748,35 @@ export const AuthProvider = ({ children }) => {
             console.error("[ECONOMY] awardMoney failed", e);
             return { success: false, error: e.message };
         }
+    }, [user, updateRank]);
+
+    // [NEW] claimDailyFreeDC - Awards 50 DC daily bypassing the cap
+    const claimDailyFreeDC = useCallback(async () => {
+        if (!user) return { success: false, reason: 'unauthorized' };
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (user.lastFreeDCAwardDate === todayStr) {
+            return { success: false, reason: 'already_claimed' };
+        }
+
+        const userRef = ref(db, `users/${user.username}`);
+        try {
+            await update(userRef, {
+                balance: increment(50),
+                totalScore: increment(50),
+                lastFreeDCAwardDate: todayStr
+            });
+            await updateRank(user.username);
+
+            // [NEW] Schedule next daily notification if enabled
+            const notifyEnabled = user.notificationSettings?.notifyDailyDc !== false;
+            NotificationService.scheduleDailyDCNotification(notifyEnabled);
+
+            return { success: true, awarded: 50 };
+        } catch (e) {
+            console.error("[ECONOMY] claimDailyFreeDC failed", e);
+            return { success: false, error: e.message };
+        }
     }, [user]);
 
     const spendMoney = useCallback(async (amount) => {
@@ -858,18 +887,16 @@ export const AuthProvider = ({ children }) => {
         await update(userRef, updates);
     }, [user?.username]);
 
-    // [NEW] Toggle Notifications Preference
-    const toggleNotifications = useCallback(async () => {
+    // [NEW] Toggle Specific Notification Preference
+    const toggleNotificationSetting = useCallback(async (settingName, currentValue) => {
         if (!user?.username) return;
-        const newValue = !(user.notificationsEnabled !== false); // Default true
+        const newValue = !currentValue;
         try {
             await update(ref(db, `users/${user.username}`), {
-                notificationsEnabled: newValue
+                [`notificationSettings/${settingName}`]: newValue
             });
-            // Optional: If disabling, maybe we want to unregister? 
-            // For now, we just rely on the sender checking this flag.
         } catch (e) {
-            console.error("[AUTH] Error toggling notifications:", e);
+            console.error("[AUTH] Error toggling notification setting:", e);
         }
     }, [user]);
 
@@ -1056,6 +1083,7 @@ export const AuthProvider = ({ children }) => {
         devLogin, // [NEW]
         logout,
         awardMoney,
+        claimDailyFreeDC,
         spendMoney,
         buyTheme,
         buySkin,
@@ -1076,7 +1104,7 @@ export const AuthProvider = ({ children }) => {
         acceptEula,
         reportPlayer,
         deleteAccount,
-        toggleNotifications
+        toggleNotificationSetting
     }), [
         user,
         pendingRoom,
@@ -1089,6 +1117,7 @@ export const AuthProvider = ({ children }) => {
         devLogin, // [NEW]
         logout,
         awardMoney,
+        claimDailyFreeDC,
         spendMoney,
         buyTheme,
         buySkin,
@@ -1110,7 +1139,7 @@ export const AuthProvider = ({ children }) => {
         reportPlayer,
         deleteAccount,
         isConnected,
-        toggleNotifications // [NEW]
+        toggleNotificationSetting // [NEW]
     ]);
 
     return (

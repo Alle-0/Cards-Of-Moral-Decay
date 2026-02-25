@@ -73,8 +73,8 @@ const SPICY_PACK_PREVIEW = {
     ]
 };
 
-export default function ShopScreen() {
-    const { user, buyTheme, buySkin, buyFrame, buyPack } = useAuth();
+export default function ShopScreen({ route }) {
+    const { user, buyTheme, buySkin, buyFrame, buyPack, claimDailyFreeDC } = useAuth();
     const { theme } = useTheme();
     const { t, language } = useLanguage();
     const insets = useSafeAreaInsets();
@@ -89,6 +89,18 @@ export default function ShopScreen() {
     // [NEW] Track visited tabs for Lazy + Keep Alive
     const [visitedTabs, setVisitedTabs] = useState([0]);
     const [readyTabs, setReadyTabs] = useState([0]);
+
+    // [NEW] Deep Link / Push Notification Tab Router
+    useEffect(() => {
+        if (route?.params?.tab === 'dc') {
+            const dcTabIndex = 4;
+            setActiveTab(dcTabIndex);
+            setVisitedTabs(prev => prev.includes(dcTabIndex) ? prev : [...prev, dcTabIndex]);
+            setTimeout(() => {
+                setReadyTabs(prev => prev.includes(dcTabIndex) ? prev : [...prev, dcTabIndex]);
+            }, 400);
+        }
+    }, [route?.params?.tab]);
 
     useEffect(() => {
         if (!visitedTabs.includes(activeTab)) {
@@ -128,6 +140,19 @@ export default function ShopScreen() {
     const buyItem = async (type) => {
         SoundService.play('tap');
         setBuyingId(type); // [FIX] Set buyingId to show spinner/disable button
+
+        if (type === 'dc_free_50') {
+            const result = await claimDailyFreeDC();
+            setBuyingId(null);
+            if (result && result.success) {
+                SoundService.play('purchase');
+                setToast({ visible: true, message: t('purchase_success', { defaultValue: 'Hai ottenuto 50 DC!' }), type: 'success' });
+            } else {
+                SoundService.play('error');
+            }
+            return;
+        }
+
         const result = await stripeBuyItem(type);
         setBuyingId(null); // [FIX] Reset buyingId
 
@@ -364,6 +389,9 @@ export default function ShopScreen() {
     }));
 
     // Helper Component for Dynamic Text Color
+    const todayStr = new Date().toISOString().split('T')[0];
+    const hasDailyDC = user?.lastFreeDCAwardDate !== todayStr;
+
     const ShopTabItem = ({ title, index, tabIndicatorX, tabBarWidth }) => {
         const textColorStyle = useAnimatedStyle(() => {
             if (tabBarWidth.value <= 0) return {};
@@ -383,12 +411,41 @@ export default function ShopScreen() {
 
             return { color };
         });
+        const showBadge = index === 4 && hasDailyDC;
+
+        const badgeStyle = useAnimatedStyle(() => {
+            if (tabBarWidth.value <= 0) return {};
+            const tabWidth = (tabBarWidth.value - 10) / 5;
+            const itemCenter = index * tabWidth;
+
+            const backgroundColor = interpolateColor(
+                tabIndicatorX.value,
+                [itemCenter - tabWidth / 2, itemCenter, itemCenter + tabWidth / 2],
+                [theme.colors.accent, '#000', theme.colors.accent]
+            );
+
+            return { backgroundColor };
+        });
 
         return (
             <View style={{ flex: 1, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', zIndex: 10 }} pointerEvents="none">
-                <Animated.Text style={[{ fontFamily: 'Outfit-Bold', fontSize: 11 }, textColorStyle]} numberOfLines={1}>
-                    {title}
-                </Animated.Text>
+                <View style={{ position: 'relative' }}>
+                    <Animated.Text style={[{ fontFamily: 'Outfit-Bold', fontSize: 11 }, textColorStyle]} numberOfLines={1}>
+                        {title}
+                    </Animated.Text>
+                    {showBadge && (
+                        <Animated.View style={[{
+                            position: 'absolute',
+                            top: 0,
+                            right: -8, // Adjust based on text length
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            borderWidth: 1,
+                            borderColor: theme.colors.surface || '#1a1a1a'
+                        }, badgeStyle]} />
+                    )}
+                </View>
             </View>
         );
     };
@@ -499,11 +556,17 @@ export default function ShopScreen() {
         { id: 'chill', price: 500, color: '#38bdf8', count: (GameDataService.chillPack?.nere?.length || 0) + (GameDataService.chillPack?.bianche?.length || 0) },
         { id: 'spicy', price: 1000, color: '#d946ef', count: (GameDataService.spicyPack?.nere?.length || 0) + (GameDataService.spicyPack?.bianche?.length || 0) }
     ], [language]);
-    const bundleData = React.useMemo(() => [
-        { id: 'dc_500', amount: 500, price: 0.99, priceLabel: '0.99€' },
-        { id: 'dc_3000', amount: 3000, price: 4.99, priceLabel: '4.99€' },
-        { id: 'dc_12000', amount: 12000, price: 14.99, priceLabel: '14.99€', bestValue: true }
-    ], []);
+    const bundleData = React.useMemo(() => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const isClaimed = user?.lastFreeDCAwardDate === todayStr;
+
+        return [
+            { id: 'dc_free_50', amount: 50, price: 0, priceLabel: 'GRATIS', isFreeDaily: true, isClaimed },
+            { id: 'dc_500', amount: 500, price: 0.99, priceLabel: '0.99€' },
+            { id: 'dc_3000', amount: 3000, price: 2.49, priceLabel: '2.49€' },
+            { id: 'dc_12000', amount: 12000, price: 9.99, priceLabel: '9.99€', bestValue: true }
+        ];
+    }, [user?.lastFreeDCAwardDate]);
 
     return (
         // [MODIFIED] Removed LinearGradient/ThemeBackground - Now handled globally in AppNavigator
