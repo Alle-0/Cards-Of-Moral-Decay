@@ -137,6 +137,9 @@ export const translations = {
         nickname_label: "IL TUO NICKNAME",
         nickname_placeholder: "Nome...",
         next_btn: "AVANTI ➜",
+        edit_profile: "MODIFICA PROFILO",
+        profile_updated_success: "Profilo aggiornato!",
+        save_btn: "SALVA",
 
         // INVENTORY
         inventory_title: "INVENTARIO",
@@ -212,6 +215,7 @@ export const translations = {
         dark_pack: "DARK",
         or_divider: "OPPURE",
         back_button: "← INDIETRO",
+        edit_profile: "MODIFICA PROFILO",
 
         // SKINS
         skin_classic: "Classica",
@@ -301,6 +305,7 @@ export const translations = {
         calculating_response: "Selezione della carta in corso.",
         thinking_round_msg: "Il prossimo round inizierà a breve...",
         dominus_choice_label: "DOMINUS CHOICE",
+        rando_thinking: "RANDO AI STA PENSANDO...",
 
         // SETTINGS MODAL
         settings_title: "IMPOSTAZIONI",
@@ -739,6 +744,9 @@ export const translations = {
         nickname_label: "YOUR NICKNAME",
         nickname_placeholder: "Name...",
         next_btn: "NEXT ➜",
+        edit_profile: "EDIT PROFILE",
+        profile_updated_success: "Profile updated!",
+        save_btn: "SAVE",
 
         // INVENTORY
         inventory_title: "INVENTORY",
@@ -817,6 +825,7 @@ export const translations = {
         dark_pack: "DARK",
         or_divider: "OR",
         back_button: "← BACK",
+        edit_profile: "EDIT PROFILE",
 
         // SKINS
         skin_classic: "Classic",
@@ -902,6 +911,7 @@ export const translations = {
         calculating_response: "Selecting the best response.",
         thinking_round_msg: "The next round will start soon...",
         dominus_choice_label: "DOMINUS CHOICE",
+        rando_thinking: "RANDO AI IS THINKING...",
 
         // SETTINGS MODAL
         settings_title: "SETTINGS",

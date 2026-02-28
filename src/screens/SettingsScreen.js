@@ -29,9 +29,12 @@ import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hook
 
 import { useRef } from 'react';
 
-import { RulesIcon, SettingsIcon, LinkIcon, OpenDoorIcon, EyeIcon, EyeOffIcon, ArrowLeftIcon, ShieldIcon, CheckIcon, HornsIcon, CardsIcon, CopyIcon, BellIcon } from '../components/Icons';
+import { RulesIcon, SettingsIcon, LinkIcon, OpenDoorIcon, EyeIcon, EyeOffIcon, ArrowLeftIcon, ShieldIcon, CheckIcon, HornsIcon, CardsIcon, CopyIcon, BellIcon, DirtyCashIcon, EditIcon } from '../components/Icons';
 import CardSuggestionModal from '../components/CardSuggestionModal';
+import ClassyModal from '../components/ClassyModal';
+import PremiumInput from '../components/PremiumInput';
 import InfoScreen from './InfoScreen';
+import { validateUsername } from '../utils/ValidationUtils';
 
 const RANK_KEY_MAP = {
     "Anima Candida": "rank_anima_candida",
@@ -113,9 +116,7 @@ const SettingsScreen = ({ navigation }) => {
     const gestureStartLang = useRef(null);
     const isDraggingLang = useRef(false);
 
-    // [FIX] Toast State
-    const [toastVisible, setToastVisible] = useState(false);
-    const [toastMessage, setToastMessage] = useState('');
+    const [toast, setToast] = useState({ visible: false, message: '', type: 'info' }); // [MODIFIED] Consolidated Toast State
     const isGrabbingIndicatorLang = useRef(false);
     const isGrabbingSV = useSharedValue(false); // [FIX] Reactivity
     const langTranslateX = useSharedValue(language === 'en' ? 50 : 2);
@@ -226,6 +227,8 @@ const SettingsScreen = ({ navigation }) => {
     const [suggestionModalVisible, setSuggestionModalVisible] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [avatarModalVisible, setAvatarModalVisible] = useState(false); // [NEW]
+    const [nicknameModalVisible, setNicknameModalVisible] = useState(false); // [NEW]
+    const [tempNickname, setTempNickname] = useState(user?.nickname || user?.username || ''); // [NEW]
 
     const [modalConfig, setModalConfig] = useState({
         visible: false,
@@ -236,12 +239,17 @@ const SettingsScreen = ({ navigation }) => {
         confirmText: t('ok_btn')
     });
     const [showExitAppModal, setShowExitAppModal] = useState(false);
-    const [toast, setToast] = useState({ visible: false, message: '', type: 'info' }); // [NEW] Toast State
     const [navDir, setNavDir] = useState('forward');
 
     useEffect(() => {
         loadSettings();
     }, []);
+
+    useEffect(() => {
+        if (user) {
+            setTempNickname(user.nickname || user.username || '');
+        }
+    }, [user?.nickname, user?.username]);
 
     const loadSettings = async () => {
         try {
@@ -740,53 +748,79 @@ const SettingsScreen = ({ navigation }) => {
                     >
                         {/* Profile Header */}
                         <View style={{ alignItems: 'center', marginBottom: 10 }}>
+                            {/* Avatar with Glow Effect */}
+                            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+                                <TouchableOpacity
+                                    onPress={() => setAvatarModalVisible(true)}
+                                    activeOpacity={0.8}
+                                >
+                                    <AvatarWithFrame
+                                        avatar={user?.avatar || 'user'}
+                                        frameId={user?.activeFrame || 'basic'}
+                                        size={80}
+                                    />
+                                    {/* Edit badge */}
+                                    <View style={{
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        right: 0,
+                                        backgroundColor: theme.colors.accent,
+                                        borderRadius: 12,
+                                        width: 24,
+                                        height: 24,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        zIndex: 10
+                                    }}>
+                                        <EditIcon size={16} color="#000" />
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Main Name (Nickname) */}
                             <TouchableOpacity
-                                onPress={() => setAvatarModalVisible(true)}
-                                activeOpacity={0.8}
-                                style={{ position: 'relative' }}
+                                onPress={() => setNicknameModalVisible(true)}
+                                activeOpacity={0.6}
+                                style={{ alignItems: 'center', paddingHorizontal: 30, paddingVertical: 10 }}
+                                hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }}
                             >
-                                <AvatarWithFrame
-                                    avatar={user?.avatar || 'user'}
-                                    frameId={user?.activeFrame || 'basic'}
-                                    size={80}
-                                />
-                                {/* Edit badge */}
-                                <View style={{
-                                    position: 'absolute',
-                                    bottom: 0,
-                                    right: 0,
-                                    backgroundColor: theme.colors.accent,
-                                    borderRadius: 10,
-                                    width: 22,
-                                    height: 22,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    borderWidth: 1.5,
-                                    borderColor: '#000'
-                                }}>
-                                    <Text style={{ fontSize: 11, color: '#000' }}>✎</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                    <Text style={{
+                                        color: '#fff',
+                                        fontFamily: 'Cinzel-Bold',
+                                        fontSize: 24,
+                                        letterSpacing: 1,
+                                        textAlign: 'center'
+                                    }}>
+                                        {user?.nickname || user?.username || "Incognito"}
+                                    </Text>
+                                    <View>
+                                        <EditIcon size={20} color={theme.colors.accent} />
+                                    </View>
                                 </View>
                             </TouchableOpacity>
-                            <Text style={{
-                                color: theme.colors.accent,
-                                fontFamily: 'Cinzel-Bold',
-                                fontSize: 22,
-                                marginTop: 12,
-                                letterSpacing: 1,
-                                textShadowColor: 'rgba(0,0,0,0.5)',
-                                textShadowOffset: { width: 0, height: 2 },
-                                textShadowRadius: 4
-                            }}>
-                                {user?.username || "Incognito"}
-                            </Text>
 
-                            {/* Rank Display */}
+                            {/* Secondary Handle (Username) - Always visible if a separate nickname exists */}
+                            {user?.nickname && (
+                                <Text style={{
+                                    color: theme.colors.accent,
+                                    opacity: 0.6,
+                                    fontFamily: 'Outfit-Bold',
+                                    fontSize: 12,
+                                    marginTop: 2,
+                                    letterSpacing: 0.5,
+                                    textTransform: 'none'
+                                }}>
+                                    @{user?.username}
+                                </Text>
+                            )}
+
+                            {/* Rank Display Integration */}
                             {(() => {
                                 const score = user?.totalScore || 0;
                                 const currentRankIdx = RANK_THRESHOLDS.findIndex(r => r.name.toLowerCase() === (user?.rank || '').toLowerCase().trim());
                                 const nextRank = currentRankIdx !== -1 && currentRankIdx < RANK_THRESHOLDS.length - 1 ? RANK_THRESHOLDS[currentRankIdx + 1] : null;
                                 const currentRankMin = RANK_THRESHOLDS[currentRankIdx]?.min || 0;
-
                                 const rankColor = getRankColor(user?.rank);
 
                                 let progress = 0;
@@ -799,52 +833,84 @@ const SettingsScreen = ({ navigation }) => {
                                 }
 
                                 return (
-                                    <View style={{ marginTop: 15, width: '100%', paddingHorizontal: 20, alignItems: 'center' }}>
-                                        <View style={{
-                                            backgroundColor: 'rgba(255,255,255,0.03)',
-                                            borderRadius: 16,
-                                            padding: 8,
-                                            width: '90%',
-                                            borderWidth: 1,
-                                            borderColor: rankColor + '33'
-                                        }}>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 6 }}>
-                                                <View style={{
-                                                    width: 3,
-                                                    height: 12,
-                                                    borderRadius: 1.5,
-                                                    backgroundColor: rankColor
-                                                }} />
-                                                <Text style={{
-                                                    color: rankColor,
-                                                    fontFamily: 'Cinzel-Bold',
-                                                    fontSize: 12,
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: 1,
-                                                    includeFontPadding: false
-                                                }}>
-                                                    {t(getRankKey(user?.rank))}
-                                                </Text>
-                                            </View>
-
-                                            <Text style={{ color: '#888', fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', marginBottom: 6 }}>
-                                                {score.toLocaleString()} DC
+                                    <View style={{
+                                        width: '85%',
+                                        marginTop: 15,
+                                        backgroundColor: 'rgba(255,255,255,0.02)',
+                                        borderRadius: 24,
+                                        borderWidth: 1,
+                                        borderColor: 'rgba(255,255,255,0.04)',
+                                        overflow: 'hidden'
+                                    }}>
+                                        {/* Top Section: Rank */}
+                                        <View style={{ padding: 16, alignItems: 'center' }}>
+                                            <Text style={{ color: rankColor, fontFamily: 'Cinzel-Bold', fontSize: 13, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+                                                {t(getRankKey(user?.rank))}
                                             </Text>
 
-                                            {nextRank ? (
-                                                <View style={{ width: '100%' }}>
-                                                    <View style={{ height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%' }}>
-                                                        <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: rankColor, borderRadius: 2 }} />
+                                            <Text style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'Outfit-Bold', fontSize: 10, letterSpacing: 1, marginBottom: 12 }}>
+                                                {score.toLocaleString()} SCORE
+                                            </Text>
+
+                                            {nextRank ? (() => {
+                                                const nextRankName = t(getRankKey(nextRank.name));
+                                                const nextRankColor = getRankColor(nextRank.name);
+                                                const nextRankPointsFull = t('next_rank_points', {
+                                                    points: pointsLeft.toLocaleString(),
+                                                    rank: 'RANK_HOLDER'
+                                                });
+                                                const [prefix, suffix] = nextRankPointsFull.split('RANK_HOLDER');
+
+                                                return (
+                                                    <View style={{ width: '100%', paddingHorizontal: 4 }}>
+                                                        <View style={{ height: 3, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 1.5, overflow: 'hidden', width: '100%' }}>
+                                                            <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: rankColor, borderRadius: 1.5 }} />
+                                                        </View>
+                                                        <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 6, fontFamily: 'Outfit', textAlign: 'center' }}>
+                                                            {prefix}
+                                                            <Text style={{ color: nextRankColor, fontFamily: 'Outfit-Bold' }}>{nextRankName}</Text>
+                                                            {suffix}
+                                                        </Text>
                                                     </View>
-                                                    <Text style={{ fontSize: 9, color: '#666', marginTop: 4, fontFamily: 'Outfit', textAlign: 'center' }}>
-                                                        {t('next_rank_points', { points: pointsLeft.toLocaleString(), rank: nextRank.name })}
-                                                    </Text>
-                                                </View>
-                                            ) : (
-                                                <Text style={{ fontSize: 10, color: '#ffd700', marginTop: 4, fontFamily: 'Outfit', textAlign: 'center' }}>
-                                                    {t('max_rank_reached')}
+                                                );
+                                            })() : (
+                                                <Text style={{ fontSize: 10, color: '#ffd700', marginTop: 4, fontFamily: 'Outfit', textAlign: 'center', fontWeight: 'bold' }}>
+                                                    {t('max_rank_reached') || "RANK MASSIMO RAGGIUNTO"}
                                                 </Text>
                                             )}
+                                        </View>
+
+                                        {/* Divider */}
+                                        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.04)', width: '100%', marginTop: 4 }} />
+
+                                        {/* Bottom Section: Quick Stats Row */}
+                                        <View style={{
+                                            flexDirection: 'row',
+                                            justifyContent: 'space-between',
+                                            backgroundColor: 'rgba(255,255,255,0.01)',
+                                            paddingVertical: 18,
+                                            paddingHorizontal: 10
+                                        }}>
+                                            <View style={{ flex: 1, alignItems: 'center' }}>
+                                                <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Cinzel-Bold', fontSize: 15 }}>
+                                                    {Object.keys(user?.friends || {}).length}
+                                                </Text>
+                                                <Text style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Outfit', fontSize: 8, textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 }}>
+                                                    {t('friends') || "Complici"}
+                                                </Text>
+                                            </View>
+                                            <View style={{ width: 1, height: '50%', backgroundColor: 'rgba(255,255,255,0.05)', alignSelf: 'center' }} />
+                                            <View style={{ flex: 1, alignItems: 'center' }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                                    <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 15 }}>
+                                                        {user?.balance?.toLocaleString() || 0}
+                                                    </Text>
+                                                    <DirtyCashIcon size={12} color={theme.colors.accent} />
+                                                </View>
+                                                <Text style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Outfit', fontSize: 8, textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 }}>
+                                                    Dirty Cash
+                                                </Text>
+                                            </View>
                                         </View>
                                     </View>
                                 );
@@ -854,12 +920,12 @@ const SettingsScreen = ({ navigation }) => {
 
                         {/* [FIX] Recovery Code Logic - Premium Style v3 (User Request - High Class) */}
                         {user?.recoveryCode && (
-                            <View style={{ marginTop: 24, marginBottom: 16 }}>
+                            <View style={{ marginTop: 15, marginBottom: 10 }}>
                                 {/* L'etichetta sopra è più elegante e visibile di una nota a pié di pagina microscopica */}
                                 <Text style={{
-                                    color: '#A0A0A0',
-                                    fontSize: 13,
-                                    marginBottom: 8,
+                                    color: 'rgba(255,255,255,0.4)',
+                                    fontSize: 12,
+                                    marginBottom: 6,
                                     marginLeft: 4,
                                     fontFamily: 'Outfit',
                                     fontWeight: '500'
@@ -951,9 +1017,9 @@ const SettingsScreen = ({ navigation }) => {
 
                                 {/* Minimal Label below - resa leggibile agli esseri umani */}
                                 <Text style={{
-                                    color: '#777',
-                                    fontSize: 11,
-                                    marginTop: 8,
+                                    color: '#555',
+                                    fontSize: 10,
+                                    marginTop: 6,
                                     textAlign: 'center',
                                     fontFamily: 'Outfit'
                                 }}>
@@ -962,39 +1028,50 @@ const SettingsScreen = ({ navigation }) => {
                             </View>
                         )}
 
-                        <View style={{ gap: 8 }}>
+                        {/* Account Actions Group - Consistent and balanced */}
+                        <View style={{
+                            flexDirection: 'row',
+                            gap: 12,
+                            marginTop: 20,
+                            width: '100%',
+                            paddingHorizontal: 0
+                        }}>
                             <PremiumPressable
-                                style={[styles.menuCard, { backgroundColor: 'rgba(239, 68, 68, 0.12)', borderRadius: 16 }]}
+                                style={{
+                                    flex: 1,
+                                    height: 52,
+                                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                                    borderRadius: 14,
+                                    borderWidth: 1,
+                                    borderColor: 'rgba(255, 255, 255, 0.02)'
+                                }}
                                 onPress={handleLogout}
                                 enableSound={false}
-                                contentContainerStyle={[styles.menuCardContent, { borderRadius: 16 }]}
+                                contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: '100%' }}
                             >
-                                <View style={[styles.menuCardIconWrap, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-                                    <OpenDoorIcon size={20} color="#ef4444" />
-                                </View>
-                                <Text
-                                    style={[styles.menuCardText, { color: '#ef4444', flex: 1, letterSpacing: -0.2 }]}
-                                    numberOfLines={1}
-                                    adjustsFontSizeToFit
-                                    minimumFontScale={0.7}
-                                >{t('logout_account')}</Text>
+                                <OpenDoorIcon size={18} color="rgba(255, 255, 255, 0.6)" />
+                                <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: 'Outfit-Bold', fontSize: 13 }}>
+                                    {t('logout_account')}
+                                </Text>
                             </PremiumPressable>
 
                             <PremiumPressable
-                                style={[styles.menuCard, { backgroundColor: 'rgba(239, 68, 68, 0.12)', borderRadius: 16 }]}
+                                style={{
+                                    flex: 1,
+                                    height: 52,
+                                    backgroundColor: 'rgba(239, 68, 68, 0.06)',
+                                    borderRadius: 14,
+                                    borderWidth: 1,
+                                    borderColor: 'rgba(239, 68, 68, 0.1)'
+                                }}
                                 onPress={handleDeleteAccount}
                                 enableSound={false}
-                                contentContainerStyle={[styles.menuCardContent, { borderRadius: 16 }]}
+                                contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: '100%' }}
                             >
-                                <View style={[styles.menuCardIconWrap, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-                                    <ShieldIcon size={20} color="#ef4444" />
-                                </View>
-                                <Text
-                                    style={[styles.menuCardText, { color: '#ef4444', flex: 1, letterSpacing: -0.3 }]}
-                                    numberOfLines={1}
-                                    adjustsFontSizeToFit
-                                    minimumFontScale={0.5}
-                                >{t('delete_account')}</Text>
+                                <ShieldIcon size={18} color="rgba(239, 68, 68, 0.6)" />
+                                <Text style={{ color: 'rgba(239, 68, 68, 0.6)', fontFamily: 'Outfit-Bold', fontSize: 13 }}>
+                                    {t('delete_account')}
+                                </Text>
                             </PremiumPressable>
                         </View>
 
@@ -1131,12 +1208,74 @@ const SettingsScreen = ({ navigation }) => {
                     onClose={() => setShowSuccessToast(false)}
                 />
 
-                {/* [FIX] Toast Component Rendered Here */}
+                {/* Nickname Editing Modal */}
+                <ClassyModal
+                    visible={nicknameModalVisible}
+                    onClose={() => setNicknameModalVisible(false)}
+                    title={t('edit_profile') || "Edit Profile"}
+                    icon={<EditIcon size={40} color={theme.colors.accent} />}
+                >
+                    <View style={{ width: '100%', paddingVertical: 10 }}>
+                        <PremiumInput
+                            label={t('nickname_label') || "Nickname"}
+                            value={tempNickname}
+                            onChangeText={setTempNickname}
+                            placeholder={t('nickname_placeholder') || "Enter nickname"}
+                            style={{ marginBottom: 20 }}
+                            labelBackgroundColor="#121214"
+                        />
+
+                        <TouchableOpacity
+                            onPress={async () => {
+                                const trimmed = tempNickname.trim();
+                                if (!trimmed) {
+                                    setToast({ visible: true, message: t('login_error_missing_name'), type: 'error' });
+                                    SoundService.play('error');
+                                    return;
+                                }
+
+                                const validation = validateUsername(trimmed);
+                                if (!validation.valid) {
+                                    let errorMsg = t('login_error_missing_name');
+                                    if (validation.error === 'username_too_short') errorMsg = t('error_username_too_short');
+                                    else if (validation.error === 'username_too_long') errorMsg = t('error_username_too_long');
+                                    else if (validation.error === 'username_invalid_chars') errorMsg = t('error_username_invalid_chars');
+                                    else if (validation.error === 'username_offensive') errorMsg = t('error_offensive_name');
+
+                                    setToast({ visible: true, message: errorMsg, type: 'error' });
+                                    SoundService.play('error');
+                                    return;
+                                }
+
+                                try {
+                                    await updateProfile({ nickname: trimmed });
+                                    setNicknameModalVisible(false);
+                                    setToast({ visible: true, message: t('profile_updated_success') || "Profilo aggiornato!", type: 'success' });
+                                    SoundService.play('success');
+                                } catch (e) {
+                                    setToast({ visible: true, message: e.message || "Update failed", type: 'error' });
+                                    SoundService.play('error');
+                                }
+                            }}
+                            style={{
+                                backgroundColor: theme.colors.accent,
+                                borderRadius: 15,
+                                paddingVertical: 12,
+                                alignItems: 'center'
+                            }}
+                        >
+                            <Text style={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 16 }}>
+                                {t('save_btn') || "SAVE"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </ClassyModal>
+
                 <ToastNotification
-                    visible={toastVisible}
-                    message={toastMessage}
-                    type="success"
-                    onClose={() => setToastVisible(false)}
+                    visible={toast.visible}
+                    message={toast.message}
+                    type={toast.type || 'success'}
+                    onClose={() => setToast(prev => ({ ...prev, visible: false }))}
                 />
             </View >
         </View >

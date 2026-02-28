@@ -3,11 +3,15 @@
     "name": "Cards of Moral Decay",
     "slug": "cards-of-moral-decay",
     "scheme": "comd",
-    "version": "4.10.1",
+    "version": "4.10.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "jsEngine": "hermes",
+    "androidNavigationBar": {
+      "visible": "sticky-immersive",
+      "backgroundColor": "#000000"
+    },
     "android": {
       "jsEngine": "hermes",
       "hardwareAccelerated": true,
@@ -16,7 +20,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.anonymous.cardsofmoraldecay",
-      "versionCode": 41,
+      "versionCode": 43,
       "googleServicesFile": "./google-services.json",
       "splash": {
         "image": "./assets/splash-custom.png",

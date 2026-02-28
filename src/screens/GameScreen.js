@@ -4,11 +4,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, runOnUI, measure, useAnimatedRef, Easing, FadeIn, FadeOut, withRepeat, interpolate, withSequence } from 'react-native-reanimated';
 
 import { useGame } from '../context/GameContext';
-import { useAuth, RANK_COLORS } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { RANK_COLORS, RANK_KEY_MAP, getRankKey } from '../constants/Ranks';
 import { THEMES, CARD_SKINS, AVATAR_FRAMES, TEXTURES, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext'; // [NEW]
 import PremiumBackground from '../components/PremiumBackground';
 import LobbySettingsPanel from '../components/LobbySettingsPanel'; // [NEW]
+import SectionHeader from '../components/SectionHeader';
+import MinimalPackCard from '../components/MinimalPackCard';
 import PremiumButton from '../components/PremiumButton';
 import PlayerHand from '../components/PlayerHand';
 import GameTable from '../components/GameTable';
@@ -35,195 +38,17 @@ import { CardsIcon, CheckIcon, ThornsIcon, LockIcon, RankIcon, SettingsIcon, Rob
 import ShopScreen from './ShopScreen'; // [NEW]
 import AnalyticsService from '../services/AnalyticsService';
 import { BASE_URL } from '../constants/Config';
-import { DARK_PACK_PREVIEW, BASE_PACK_PREVIEW } from '../constants/PreviewData';
+import { DARK_PACK_PREVIEW, BASE_PACK_PREVIEW, CHILL_PACK_PREVIEW, SPICY_PACK_PREVIEW } from '../constants/PreviewData';
 import CensoredText from '../components/CensoredText'; // [NEW]
 import { CHAOS_EVENTS, CHAOS_EVENT_DETAILS } from '../constants/ChaosEvents'; // [NEW]
 
 
 
 
-const RANK_KEY_MAP = {
-    "Anima Candida": "rank_anima_candida",
-    "Innocente": "rank_innocente",
-    "Corrotto": "rank_corrotto",
-    "Socio del Vizio": "rank_socio_del_vizio",
-    "Architetto del Caos": "rank_architetto_del_caos",
-    "Eminenza Grigia": "rank_eminenza_grigia",
-    "Entità Apocalittica": "rank_entita_apocalittica",
-    "Capo supremo": "rank_capo_supremo",
-    "Capo Supremo": "rank_capo_supremo",
-    "BOT": "rank_bot"
-};
 
-const getRankKey = (rank) => {
-    if (!rank) return 'rank_anima_candida';
-    const cleanRank = rank.trim();
-    if (cleanRank.startsWith('rank_')) return cleanRank;
-    return RANK_KEY_MAP[cleanRank] || `rank_${cleanRank.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_')}`;
-};
-
-const CHILL_PACK_PREVIEW = {
-    it: [
-        "Un piccione con autostima",
-        "Indossare le crocs al matrimonio",
-        "L'ansia sociale a comando",
-        "Un abbraccio non richiesto"
-    ],
-    en: [
-        "A pigeon with self-esteem",
-        "Wearing crocs at a wedding",
-        "Social anxiety on command",
-        "An unsolicited hug"
-    ]
-};
-
-const SPICY_PACK_PREVIEW = {
-    it: [
-        "Un {dildo} nero venoso di 30cm",
-        "Leccare l'{ano} di un senzatetto",
-        "Un'{orgia} in una casa di riposo",
-        "Il sapore dello {sperma} di tuo padre"
-    ],
-    en: [
-        "A 12-inch veinous black {dildo}",
-        "Licking a homeless person's {anus}",
-        "An {orgy} in a retirement home",
-        "The taste of your dad's {cum}"
-    ]
-};
 
 // --- NUOVI COMPONENTI GRAFICI (Mettili prima di GameScreen o in fondo) ---
 
-// 1. Divisore Art Deco (Sostituisce i titoli fluttuanti)
-const SectionHeader = ({ title }) => (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 2, width: '100%' }}>
-        <LinearGradient
-            colors={['transparent', 'rgba(212, 175, 55, 0.4)']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={{ flex: 1, height: 1 }}
-        />
-        <Text style={{
-            fontFamily: 'Cinzel-Bold',
-            color: '#d4af37',
-            fontSize: 9,
-            marginHorizontal: 12,
-            letterSpacing: 1.2
-        }}>
-            {title}
-        </Text>
-        <LinearGradient
-            colors={['rgba(212, 175, 55, 0.4)', 'transparent']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={{ flex: 1, height: 1 }}
-        />
-    </View>
-);
-
-// 2. Card Pacchetto Minimale (Sostituisce le scatole 3D)
-// 2. Card Pacchetto Minimale (Sostituisce le scatole 3D)
-const MinimalPackCard = ({ label, type, selected, onPress, owned = true, onPreview, style }) => {
-    const isDark = type === 'dark';
-    const isChill = type === 'chill'; // [NEW]
-    const isSpicy = type === 'spicy'; // [NEW]
-
-    // Safety Fallback for HornsIcon (Hot-reload fix)
-    const SpicyIcon = HornsIcon || (() => <View style={{ width: 16, height: 16, backgroundColor: 'purple' }} />);
-
-    let baseColor = '#FDB931'; // Default Gold (Base)
-    if (isDark) baseColor = '#ef4444';
-    if (isChill) baseColor = '#38bdf8';
-    if (isSpicy) baseColor = '#d946ef';
-    const { t } = useLanguage();
-
-    return (
-        <View style={[{ height: 50, marginBottom: 0 }, style]}>
-            {/* 1. Main Interaction Layer (Background + Click) */}
-            <PremiumPressable
-                onPress={owned ? onPress : null}
-                scaleDown={0.97}
-                style={{
-                    width: '100%',
-                    height: '100%',
-                    opacity: owned ? 1 : 0.6
-                }}
-                contentContainerStyle={{ height: '100%' }}
-            >
-                <View style={{
-                    flex: 1,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: selected ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.4)',
-                    borderRadius: 12,
-                    paddingHorizontal: 8, // Reduced padding
-                    borderWidth: 1,
-                    borderColor: selected ? baseColor : 'rgba(255,255,255,0.05)',
-                    height: '100%',
-                    paddingRight: 35 // Reduced space for floating elements
-                }}>
-                    {/* Icona Sinistra */}
-                    <View style={{
-                        width: 28, // Reduced size
-                        height: 28, // Reduced size
-                        borderRadius: 14,
-                        backgroundColor: selected ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.02)',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        overflow: 'hidden',
-                        borderWidth: selected ? 1 : 0,
-                        borderColor: 'rgba(255,255,255,0.05)'
-                    }}>
-                        {isDark ? <ThornsIcon size={16} color={selected ? baseColor : '#555'} /> :
-                            (isChill ? <View style={{ transform: [{ scale: 0.8 }] }}><CardsIcon size={16} color={selected ? baseColor : '#555'} /></View> :
-                                (isSpicy ? <SpicyIcon size={16} color={selected ? baseColor : '#555'} /> :
-                                    <CardsIcon size={16} color={selected ? baseColor : '#555'} />))
-                        }
-                    </View>
-
-                    {/* Testo Centrale */}
-                    <View style={{ flex: 1, marginLeft: 8 }}>
-                        <Text style={{
-                            fontFamily: 'Cinzel-Bold',
-                            color: selected ? baseColor : '#888',
-                            fontSize: 10, // Smaller font
-                            letterSpacing: 0.5
-                        }} numberOfLines={1}>
-                            {label}
-                        </Text>
-                        <Text style={{ fontFamily: 'Outfit', fontSize: 7, color: '#444' }} numberOfLines={1}>
-                            {isDark ? t('adult_content') : (isChill ? t('chill_content') : (isSpicy ? t('spicy_content') : t('starter_set')))}
-                        </Text>
-                    </View>
-                </View>
-            </PremiumPressable>
-
-            {/* 2. Floating Action Layer (Sibling to Pressable) */}
-            <View
-                style={{
-                    position: 'absolute',
-                    right: 4,
-                    top: 0,
-                    bottom: 0,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 6,
-                    pointerEvents: 'box-none'
-                }}
-            >
-                {onPreview && (
-                    <TouchableOpacity
-                        onPress={onPreview}
-                        style={{ padding: 4 }}
-                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                    >
-                        <EyeIcon size={16} color="#d4af37" />
-                    </TouchableOpacity>
-                )}
-                {!owned && <LockIcon size={12} color="#444" />}
-                {owned && selected && <CheckIcon size={12} color={baseColor} />}
-            </View>
-        </View >
-    );
-};
 // 3. Chaos Event Banner (Moved outside to prevent re-renders)
 const ChaosBanner = ({ event, roomData, t }) => {
     if (!event || !roomData?.chaosMode) return null;
@@ -1684,39 +1509,30 @@ const GameScreen = ({ onStartLoading }) => {
                     </View>
                 </PremiumModal>
 
-                {/* [NEW] AI Joker Animation Overlay */}
+                {/* Joker Animation Overlay */}
                 <JokerOverlay
                     visible={isAnimatingJoker}
                     onFinish={async () => {
                         setIsAnimatingJoker(false);
                         try {
-                            const success = await useAIJoker(); // Trigger logic after animation
-
+                            const success = await useAIJoker();
                             if (!success) {
                                 SoundService.play('error');
                                 HapticsService.trigger('error');
-                                setModalConfig({
-                                    visible: true,
-                                    title: t('robot_icon_label') || "AI",
-                                    message: t('joker_not_found'),
-                                    singleButton: true,
-                                    confirmText: t('default_confirm')
-                                });
+                                triggerShake();
+                                setToast({ visible: true, message: t('joker_not_found'), type: 'error' });
                             } else {
                                 SoundService.play('success');
                                 HapticsService.trigger('success');
                             }
                         } catch (e) {
                             setIsAnimatingJoker(false);
-                            if (e.message !== "JOKER_LIMIT") {
-                                SoundService.play('error');
-                                HapticsService.trigger('error');
-                                triggerShake();
-                                setToast({ visible: true, message: e.message, type: 'error' });
-                            }
+                            console.error("[JOKER] final error:", e);
                         }
                     }}
                 />
+
+
 
                 {/* [NEW] Dominus Alert Overlay */}
                 {showDominusAlert && (

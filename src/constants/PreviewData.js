@@ -27,3 +27,33 @@ export const BASE_PACK_PREVIEW = {
         "A miscarriage"
     ]
 };
+
+export const CHILL_PACK_PREVIEW = {
+    it: [
+        "Un piccione con autostima",
+        "Indossare le crocs al matrimonio",
+        "L'ansia sociale a comando",
+        "Un abbraccio non richiesto"
+    ],
+    en: [
+        "A pigeon with self-esteem",
+        "Wearing crocs at a wedding",
+        "Social anxiety on command",
+        "An unsolicited hug"
+    ]
+};
+
+export const SPICY_PACK_PREVIEW = {
+    it: [
+        "Un {dildo} nero venoso di 30cm",
+        "Leccare l'{ano} di un senzatetto",
+        "Un'{orgia} in una casa di riposo",
+        "Il sapore dello {sperma} di tuo padre"
+    ],
+    en: [
+        "A 12-inch veinous black {dildo}",
+        "Licking a homeless person's {anus}",
+        "An {orgy} in a retirement home",
+        "The taste of your dad's {cum}"
+    ]
+};

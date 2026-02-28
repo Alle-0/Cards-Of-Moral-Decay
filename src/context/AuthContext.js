@@ -768,9 +768,10 @@ export const AuthProvider = ({ children }) => {
             });
             await updateRank(user.username);
 
-            // [NEW] Schedule next daily notification if enabled
-            const notifyEnabled = user.notificationSettings?.notifyDailyDc !== false;
-            NotificationService.scheduleDailyDCNotification(notifyEnabled);
+            // [OBSOLETE] Local next daily notification scheduling
+            // Now handled entirely server-side by backend Vercel Cron
+            // const notifyEnabled = user.notificationSettings?.notifyDailyDc !== false;
+            // NotificationService.scheduleDailyDCNotification(notifyEnabled);
 
             return { success: true, awarded: 50 };
         } catch (e) {

@@ -49,7 +49,7 @@ const IdentityStep = ({
                         <LocalAvatar seed={avatar} size={45} />
                     )}
                     <View style={styles.editBadge}>
-                        <Text style={{ fontSize: 10 }}>✎</Text>
+                        <EditIcon size={14} color="#000" />
                     </View>
                 </TouchableOpacity>
 
@@ -134,13 +134,12 @@ const styles = StyleSheet.create({
         bottom: 0,
         right: 0,
         backgroundColor: '#fff',
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#000'
+        zIndex: 10
     }
 });
 

@@ -15,6 +15,7 @@ import RoomListStep from './RoomListStep';
 import PremiumInput from '../PremiumInput';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { EditIcon } from '../Icons';
 
 const MainMenuStep = ({
     theme,
@@ -74,9 +75,12 @@ const MainMenuStep = ({
         <View style={styles.stepContainer}>
             <View style={{ width: '100%', flex: 1 }}>
                 <View style={styles.contentWrapper}>
-                    {/* BACK BUTTON */}
+                    {/* PROFILE EDIT BUTTON */}
                     <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <Text style={styles.backButtonText}>{t('back_button')}</Text>
+                        <View style={styles.backButtonInner}>
+                            <EditIcon size={18} color="rgba(255,255,255,0.6)" />
+                            <Text style={styles.backButtonText}>{t('edit_profile')}</Text>
+                        </View>
                     </TouchableOpacity>
 
                     {/* MAIN CARD CONTAINER */}
@@ -193,15 +197,22 @@ const styles = StyleSheet.create({
     },
     backButton: {
         alignSelf: 'flex-start',
-        paddingVertical: 10,
-        marginBottom: 15,
-        paddingHorizontal: 5
+        paddingVertical: 8,
+        marginTop: 8,
+        marginBottom: 12,
+        paddingHorizontal: 4,
+    },
+    backButtonInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
     },
     backButtonText: {
-        color: 'rgba(255,255,255,0.4)',
+        color: 'rgba(255,255,255,0.7)',
         fontFamily: 'Cinzel-Bold',
-        fontSize: 12,
-        letterSpacing: 0.5
+        fontSize: 11,
+        letterSpacing: 1,
+        textTransform: 'uppercase'
     },
 
     // CARD CONTAINER (Matching LobbySettingsPanel)

@@ -16,7 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
-import { RANK_COLORS, RANK_THRESHOLDS } from '../constants/Ranks';
+import { RANK_COLORS, RANK_THRESHOLDS, RANK_KEY_MAP, getRankKey } from '../constants/Ranks';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import SoundService from '../services/SoundService';
@@ -37,24 +37,6 @@ const STEPS = {
     JOIN: 2,
 };
 
-const RANK_KEY_MAP = {
-    "Anima Candida": "rank_anima_candida",
-    "Innocente": "rank_innocente",
-    "Corrotto": "rank_corrotto",
-    "Socio del Vizio": "rank_socio_del_vizio",
-    "Architetto del Caos": "rank_architetto_del_caos",
-    "Eminenza Grigia": "rank_eminenza_grigia",
-    "Entità Apocalittica": "rank_entita_apocalittica",
-    "Capo supremo": "rank_capo_supremo",
-    "Capo Supremo": "rank_capo_supremo", // [FIX] Case variation
-    "BOT": "rank_bot"
-};
-
-const getRankKey = (rank) => {
-    if (!rank) return 'rank_anima_candida';
-    const cleanRank = rank.trim();
-    return RANK_KEY_MAP[cleanRank] || `rank_${cleanRank.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_')}`;
-};
 
 const LobbyScreen = ({ onStartLoading }) => {
     const {
@@ -218,7 +200,19 @@ const LobbyScreen = ({ onStartLoading }) => {
     }, [currentStep, height, friendsRooms, publicRooms, currentTab, showJoinInput]);
 
     const [localPlayerName, setLocalPlayerName] = useState(authUser?.nickname || authUser?.username || '');
-    const [localAvatar, setLocalAvatar] = useState(authUser?.avatar || authUser?.avatar || MYSTERY_AVATAR);
+    const [localAvatar, setLocalAvatar] = useState(authUser?.avatar || MYSTERY_AVATAR);
+
+    // [FIX] Sync local state with AuthContext when profile updates externally (e.g. from Settings)
+    useEffect(() => {
+        if (authUser) {
+            if (authUser.nickname || authUser.username) {
+                setLocalPlayerName(authUser.nickname || authUser.username || '');
+            }
+            if (authUser.avatar) {
+                setLocalAvatar(authUser.avatar);
+            }
+        }
+    }, [authUser?.nickname, authUser?.username, authUser?.avatar]);
 
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
@@ -501,9 +495,23 @@ const LobbyScreen = ({ onStartLoading }) => {
                                                     {/* Active Progress */}
                                                     <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: rankColor, borderRadius: 2 }} />
                                                 </View>
-                                                <Text style={{ fontSize: 8, color: '#666', marginTop: 2, fontFamily: 'Outfit', includeFontPadding: false }}>
-                                                    {t('next_rank_points', { points: pointsLeft.toLocaleString(), rank: t(getRankKey(nextRank.name)) })}
-                                                </Text>
+                                                {(() => {
+                                                    const nextRankName = t(getRankKey(nextRank.name));
+                                                    const nextRankColor = getRankColor(nextRank.name);
+                                                    const nextRankPointsFull = t('next_rank_points', {
+                                                        points: pointsLeft.toLocaleString(),
+                                                        rank: 'RANK_HOLDER'
+                                                    });
+                                                    const [prefix, suffix] = nextRankPointsFull.split('RANK_HOLDER');
+
+                                                    return (
+                                                        <Text style={{ fontSize: 8, color: '#666', marginTop: 2, fontFamily: 'Outfit', includeFontPadding: false }}>
+                                                            {prefix}
+                                                            <Text style={{ color: nextRankColor, fontFamily: 'Outfit-Bold' }}>{nextRankName}</Text>
+                                                            {suffix}
+                                                        </Text>
+                                                    );
+                                                })()}
                                             </View>
                                         )}
                                     </View>

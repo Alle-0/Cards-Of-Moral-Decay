@@ -1020,69 +1020,54 @@ export const GameProvider = ({ children }) => {
 
     const playCards = async (selectedCards) => {
         if (!roomCode || !user) return;
+        let activePlayers = 0;
         try {
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
                 if (!room.giocatori || !room.giocatori[roomPlayerName || user.name]) return dehydrateRoom(room);
                 const pName = roomPlayerName || user.name;
+
+                // 1. Gioca le carte
                 room.carteGiocate = room.carteGiocate || {};
                 room.carteGiocate[pName] = selectedCards;
+
+                // 2. Rimuovi dalla mano
                 const currentHand = room.giocatori[pName].carte || [];
                 room.giocatori[pName].carte = currentHand.filter(c => {
                     const cardText = typeof c === 'string' ? c : c?.testo;
                     return !selectedCards.some(sc => (typeof sc === 'string' ? sc : sc?.testo) === cardText);
                 });
-                const activePlayers = Object.entries(room.giocatori).filter(([name]) => name !== room.dominus).length;
-                const playedCount = Object.keys(room.carteGiocate || {}).length;
 
-                // [FIX] ATOMIC TRANSACTION: Check if we are the last one playing in a 2-player game
-                // activePlayers includes us (because we are inside the transaction, but our card is already added to 'carteGiocate' above)
-                // Actually, 'room.carteGiocate' is updated in-memory above. So 'playedCount' includes us.
+                // 3. Calcola se il turno è finito (tutti hanno giocato)
+                activePlayers = Object.entries(room.giocatori).filter(([name]) => name !== room.dominus).length;
+                let playedCount = Object.keys(room.carteGiocate || {}).length;
 
-                // Condition: 2 Players total (1 Dominus + 1 Player)
-                // We are that 1 Player. We just played.
-                if (activePlayers === 1) {
+                // 4. Se tutti gli umani hanno giocato e manca Rando, fallo giocare (Locale, No AI)
+                if (room.giocatori['Rando'] && !room.carteGiocate['Rando'] && playedCount >= (activePlayers - 1)) {
+                    if (!room.whiteDeck || room.whiteDeck.length < 10) {
+                        const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true }).carteBianche;
+                        room.whiteDeck = shuffleArray([...allWhite]);
+                    }
                     const blanks = room.cartaNera?.blanks || 1;
-                    const randoCards = [];
-                    // Pop needed amount of cards
+                    let chosen = [];
                     for (let i = 0; i < blanks; i++) {
-                        // [FIX] EMPTY DECK SAFETY: Reshuffle if needed
-                        if (!room.whiteDeck || room.whiteDeck.length === 0) {
-                            // Harvest used cards to refill deck
-                            const excludedCards = new Set();
-                            // - Hands
-                            Object.values(room.giocatori || {}).forEach(p => {
-                                (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
-                            });
-                            // - Currently Played
-                            Object.values(room.carteGiocate || {}).forEach(cards => {
-                                const arr = Array.isArray(cards) ? cards : [cards];
-                                arr.forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
-                            });
-
-                            // Get all cards from packages
-                            const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }).carteBianche;
-                            const availableCards = allWhite.filter(c => !excludedCards.has(c.trim()));
-                            room.whiteDeck = shuffleArray(availableCards);
-                        }
-
-                        if (room.whiteDeck && room.whiteDeck.length > 0) {
-                            randoCards.push(room.whiteDeck.pop());
-                        }
+                        if (room.whiteDeck?.length > 0) chosen.push(room.whiteDeck.pop());
                     }
-
-                    if (randoCards.length > 0) {
-                        room.carteGiocate = room.carteGiocate || {};
-                        room.carteGiocate["Rando"] = randoCards;
+                    if (chosen.length > 0) {
+                        room.carteGiocate['Rando'] = chosen;
+                        playedCount++;
                     }
-                    room.statoTurno = "DOMINUS_CHOOSING";
-                } else if (playedCount >= activePlayers && activePlayers > 0) {
+                }
+
+                if (playedCount >= activePlayers && activePlayers > 0) {
                     room.statoTurno = "DOMINUS_CHOOSING";
                 }
                 return dehydrateRoom(room);
             });
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error("[GAME] playCards error:", e);
+        }
     };
 
     const confirmDominusSelection = async (winnerName) => {

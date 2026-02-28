@@ -30,3 +30,23 @@ export const RANK_THRESHOLDS = [
     { name: "Eminenza Grigia", min: 25000 },
     { name: "Entità Apocalittica", min: 50000 }
 ];
+
+export const RANK_KEY_MAP = {
+    "Anima Candida": "rank_anima_candida",
+    "Innocente": "rank_innocente",
+    "Corrotto": "rank_corrotto",
+    "Socio del Vizio": "rank_socio_del_vizio",
+    "Architetto del Caos": "rank_architetto_del_caos",
+    "Eminenza Grigia": "rank_eminenza_grigia",
+    "Entità Apocalittica": "rank_entita_apocalittica",
+    "Capo supremo": "rank_capo_supremo",
+    "Capo Supremo": "rank_capo_supremo",
+    "BOT": "rank_bot"
+};
+
+export const getRankKey = (rank) => {
+    if (!rank) return 'rank_anima_candida';
+    const cleanRank = rank.trim();
+    if (cleanRank.startsWith('rank_')) return cleanRank;
+    return RANK_KEY_MAP[cleanRank] || `rank_${cleanRank.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_')}`;
+};

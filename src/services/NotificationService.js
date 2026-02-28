@@ -189,39 +189,12 @@ async function registerForPushNotificationsAsync(vapidKey = 'BMcF2h_kIAUPpErVAh-
     return token;
 }
 
-// [NEW] Schedule Local Notification for Daily Free DC
+// [OBSOLETE] Local Notification for Daily Free DC
+// Now handled centrally by Vercel Serverless Cron Job (CardsOfMoralDecayBackend/api/cron-daily-dc.js)
 const scheduleDailyDCNotification = async (enabled, language = 'it') => {
-    try {
-        // Clear previously scheduled notifications of this type
-        const allScheduled = await Notifications.getAllScheduledNotificationsAsync();
-        for (const notif of allScheduled) {
-            if (notif.content.data?.type === 'DAILY_DC') {
-                await Notifications.cancelScheduledNotificationAsync(notif.identifier);
-            }
-        }
-
-        if (!enabled || Platform.OS === 'web') return; // Local scheduling might not be reliable on web or if disabled
-
-        const title = language === 'it' ? "Mercato Nero Aperto 💸" : "Black Market Open 💸";
-        const body = language === 'it'
-            ? "Ehi! Sono passate 24h, ritira i tuoi 50 DC gratuiti nel Mercato Nero!"
-            : "Hey! 24h have passed, claim your 50 free DC in the Black Market!";
-
-        await Notifications.scheduleNotificationAsync({
-            content: {
-                title: title,
-                body: body,
-                data: { type: 'DAILY_DC', screen: 'Shop', params: { tab: 'dc' } },
-            },
-            trigger: {
-                seconds: 24 * 60 * 60, // 24 hours
-                repeats: false,
-            },
-        });
-        console.log("[PUSH] Daily DC Notification scheduled for 24h from now");
-    } catch (e) {
-        console.warn("[PUSH] Failed to schedule Daily DC notification", e);
-    }
+    // Left empty intentionally to not break existing imports, but the server handles execution now
+    console.log("[PUSH] scheduleDailyDCNotification called, but execution is now server-side.");
+    return;
 }
 
 const NotificationService = {
