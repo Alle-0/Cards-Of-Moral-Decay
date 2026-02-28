@@ -263,7 +263,7 @@
             border: 1px solid rgba(255,255,255,0.1);
             transition: all 0.4s ease;
             filter: grayscale(20%);
-            cursor: zoom-in; /* Indica che si può ingrandire */
+            cursor: zoom-in;
         }
 
         .gallery img:hover {
@@ -274,9 +274,9 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.8);
         }
 
-        /* --- LIGHTBOX (MODALE PER INGRANDIRE LE IMMAGINI) --- */
+        /* --- LIGHTBOX (MODALE) --- */
         #lightbox {
-            display: none; /* Nascosto di default */
+            display: none;
             position: fixed;
             z-index: 999;
             top: 0;
@@ -315,7 +315,7 @@
         /* --- FOOTER & SEO --- */
         .seo-trough {
             font-size: 0.75rem;
-            color: #333;
+            color: var(--text-muted); /* Corretto per la SEO */
             text-align: justify;
             margin: 60px 0;
             padding-top: 40px;
@@ -399,6 +399,22 @@
         </div>
     </div>
 
+    <h2 class="section-title">Elogi Funebri</h2>
+    <div class="bento-grid" style="margin-bottom: 80px;">
+        <div class="bento-item" style="padding: 30px; text-align: center;">
+            <p style="font-style: italic; font-size: 1.1rem; color: #fff;">"Ho giocato una partita al pranzo di Natale con i parenti. Ora vivo in un monolocale in affitto e mio padre non mi rivolge la parola."</p>
+            <h4 style="color: var(--gold); margin-top: 15px;">⭐⭐⭐⭐⭐ - Utente Anonimo</h4>
+        </div>
+        <div class="bento-item" style="padding: 30px; text-align: center;">
+            <p style="font-style: italic; font-size: 1.1rem; color: #fff;">"Il Rand Bot ha usato la carta sull'eutanasia contro di me e ha vinto il round. L'intelligenza artificiale è un errore."</p>
+            <h4 style="color: var(--gold); margin-top: 15px;">⭐⭐⭐⭐⭐ - Marco T.</h4>
+        </div>
+        <div class="bento-item" style="padding: 30px; text-align: center;">
+            <p style="font-style: italic; font-size: 1.1rem; color: #fff;">"Pensavo di essere una brava persona prima di scaricare questo agglomerato di codice. Mi sbagliavo di grosso."</p>
+            <h4 style="color: var(--gold); margin-top: 15px;">⭐⭐⭐⭐⭐ - Ex Chierichetto</h4>
+        </div>
+    </div>
+
     <h2 class="section-title">The Disgrace Gallery</h2>
     <div class="gallery">
         <img alt="Gameplay Screenshot 1" src="https://github.com/user-attachments/assets/a4351236-8cfd-457b-be06-8ec48cbd87d7" loading="lazy" class="zoomable" />
@@ -438,13 +454,18 @@
             });
         });
 
-        // Chiudi cliccando sullo sfondo scuro
+        // Chiudi cliccando sullo sfondo
         lightbox.addEventListener('click', () => {
             lightbox.classList.remove('active');
-            // Piccolo timeout per svuotare la src dopo l'animazione di fade
-            setTimeout(() => {
-                if(!lightbox.classList.contains('active')) lightboxImg.src = '';
-            }, 300);
+            setTimeout(() => { if(!lightbox.classList.contains('active')) lightboxImg.src = ''; }, 300);
+        });
+
+        // Chiudi col tasto ESC (Prevenzione sequestro di persona)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+                lightbox.classList.remove('active');
+                setTimeout(() => { if(!lightbox.classList.contains('active')) lightboxImg.src = ''; }, 300);
+            }
         });
     });
 </script>
