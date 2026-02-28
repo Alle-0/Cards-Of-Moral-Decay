@@ -1,307 +1,301 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cards of Moral Decay</title>
+    <title>Cards of Moral Decay | Il Party Game Senza Filtri</title>
+    
+    <meta name="description" content="Il party game multiplayer online definitivo per gli amanti del black humor. Gioca gratis dal web o scarica l'app Android. Un'alternativa irriverente ai classici giochi di carte per adulti.">
+    <meta name="keywords" content="carte vs umani, black humor, party game, carte contro l'umanità online, multiplayer, giochi per adulti, app carte black humor, cards of moral decay, scarica apk, giochi divertenti amici, itch.io, uptodown">
+    <meta name="author" content="Alle-0">
+    
     <style>
         :root {
             --gold: #D4AF37;
-            --bg: #080808;
-            --surface: rgba(30, 30, 30, 0.6);
-            --text-main: #f0f0f0;
-            --text-muted: #a0a0a0;
+            --gold-glow: rgba(212, 175, 55, 0.5);
+            --bg: #050505;
+            --surface: #121212;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             color: var(--text-main);
             line-height: 1.6;
-            background-image: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.1) 0%, transparent 50%);
+            overflow-x: hidden;
+        }
+
+        /* Effetto sfondo radiale */
+        .bg-glow {
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80vw;
+            height: 80vw;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.05) 0%, rgba(0,0,0,0) 70%);
+            z-index: -1;
+            pointer-events: none;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 0 20px;
         }
 
+        /* --- HERO SECTION --- */
         header {
             text-align: center;
-            margin-bottom: 40px;
+            padding: 80px 0 40px;
         }
 
-        .banner {
-            max-width: 100%;
-            height: auto;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            margin-bottom: 20px;
+        .hero-banner {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            margin-bottom: 30px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
         }
 
         h1 {
-            font-size: 2.5em;
-            margin: 0 0 10px 0;
+            font-size: 3em;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #fff, var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        h2 {
-            color: var(--gold);
-            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
-            padding-bottom: 10px;
-            margin-top: 40px;
-        }
-
-        h3 {
-            margin-bottom: 5px;
-        }
-
-        .subtitle {
-            font-size: 1.2em;
+        .tagline {
+            font-size: 1.3em;
             color: var(--text-muted);
-            font-style: italic;
-            margin-bottom: 25px;
+            font-weight: 300;
+            margin-bottom: 40px;
         }
 
-        .badges img {
-            margin: 0 5px;
-            height: 28px;
-        }
-
-        .glass-panel {
+        /* --- CALL TO ACTION (DOWNLOADS) --- */
+        .download-section {
             background: var(--surface);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .warning-box {
-            border-left: 4px solid #ff4444;
-            background: rgba(255, 68, 68, 0.05);
-            text-align: left;
+        .download-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
         }
 
-        .warning-box h3 {
-            color: #ff4444;
-            margin-top: 0;
+        .btn-grid {
             display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .cta-container {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
             flex-wrap: wrap;
-            margin: 30px 0;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
         }
 
         .btn {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-weight: bold;
+            gap: 10px;
+            padding: 16px 32px;
+            border-radius: 10px;
+            font-weight: 600;
             text-decoration: none;
             text-transform: uppercase;
             letter-spacing: 1px;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.95em;
         }
 
         .btn-primary {
             background-color: var(--gold);
             color: #000;
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+            box-shadow: 0 0 20px var(--gold-glow);
+            width: 100%;
+            max-width: 400px;
+            justify-content: center;
+            font-size: 1.1em;
+            margin-bottom: 10px;
         }
 
         .btn-primary:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 30px var(--gold-glow);
             background-color: #fff;
-            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.5);
-            transform: translateY(-2px);
         }
 
-        .btn-secondary {
-            background-color: transparent;
-            color: var(--gold);
-            border: 2px solid var(--gold);
-        }
-
-        .btn-secondary:hover {
-            background-color: rgba(212, 175, 55, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .note {
-            font-size: 0.9em;
-            color: var(--text-muted);
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        .grid-features {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-
-        .feature-item p {
-            margin-top: 5px;
-            color: var(--text-muted);
-        }
-
-        .screenshot-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .screenshot-grid img {
-            width: 100%;
-            height: auto;
-            border-radius: 12px;
+        .btn-store {
+            background-color: #1a1a1a;
+            color: #fff;
             border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .btn-store:hover {
+            background-color: #2a2a2a;
+            border-color: var(--gold);
+            transform: translateY(-2px);
+        }
+
+        /* --- FEATURES GRID --- */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 60px;
+        }
+
+        .feature-card {
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 30px;
+            border-radius: 16px;
             transition: transform 0.3s ease;
         }
 
-        .screenshot-grid img:hover {
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(212, 175, 55, 0.3);
+            background: rgba(30, 30, 30, 0.9);
+        }
+
+        .feature-card h3 {
+            color: var(--gold);
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        /* --- SCREENSHOTS --- */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 60px;
+        }
+
+        .gallery img {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .gallery img:hover {
             transform: scale(1.05);
             border-color: var(--gold);
+            z-index: 10;
         }
 
-        details {
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-            padding: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        summary {
-            font-weight: bold;
-            cursor: pointer;
-            color: var(--gold);
-            list-style: none;
-        }
-
-        summary::-webkit-details-marker {
-            display: none;
-        }
-
-        details[open] summary {
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 10px;
-            margin-bottom: 10px;
+        /* --- FOOTER & SEO --- */
+        .seo-text {
+            font-size: 0.8em;
+            color: #444;
+            text-align: justify;
+            margin: 40px 0;
+            line-height: 1.4;
         }
 
         footer {
             text-align: center;
-            margin-top: 60px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 40px 0;
+            border-top: 1px solid rgba(255,255,255,0.05);
             color: var(--text-muted);
-            font-size: 0.9em;
         }
 
-        @media (min-width: 600px) {
-            .grid-features {
-                grid-template-columns: 1fr 1fr;
-            }
+        footer a {
+            color: var(--gold);
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
 
+<div class="bg-glow"></div>
+
 <div class="container">
     <header>
-        <img src="https://carte-vs-umani.web.app/og-image.png" alt="Cards of Moral Decay Banner" class="banner">
+        <img src="https://carte-vs-umani.web.app/og-image.png" alt="Cards of Moral Decay" class="hero-banner">
         <h1>Cards of Moral Decay</h1>
-        <div class="subtitle">An elegant interface for disgraceful thoughts.</div>
-        
-        <div class="badges">
-            <img src="https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?style=for-the-badge&label=VERSION&color=D4AF37&labelColor=000000" alt="Version">
-            <img src="https://img.shields.io/badge/PLATFORM-ANDROID_%26_WEB-D4AF37?style=for-the-badge&labelColor=000000" alt="Platform">
-            <img src="https://img.shields.io/badge/RATING-18%2B-D4AF37?style=for-the-badge&labelColor=000000" alt="Rating 18+">
-        </div>
+        <p class="tagline">Un'interfaccia elegante per pensieri disdicevoli.</p>
     </header>
 
-    <div class="glass-panel warning-box">
-        <h3>🔞 MATURE CONTENT</h3>
-        <p>This experience explores dark humor, social taboos, and moral decadence.<br>
-        <strong>Strictly for adults. Play responsibly.</strong></p>
-    </div>
+    <div class="download-section">
+        <h2 style="margin-bottom: 25px; font-size: 1.8em;">Inizia la Discesa</h2>
+        
+        <div style="display: flex; justify-content: center;">
+            <a href="https://carte-vs-umani.web.app" class="btn btn-primary">
+                🌐 Gioca Subito nel Browser
+            </a>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 25px;">Ottimizzato per dispositivi mobile. Nessuna installazione richiesta.</p>
 
-    <div class="glass-panel" style="text-align: center;">
-        <h2>🚀 JOIN THE DECAY</h2>
-        <div class="cta-container">
-            <a href="https://carte-vs-umani.web.app" class="btn btn-primary">🌐 Play Online (Web)</a>
-            <a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest" class="btn btn-secondary">📱 Download APK</a>
-        </div>
-        <p class="note"><i>(The Web version is optimized for Mobile Devices)</i></p>
-    </div>
-
-    <h2>💎 THE EXPERIENCE</h2>
-    <div class="grid-features">
-        <div class="feature-item">
-            <h3>🌑 A Journey into Decadence</h3>
-            <p>A real-time multiplayer card game for those who aren't afraid to laugh at the darkest sides of humanity. No filters, no limits.</p>
-        </div>
-        <div class="feature-item">
-            <h3>🌐 Dual Language Support</h3>
-            <p>Fully localized in <strong>English 🇬🇧</strong> and <strong>Italian 🇮🇹</strong>. The interface and the cards adapt to your language, keeping the wit sharp and the humor biting.</p>
-        </div>
-        <div class="feature-item">
-            <h3>🤝 Private Lobbies</h3>
-            <p>Created for friends. No random matchmaking, just private rooms where you can be yourself (or your worst version) with people you trust.</p>
-        </div>
-        <div class="feature-item">
-            <h3>🌪️ The Chaos Engine</h3>
-            <p>Entropy is part of the fun. When enabled, the Chaos Engine disrupts the game flow every 2 or 3 rounds with 6 different global events.</p>
-        </div>
-        <div class="feature-item">
-            <h3>🎭 Shop & Aesthetics</h3>
-            <p>Collect <strong>Dirty Cash</strong> and redefine your style. Unlock Immersive Themes, Custom Card Skins, and Avatar Frames.</p>
-        </div>
-        <div class="feature-item">
-            <h3>🤖 Rand Bot</h3>
-            <p>Only have one friend? Don't worry, Rando Bot has your back. He automatically joins 2-player games and plays a random card every turn.</p>
+        <div class="btn-grid">
+            <a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest" class="btn btn-store">
+                📦 Download APK Diretto
+            </a>
+            <a href="#" class="btn btn-store">
+                🎮 Itch.io
+            </a>
+            <a href="#" class="btn btn-store">
+                ⬇️ Uptodown
+            </a>
         </div>
     </div>
 
-    <h2>📸 SCREENSHOTS</h2>
-    <div class="screenshot-grid">
-        <img alt="screen1" src="https://github.com/user-attachments/assets/35dc55a2-e1c6-4c42-b65d-f88ebe3dee56" />
-        <img alt="screen2" src="https://github.com/user-attachments/assets/c42f7e0f-835c-4edb-b93b-ea65907b5d79" />
-        <img alt="screen3" src="https://github.com/user-attachments/assets/814b79e9-fd53-4836-adfc-134ee93f4a9b" />
-        <img alt="screen4" src="https://github.com/user-attachments/assets/0fa114f9-71b5-468d-a5c3-125ad9748d02" />
-        <img alt="screen5" src="https://github.com/user-attachments/assets/a9909308-5516-4699-90e4-c2799489f87c" />
-        <img alt="screen6" src="https://github.com/user-attachments/assets/b8743c9a-fb34-4e02-a710-95f14adfb15f" />
-        <img alt="screen7" src="https://github.com/user-attachments/assets/796dab92-8a77-4f32-a518-2b10139614d6" />
+    <div class="features">
+        <div class="feature-card">
+            <h3>🌑 Senza Filtri</h3>
+            <p>Un party game multiplayer in tempo reale per chi non ha paura di ridere dei lati più oscuri dell'umanità. Entra in stanze private e distruggi amicizie decennali.</p>
+        </div>
+        <div class="feature-card">
+            <h3>🌪️ Motore del Caos</h3>
+            <p>L'entropia è parte del divertimento. Se attivato, il gioco saboterà attivamente la partita ogni tot turni con eventi globali studiati per generarvi ansia.</p>
+        </div>
+        <div class="feature-card">
+            <h3>🤖 Bot Inutile</h3>
+            <p>Siete solo in due? Nessun problema. Il nostro "Rand Bot" si unirà alla partita lanciando carte a caso, umiliandovi regolarmente pur non avendo una coscienza.</p>
+        </div>
+        <div class="feature-card">
+            <h3>🎭 Stile Decadente</h3>
+            <p>Raccogli valuta virtuale sfoggiando il tuo cinismo. Sblocca temi immersivi (Tokyo, Lucifer, Asylum) e skin personalizzate per umiliare gli avversari con stile.</p>
+        </div>
     </div>
 
-    <h2 style="margin-top: 50px;">⚙️ TECHNICAL STACK</h2>
-    <details>
-        <summary>Click to view the architecture</summary>
-        <ul>
-            <li><strong>Framework:</strong> React Native + Expo (v54)</li>
-            <li><strong>Real-time:</strong> Firebase Realtime Database</li>
-            <li><strong>Audio:</strong> Expo AV (Sound Design)</li>
-            <li><strong>UX:</strong> Auto-Session Recovery & Deep Linking</li>
-            <li><strong>Animations:</strong> Reanimated 2 (Fluid 60 FPS)</li>
-            <li><strong>Design:</strong> Custom HSL-based palette & Glassmorphism</li>
-        </ul>
-    </details>
+    <h2 style="text-align: center; margin-bottom: 30px; font-size: 1.8em;">Galleria del Disagio</h2>
+    <div class="gallery">
+        <img alt="Gameplay 1" src="https://github.com/user-attachments/assets/35dc55a2-e1c6-4c42-b65d-f88ebe3dee56" />
+        <img alt="Gameplay 2" src="https://github.com/user-attachments/assets/c42f7e0f-835c-4edb-b93b-ea65907b5d79" />
+        <img alt="Gameplay 3" src="https://github.com/user-attachments/assets/814b79e9-fd53-4836-adfc-134ee93f4a9b" />
+        <img alt="Gameplay 4" src="https://github.com/user-attachments/assets/0fa114f9-71b5-468d-a5c3-125ad9748d02" />
+        <img alt="Gameplay 5" src="https://github.com/user-attachments/assets/a9909308-5516-4699-90e4-c2799489f87c" />
+        <img alt="Gameplay 6" src="https://github.com/user-attachments/assets/b8743c9a-fb34-4e02-a710-95f14adfb15f" />
+    </div>
+
+    <div class="seo-text">
+        Cards of Moral Decay (conosciuto anche come Carte VS Umani) è un gioco da tavolo digitale e multiplayer online basato sul black humor. Un'alternativa irriverente, gratuita e senza censure ai classici party game per adulti. Disponibile come Web App giocabile direttamente da browser o tramite file APK per dispositivi Android. Perfetto per gruppi di amici, supporta stanze private, intelligenza artificiale integrata e personalizzazione estetica. Scaricalo anche tramite gli store alternativi come Itch.io e Uptodown.
+    </div>
 
     <footer>
-        <p>Developed by Alle-0 • <a href="https://github.com/Alle-0/Cards-Of-Moral-Decay" style="color: var(--gold); text-decoration: none;">View Repository</a></p>
+        <p>⚠️ Contenuti destinati ad un pubblico adulto (18+).</p>
+        <p style="margin-top: 10px;">Sviluppato da Alle-0 • <a href="https://github.com/Alle-0/Cards-Of-Moral-Decay">Codice Sorgente</a></p>
     </footer>
 </div>
 
