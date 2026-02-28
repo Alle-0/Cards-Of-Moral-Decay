@@ -320,6 +320,60 @@
             transform: scale(1.05);
             filter: brightness(1.2);
         }
+
+        /* --- DOWNLOAD GRID --- */
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 40px;
+            width: 100%;
+        }
+
+        .download-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 15px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .download-card:hover {
+            background: rgba(212, 175, 55, 0.08);
+            border-color: var(--gold);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .download-card .emoji {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            transition: transform 0.3s ease;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.05));
+        }
+
+        .download-card:hover .emoji {
+            transform: scale(1.15) rotate(5deg);
+            filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.4));
+        }
+
+        .download-card .title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .download-card .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
     </style>
 </head>
 <body>
@@ -332,30 +386,35 @@
     </header>
 
     <div class="download-terminal">
-        <h2 style="font-size: 2rem; color: #fff; margin-bottom: 10px;">Embrace the Void</h2>
+        <h2 style="font-size: 2.5rem; color: #fff; margin-bottom: 10px;">Embrace the Void</h2>
         <p style="color: var(--text-muted);">Cross-platform. No installation required for web.</p>
         
-        <div class="btn-group">
-            <a href="https://carte-vs-umani.web.app" class="btn btn-primary">
+        <div style="margin-top: 40px; display: flex; justify-content: center;">
+            <a href="https://carte-vs-umani.web.app" class="btn btn-primary" style="max-width: 400px; padding: 20px; font-size: 1.2rem;">
                 🌐 Play Web Version
             </a>
-            
-            <div class="secondary-links" style="margin-top: 10px;">
-                <a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest" class="btn btn-store">📦 Direct APK Download</a>
-            </div>
-
-            <div class="store-embeds">
-                <div class="itch-widget">
-                    <iframe frameborder="0" src="https://itch.io/embed/4239533?bg_color=121212&amp;fg_color=CFCFCF&amp;link_color=E6C25D&amp;border_color=414141" width="552" height="167">
-                        <a href="https://alle-0.itch.io/card-of-moral-decay">Cards Of Moral Decay by Alle-0</a>
-                    </iframe>
-                </div>
-
-                <a href='https://cards-of-moral-decay.en.uptodown.com/android' title='Download Cards of Moral Decay' class="uptodown-badge">
-                    <img src='https://stc.utdstc.com/img/mediakit/download-gio-small.png' alt='Download Cards of Moral Decay'>
-                </a>
-            </div>
         </div>
+
+        <div class="download-grid">
+            <a href="https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest" class="download-card" target="_blank">
+                <div class="emoji">📦</div>
+                <div class="title">Direct APK</div>
+                <div class="subtitle">GitHub Release</div>
+            </a>
+
+            <a href="https://alle-0.itch.io/card-of-moral-decay" class="download-card" target="_blank">
+                <div class="emoji">🎮</div>
+                <div class="title">Itch.io</div>
+                <div class="subtitle">Indie Store</div>
+            </a>
+
+            <a href="https://cards-of-moral-decay.en.uptodown.com/android" class="download-card" target="_blank">
+                <div class="emoji">⬇️</div>
+                <div class="title">Uptodown</div>
+                <div class="subtitle">Alternative Store</div>
+            </a>
+        </div>
+    </div>
     </div>
 
     <div class="bento-grid">
