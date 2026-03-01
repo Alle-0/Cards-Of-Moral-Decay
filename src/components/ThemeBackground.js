@@ -604,8 +604,8 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
         setElements([]); // Clear on theme change
 
         if (['matrix', 'pulsar', 'wallstreet'].includes(theme.id)) {
-            const intervalTime = theme.id === 'matrix' ? 12000 : (theme.id === 'wallstreet' ? 10000 : 18000);
-            const maxElements = theme.id === 'matrix' ? 3 : (theme.id === 'wallstreet' ? 4 : 2);
+            const intervalTime = 6000;
+            const maxElements = theme.id === 'matrix' ? 3 : (theme.id === 'wallstreet' ? 4 : 3); // Increased pulsar max slightly
 
             const interval = setInterval(() => {
                 const randomDelay = Math.random() * 2000;

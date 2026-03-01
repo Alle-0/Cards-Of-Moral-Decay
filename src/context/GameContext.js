@@ -31,6 +31,7 @@ export const GameProvider = ({ children }) => {
     const [gameDataLoaded, setGameDataLoaded] = useState(GameDataService.isLoaded); // [NEW]
     const [joinNotification, setJoinNotification] = useState(null); // [NEW] Track arrival of new players
     const prevPlayersRef = useRef({}); // [NEW] Track previous player list for arrival logic
+    const playerOnlineListeners = useRef({}); // [FIX] Dedicated per-player online listeners for instant offline detection
 
     // [NEW] Computed user state from AuthContext
     const user = useMemo(() => {
@@ -505,6 +506,56 @@ export const GameProvider = ({ children }) => {
     }, [roomData?.giocatori, roomPlayerName, user?.name, user?.username, roomCode]);
 
     const clearJoinNotification = () => setJoinNotification(null);
+
+    // [FIX] Dedicated per-player online listeners — fires IMMEDIATELY on onDisconnect
+    // without waiting for any other DB write to trigger the general room listener.
+    useEffect(() => {
+        if (!roomCode || !roomData?.giocatori) return;
+
+        const me = (roomPlayerName || user?.name || user?.username || '').trim().toLowerCase();
+        const currentPlayerNames = Object.keys(roomData.giocatori);
+
+        // Attach new listeners for players we aren't watching yet
+        currentPlayerNames.forEach((pName) => {
+            if (playerOnlineListeners.current[pName]) return; // Already listening
+            const pNameLower = pName.trim().toLowerCase();
+            if (pNameLower === me) return; // Skip self
+
+            const onlineRef = ref(db, `stanze/${roomCode}/giocatori/${pName}/online`);
+            let lastKnownOnline = roomData.giocatori[pName]?.online;
+
+            const unsub = onValue(onlineRef, (snap) => {
+                const isNowOnline = snap.val() === true;
+                // Fire toast only on the transition true → false
+                if (lastKnownOnline === true && isNowOnline === false) {
+                    setJoinNotification({ name: pName, type: 'offline', timestamp: Date.now() });
+                }
+                lastKnownOnline = isNowOnline;
+            });
+
+            playerOnlineListeners.current[pName] = unsub;
+        });
+
+        // Remove listeners for players who left the room entirely
+        Object.keys(playerOnlineListeners.current).forEach((pName) => {
+            if (!roomData.giocatori[pName]) {
+                playerOnlineListeners.current[pName](); // unsub
+                delete playerOnlineListeners.current[pName];
+            }
+        });
+
+        // Cleanup: detach all listeners when leaving the room
+        return () => { };
+    }, [roomData?.giocatori, roomCode, roomPlayerName, user?.name]);
+
+    // Cleanup all player online listeners on unmount or room exit
+    useEffect(() => {
+        if (!roomCode) {
+            Object.values(playerOnlineListeners.current).forEach(unsub => unsub());
+            playerOnlineListeners.current = {};
+        }
+    }, [roomCode]);
+
     // [NEW] Quick Join Logic
     const quickJoin = async (onValidationSuccess = null) => {
         // Find a suitable public room

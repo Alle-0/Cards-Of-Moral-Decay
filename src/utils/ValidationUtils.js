@@ -9,13 +9,14 @@ const FORBIDDEN_WORDS = [
     'faggot', 'kike', 'spic', 'chink', 'dyke', 'porn', 'cock', 'clit', 'vagina', 'penis', 'cum', 'whore', 'slut',
     'bastard', 'motherfucker', 'retard', 'wanker', 'twat', 'piss', 'bollocks', 'tosser', 'fag', 'coon', 'wetback',
     'kkk', 'ku-klux-klan', 'aryan', 'white-power', 'neo-nazi', 'holocaust', 'stalin', 'lenin', 'mao', 'comunista',
-    'comunismo', 'communism', 'communist', 'gay', 'trans',
+    'comunismo', 'communism', 'communist', 'gay', 'trans', 'god', 'jesus', 'christ', 'christian', 'islam', 'muslim',
     // Italian (Bestemmie, Insulti Gravi, Slurs, Politica Estrema)
     'stronzo', 'cazzo', 'vaffanculo', 'merda', 'troia', 'puttana', 'coglion', 'bastardo', 'dio', 'madonna', 'porco',
     'bestia', 'mussolini', 'duce', 'fascio', 'fascista', 'nazista', 'finocchio', 'negro', 'frocio', 'negra', 'zoccola',
     'bucchino', 'pompino', 'segone', 'ricchione', 'terrone', 'polentone', 'handicappato', 'mongoloide', 'cretino', 'idiota',
     'baldracca', 'mignotta', 'bagascia', 'leccaculo', 'leccapalle', 'minchia', 'ficcatelo', 'infame', 'canaglia',
     'brigate-rosse', 'lotta-continua', 'falce-e-martello', 'falcemartello', 'gulag', 'che-guevara', 'falce-martello',
+    'terrorista', 'terrorismo',
 ];
 
 export const isProfane = (text) => {
