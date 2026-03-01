@@ -417,12 +417,13 @@
 
         .gallery img {
             width: 100%;
-            aspect-ratio: 1/1;
+            aspect-ratio: 1 / 1 !important;
             object-fit: cover;
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             transition: var(--transition);
             cursor: pointer;
+            display: block;
         }
 
         .gallery img:last-child:nth-child(odd) {
