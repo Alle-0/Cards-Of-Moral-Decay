@@ -298,18 +298,22 @@
         /* --- GRID --- */
         .rules-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(clamp(300px, 25vw, 400px), 1fr));
+            gap: 30px;
         }
 
         .rule-card {
             background: #0d0d0d;
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 20px;
-            padding: 40px;
+            padding: clamp(30px, 4vw, 50px);
             transition: var(--transition);
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 280px;
         }
 
         .rule-card:hover {
@@ -329,16 +333,21 @@
 
         .rule-card h3 {
             color: var(--gold);
-            font-size: 1.4rem;
+            font-size: clamp(1.4rem, 2vw, 1.8rem);
             margin-bottom: 15px;
             text-transform: uppercase;
             letter-spacing: 1px;
             font-family: 'Playfair Display', serif;
         }
 
+        .rule-card p {
+            font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+            line-height: 1.6;
+        }
+
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(clamp(340px, 30vw, 450px), 1fr));
             gap: 30px;
             margin-top: 60px;
         }
@@ -348,7 +357,7 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 30px;
-            padding: 50px;
+            padding: clamp(30px, 5vw, 60px);
             transition: var(--transition);
             display: flex;
             flex-direction: column;
@@ -380,12 +389,23 @@
             background: var(--gold-dim);
             color: var(--gold);
             border-radius: 10px;
-            font-size: 0.75rem;
+            font-size: clamp(0.7rem, 1vw, 0.85rem);
             font-weight: 900;
             margin-bottom: 24px;
             text-transform: uppercase;
             letter-spacing: 2px;
             width: fit-content;
+        }
+
+        .feature-box h3 {
+            font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+            font-family: 'Playfair Display', serif;
+            margin-bottom: 20px;
+        }
+
+        .feature-box p {
+            font-size: clamp(1rem, 1.4vw, 1.25rem);
+            line-height: 1.7;
         }
 
         /* --- GALLERY --- */
