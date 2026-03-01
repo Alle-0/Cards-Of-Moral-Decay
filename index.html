@@ -152,6 +152,18 @@
             border-color: var(--gold);
         }
 
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
         /* --- CTAs --- */
         .cta-group {
             display: flex;
@@ -488,14 +500,16 @@
             <div>
                 <img src="https://carte-vs-umani.web.app/icon-192.png" alt="Icon" class="app-icon">
             </div>
-            <h1>Cards of Moral Decay</h1>
-            <p
-                style="color: var(--text-muted); text-transform: uppercase; letter-spacing: 4px; font-size: 0.9rem; font-weight: 400; margin-top: 10px;">
-                The Party Game That Doesn't Forgive</p>
+
+            <h1 class="visually-hidden">Cards of Moral Decay</h1>
 
             <div class="hero-banner-wrapper">
-                <img src="https://carte-vs-umani.web.app/og-image.png" alt="Gameplay" class="hero-banner">
+                <img src="https://carte-vs-umani.web.app/og-image.png" alt="Cards of Moral Decay" class="hero-banner">
             </div>
+
+            <p
+                style="color: var(--text-muted); text-transform: uppercase; letter-spacing: 4px; font-size: 0.9rem; font-weight: 400; margin-top: 20px; margin-bottom: 20px;">
+                The Party Game That Doesn't Forgive</p>
         </header>
 
         <div class="cta-group reveal">
