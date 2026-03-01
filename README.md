@@ -5,6 +5,7 @@
 <br/><br/>
 
 # CARDS OF MORAL DECAY
+
 ### *An elegant interface for disgraceful thoughts.*
 
 <br/>
@@ -18,7 +19,9 @@
 <br/>
 
 > [!WARNING]
+>
 > ### 🔞 MATURE CONTENT
+>
 > This experience explores dark humor, social taboos, and moral decadence.
 > **Strictly for adults. Play responsibly.**
 
@@ -46,25 +49,32 @@
 ## 💎 THE EXPERIENCE
 
 ### 🌑 A Journey into Decadence
+
 A real-time multiplayer card game for those who aren't afraid to laugh at the darkest sides of humanity. No filters, no limits.
 
 ### 🌐 Dual Language Support
+
 Fully localized in **English 🇬🇧** and **Italian 🇮🇹**. The interface and the cards adapt to your language, keeping the wit sharp and the humor biting.
 
 ### 🤝 Private Lobbies
+
 Created for friends. No random matchmaking, just private rooms where you can be yourself (or your worst version) with people you trust.
 
-### 🎭 Shop & Aesthetics
-Collect **Dirty Cash** and redefine your style. Unlock:
-- 🌌 **Immersive Themes** (Tokyo, Lucifer, Matrix, Asylum)
-- 🎴 **Custom Card Skins**
-- 🖼️ **Avatar Frames**
+### 🎭 Personalization & Shop
+
+Collect **Dirty Cash** and redefine your criminal aesthetic. Unlock:
+
+- 🌌 **Premium Themes** (Tokyo, Lucifer, Matrix, Asylum, Pulsar)
+- 🎴 **Exclusive Card Skins** (Midas, Noir, Magma)
+- 🖼️ **Avatar Frames** (From *Pure Soul* to *Apocalyptic Entity*)
 
 ### 🌪️ The Chaos Engine
-Entropy is part of the fun. When enabled, the **Chaos Engine** disrupts the game flow every 2 or 3 rounds with 6 different global events.
 
-### 🤖 Rand Bot
-Only have one friend? Don't worry, Rando Bot has your back. He automatically joins 2-player games and plays a random card every turn.
+Pure entropy at your fingertips. When enabled, the **Chaos Engine** disrupts the game every 2 rounds with unpredictable global events like **Inflation**, **Dictatorship**, or **Blackout**.
+
+### 🤖 Unpredictable Rando
+
+No friends at your level? **Rand Bot** has no logic, no morals, and no mercy. He automatically joins 2-player games to ensure the chaos never stops.
 
 ---
 
@@ -87,12 +97,13 @@ Only have one friend? Don't worry, Rando Bot has your back. He automatically joi
 
 <br/>
 
-* **Framework:** React Native + Expo (v54)
-* **Real-time:** Firebase Realtime Database
-* **Audio:** Expo AV (Sound Design)
-* **UX:** Auto-Session Recovery & Deep Linking
-* **Animations:** Reanimated 2 (Fluid 60 FPS)
-* **Design:** Custom HSL-based palette & Glassmorphism
+- **Framework:** React Native + Expo (v54)
+- **Real-time:** Firebase Realtime Database
+- **Audio:** Expo AV (Sound Design)
+- **UX:** Auto-Session Recovery & Deep Linking
+- **Animations:** Reanimated 2 (Fluid 60 FPS)
+- **Design:** Custom HSL-based palette & Glassmorphism
+
 </details>
 
 <br/>
