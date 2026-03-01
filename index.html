@@ -177,17 +177,17 @@
             display: inline-flex;
             align-items: center;
             gap: 12px;
-            padding: 16px 40px;
+            padding: clamp(16px, 3vw, 24px) clamp(40px, 6vw, 64px);
             background: linear-gradient(135deg, #FFD700 0%, #FFCE6A 50%, #D4AF37 100%);
             color: #000;
             text-decoration: none;
             font-weight: 900;
-            font-size: 1.1rem;
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
             border-radius: 100px;
             transition: var(--transition);
             box-shadow: 0 8px 25px rgba(212, 175, 55, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.4);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 2px;
             position: relative;
             overflow: hidden;
             animation: pulse-glow 4s infinite;
@@ -237,12 +237,12 @@
 
         .download-row {
             display: flex;
-            gap: 12px;
+            gap: clamp(12px, 2vw, 20px);
             flex-wrap: wrap;
             justify-content: center;
             background: rgba(255, 255, 255, 0.03);
-            padding: 12px;
-            border-radius: 24px;
+            padding: clamp(12px, 2vw, 20px);
+            border-radius: clamp(24px, 4vw, 32px);
             border: 1px solid rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(5px);
         }
@@ -251,15 +251,15 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: clamp(10px, 2vw, 14px) clamp(20px, 3vw, 28px);
+            padding: clamp(12px, 2vw, 18px) clamp(24px, 4vw, 40px);
             border: 1px solid rgba(255, 255, 255, 0.08);
             background: rgba(255, 255, 255, 0.02);
             color: #f0f0f0;
             text-decoration: none;
             font-weight: 700;
-            border-radius: 14px;
+            border-radius: clamp(14px, 2.5vw, 18px);
             transition: var(--transition);
-            font-size: clamp(0.75rem, 2vw, 0.85rem);
+            font-size: clamp(0.85rem, 2vw, 1rem);
         }
 
         .btn-outline:hover {
