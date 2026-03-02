@@ -1071,7 +1071,6 @@ export const GameProvider = ({ children }) => {
 
     const playCards = async (selectedCards) => {
         if (!roomCode || !user) return;
-        let activePlayers = 0;
         try {
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
@@ -1091,11 +1090,15 @@ export const GameProvider = ({ children }) => {
                 });
 
                 // 3. Calcola se il turno è finito (tutti hanno giocato)
-                activePlayers = Object.entries(room.giocatori).filter(([name]) => name !== room.dominus).length;
+                const humansInRoom = Object.keys(room.giocatori);
+                const humanActivePlayers = humansInRoom.filter(name => name !== room.dominus).length;
                 let playedCount = Object.keys(room.carteGiocate || {}).length;
 
-                // 4. Se tutti gli umani hanno giocato e manca Rando, fallo giocare (Locale, No AI)
-                if (room.giocatori['Rando'] && !room.carteGiocate['Rando'] && playedCount >= (activePlayers - 1)) {
+                // [FIX] RANDO TRIGGER: Rando plays if humans are 2 or if Rando is explicitly present
+                const randoInRoom = !!room.giocatori['Rando'];
+                const weNeedRando = randoInRoom || humansInRoom.length === 2;
+
+                if (weNeedRando && !room.carteGiocate['Rando'] && playedCount >= humanActivePlayers) {
                     if (!room.whiteDeck || room.whiteDeck.length < 10) {
                         const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true }).carteBianche;
                         room.whiteDeck = shuffleArray([...allWhite]);
@@ -1111,7 +1114,9 @@ export const GameProvider = ({ children }) => {
                     }
                 }
 
-                if (playedCount >= activePlayers && activePlayers > 0) {
+                // 5. Check completion
+                const totalExpected = weNeedRando ? (humanActivePlayers + 1) : humanActivePlayers;
+                if (playedCount >= totalExpected && humanActivePlayers > 0) {
                     room.statoTurno = "DOMINUS_CHOOSING";
                 }
                 return dehydrateRoom(room);
