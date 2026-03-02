@@ -487,13 +487,21 @@ export const GameProvider = ({ children }) => {
             Object.keys(prevPlayers).forEach(pName => {
                 const wasOnline = prevPlayers[pName]?.online;
                 const isNowOffline = currentPlayers[pName] && currentPlayers[pName].online === false;
+                const isNowOnline = currentPlayers[pName] && currentPlayers[pName].online === true;
+
+                const me = (roomPlayerName || user?.name || user?.username || '').trim().toLowerCase();
+                const pNameLower = pName.trim().toLowerCase();
+                const isNotMe = pNameLower !== me && pNameLower !== (user?.name || '').trim().toLowerCase();
+
                 if (wasOnline && isNowOffline) {
-                    const me = (roomPlayerName || user?.name || user?.username || '').trim().toLowerCase();
-                    const pNameLower = pName.trim().toLowerCase();
-                    const isNotMe = pNameLower !== me && pNameLower !== (user?.name || '').trim().toLowerCase();
                     if (isNotMe) {
                         console.log(`[GAME] Player went offline: ${pName}`);
                         setJoinNotification({ name: pName, type: 'offline', timestamp: Date.now() });
+                    }
+                } else if (wasOnline === false && isNowOnline) {
+                    if (isNotMe) {
+                        console.log(`[GAME] Player back online: ${pName}`);
+                        setJoinNotification({ name: pName, type: 'online', timestamp: Date.now() });
                     }
                 }
             });
@@ -526,9 +534,11 @@ export const GameProvider = ({ children }) => {
 
             const unsub = onValue(onlineRef, (snap) => {
                 const isNowOnline = snap.val() === true;
-                // Fire toast only on the transition true → false
+                // Fire toast only on the transition true → false OR false → true
                 if (lastKnownOnline === true && isNowOnline === false) {
                     setJoinNotification({ name: pName, type: 'offline', timestamp: Date.now() });
+                } else if (lastKnownOnline === false && isNowOnline === true) {
+                    setJoinNotification({ name: pName, type: 'online', timestamp: Date.now() });
                 }
                 lastKnownOnline = isNowOnline;
             });

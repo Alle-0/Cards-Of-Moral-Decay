@@ -17,6 +17,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
     const { t } = useLanguage();
     const { user } = useAuth();
     const [showReward, setShowReward] = useState(false);
+    const [showCard, setShowCard] = useState(false);
 
     useEffect(() => {
         if (visible) {
@@ -26,12 +27,20 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
             } catch (error) {
             }
 
+            // Show card after 1400ms (100ms before reward/slam)
+            const cardTimer = setTimeout(() => setShowCard(true), 1500);
+
             // Show reward animation if user is the winner
             if (winnerInfo?.name === user?.username) {
                 const timer = setTimeout(() => setShowReward(true), 1500); // Appear with the card slam
-                return () => clearTimeout(timer);
+                return () => {
+                    clearTimeout(cardTimer);
+                    clearTimeout(timer);
+                };
             }
+            return () => clearTimeout(cardTimer);
         } else {
+            setShowCard(false);
             setShowReward(false);
         }
     }, [visible, winnerInfo?.name, user?.name]);
@@ -184,53 +193,56 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                     </Text>
                 </Animated.View>
 
-                {/* CARTA (SLAM! From top) */}
-                <Animated.View
-                    entering={SlideInUp.delay(1500).springify().mass(1.2).damping(25).stiffness(150)}
-                    style={{
-                        width: '88%',
-                        backgroundColor: '#fff',
-                        borderRadius: 8,
-                        padding: 24,
-                        minHeight: 140,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        // DEEPER 3D SHADOW
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 25 },
-                        shadowOpacity: 0.8,
-                        shadowRadius: 30,
-                        elevation: 35,
-                        transform: [
-                            { rotate: '-3deg' },
-                            { perspective: 1000 },
-                            { translateY: 10 }
-                        ],
-                        marginBottom: 35,
-                    }}
-                >
-                    <View style={{ position: 'absolute', top: 12, left: 12, opacity: 0.2 }}>
-                        <Text style={{ fontSize: 9, fontFamily: 'Cinzel-Bold', color: '#000' }}>{t('dominus_choice_label')}</Text>
-                    </View>
+                {/* CARTA (SLAM! From top) - Wrapped in space-reserving View */}
+                <View style={{ width: '100%', alignItems: 'center', minHeight: 180, marginBottom: 35 }}>
+                    {showCard && (
+                        <Animated.View
+                            entering={SlideInUp.springify().mass(1.2).damping(25).stiffness(150)}
+                            style={{
+                                width: '88%',
+                                backgroundColor: '#fff',
+                                borderRadius: 8,
+                                padding: 24,
+                                minHeight: 140,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                // DEEPER 3D SHADOW
+                                shadowColor: "#000",
+                                shadowOffset: { width: 0, height: 25 },
+                                shadowOpacity: 0.8,
+                                shadowRadius: 30,
+                                elevation: 35,
+                                transform: [
+                                    { rotate: '-3deg' },
+                                    { perspective: 1000 },
+                                    { translateY: 10 }
+                                ],
+                            }}
+                        >
+                            <View style={{ position: 'absolute', top: 12, left: 12, opacity: 0.2 }}>
+                                <Text style={{ fontSize: 9, fontFamily: 'Cinzel-Bold', color: '#000' }}>{t('dominus_choice_label')}</Text>
+                            </View>
 
-                    <Text
-                        style={{
-                            color: '#111',
-                            fontFamily: 'Outfit-Bold',
-                            fontSize: getWinningCardsText().length > 60 ? 18 : (getWinningCardsText().length > 30 ? 22 : 28),
-                            textAlign: 'center',
-                            width: '100%',
-                            paddingHorizontal: 5
-                        }}
-                        numberOfLines={10}
-                    >
-                        {getWinningCardsText()}
-                    </Text>
+                            <Text
+                                style={{
+                                    color: '#111',
+                                    fontFamily: 'Outfit-Bold',
+                                    fontSize: getWinningCardsText().length > 60 ? 18 : (getWinningCardsText().length > 30 ? 22 : 28),
+                                    textAlign: 'center',
+                                    width: '100%',
+                                    paddingHorizontal: 5
+                                }}
+                                numberOfLines={10}
+                            >
+                                {getWinningCardsText()}
+                            </Text>
 
-                    <View style={{ position: 'absolute', bottom: 12, right: 12 }}>
-                        <Text style={{ fontSize: 8, color: '#999', fontFamily: 'Cinzel-Bold' }}>CARDS OF MORAL DECAY</Text>
-                    </View>
-                </Animated.View>
+                            <View style={{ position: 'absolute', bottom: 12, right: 12 }}>
+                                <Text style={{ fontSize: 8, color: '#999', fontFamily: 'Cinzel-Bold' }}>CARDS OF MORAL DECAY</Text>
+                            </View>
+                        </Animated.View>
+                    )}
+                </View>
 
                 {/* FOOTER */}
                 <Animated.Text

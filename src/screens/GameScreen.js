@@ -140,7 +140,8 @@ const GameScreen = ({ onStartLoading }) => {
     const [roomLanguage, setRoomLanguage] = useState(roomData?.roomLanguage || 'it');
     const [allowedPackages, setAllowedPackages] = useState(roomData?.allowedPackages || { base: true, dark: false, chill: false, spicy: false });
     const [showJokerConfirm, setShowJokerConfirm] = useState(false);
-    const [showBribeConfirm, setShowBribeConfirm] = useState(false); // [NEW] Bribe Modal State
+    const [showBribeConfirm, setShowBribeConfirm] = useState(false);
+    const [isBribing, setIsBribing] = useState(false); // controls PlayerHand animation
     const [showInfo, setShowInfo] = useState(false); // [NEW]
     const [showShop, setShowShop] = useState(false); // [NEW] Shop Overlay State
     const [isAnimatingJoker, setIsAnimatingJoker] = useState(false);
@@ -248,7 +249,9 @@ const GameScreen = ({ onStartLoading }) => {
                 visible: true,
                 message: joinNotification.type === 'offline'
                     ? t('player_offline_toast', { name: joinNotification.name, defaultValue: `${joinNotification.name} È ANDATO OFFLINE` })
-                    : t('player_joined_toast', { name: joinNotification.name, defaultValue: `${joinNotification.name} SI È UNITO ALLA STANZA` }),
+                    : (joinNotification.type === 'online'
+                        ? t('player_online_toast', { name: joinNotification.name, defaultValue: `${joinNotification.name} È TORNATO ONLINE` })
+                        : t('player_joined_toast', { name: joinNotification.name, defaultValue: `${joinNotification.name} SI È UNITO ALLA STANZA` })),
                 type: joinNotification.type === 'offline' ? 'error' : 'success'
             });
             clearJoinNotification();
@@ -482,15 +485,21 @@ const GameScreen = ({ onStartLoading }) => {
             return;
         }
 
+        setIsBribing(true); // triggers ZoomOut on all cards via data=[]
+
         const success = await payBribe(async () => {
+            // Wait for fade-out to complete before swapping cards
+            await new Promise(resolve => setTimeout(resolve, 280));
             const ok = await bribeHand();
             if (ok) {
                 SoundService.play('success');
                 HapticsService.trigger('success');
+                setIsBribing(false); // triggers ZoomIn on new cards via data=hand
             }
         });
 
         if (!success) {
+            setIsBribing(false);
             SoundService.play('error');
             HapticsService.trigger('error');
             triggerShake();
@@ -1276,7 +1285,8 @@ const GameScreen = ({ onStartLoading }) => {
                         balance={authUser?.balance || 0}
                         isSmallScreen={isSmallScreen}
                         onBackgroundPress={() => setSelectedCards([])}
-                        isBlackout={roomData?.activeChaosEvent === CHAOS_EVENTS.BLACKOUT} // [NEW]
+                        isBlackout={roomData?.activeChaosEvent === CHAOS_EVENTS.BLACKOUT}
+                        isBribing={isBribing}
                     />
                 </View>
             )}

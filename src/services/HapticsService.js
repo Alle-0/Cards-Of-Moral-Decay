@@ -1,8 +1,21 @@
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 class HapticsService {
     constructor() {
-        this.enabled = true;
+        // Default to false until we know — prevents spurious vibrations on cold start
+        this.enabled = false;
+        this._initialized = false;
+
+        // Self-initialize from persisted user preference immediately
+        AsyncStorage.getItem('cah_haptics').then(val => {
+            // If never set, default to true; if explicitly 'false', disable
+            this.enabled = val !== 'false';
+            this._initialized = true;
+        }).catch(() => {
+            this.enabled = true;
+            this._initialized = true;
+        });
     }
 
     setEnabled(enabled) {

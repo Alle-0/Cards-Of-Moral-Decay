@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { StyleSheet, View, Text, ScrollView, FlatList, Pressable, Dimensions, Image, TouchableWithoutFeedback } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, withDelay, withSequence, ZoomIn, FadeOut, Easing, runOnJS, LinearTransition, interpolate, interpolateColor } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, withDelay, withSequence, ZoomIn, ZoomOut, FadeOut, Easing, runOnJS, LinearTransition, interpolate, interpolateColor } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme, TEXTURES } from '../context/ThemeContext';
 import HapticsService from '../services/HapticsService';
@@ -12,22 +12,20 @@ import { useLanguage } from '../context/LanguageContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, showPlayButton, onPlay, onDiscard, isPlaying, selectionOrder, hasDiscarded, isSelectionFull, isSinglePick, skin, t, isBlackout }) => { // [NEW] isBlackout
+const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, showPlayButton, onPlay, onDiscard, isPlaying, selectionOrder, hasDiscarded, isSelectionFull, isSinglePick, skin, t, isBlackout }) => {
     const { theme } = useTheme();
     const [isEliminating, setIsEliminating] = useState(false);
 
-    // Unified selection state for animation sync
     const selectionProgress = useSharedValue(0);
     const buttonProgress = useSharedValue(0);
     const trashRotation = useSharedValue(0);
-    const slideElimina = useSharedValue(0); // 0 = inside trash, 1 = at destination
-    const isHandlingPress = useRef(false); // [NEW] Track press handling
+    const slideElimina = useSharedValue(0);
+    const isHandlingPress = useRef(false);
 
-    // [NEW] Discard Animation Values
     const discardTranslateY = useSharedValue(0);
     const discardRotate = useSharedValue(0);
     const discardScale = useSharedValue(1);
-    const scale = useSharedValue(1); // Unified scale source
+    const scale = useSharedValue(1);
 
     const performDiscard = () => {
         // 1. Anticipation (Jump up)
@@ -393,15 +391,38 @@ const PlayerHand = ({
     skin,
     balance,
     isSmallScreen,
-
     onBackgroundPress,
     isBlackout = false,
+    isBribing = false,
 }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
-    // const scrollRef = useWebScroll(false); // Removed web scroll hook for FlatList compatibility if needed, or keep if generic
-    // Using simple ref for FlatList
     const flatListRef = useRef(null);
+    const cardsOpacity = useSharedValue(1);
+    const cardsScale = useSharedValue(1);
+    const hasHadBribe = useRef(false);
+    const [cardsVisible, setCardsVisible] = useState(true); // controls FlatList data, lags 220ms behind isBribing
+
+    useEffect(() => {
+        if (isBribing) {
+            hasHadBribe.current = true;
+            // Animate out first, then hide data after animation completes
+            cardsOpacity.value = withTiming(0, { duration: 220, easing: Easing.in(Easing.quad) });
+            cardsScale.value = withTiming(0.85, { duration: 220, easing: Easing.in(Easing.quad) });
+            setTimeout(() => setCardsVisible(false), 220);
+        } else {
+            // Show new cards first (invisible), then animate in
+            setCardsVisible(true);
+            cardsOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.back(1.2)) });
+            cardsScale.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.back(1.2)) });
+        }
+    }, [isBribing]);
+
+    const cardsContainerStyle = useAnimatedStyle(() => ({
+        flex: 1,
+        opacity: cardsOpacity.value,
+        transform: [{ scale: cardsScale.value }],
+    }));
 
     const handOffset = useSharedValue(disabled || isPlaying ? 400 : 0);
     const [containerHeight, setContainerHeight] = useState(0);
@@ -424,13 +445,16 @@ const PlayerHand = ({
         transform: [{ translateY: handOffset.value }],
     }));
 
-    // [OPTIMIZATION] Stable renderItem
     const renderCard = useCallback(({ item, index }) => {
         const sIdx = selectedCards.indexOf(item);
+        const entering = hasHadBribe.current
+            ? ZoomIn.delay(index * 55).duration(300)
+            : undefined;
         return (
             <Animated.View
+                entering={entering}
                 layout={LinearTransition.duration(200)}
-                style={{ width: '48%', height: isSmallScreen ? 120 : 140, marginBottom: 30 }} // Moved margin to item for consistent layout
+                style={{ width: '48%', height: isSmallScreen ? 120 : 140, marginBottom: 30 }}
             >
                 <CardItem
                     text={item}
@@ -454,7 +478,6 @@ const PlayerHand = ({
         );
     }, [selectedCards, isSmallScreen, onSelectCard, disabled, isPlaying, onPlay, onDiscard, maxSelection, hasDiscarded, skin, t, isBlackout]);
 
-    // [OPTIMIZATION] Stable keyExtractor
     const keyExtractor = useCallback((item, index) => `${item}-${index}`, []);
 
     // [OPTIMIZATION] Layout calculation
@@ -526,11 +549,10 @@ const PlayerHand = ({
             {/* Container for FlatList + Gradients */}
             <View style={{ flex: 1, position: 'relative' }}>
                 <TouchableWithoutFeedback onPress={() => onBackgroundPress && onBackgroundPress()}>
-                    <View style={{ flex: 1 }}>
-                        {/* [OPTIMIZATION] FlatList Implementation */}
+                    <Animated.View style={cardsContainerStyle}>
                         <FlatList
                             ref={flatListRef}
-                            data={hand}
+                            data={cardsVisible ? hand : []}
                             renderItem={renderCard}
                             keyExtractor={keyExtractor}
                             numColumns={2}
@@ -543,7 +565,7 @@ const PlayerHand = ({
                             windowSize={5} // reduced window size
                             getItemLayout={getItemLayout}
                         />
-                    </View>
+                    </Animated.View>
                 </TouchableWithoutFeedback>
 
                 {/* Top Shadow Gradient */}

@@ -131,6 +131,7 @@ export const translations = {
         toast_auto_friend: "Ti sei unito alla banda di %{name}!",
         player_joined_toast: "%{name} SI È UNITO ALLA STANZA",
         player_offline_toast: "%{name} È ANDATO OFFLINE",
+        player_online_toast: "%{name} È TORNATO ONLINE",
 
         // LOBBY / IDENTITY
         who_are_you: "CHI SEI?",
@@ -344,6 +345,8 @@ export const translations = {
         leave_game_title: "ABBANDONA PARTITA",
         leave_game_msg: "Sei sicuro di voler uscire dalla stanza corrente?",
         exit_btn: "ESCI",
+        show_all: "MOSTRA TUTTI",
+        show_less: "MOSTRA MENO",
         logout_title: "DISCONNETTI",
         logout_msg: "Vuoi uscire dall'account?\nDovrai effettuare nuovamente il login.",
         copied_title: "Copiato",
@@ -739,6 +742,7 @@ export const translations = {
         toast_auto_friend: "You joined %{name}'s gang!",
         player_joined_toast: "%{name} JOINED THE ROOM",
         player_offline_toast: "%{name} WENT OFFLINE",
+        player_online_toast: "%{name} IS BACK ONLINE",
 
         // LOBBY / IDENTITY
         who_are_you: "WHO ARE YOU?",
@@ -951,6 +955,8 @@ export const translations = {
         leave_game_title: "LEAVE GAME",
         leave_game_msg: "Are you sure you want to leave the current room?",
         exit_btn: "EXIT",
+        show_all: "SHOW ALL",
+        show_less: "SHOW LESS",
         logout_title: "LOGOUT",
         logout_msg: "Do you want to log out?\nYou will need to login again.",
         copied_title: "Copied",

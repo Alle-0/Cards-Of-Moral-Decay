@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Image, BackHandler, ScrollView } from 'react-native';
-import Animated, { FadeIn, ZoomIn, SlideInDown } from 'react-native-reanimated';
+import { StyleSheet, View, Text, Image, BackHandler, ScrollView, TouchableOpacity, LayoutAnimation, UIManager, Platform } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+import Animated, { FadeIn, ZoomIn, SlideInDown, FadeInDown, SlideInUp, LinearTransition, FadeOut, useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import EfficientBlurView from '../components/EfficientBlurView';
+
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { RANK_COLORS } from '../constants/Ranks';
@@ -10,6 +18,7 @@ import ConfettiSystem from '../components/ConfettiSystem';
 import SoundService from '../services/SoundService';
 import ElegantSplashScreen from '../components/ElegantSplashScreen';
 import LocalAvatar from '../components/LocalAvatar';
+import AvatarWithFrame from '../components/AvatarWithFrame';
 import RewardPopup from '../components/RewardPopup';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -28,6 +37,21 @@ const VictoryScreen = ({ winnerName, onExit }) => {
     const [initialRank, setInitialRank] = useState(user?.rank);
     const [rewardAmount, setRewardAmount] = useState(0);
     const [showReward, setShowReward] = useState(false);
+    const [isLeaderboardExpanded, setIsLeaderboardExpanded] = useState(false);
+    const expandProgress = useSharedValue(0);
+
+    useEffect(() => {
+        expandProgress.value = withTiming(isLeaderboardExpanded ? 1 : 0, {
+            duration: 550,
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
+    }, [isLeaderboardExpanded]);
+
+    const expandedStyle = useAnimatedStyle(() => ({
+        maxHeight: expandProgress.value * 600,
+        opacity: expandProgress.value,
+        overflow: 'hidden',
+    }));
     const confettiRef = useRef(null);
 
     const isWinnerRando = winnerName === 'Rando';
@@ -35,15 +59,15 @@ const VictoryScreen = ({ winnerName, onExit }) => {
 
     // Calculate loser BEFORE useEffect to avoid ReferenceError
     const allScoresRaw = { ...(roomData?.punti || {}) };
-    if (roomData?.randoActive && roomData?.randoPoints !== undefined) {
-        allScoresRaw['Rando'] = roomData.randoPoints;
+    if (roomData?.randoPoints !== undefined || winnerName === 'Rando') {
+        allScoresRaw['Rando'] = roomData?.randoPoints || 0;
     }
 
-    const allScores = Object.entries(allScoresRaw)
+    const allSortedGlobal = Object.entries(allScoresRaw)
         .filter(([name]) => name === 'Rando' || roomData?.giocatori?.[name])
-        .sort(([, a], [, b]) => a - b);
+        .sort(([, a], [, b]) => b - a); // Descending (Standard Leaderboard)
 
-    const potentialLosers = allScores.filter(([name]) => name !== winnerName);
+    const potentialLosers = [...allSortedGlobal].reverse().filter(([name]) => name !== winnerName);
 
     // [NEW] Better Tie-Handling: award ALL players with the minimum score
     const minScore = potentialLosers.length > 0 ? potentialLosers[0][1] : 0;
@@ -148,163 +172,246 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                 showsVerticalScrollIndicator={false}
             >
                 <Animated.View
-                    entering={FadeIn.delay(200).duration(800)}
-                    style={styles.content}
+                    entering={FadeInDown.delay(200).springify().damping(20).stiffness(90)}
+                    style={[
+                        styles.content,
+                        {
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)', // Fallback
+                            borderRadius: 35,
+                            overflow: 'hidden',
+                            marginTop: 30,
+                            marginBottom: 20,
+                            marginHorizontal: 15, // [NEW] Added horizontal margin
+                            paddingTop: 10, // Add top padding for the gradient space
+                            paddingBottom: 0,
+                            paddingHorizontal: 0,
+                        }
+                    ]}
                 >
-                    <Animated.Text
-                        entering={SlideInDown.springify()}
-                        style={[styles.title, { color: theme.colors.accent }]}
-                    >
-                        {t('winner_match')}
-                    </Animated.Text>
+                    <LinearGradient
+                        colors={[`${theme.colors.accent}20`, 'rgba(255, 255, 255, 0.02)', 'transparent']}
+                        style={StyleSheet.absoluteFill}
+                        start={{ x: 0.5, y: 0 }}
+                        end={{ x: 0.5, y: 0.5 }}
+                    />
+                    <View style={[StyleSheet.absoluteFill, { borderWidth: 1, borderColor: `${theme.colors.accent}30`, borderRadius: 35 }]} />
 
-                    <Animated.View
-                        entering={ZoomIn.delay(500).springify()}
-                        style={[styles.avatarContainer, { borderColor: theme.colors.accent }]}
-                    >
-                        <LocalAvatar
-                            size={138}
-                            seed={winner?.avatar?.startsWith('http') ? winner.avatar : (winner?.avatar || 'Winner')}
-                        />
-                    </Animated.View>
+                    <View style={{ width: '100%', paddingVertical: 35, paddingHorizontal: 20, alignItems: 'center' }}>
+                        <Animated.Text
+                            entering={SlideInDown.springify().damping(15)}
+                            style={[styles.title, {
+                                color: theme.colors.accent,
+                                textShadowColor: 'rgba(212, 175, 55, 0.8)',
+                                textShadowOffset: { width: 0, height: 0 },
+                                textShadowRadius: 20,
+                                letterSpacing: 2
+                            }]}
+                        >
+                            {t('winner_match')}
+                        </Animated.Text>
 
-                    <Animated.Text
-                        entering={FadeIn.delay(800)}
-                        style={[styles.winnerName, { color: theme.colors.textPrimary }]}
-                    >
-                        {winnerName}
-                    </Animated.Text>
+                        <Animated.View
+                            entering={ZoomIn.delay(500).springify()}
+                            style={[styles.avatarContainer, {
+                                borderColor: theme.colors.accent,
+                                // Removed shadow mapping per request
+                                borderWidth: 0,
+                            }]}
+                        >
+                            <AvatarWithFrame
+                                size={138}
+                                avatar={winner?.avatar?.startsWith('http') ? winner.avatar : (winner?.avatar || 'Winner')}
+                                frameId={isWinnerRando ? 'glitch' : (winner?.activeFrame || 'basic')}
+                            />
+                        </Animated.View>
 
-                    <Animated.Text
-                        entering={FadeIn.delay(1000)}
-                        style={styles.subtitle}
-                    >
-                        {t('winner_summary', { points: isWinnerRando ? roomData?.randoPoints : roomData?.punti?.[winnerName] })}
-                    </Animated.Text>
+                        <Animated.Text
+                            entering={FadeIn.delay(800)}
+                            style={[styles.winnerName, { color: theme.colors.textPrimary }]}
+                        >
+                            {winnerName}
+                        </Animated.Text>
 
-                    {/* Leaderboard Section */}
-                    <Animated.View entering={FadeIn.delay(1200)} style={styles.leaderboardContainer}>
-                        <Text style={[styles.leaderboardTitle, { color: '#888' }]}>{t('final_leaderboard')}</Text>
-                        {(() => {
-                            const sortedPlayers = Object.entries(roomData?.punti || {})
-                                .filter(([name]) => roomData?.giocatori?.[name])
-                                .sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
+                        <Animated.Text
+                            entering={FadeIn.delay(1000)}
+                            style={styles.subtitle}
+                        >
+                            {t('winner_summary', { points: isWinnerRando ? roomData?.randoPoints : roomData?.punti?.[winnerName] })}
+                        </Animated.Text>
 
-                            // [NEW] Filter out the absolute winner and the absolute loser
-                            const middlePlayers = sortedPlayers.filter(([name]) => name !== winnerName && name !== loserName);
+                        {/* Leaderboard Section */}
+                        <Animated.View
+                            entering={FadeInDown.delay(1200).springify()}
+                            style={[styles.leaderboardContainer, { overflow: 'hidden', padding: 18, marginTop: 10, backgroundColor: theme.colors.surface + 'E6' }]}
+                        >
+                            <LinearGradient
+                                colors={['rgba(255,255,255,0.05)', 'transparent']}
+                                style={StyleSheet.absoluteFill}
+                            />
+                            <View style={[StyleSheet.absoluteFill, { borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 20 }]} />
+                            <Text style={[styles.leaderboardTitle, { color: '#888' }]}>{t('final_leaderboard')}</Text>
+                            {(() => {
+                                // [NEW] Use the global ranking (already sorted descending)
+                                // Filter out the absolute winner and the absolute loser
+                                const middlePlayers = allSortedGlobal.filter(([name]) => name !== winnerName && name !== loserName);
 
-                            // [NEW] Take only the first 3 (which are positions 2, 3, 4)
-                            const displayedMiddle = middlePlayers.slice(0, 3);
+                                // [TEMPORARY FOR TESTING] Always show toggle 
+                                const itemsToMap = middlePlayers;
 
-                            if (displayedMiddle.length === 0) {
-                                return (
-                                    <View style={{ paddingVertical: 10, alignItems: 'center' }}>
-                                        <Text style={{ color: '#555', fontFamily: 'Outfit', fontSize: 12 }}>{t('no_other_players') || 'Nessun altro grado criminale assegnato'}</Text>
-                                    </View>
-                                );
-                            }
-
-                            return displayedMiddle.map(([name, score]) => {
-                                const isRowRando = name === 'Rando';
-                                const player = isRowRando ? null : roomData?.giocatori?.[name];
-                                const playerAvatar = isRowRando ? 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando' : player?.avatar;
-                                const playerRank = isRowRando ? 'Bot' : (player?.rank || 'Anima Candida');
-
-                                // Re-calculate rank index based on original sorted list
-                                const originalIndex = sortedPlayers.findIndex(([pName]) => pName === name);
-
-                                return (
-                                    <View key={name} style={styles.playerRow}>
-                                        <View style={styles.rankBadge}>
-                                            <Text style={styles.rankText}>#{originalIndex + 1}</Text>
+                                // We only show the toggle if there are MORE than 1 players (forced for testing)
+                                if (itemsToMap.length === 0) {
+                                    return (
+                                        <View style={{ paddingVertical: 10, alignItems: 'center' }}>
+                                            <Text style={{ color: '#555', fontFamily: 'Outfit', fontSize: 12 }}>{t('no_other_players') || 'Nessun altro grado criminale assegnato'}</Text>
                                         </View>
-                                        <View style={styles.smallAvatar}>
-                                            <LocalAvatar
-                                                size={30}
-                                                seed={playerAvatar?.startsWith('http') ? playerAvatar : (playerAvatar || 'User')}
+                                    );
+                                }
+
+                                const items = itemsToMap.map(([name, score], index) => {
+                                    const isRowRando = name === 'Rando';
+                                    const player = isRowRando ? null : roomData?.giocatori?.[name];
+                                    const playerAvatar = isRowRando ? 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando' : player?.avatar;
+                                    const playerRank = isRowRando ? 'Bot' : (player?.rank || 'Anima Candida');
+
+                                    // Calculate rank based on distinct points to handle ties properly
+                                    const distinctScores = [...new Set(allSortedGlobal.map(([, s]) => s))].sort((a, b) => b - a);
+                                    const currentRank = distinctScores.indexOf(score) + 1;
+                                    return (
+                                        <View key={name} style={styles.playerRow}>
+                                            <View style={styles.rankBadge}>
+                                                <Text style={styles.rankText}>#{currentRank}</Text>
+                                            </View>
+                                            <View style={styles.smallAvatar}>
+                                                <AvatarWithFrame
+                                                    size={30}
+                                                    avatar={playerAvatar?.startsWith('http') ? playerAvatar : (playerAvatar || 'User')}
+                                                    frameId={isRowRando ? 'glitch' : (player?.activeFrame || 'basic')}
+                                                />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={[styles.playerName, { color: theme.colors.textPrimary }]}>{name}</Text>
+                                                <Text style={{ fontSize: 9, color: RANK_COLORS[playerRank] || '#888', fontWeight: 'bold' }}>
+                                                    {isRowRando ? 'BOT' : (playerRank ? t(`rank_${playerRank.toLowerCase().replace(/ /g, '_')}`, { defaultValue: playerRank }) : t('rank_anima_candida'))}
+                                                </Text>
+                                            </View>
+                                            <Text style={[styles.playerScore, { color: theme.colors.accent }]}>{score} {t('points_short')}</Text>
+                                        </View>
+                                    );
+                                });
+
+                                return (
+                                    <>
+                                        {/* Render visible items (top 3) */}
+                                        {items.slice(0, 3)}
+
+                                        {/* Expanded content with smooth maxHeight+opacity animation */}
+                                        <Animated.View style={expandedStyle}>
+                                            {items}
+                                        </Animated.View>
+                                        {/* Show toggle only if there are more than 3 middle players */}
+                                        {middlePlayers.length > 3 && (
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    if (Platform.OS !== 'web') {
+                                                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                                    }
+                                                    setIsLeaderboardExpanded(!isLeaderboardExpanded);
+                                                }}
+                                                style={{ marginTop: 15, alignItems: 'center', paddingVertical: 5 }}
+                                            >
+                                                <Text style={{ fontFamily: 'Outfit', fontSize: 13, color: theme.colors.accent, textTransform: 'uppercase', letterSpacing: 1 }}>
+                                                    {isLeaderboardExpanded ? t('show_less') : `${t('show_all')} (${middlePlayers.length})`}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </>
+                                );
+                            })()}
+                        </Animated.View>
+
+                        {/* [REDESIGNED] Award della Vergogna Section */}
+                        {loserName && (
+                            <Animated.View
+                                entering={ZoomIn.delay(2200).springify()}
+                                style={[styles.shameContainer, { overflow: 'hidden', backgroundColor: 'rgba(217, 119, 6, 0.08)' }]}
+                            >
+                                <LinearGradient
+                                    colors={['rgba(217, 119, 6, 0.15)', 'transparent']}
+                                    style={StyleSheet.absoluteFill}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                />
+                                <View style={[StyleSheet.absoluteFill, { borderWidth: 1, borderColor: 'rgba(217, 119, 6, 0.4)', borderStyle: 'dashed', borderRadius: 20, opacity: 0.8 }]} />
+                                <Text style={[styles.shameTitle, { color: '#d97706' }]}>🏆 {t('shame_award')}</Text>
+                                <View style={styles.shameRow}>
+                                    <View style={{ marginRight: 20, position: 'relative' }}>
+                                        <View style={[styles.shameAvatarContainer, { borderColor: '#d97706', backgroundColor: '#1a1a1a' }]}>
+                                            <AvatarWithFrame
+                                                size={40}
+                                                avatar={loserData?.avatar?.startsWith('http') ? loserData.avatar : (loserData?.avatar || 'Loser')}
+                                                frameId={isLoserRando ? 'glitch' : (loserData?.activeFrame || 'basic')}
                                             />
                                         </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={[styles.playerName, { color: theme.colors.textPrimary }]}>{name}</Text>
-                                            <Text style={{ fontSize: 9, color: RANK_COLORS[playerRank] || '#888', fontWeight: 'bold' }}>
-                                                {isRowRando ? 'BOT' : (playerRank ? t(`rank_${playerRank.toLowerCase().replace(/ /g, '_')}`, { defaultValue: playerRank }) : t('rank_anima_candida'))}
-                                            </Text>
-                                        </View>
-                                        <Text style={[styles.playerScore, { color: theme.colors.accent }]}>{score} {t('points_short')}</Text>
-                                    </View>
-                                );
-                            });
-                        })()}
-                    </Animated.View>
-
-                    {/* [REDESIGNED] Award della Vergogna Section */}
-                    {loserName && (
-                        <Animated.View
-                            entering={ZoomIn.delay(2200).duration(600).springify()}
-                            style={[styles.shameContainer, { borderColor: '#d97706' }]}
-                        >
-                            <Text style={[styles.shameTitle, { color: '#d97706' }]}>🏆 {t('shame_award')}</Text>
-                            <View style={styles.shameRow}>
-                                <View style={{ marginRight: 20, position: 'relative' }}>
-                                    <View style={[styles.shameAvatarContainer, { borderColor: '#d97706', backgroundColor: '#1a1a1a' }]}>
-                                        <LocalAvatar
-                                            size={40}
-                                            seed={loserData?.avatar?.startsWith('http') ? loserData.avatar : (loserData?.avatar || 'Loser')}
-                                        />
-                                    </View>
-                                    {/* Trash icon badge over avatar */}
-                                    <View style={[styles.shameIcon, { borderColor: '#d97706', width: 22, height: 22, borderRadius: 11, padding: 3 }]}>
-                                        <View style={{ transform: [{ rotate: '15deg' }] }}>
-                                            <TrashIcon size={14} color="#d97706" />
+                                        {/* Trash icon badge over avatar */}
+                                        <View style={[styles.shameIcon, { borderColor: '#d97706', width: 22, height: 22, borderRadius: 11, padding: 3 }]}>
+                                            <View style={{ transform: [{ rotate: '15deg' }] }}>
+                                                <TrashIcon size={14} color="#d97706" />
+                                            </View>
                                         </View>
                                     </View>
+                                    <View style={styles.shameTextContainer}>
+                                        <Text style={[styles.loserName, { color: '#fff' }]}>{loserName}</Text>
+                                        <Text style={[styles.loserPoints, { color: '#d97706', opacity: 0.9 }]}>
+                                            {t('shame_award')} {t('shame_award_msg', { points: loser?.[1] })}
+                                        </Text>
+                                    </View>
                                 </View>
-                                <View style={styles.shameTextContainer}>
-                                    <Text style={[styles.loserName, { color: '#fff' }]}>{loserName}</Text>
-                                    <Text style={[styles.loserPoints, { color: '#d97706', opacity: 0.9 }]}>
-                                        {t('shame_award')} {t('shame_award_msg', { points: loser?.[1] })}
-                                    </Text>
-                                </View>
-                            </View>
-                        </Animated.View>
-                    )}
+                            </Animated.View>
+                        )}
 
-                    {isCreator ? (
-                        <Animated.View entering={FadeIn.delay(1500)} style={{ width: '80%', marginTop: 20, gap: 10, paddingBottom: 40 }}>
-                            <PremiumButton
-                                title={t('play_again')}
-                                onPress={handleRestart}
-                            />
-                            <PremiumButton
-                                title={t('back_home')}
-                                variant="outline"
-                                enableSound={false}
-                                onPress={handleExit}
-                            />
-                        </Animated.View>
-                    ) : (
-                        <Animated.View entering={FadeIn.delay(1500)} style={{ width: '80%', marginTop: 20, alignItems: 'center', gap: 20, paddingBottom: 40 }}>
-                            <Text style={[styles.waitingText, { color: '#e0e0e0', marginTop: 0, fontStyle: 'normal', textAlign: 'center' }]}>
-                                {t('waiting_restart_msg')}
-                            </Text>
-
-                            <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginVertical: 15 }}>
-                                <View style={{ flex: 1, height: 1, backgroundColor: '#444' }} />
-                                <Text style={{ marginHorizontal: 10, color: '#666', fontFamily: 'Outfit', fontSize: 12, textTransform: 'uppercase' }}>
-                                    {t('or_divider')}
+                        {isCreator ? (
+                            <Animated.View
+                                entering={FadeIn.delay(1500)}
+                                style={{ width: '80%', marginTop: 20, gap: 10, paddingBottom: 40 }}
+                            >
+                                <PremiumButton
+                                    title={t('play_again')}
+                                    onPress={handleRestart}
+                                />
+                                <PremiumButton
+                                    title={t('back_home')}
+                                    variant="outline"
+                                    enableSound={false}
+                                    onPress={handleExit}
+                                />
+                            </Animated.View>
+                        ) : (
+                            <Animated.View
+                                entering={FadeIn.delay(1500)}
+                                style={{ width: '80%', marginTop: 20, alignItems: 'center', gap: 20, paddingBottom: 40 }}
+                            >
+                                <Text style={[styles.waitingText, { color: '#e0e0e0', marginTop: 0, fontStyle: 'normal', textAlign: 'center' }]}>
+                                    {t('waiting_restart_msg')}
                                 </Text>
-                                <View style={{ flex: 1, height: 1, backgroundColor: '#444' }} />
-                            </View>
 
-                            <PremiumButton
-                                title={t('back_home')}
-                                variant="outline"
-                                onPress={handleExit}
-                                enableSound={false}
-                                style={{ width: '100%' }}
-                            />
-                        </Animated.View>
-                    )}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginVertical: 15 }}>
+                                    <View style={{ flex: 1, height: 1, backgroundColor: '#444' }} />
+                                    <Text style={{ marginHorizontal: 10, color: '#666', fontFamily: 'Outfit', fontSize: 12, textTransform: 'uppercase' }}>
+                                        {t('or_divider')}
+                                    </Text>
+                                    <View style={{ flex: 1, height: 1, backgroundColor: '#444' }} />
+                                </View>
+
+                                <PremiumButton
+                                    title={t('back_home')}
+                                    variant="outline"
+                                    onPress={handleExit}
+                                    enableSound={false}
+                                    style={{ width: '100%' }}
+                                />
+                            </Animated.View>
+                        )}
+                    </View>
                 </Animated.View>
             </ScrollView >
             {/* [NEW] Rank Up Celebration Overlay */}
@@ -351,8 +458,8 @@ const styles = StyleSheet.create({
     },
     content: {
         alignItems: 'center',
-        width: '100%',
-        paddingHorizontal: 20,
+        width: '98%', // [NEW] Allows margins
+        paddingHorizontal: 0,
     },
     title: {
         fontFamily: 'Cinzel-Bold',
@@ -366,15 +473,10 @@ const styles = StyleSheet.create({
         width: 150, // Slightly smaller to fit leaderboard
         height: 150,
         borderRadius: 75,
-        borderWidth: 6,
+        borderWidth: 0, // Border moved to content animation style
         overflow: 'hidden',
-        backgroundColor: '#222',
+        backgroundColor: 'transparent', // Lightened to allow card effect
         marginBottom: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.5,
-        shadowRadius: 15,
-        elevation: 10,
     },
     winnerName: {
         fontFamily: 'Cinzel-Bold',
@@ -390,9 +492,7 @@ const styles = StyleSheet.create({
     },
     leaderboardContainer: {
         width: '100%',
-        backgroundColor: '#1c1c1e',
-        borderRadius: 16,
-        padding: 15,
+        borderRadius: 20,
         gap: 10,
     },
     leaderboardTitle: {
@@ -406,7 +506,7 @@ const styles = StyleSheet.create({
     playerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#2c2c2e',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         padding: 10,
         borderRadius: 12,
     },
@@ -428,9 +528,9 @@ const styles = StyleSheet.create({
         width: 30,
         height: 30,
         borderRadius: 15,
-        backgroundColor: '#444',
-        overflow: 'hidden',
         marginRight: 10,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
     playerName: {
         fontFamily: 'Outfit',
@@ -449,12 +549,9 @@ const styles = StyleSheet.create({
     },
     shameContainer: {
         width: '100%',
-        marginTop: 20,
-        backgroundColor: 'rgba(217, 119, 6, 0.05)',
-        borderRadius: 16,
-        padding: 15,
-        borderWidth: 1,
-        borderColor: 'rgba(217, 119, 6, 0.2)',
+        marginTop: 25,
+        borderRadius: 20,
+        padding: 18,
     },
     shameTitle: {
         fontFamily: 'Cinzel-Bold',
@@ -472,10 +569,7 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        borderWidth: 2,
-        borderColor: '#d97706',
-        overflow: 'hidden',
-        backgroundColor: '#222',
+        overflow: 'visible', // Allow icons/glows to escape
         justifyContent: 'center',
         alignItems: 'center',
     },
