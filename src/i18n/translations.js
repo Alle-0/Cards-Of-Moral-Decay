@@ -103,6 +103,7 @@ export const translations = {
         update_required: "AGGIORNAMENTO NECESSARIO",
         update_available: "Una nuova versione di\n%{appName}\nè disponibile.",
         download_now: "SCARICA ORA",
+        refresh_now: "AGGIORNA PAGINA",
         update_hint: "Sarai reindirizzato al browser per scaricare l'aggiornamento.",
 
         // FRIENDS
@@ -710,6 +711,7 @@ export const translations = {
         update_required: "UPDATE REQUIRED",
         update_available: "A new version of\n%{appName}\nis available.",
         download_now: "DOWNLOAD NOW",
+        refresh_now: "REFRESH PAGE",
         update_hint: "You will be redirected to the browser to download the update.",
 
         // FRIENDS

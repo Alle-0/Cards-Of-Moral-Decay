@@ -48,7 +48,7 @@ const UpdateOverlay = ({ downloadUrl }) => {
                         </Text>
 
                         <PremiumButton
-                            title={t('download_now')}
+                            title={t(Platform.OS === 'web' ? 'refresh_now' : 'download_now')}
                             onPress={handleUpdate}
                             style={{ backgroundColor: theme.colors.accent, width: '100%', height: 60 }}
                             textStyle={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 16 }}
