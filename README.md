@@ -16,6 +16,8 @@
 [![Platform](https://img.shields.io/badge/PLATFORM-ANDROID_%26_WEB-D4AF37?style=for-the-badge&labelColor=000000&logo=googlechrome&logoColor=D4AF37)](https://carte-vs-umani.web.app)
 [![License](https://img.shields.io/badge/RATING-18%2B-D4AF37?style=for-the-badge&labelColor=000000&logo=adblock&logoColor=D4AF37)](https://github.com/Alle-0/Cards-Of-Moral-Decay)
 
+#### (Showcase Website: <a href="https://alle-0.github.io/Cards-Of-Moral-Decay/">Cards Of Moral Decay</a>)
+
 <br/>
 
 > [!WARNING]
@@ -24,10 +26,6 @@
 >
 > This experience explores dark humor, social taboos, and moral decadence.
 > **Strictly for adults. Play responsibly.**
-
-<br/>
-
-#### (Showcase Website: <a href="https://alle-0.github.io/Cards-Of-Moral-Decay/">Cards Of Moral Decay</a>)
 
 <br/>
 
