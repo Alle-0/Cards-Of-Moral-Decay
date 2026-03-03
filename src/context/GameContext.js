@@ -1020,64 +1020,50 @@ export const GameProvider = ({ children }) => {
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
+
+                // 1. Initial State
                 room.statoPartita = "IN_GIOCO";
                 room.statoTurno = "WAITING_CARDS";
                 room.puntiPerVincere = targetPoints;
                 room.vincitorePartita = null;
                 room.vincitoreTurno = null;
-                room.randoPoints = 0; // [FIX] Reset Bot Points for new game
+                room.randoPoints = 0;
                 if (room.punti) { Object.keys(room.punti).forEach(k => { room.punti[k] = 0; }); }
+
+                // 2. Deal Cards (Atomic)
+                const packages = room.allowedPackages || { base: true, dark: false };
+                const forcedLang = room.roomLanguage || null;
+
+                // [FIX] No more setLanguage here! getPackages now accepts lang.
+                const { carteNere, carteBianche } = GameDataService.getPackages(packages, forcedLang);
+
+                room.blackDeck = shuffleArray([...carteNere]);
+                room.whiteDeck = shuffleArray([...carteBianche]);
+
+                // [SAFETY] Emergency deck refill if empty
+                if (room.blackDeck.length === 0 || room.whiteDeck.length === 0) {
+                    console.warn("Decks are empty during atomic start! Retrying...");
+                    const fallback = GameDataService.getPackages({ base: true }, forcedLang);
+                    if (room.blackDeck.length === 0) room.blackDeck = shuffleArray([...fallback.carteNere]);
+                    if (room.whiteDeck.length === 0) room.whiteDeck = shuffleArray([...fallback.carteBianche]);
+                }
+
+                Object.keys(room.giocatori || {}).forEach(pName => {
+                    const hand = [];
+                    for (let i = 0; i < 10; i++) { if (room.whiteDeck.length) hand.push(room.whiteDeck.pop()); }
+                    room.giocatori[pName].carte = hand;
+                    room.giocatori[pName].jokers = 3;
+                    room.giocatori[pName].bribes = 5;
+                    room.giocatori[pName].bribeCount = 0;
+                });
+
+                room.cartaNera = room.blackDeck.pop() || null;
+
                 return dehydrateRoom(room);
             });
-            await dealInitialCards();
-        } catch (e) { console.error("GameContext Error:", e); }
+        } catch (e) { console.error("GameContext Atomic Start Error:", e); }
     };
 
-    const dealInitialCards = async () => {
-        const rRef = ref(db, `stanze/${roomCode}`);
-        await runTransaction(rRef, (rawRoom) => {
-            if (!rawRoom) return rawRoom;
-            const room = hydrateRoom(rawRoom);
-
-            // [NEW] Use room settings for packages and language
-            const packages = room.allowedPackages || { base: true, dark: false };
-            const forcedLang = room.roomLanguage || null;
-
-            // Update GameDataService to the forced language temporarily to get the right packages
-            const oldLang = GameDataService.language;
-            if (forcedLang) GameDataService.setLanguage(forcedLang);
-
-            const { carteNere, carteBianche } = GameDataService.getPackages(packages);
-
-            // Restore language
-            if (forcedLang) GameDataService.setLanguage(oldLang);
-
-            room.blackDeck = shuffleArray([...carteNere]);
-            room.whiteDeck = shuffleArray([...carteBianche]);
-
-            // [SAFETY] Emergency deck refill if empty
-            if (room.blackDeck.length === 0 || room.whiteDeck.length === 0) {
-                console.warn("Decks are empty during dealInitialCards! Retrying...");
-                const fallback = GameDataService.getPackages({ base: true });
-                if (room.blackDeck.length === 0) room.blackDeck = shuffleArray([...fallback.carteNere]);
-                if (room.whiteDeck.length === 0) room.whiteDeck = shuffleArray([...fallback.carteBianche]);
-            }
-
-            Object.keys(room.giocatori || {}).forEach(pName => {
-                const hand = [];
-                for (let i = 0; i < 10; i++) { if (room.whiteDeck.length) hand.push(room.whiteDeck.pop()); }
-                room.giocatori[pName].carte = hand;
-                // [NEW] Reset resources for new game
-                room.giocatori[pName].jokers = 3;
-                room.giocatori[pName].bribes = 5;
-                room.giocatori[pName].bribeCount = 0;
-            });
-            room.cartaNera = room.blackDeck.pop() || null; // [FIX] Atomic Null Safety
-            room.statoTurno = "WAITING_CARDS";
-            room.statoPartita = "IN_GIOCO";
-            return dehydrateRoom(room);
-        });
-    };
 
     const playCards = async (selectedCards) => {
         if (!roomCode || !user) return;

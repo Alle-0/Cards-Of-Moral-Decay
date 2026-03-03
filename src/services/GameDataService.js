@@ -23,9 +23,10 @@ class GameDataService {
         this.spicyPack = { nere: [], bianche: [] }; // [NEW] Spicy (NSFW Legal)
 
         this.isLoaded = false;
-        this.minVersion = "4.10.5";
+        this.minVersion = "4.10.7";
         this.downloadUrl = null;
         this.cachedAllCards = { it: null, en: null }; // [NEW] Cache
+        this.lookupMaps = { it: { nere: new Map(), bianche: new Map() }, en: { nere: new Map(), bianche: new Map() } }; // [NEW] Reverse lookups
     }
 
     // Initialize data: Fetch from Firebase (Memory Only)
@@ -130,8 +131,9 @@ class GameDataService {
 
                 // console.log('Packs (IT/EN) synced from Firebase.');
 
-                // Reset Cache
+                // Reset Cache & Maps
                 this.cachedAllCards = { it: null, en: null };
+                this.lookupMaps = { it: { nere: new Map(), bianche: new Map() }, en: { nere: new Map(), bianche: new Map() } };
 
                 // Update active packs based on current language
                 this.updateActivePacks();
@@ -165,28 +167,43 @@ class GameDataService {
         return this.downloadUrl;
     }
 
-    getPackages(activePacks = { base: true, dark: true, chill: false, spicy: false }) {
+    getPackages(activePacks = { base: true, dark: true, chill: false, spicy: false }, forcedLang = null) {
         let nere = [];
         let bianche = [];
 
+        const lang = forcedLang || this.language;
+        let base, dark, chill, spicy;
+
+        if (lang === 'en') {
+            base = this.basePackEN;
+            dark = this.darkPackEN;
+            chill = this.chillPackEN;
+            spicy = this.spicyPackEN;
+        } else {
+            base = this.basePackIT;
+            dark = this.darkPackIT;
+            chill = this.chillPackIT;
+            spicy = this.spicyPackIT;
+        }
+
         if (activePacks.base) {
-            nere = [...nere, ...this.basePack.nere];
-            bianche = [...bianche, ...this.basePack.bianche];
+            nere = [...nere, ...(base?.nere || [])];
+            bianche = [...bianche, ...(base?.bianche || [])];
         }
 
         if (activePacks.dark) {
-            nere = [...nere, ...this.darkPack.nere];
-            bianche = [...bianche, ...this.darkPack.bianche];
+            nere = [...nere, ...(dark?.nere || [])];
+            bianche = [...bianche, ...(dark?.bianche || [])];
         }
 
         if (activePacks.chill) {
-            nere = [...nere, ...this.chillPack.nere];
-            bianche = [...bianche, ...this.chillPack.bianche];
+            nere = [...nere, ...(chill?.nere || [])];
+            bianche = [...bianche, ...(chill?.bianche || [])];
         }
 
         if (activePacks.spicy) {
-            nere = [...nere, ...this.spicyPack.nere];
-            bianche = [...bianche, ...this.spicyPack.bianche];
+            nere = [...nere, ...(spicy?.nere || [])];
+            bianche = [...bianche, ...(spicy?.bianche || [])];
         }
 
         return { carteNere: nere, carteBianche: bianche };
@@ -228,6 +245,12 @@ class GameDataService {
             bianche: [...(base?.bianche || []), ...(dark?.bianche || []), ...(chill?.bianche || []), ...(spicy?.bianche || [])]
         };
 
+        // Populate Maps
+        this.lookupMaps[langTarget].nere.clear();
+        result.nere.forEach((c, idx) => { if (c && c.testo) this.lookupMaps[langTarget].nere.set(c.testo.trim(), idx); });
+        this.lookupMaps[langTarget].bianche.clear();
+        result.bianche.forEach((c, idx) => { if (c) this.lookupMaps[langTarget].bianche.set(c.trim(), idx); });
+
         // Cache the result
         this.cachedAllCards[langTarget] = result;
         return result;
@@ -235,9 +258,12 @@ class GameDataService {
 
     getWhiteCardIndex(text, forcedLang = null) {
         if (!text) return -1;
+        const lang = forcedLang || this.language;
+        if (!this.cachedAllCards[lang]) this.getAllCards(lang); // Ensure maps populated
+
         const normalized = text.trim();
-        const all = this.getAllCards(forcedLang).bianche;
-        return all.findIndex(c => c.trim() === normalized);
+        const idx = this.lookupMaps[lang].bianche.get(normalized);
+        return idx !== undefined ? idx : -1;
     }
 
     getWhiteCardByIndex(index, forcedLang = null) {
@@ -248,9 +274,12 @@ class GameDataService {
 
     getBlackCardIndex(card, forcedLang = null) {
         if (!card || !card.testo) return -1;
+        const lang = forcedLang || this.language;
+        if (!this.cachedAllCards[lang]) this.getAllCards(lang); // Ensure maps populated
+
         const normalized = card.testo.trim();
-        const all = this.getAllCards(forcedLang).nere;
-        return all.findIndex(c => c.testo.trim() === normalized);
+        const idx = this.lookupMaps[lang].nere.get(normalized);
+        return idx !== undefined ? idx : -1;
     }
 
     getBlackCardByIndex(index, forcedLang = null) {
