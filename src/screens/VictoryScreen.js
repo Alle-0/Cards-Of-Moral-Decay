@@ -189,12 +189,12 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                     ]}
                 >
                     <LinearGradient
-                        colors={[`${theme.colors.accent}20`, 'rgba(255, 255, 255, 0.02)', 'transparent']}
+                        colors={[theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}20` : theme.colors.accent, 'rgba(255, 255, 255, 0.02)', 'transparent']}
                         style={StyleSheet.absoluteFill}
                         start={{ x: 0.5, y: 0 }}
                         end={{ x: 0.5, y: 0.5 }}
                     />
-                    <View style={[StyleSheet.absoluteFill, { borderWidth: 1, borderColor: `${theme.colors.accent}30`, borderRadius: 35 }]} />
+                    <View style={[StyleSheet.absoluteFill, { borderWidth: 1, borderColor: theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}30` : theme.colors.accent, borderRadius: 35 }]} />
 
                     <View style={{ width: '100%', paddingVertical: 35, paddingHorizontal: 20, alignItems: 'center' }}>
                         <Animated.Text
@@ -242,7 +242,14 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                         {/* Leaderboard Section */}
                         <Animated.View
                             entering={FadeInDown.delay(1200).springify()}
-                            style={[styles.leaderboardContainer, { overflow: 'hidden', padding: 18, marginTop: 10, backgroundColor: theme.colors.surface + 'E6' }]}
+                            style={[styles.leaderboardContainer, {
+                                overflow: 'hidden',
+                                padding: 18,
+                                marginTop: 10,
+                                backgroundColor: theme.colors.surface?.startsWith('#')
+                                    ? theme.colors.surface + 'E6'
+                                    : (theme.colors.surface || 'rgba(0,0,0,0.9)')
+                            }]}
                         >
                             <LinearGradient
                                 colors={['rgba(255,255,255,0.05)', 'transparent']}

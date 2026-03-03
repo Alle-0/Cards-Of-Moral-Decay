@@ -18,7 +18,7 @@ const PointItem = ({ pts, index, dragX, theme, onPress }) => {
         const color = interpolateColor(
             dragX.value,
             [itemCenter - 70, itemCenter, itemCenter + 70],
-            [theme.colors.textPrimary + '44', '#000000', theme.colors.textPrimary + '44']
+            [theme.colors.textPrimary?.startsWith('#') ? theme.colors.textPrimary + '44' : theme.colors.textPrimary, '#000000', theme.colors.textPrimary?.startsWith('#') ? theme.colors.textPrimary + '44' : theme.colors.textPrimary]
         );
         return { color, fontWeight: '900' };
     });
@@ -112,9 +112,9 @@ const PackCard = React.memo(({ pack, isSelected, isOwned, onToggle, onPreview, t
 
                 <View style={[styles.iconCircle, isSelected ? { backgroundColor: pack.color } : { backgroundColor: theme.colors.cardBg }]}>
                     {!isOwned ? (
-                        <LockIcon size={14} color={theme.colors.textPrimary + '44'} />
+                        <LockIcon size={14} color={theme.colors.textPrimary?.startsWith('#') ? theme.colors.textPrimary + '44' : theme.colors.textPrimary} />
                     ) : (
-                        <Ionicons name={pack.icon} size={14} color={isSelected ? '#000' : theme.colors.textPrimary + '66'} />
+                        <Ionicons name={pack.icon} size={14} color={isSelected ? '#000' : (theme.colors.textPrimary?.startsWith('#') ? theme.colors.textPrimary + '66' : theme.colors.textPrimary)} />
                     )}
                 </View>
                 <View style={{ flex: 1 }}>
@@ -388,7 +388,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
     }));
 
     const animatedTextStyle = useAnimatedStyle(() => ({
-        color: withTiming(settings.chaosMode ? '#f87171' : theme.colors.textPrimary + '88', { duration: 300 }) // [REFINED] Softer red text
+        color: withTiming(settings.chaosMode ? '#f87171' : (theme.colors.textPrimary?.startsWith('#') ? theme.colors.textPrimary + '88' : theme.colors.textPrimary), { duration: 300 }) // [REFINED] Softer red text
     }));
 
     // [NEW] Language Indicator Animation
@@ -517,7 +517,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
                             onPress={() => onOpenChaosRules && onOpenChaosRules()}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Ionicons name="information-circle-outline" size={16} color={theme.colors.textPrimary + '66'} />
+                            <Ionicons name="information-circle-outline" size={16} color={theme.colors.textPrimary?.startsWith('#') ? theme.colors.textPrimary + '66' : theme.colors.textPrimary} />
                         </TouchableOpacity>
                     </View>
                     <Text style={styles.chaosDesc}>{t.chaos_mode_desc || "Random events enabled."}</Text>

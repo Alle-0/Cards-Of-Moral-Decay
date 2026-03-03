@@ -14,6 +14,7 @@ export const THEMES = {
             background: ['#1a1510', '#141210', '#0f0d0b'],
             cardBg: 'rgba(255, 206, 106, 0.10)',
             cardBorder: 'rgba(255, 206, 106, 0.45)',
+            surface: 'rgba(26, 21, 16, 0.85)',
             textPrimary: '#f8f3e6',
             particle: '#ffce6a',
             particleEmoji: '✨',
@@ -30,6 +31,7 @@ export const THEMES = {
             background: ['#000000', '#111111', '#1a1a1a'],
             cardBg: 'rgba(255, 255, 255, 0.03)',
             cardBorder: 'rgba(255, 255, 255, 0.4)',
+            surface: 'rgba(17, 17, 17, 0.85)',
             textPrimary: '#ffffff',
             particle: '#888888',
             particleEmoji: '⚫',
@@ -46,6 +48,7 @@ export const THEMES = {
             background: ['#000000', '#2a1205', '#450a0a'],
             cardBg: 'rgba(234, 88, 12, 0.08)',
             cardBorder: 'rgba(234, 88, 12, 0.5)',
+            surface: 'rgba(42, 18, 5, 0.85)',
             textPrimary: '#ffedd5',
             particle: '#fdba74',
             particleEmoji: '🔥',
@@ -62,6 +65,7 @@ export const THEMES = {
             background: ['#020617', '#172554', '#1e1b4b'],
             cardBg: 'rgba(59, 130, 246, 0.08)',
             cardBorder: 'rgba(59, 130, 246, 0.5)',
+            surface: 'rgba(23, 37, 84, 0.85)',
             textPrimary: '#eff6ff',
             particle: '#60a5fa',
             particleEmoji: '🔱',
@@ -78,6 +82,7 @@ export const THEMES = {
             background: ['#000000', '#000605ff', '#010201ff'],
             cardBg: 'rgba(34, 197, 94, 0.08)',
             cardBorder: 'rgba(34, 197, 94, 0.6)',
+            surface: 'rgba(0, 6, 5, 0.85)',
             textPrimary: '#dcfce7',
             particle: '#4ade80',
             particleEmoji: '🫧',
@@ -94,6 +99,7 @@ export const THEMES = {
             background: ['#2d667e', '#09374e', '#05283a'],
             cardBg: 'rgba(224, 242, 254, 0.1)',
             cardBorder: 'rgba(224, 242, 254, 0.5)',
+            surface: 'rgba(9, 55, 78, 0.85)',
             textPrimary: '#a6c9df',
             particle: '#9cc3db',
             particleEmoji: '❄️',
@@ -110,6 +116,7 @@ export const THEMES = {
             background: ['#1e293b', '#334155', '#0f172a'],
             cardBg: 'rgba(255, 255, 255, 0.05)',
             cardBorder: 'rgba(203, 213, 225, 0.5)',
+            surface: 'rgba(51, 65, 85, 0.85)',
             textPrimary: '#f1f5f9',
             particle: '#94a3b8',
             particleEmoji: '⚙️',
@@ -126,6 +133,7 @@ export const THEMES = {
             background: ['#4c0519', '#831843', '#2e1065'],
             cardBg: 'rgba(244, 63, 94, 0.08)',
             cardBorder: 'rgba(244, 63, 94, 0.5)',
+            surface: 'rgba(131, 24, 67, 0.85)',
             textPrimary: '#ffe4e6',
             particle: null,
             particleEmoji: '🌸',
@@ -142,6 +150,7 @@ export const THEMES = {
             background: ['#2e1065', '#1e1b4b', '#4a044e'],
             cardBg: 'rgba(217, 70, 239, 0.1)',
             cardBorder: 'rgba(6, 182, 212, 0.6)',
+            surface: 'rgba(30, 27, 75, 0.85)',
             textPrimary: '#fae8ff',
             particle: '#22d3ee',
             particleEmoji: '👾',
@@ -158,6 +167,7 @@ export const THEMES = {
             background: ['#000000', '#021405', '#000000'],
             cardBg: 'rgba(0, 50, 0, 0.8)',
             cardBorder: 'rgba(0, 255, 65, 0.8)',
+            surface: 'rgba(2, 20, 5, 0.85)',
             textPrimary: '#00ff41',
             particle: '#008F11',
             particleEmoji: '💻',
@@ -174,6 +184,7 @@ export const THEMES = {
             background: ['#0f172a', '#1e293b', '#000000'],
             cardBg: 'rgba(255, 255, 255, 0.05)',
             cardBorder: 'rgba(148, 163, 184, 0.5)',
+            surface: 'rgba(30, 41, 59, 0.85)',
             textPrimary: '#f8fafc',
             particle: '#cbd5e1',
             particleEmoji: '🗿',
@@ -190,6 +201,7 @@ export const THEMES = {
             background: ['#450404', '#2a0202', '#000000'],
             cardBg: 'rgba(212, 171, 55, 0.08)',
             cardBorder: 'rgba(212, 171, 55, 0.5)',
+            surface: 'rgba(69, 4, 4, 0.85)',
             textPrimary: '#fde68a',
             particle: '#ffffff',
             particleEmoji: '☁️',
@@ -206,6 +218,7 @@ export const THEMES = {
             background: ['#2e0000', '#1a0000', '#000000'],
             cardBg: 'rgba(255, 0, 85, 0.08)',
             cardBorder: 'rgba(255, 0, 85, 0.5)',
+            surface: 'rgba(46, 0, 0, 0.85)',
             textPrimary: '#ffe4e6',
             particle: '#ff0055',
             particleEmoji: '💄',
@@ -222,6 +235,7 @@ export const THEMES = {
             background: ['#0f172a', '#1e293b', '#020617'],
             cardBg: 'rgba(16, 185, 129, 0.08)',
             cardBorder: 'rgba(16, 185, 129, 0.5)',
+            surface: 'rgba(15, 23, 42, 0.85)',
             textPrimary: '#f1f5f9',
             particle: '#10b981',
             particleEmoji: '📈',
@@ -238,6 +252,7 @@ export const THEMES = {
             background: ['#1c1917', '#292524', '#0c0a09'], // Asfalto scuro
             cardBg: 'rgba(250, 204, 21, 0.05)',
             cardBorder: 'rgba(250, 204, 21, 0.6)',
+            surface: 'rgba(28, 25, 23, 0.85)',
             textPrimary: '#fef08a',
             particle: '#ef4444', // Sirene Rosse
             particleEmoji: '🚨',
@@ -254,7 +269,8 @@ export const THEMES = {
             background: ['#8a8a8aff', '#585858ff', '#4d4d4dff'], // Grigio imbottito
             cardBg: 'rgba(20, 184, 166, 0.08)',
             cardBorder: 'rgba(20, 184, 166, 0.5)',
-            textPrimary: '#0f766e', // Testo scuro per contrasto su background chiaro
+            surface: 'rgba(88, 88, 88, 0.85)',
+            textPrimary: '#0f766e',
             particle: '#ffffff',
             particleEmoji: '💊',
         },
@@ -270,6 +286,7 @@ export const THEMES = {
             background: ['#052e16', '#14532d', '#022c22'], // Verde tavolo da gioco
             cardBg: 'rgba(0, 0, 0, 0.3)',
             cardBorder: '#d4af37', // Oro finto
+            surface: 'rgba(5, 46, 22, 0.85)',
             textPrimary: '#fca5a5',
             particle: '#ef4444',
             particleEmoji: '🎲',
@@ -286,6 +303,7 @@ export const THEMES = {
             background: ['#020617', '#0f172a', '#000000'], // Blu notte profondo
             cardBg: 'rgba(0, 0, 0, 0.6)',
             cardBorder: '#4c1d95',
+            surface: 'rgba(2, 6, 23, 0.85)',
             textPrimary: '#e2e8f0',
             particle: '#7c3aed',
             particleEmoji: '👁️',
@@ -302,6 +320,7 @@ export const THEMES = {
             background: ['#451a03', '#78350f', '#271007'], // Cioccolato fondente
             cardBg: 'rgba(255, 255, 255, 0.05)',
             cardBorder: '#d97706',
+            surface: 'rgba(69, 26, 3, 0.85)',
             textPrimary: '#fffbeb',
             particle: '#fca5a5',
             particleEmoji: '🍩',
@@ -495,33 +514,30 @@ export const AVATAR_FRAMES = {
 export const ThemeProvider = ({ children }) => {
     // [NEW] Web-specific theme overrides for better visibility
     const getThemeWithOverrides = (inputTheme) => {
-        if (!inputTheme) return THEMES.default;
+        const theme = inputTheme || THEMES.default;
 
-        if (Platform.OS === 'web') {
-            const webOverrides = {
-                default: { background: ['#231d16', '#1a1815', '#141210'] }, // Lightened
-                onice: { background: ['#111111', '#1a1a1a', '#222222'] },
-                lucifero: { background: ['#1a0c04', '#3d1a08', '#5a0e0e'] },
-                leviatano: { background: ['#0a1229', '#1e3a8a', '#2e2a6e'] },
-                assenzio: { background: ['#0a1f1a', '#064e3b', '#1a633a'] },
-                ghiaccio: { background: ['#2d667e', '#09374e', '#05283a'] },
-                matrix: { background: ['#050a06', '#0a2a0e', '#050a06'] },
-                abisso: { background: ['#01030e', '#090d1a', '#000000'] },
-                cioccolato: { background: ['#381502', '#5f2b0c', '#1a0b05'] },
-            };
+        const webOverrides = {
+            default: { background: ['#231d16', '#1a1815', '#141210'] }, // Lightened
+            onice: { background: ['#111111', '#1a1a1a', '#222222'] },
+            lucifero: { background: ['#1a0c04', '#3d1a08', '#5a0e0e'] },
+            leviatano: { background: ['#0a1229', '#1e3a8a', '#2e2a6e'] },
+            assenzio: { background: ['#0a1f1a', '#064e3b', '#1a633a'] },
+            ghiaccio: { background: ['#2d667e', '#09374e', '#05283a'] },
+            matrix: { background: ['#050a06', '#0a2a0e', '#050a06'] },
+            abisso: { background: ['#01030e', '#090d1a', '#000000'] },
+            cioccolato: { background: ['#381502', '#5f2b0c', '#1a0b05'] },
+        };
 
-            const override = webOverrides[inputTheme.id];
-            if (override) {
-                return {
-                    ...inputTheme,
-                    colors: {
-                        ...inputTheme.colors,
-                        ...override,
-                    }
-                };
-            }
-        }
-        return inputTheme;
+        const colors = {
+            ...THEMES.default.colors,
+            ...theme.colors,
+            ...(Platform.OS === 'web' ? (webOverrides[theme.id] || {}) : {})
+        };
+
+        return {
+            ...theme,
+            colors
+        };
     };
 
     const [currentTheme, setCurrentTheme] = useState(() => getThemeWithOverrides(THEMES.default));
