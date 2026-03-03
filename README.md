@@ -60,7 +60,7 @@ Fully localized in **English 🇬🇧** and **Italian 🇮🇹**. The interface 
 
 ### 🤝 Private Lobbies
 
-Created for friends. No random matchmaking, just private rooms where you can be yourself (or your worst version) with people you trust.
+Created for friends. Private rooms where you can be yourself (or your worst version) with people you trust. (There are also public rooms)
 
 ### 🎭 Personalization & Shop
 
