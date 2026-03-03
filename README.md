@@ -83,6 +83,8 @@ No friends at your level? **Rand Bot** has no logic, no morals, and no mercy. He
 ## 📸 SCREENSHOTS
 
 <div align="center">
+  
+<img width="270" height="270" alt="icon" src="https://github.com/user-attachments/assets/83ee286d-ab2a-4e05-b210-0a5c66fb2499" />
 <img width="270" height="270" alt="screen1" src="https://github.com/user-attachments/assets/a4351236-8cfd-457b-be06-8ec48cbd87d7" />
 <img width="270" height="270" alt="screen2" src="https://github.com/user-attachments/assets/968ffe9e-a73c-4d4d-95a4-6b1c7cd1ef0f" />
 <img width="270" height="270" alt="screen3" src="https://github.com/user-attachments/assets/fd6d27f8-4522-4ecc-a96a-d50d7c310bef" />
