@@ -40,6 +40,7 @@ import PaymentResultModal from './src/components/PaymentResultModal'; // [NEW] G
 import PwaInstallPrompt from './src/components/PwaInstallPrompt'; // [NEW] PWA Install Prompt
 import { useLanguage } from './src/context/LanguageContext';
 import ConnectivityOverlay from './src/components/ConnectivityOverlay';
+import IntroTutorialOverlay from './src/components/tutorial/IntroTutorialOverlay'; // [NEW] Spotlight Tutorial
 import { Platform, Linking } from 'react-native';
 import { db } from './src/services/firebase';
 import { ref, onValue } from 'firebase/database';
@@ -160,6 +161,10 @@ const AppContent = () => {
     const [showGameSplash, setShowGameSplash] = useState(false);
     const [isFastSplash, setIsFastSplash] = useState(false);
     const [needsUpdate, setNeedsUpdate] = useState(false);
+
+    // [NEW] Local state to ensure tutorial only mounts once user is fully in the lobby
+    const [showTutorial, setShowTutorial] = useState(false);
+    const { markTutorialSeen } = useAuth();
 
     // [NEW] Start Music on Mount (Entry to App)
     useEffect(() => {
@@ -299,6 +304,31 @@ const AppContent = () => {
         }
     }, [pendingTab, setPendingTab]);
 
+    // [NEW] Check for Tutorial Visibility
+    useEffect(() => {
+        // Only show if user is fully loaded, NOT in a game, NOT a brand new user still picking a name, and hasn't seen it yet.
+        if (
+            user &&
+            !user.isNew &&
+            user.hasSeenLobbyTutorial === false &&
+            !roomCode &&
+            !showGameSplash
+        ) {
+            // Add a small delay so the Lobby renders before the tutorial starts
+            const timer = setTimeout(() => {
+                setShowTutorial(true);
+            }, 800);
+            return () => clearTimeout(timer);
+        } else {
+            setShowTutorial(false);
+        }
+    }, [user, roomCode, showGameSplash]);
+
+    const handleTutorialFinish = useCallback(async () => {
+        setShowTutorial(false);
+        await markTutorialSeen();
+    }, [markTutorialSeen]);
+
     const handleStartLoading = (action = undefined) => {
         if (action === false) {
             setShowGameSplash(false);
@@ -347,6 +377,12 @@ const AppContent = () => {
                 visible={paymentResult.visible}
                 result={paymentResult.result}
                 onClose={() => setPaymentResult({ visible: false, result: null })}
+            />
+
+            {/* [NEW] Intro Tutorial Overlay */}
+            <IntroTutorialOverlay
+                visible={showTutorial}
+                onFinish={handleTutorialFinish}
             />
 
             <ConnectivityOverlay isConnected={isConnected} />

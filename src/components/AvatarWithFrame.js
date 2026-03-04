@@ -20,13 +20,13 @@ const AvatarWithFrame = ({
     const borderRadius = size / 2;
 
     return (
-        <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center', overflow: 'visible' }, style]}>
 
             {/* GLOW LAYER (Background) */}
             {(Platform.OS === 'android' || Platform.OS === 'web') && (
-                <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }]}>
+                <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', overflow: 'visible' }]}>
                     {frameId === 'neon' && (
-                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
                             <Defs>
                                 <RadialGradient id="neon_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
                                     <Stop offset="0.55" stopColor="#06b6d4" stopOpacity="0" />
@@ -38,7 +38,7 @@ const AvatarWithFrame = ({
                         </Svg>
                     )}
                     {frameId === 'angel' && (
-                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
                             <Defs>
                                 <RadialGradient id="angel_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
                                     <Stop offset="0.55" stopColor="#fbbf24" stopOpacity="0" />
@@ -50,7 +50,7 @@ const AvatarWithFrame = ({
                         </Svg>
                     )}
                     {frameId === 'demon' && (
-                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
                             <Defs>
                                 <RadialGradient id="demon_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
                                     <Stop offset="0.55" stopColor="#ef4444" stopOpacity="0" />
@@ -62,7 +62,7 @@ const AvatarWithFrame = ({
                         </Svg>
                     )}
                     {frameId === 'capo' && (
-                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
                             <Defs>
                                 <RadialGradient id="capo_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
                                     <Stop offset="0.55" stopColor="#ff00ff" stopOpacity="0" />
@@ -74,7 +74,7 @@ const AvatarWithFrame = ({
                         </Svg>
                     )}
                     {frameId === 'midas_touch' && (
-                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
                             <Defs>
                                 <RadialGradient id="midas_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
                                     <Stop offset="0.55" stopColor="#f59e0b" stopOpacity="0" />
@@ -86,7 +86,7 @@ const AvatarWithFrame = ({
                         </Svg>
                     )}
                     {frameId === 'ice_king' && (
-                        <Svg height="150%" width="150%" viewBox="0 0 100 100">
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
                             <Defs>
                                 <RadialGradient id="ice_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
                                     <Stop offset="0.55" stopColor="#06b6d4" stopOpacity="0" />
@@ -101,10 +101,10 @@ const AvatarWithFrame = ({
             )}
 
             {/* AVATAR + BORDER FRAME */}
-            <View style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }}>
 
                 {/* 1. Base Avatar */}
-                <View style={{ width: size, height: size, borderRadius: borderRadius, overflow: 'hidden', backgroundColor: theme.colors.cardBg || 'rgba(255,255,255,0.05)' }}>
+                <View style={{ width: size, height: size, borderRadius: borderRadius, overflow: 'visible', backgroundColor: theme.colors.cardBg || 'rgba(255,255,255,0.05)' }}>
                     <LocalAvatar
                         size={size}
                         seed={avatar?.startsWith('http') ? avatar : (avatar || 'User')}
@@ -228,18 +228,35 @@ const AvatarWithFrame = ({
 
                 {/* MIDAS TOUCH */}
                 {frameId === 'midas_touch' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
-                        {/* Gold Glow */}
-                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: '#fbbf24', shadowColor: '#f59e0b', shadowOpacity: 1, shadowRadius: 15 }]} />
-                        {/* Inner Ring */}
-                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#fff', margin: 3 * scale, opacity: 0.5 }]} />
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }]}>
+                        {/* Soft Gold Outer Glow */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: 'rgba(251, 191, 36, 0.4)', shadowColor: '#f59e0b', shadowOpacity: 1, shadowRadius: 15, overflow: 'visible' }]} />
 
-                        {/* Sparkles simulate touch */}
-                        <View style={{ position: 'absolute', bottom: -5 * scale, right: -5 * scale }}>
-                            <View style={{ width: 4 * scale, height: 4 * scale, backgroundColor: '#fff', borderRadius: 2 }} />
+                        {/* Rich SVG Gold Gradient Frame */}
+                        <Svg height="100%" width="100%" style={{ position: 'absolute', overflow: 'visible' }}>
+                            <Defs>
+                                <RadialGradient id="gold_grad" cx="50%" cy="0%" r="100%">
+                                    <Stop offset="0%" stopColor="#ffee58" />
+                                    <Stop offset="50%" stopColor="#f59e0b" />
+                                    <Stop offset="100%" stopColor="#b45309" />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx={size / 2} cy={size / 2} r={(size / 2)} stroke="url(#gold_grad)" strokeWidth={4 * scale} fill="none" />
+                        </Svg>
+
+                        {/* Thin sharp inner highlight */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#fff', margin: 4 * scale, opacity: 0.6, overflow: 'visible' }]} />
+
+                        {/* Sparkles / Gold Flakes */}
+                        <View style={{ position: 'absolute', bottom: -4 * scale, right: -4 * scale }}>
+                            <Svg width={12 * scale} height={12 * scale} viewBox="0 0 24 24" style={{ overflow: 'visible' }}>
+                                <Path d="M12 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z" fill="#fef08a" />
+                            </Svg>
                         </View>
-                        <View style={{ position: 'absolute', top: 5 * scale, left: -2 * scale }}>
-                            <View style={{ width: 3 * scale, height: 3 * scale, backgroundColor: '#fbbf24', borderRadius: 1.5 }} />
+                        <View style={{ position: 'absolute', top: Math.floor(size * 0.1), left: -8 * scale }}>
+                            <Svg width={10 * scale} height={10 * scale} viewBox="0 0 24 24">
+                                <Path d="M12 0l1.5 6 6 1.5-6 1.5-1.5 6-1.5-6-6-1.5 6-1.5z" fill="#fde047" />
+                            </Svg>
                         </View>
                     </View>
                 )}

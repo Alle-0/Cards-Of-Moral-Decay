@@ -57,6 +57,13 @@
                 ".write": "auth != null && !data.exists() && newData.exists()",
                 ".read": "false"
             }
+        },
+        "feedbacks": {
+            ".read": "false",
+            ".write": "auth != null",
+            "$feedbackId": {
+                ".validate": "newData.hasChildren(['message', 'timestamp', 'userId', 'name']) && newData.child('message').val().length <= 250"
+            }
         }
     }
 }

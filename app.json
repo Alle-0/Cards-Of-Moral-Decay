@@ -3,7 +3,7 @@
     "name": "Cards of Moral Decay",
     "slug": "cards-of-moral-decay",
     "scheme": "comd",
-    "version": "4.10.8",
+    "version": "4.11.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -20,7 +20,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.anonymous.cardsofmoraldecay",
-      "versionCode": 48,
+      "versionCode": 49,
       "googleServicesFile": "./google-services.json",
       "splash": {
         "image": "./assets/splash-custom.png",
@@ -61,7 +61,7 @@
       "favicon": "./assets/favicon.png",
       "themeColor": "#1a1510",
       "backgroundColor": "#1a1510",
-      "display": "standalone",
+      "display": "fullscreen",
       "orientation": "portrait",
       "description": "Un gioco di carte cinico e immorale.",
       "shortName": "Cards of Moral Decay",

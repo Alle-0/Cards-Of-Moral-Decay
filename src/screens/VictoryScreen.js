@@ -198,7 +198,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
 
                     <View style={{ width: '100%', paddingVertical: 35, paddingHorizontal: 20, alignItems: 'center' }}>
                         <Animated.Text
-                            entering={SlideInDown.springify().damping(15)}
+                            entering={FadeInDown.duration(1000).springify().damping(25).stiffness(80)}
                             style={[styles.title, {
                                 color: theme.colors.accent,
                                 textShadowColor: 'rgba(212, 175, 55, 0.8)',
@@ -211,7 +211,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                         </Animated.Text>
 
                         <Animated.View
-                            entering={ZoomIn.delay(500).springify()}
+                            entering={ZoomIn.delay(500).springify().damping(20).stiffness(90)}
                             style={[styles.avatarContainer, {
                                 borderColor: theme.colors.accent,
                                 // Removed shadow mapping per request
@@ -241,7 +241,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
 
                         {/* Leaderboard Section */}
                         <Animated.View
-                            entering={FadeInDown.delay(1200).springify()}
+                            entering={FadeInDown.delay(1200).springify().damping(25).stiffness(80)}
                             style={[styles.leaderboardContainer, {
                                 overflow: 'hidden',
                                 padding: 18,
@@ -339,7 +339,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                         {/* [REDESIGNED] Award della Vergogna Section */}
                         {loserName && (
                             <Animated.View
-                                entering={ZoomIn.delay(2200).springify()}
+                                entering={ZoomIn.delay(2200).springify().damping(20).stiffness(90)}
                                 style={[styles.shameContainer, { overflow: 'hidden', backgroundColor: 'rgba(217, 119, 6, 0.08)' }]}
                             >
                                 <LinearGradient
@@ -481,7 +481,6 @@ const styles = StyleSheet.create({
         height: 150,
         borderRadius: 75,
         borderWidth: 0, // Border moved to content animation style
-        overflow: 'hidden',
         backgroundColor: 'transparent', // Lightened to allow card effect
         marginBottom: 20,
     },

@@ -1,3 +1,5 @@
+importScripts('/expo-service-worker.js');
+
 const CACHE_NAME = 'moral-decay-v1';
 const ASSETS_TO_CACHE = [
     '/',

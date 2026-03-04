@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import AnalyticsService from '../services/AnalyticsService';
 import { APP_VERSION } from '../constants/Config';
+import FeedbackModal from '../components/FeedbackModal'; // [NEW] Import
 
 const InfoScreen = ({ onClose }) => {
     const { theme } = useTheme();
@@ -31,6 +32,8 @@ const InfoScreen = ({ onClose }) => {
     const { t } = useLanguage();
     const [expandedId, setExpandedId] = useState(null);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [successMessage, setSuccessMessage] = useState(''); // [NEW]
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false); // [NEW]
 
     // [FIX] Handle Android Hardware Back Button
     useEffect(() => {
@@ -54,7 +57,7 @@ const InfoScreen = ({ onClose }) => {
             icon: <CrownIcon size={20} color="#000" />,
             content: t('donate_content'),
             action: t('donate_action'),
-            url: 'https://paypal.me/AlessandroBasile0/3eur', // <--- INSERISCI IL TUO USERNAME PAYPAL
+            url: 'https://paypal.me/AlessandroBasile0/2eur', // <--- INSERISCI IL TUO USERNAME PAYPAL
             special: true // Stile Dorato
         },
         {
@@ -66,10 +69,28 @@ const InfoScreen = ({ onClose }) => {
         {
             id: 'contacts',
             title: t('section_contacts'),
-            icon: <GithubIcon size={20} color={theme.colors.accent} />,
-            content: t('contacts_content'),
-            action: 'GITHUB',
-            url: 'https://github.com/Alle-0/Cards-Of-Moral-Decay'
+            icon: <PeopleIcon size={20} color={theme.colors.accent} />,
+            renderContent: () => (
+                <View>
+                    <Text style={[styles.contentText, { marginBottom: 15 }]}>
+                        {t('contacts_content')}
+                    </Text>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { borderColor: theme.colors.accent }]}
+                        onPress={() => handleLink('https://github.com/Alle-0/Cards-Of-Moral-Decay')}
+                    >
+                        <Text style={[styles.actionButtonText, { color: theme.colors.accent }]}>GITHUB</Text>
+                        <GithubIcon size={16} color={theme.colors.accent} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { borderColor: theme.colors.accent, marginTop: 10 }]}
+                        onPress={() => setShowFeedbackModal(true)}
+                    >
+                        <Text style={[styles.actionButtonText, { color: theme.colors.accent }]}>INVIA FEEDBACK</Text>
+                        <LinkIcon size={16} color={theme.colors.accent} />
+                    </TouchableOpacity>
+                </View>
+            )
         },
         {
             id: 'privacy',
@@ -226,9 +247,18 @@ const InfoScreen = ({ onClose }) => {
 
                     <ToastNotification
                         visible={showSuccessToast}
-                        message={t('suggest_card_success')}
+                        message={successMessage || t('suggest_card_success')}
                         type="success"
                         onClose={() => setShowSuccessToast(false)}
+                    />
+
+                    <FeedbackModal
+                        visible={showFeedbackModal}
+                        onClose={() => setShowFeedbackModal(false)}
+                        onSuccess={() => {
+                            setSuccessMessage(t('feedback_success') || 'Feedback inviato con successo. Grazie!');
+                            setShowSuccessToast(true);
+                        }}
                     />
                 </SafeAreaView>
             </PremiumBackground>
@@ -313,6 +343,8 @@ const styles = StyleSheet.create({
         marginTop: 15,
         backgroundColor: 'rgba(0,0,0,0.2)',
         paddingVertical: 12,
+        minHeight: 48,
+        overflow: 'hidden',
         borderRadius: 12,
         flexDirection: 'row',
         justifyContent: 'center',

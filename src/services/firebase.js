@@ -55,4 +55,17 @@ isSupported().then(yes => {
     if (__DEV__) console.error("[Firebase] Error checking analytics support:", err);
 });
 
+// 5. App Services
+export const submitFeedback = async (feedbackData) => {
+    try {
+        const { push, ref } = await import('firebase/database');
+        const feedbacksRef = ref(db, 'feedbacks');
+        await push(feedbacksRef, feedbackData);
+        return true;
+    } catch (error) {
+        console.error("Error submitting feedback:", error);
+        throw error;
+    }
+};
+
 export { app, auth, db, analytics };

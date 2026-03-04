@@ -466,7 +466,8 @@ export const AuthProvider = ({ children }) => {
                 dark: false
             },
             eulaAccepted: true, // [NEW] EULA is now required for signup
-            eulaAcceptedAt: serverTimestamp() // [NEW] Timestamp for EULA acceptance
+            eulaAcceptedAt: serverTimestamp(), // [NEW] Timestamp for EULA acceptance
+            hasSeenLobbyTutorial: false // [NEW] Spotlight Tutorial flag
         };
 
         // Create UID mapping first, then the user profile (Sequential to satisfy Rules)
@@ -571,7 +572,8 @@ export const AuthProvider = ({ children }) => {
                     unlockedSkins: { classic: true },
                     activeFrame: 'basic',
                     unlockedFrames: { basic: true },
-                    unlockedPacks: { dark: false }
+                    unlockedPacks: { dark: false },
+                    hasSeenLobbyTutorial: false
                 };
                 await set(userRef, userData);
             } else {
@@ -1068,6 +1070,18 @@ export const AuthProvider = ({ children }) => {
         await AsyncStorage.removeItem(USER_CACHE_KEY);
     }, [user]);
 
+    // [NEW] Mark tutorial as seen
+    const markTutorialSeen = useCallback(async () => {
+        if (!user) return;
+        const userRef = ref(db, `users/${user.username}`);
+        try {
+            await update(userRef, { hasSeenLobbyTutorial: true });
+            // Local state is updated via the realtime observer
+        } catch (e) {
+            console.error("[AUTH] Error marking tutorial seen", e);
+        }
+    }, [user]);
+
     // Memoize the context value to avoid re-rendering consumers unless necessary
     const value = React.useMemo(() => ({
         user,
@@ -1105,7 +1119,8 @@ export const AuthProvider = ({ children }) => {
         acceptEula,
         reportPlayer,
         deleteAccount,
-        toggleNotificationSetting
+        toggleNotificationSetting,
+        markTutorialSeen // [NEW]
     }), [
         user,
         pendingRoom,

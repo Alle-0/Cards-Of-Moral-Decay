@@ -16,6 +16,7 @@ import PremiumInput from '../PremiumInput';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { EditIcon } from '../Icons';
+import { TutorialRegistry } from '../../utils/TutorialRegistry';
 
 const MainMenuStep = ({
     theme,
@@ -89,7 +90,11 @@ const MainMenuStep = ({
                     >
 
                         {/* QUICK JOIN SECTION */}
-                        <View style={styles.section}>
+                        <View
+                            style={styles.section}
+                            ref={ref => TutorialRegistry.register('quickjoin', ref)}
+                            collapsable={false}
+                        >
                             <TouchableOpacity
                                 style={[styles.quickJoinButton, { backgroundColor: theme.colors.accent }]}
                                 onPress={onQuickJoin}
@@ -102,7 +107,11 @@ const MainMenuStep = ({
                         </View>
 
                         {/* CREATE / JOIN BUTTONS */}
-                        <View style={styles.section}>
+                        <View
+                            style={styles.section}
+                            ref={ref => TutorialRegistry.register('create_code', ref)}
+                            collapsable={false}
+                        >
                             <View style={styles.actionRow}>
                                 {/* CREATE BUTTON */}
                                 <TouchableOpacity
@@ -172,7 +181,11 @@ const MainMenuStep = ({
                 </View>
 
                 {/* ROOM LISTS - NOW WRAPS EVERYTHING */}
-                <View style={{ flex: 1, width: '100%', minHeight: 0 }}>
+                <View
+                    style={{ flex: 1, width: '100%', minHeight: 0 }}
+                    ref={ref => TutorialRegistry.register('rooms', ref)}
+                    collapsable={false}
+                >
                     <RoomListStep
                         friendsRooms={friendsRooms}
                         publicRooms={publicRooms}

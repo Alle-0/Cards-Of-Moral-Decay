@@ -20,12 +20,16 @@ const LocalAvatar = ({ seed, size = 128, style }) => {
     if (seed?.startsWith('http')) {
         const isSvg = seed.endsWith('.svg') || seed.includes('dicebear');
 
+        // Since the parent container now has overflow: visible (to prevent clipping frames/glows),
+        // we must manually enforce the circular shape on the image itself.
+        const imageStyle = { width: '100%', height: '100%', borderRadius: size / 2, overflow: 'hidden' };
+
         // [FIX] On web, we use Image for everything remote. 
         // Browsers handle SVGs in <img> tags natively and more reliably than SvgUri.
         if (Platform.OS === 'web') {
             return (
                 <View style={[styles.container, { width: size, height: size }, style]}>
-                    <Image source={{ uri: seed }} style={{ width: '100%', height: '100%' }} />
+                    <Image source={{ uri: seed }} style={imageStyle} />
                 </View>
             );
         }
@@ -33,9 +37,9 @@ const LocalAvatar = ({ seed, size = 128, style }) => {
         return (
             <View style={[styles.container, { width: size, height: size }, style]}>
                 {isSvg ? (
-                    <SvgUri uri={seed} width="100%" height="100%" />
+                    <SvgUri uri={seed} width="100%" height="100%" style={imageStyle} />
                 ) : (
-                    <Image source={{ uri: seed }} style={{ width: '100%', height: '100%' }} />
+                    <Image source={{ uri: seed }} style={imageStyle} />
                 )}
             </View>
         );
@@ -60,7 +64,6 @@ const LocalAvatar = ({ seed, size = 128, style }) => {
 
 const styles = StyleSheet.create({
     container: {
-        overflow: 'hidden',
         justifyContent: 'center',
         alignItems: 'center',
         // Note: Border radius should usually be handled by the parent container 

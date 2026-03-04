@@ -181,7 +181,7 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
                         <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
 
                         {/* Clip content relative to inner container, but allow full width */}
-                        <View style={[styles.content, { overflow: 'hidden' }]}>
+                        <View style={[styles.content, { overflow: 'visible' }]}>
                             {children}
                         </View>
                     </View>

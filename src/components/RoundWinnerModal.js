@@ -151,11 +151,13 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                         width: '100%',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        height: 110,
+                        height: 150,
+                        overflow: 'visible',
                     }}
                 >
                     <View style={{
                         zIndex: 10,
+                        overflow: 'visible',
                         shadowColor: "#000",
                         shadowOffset: { width: 0, height: 10 },
                         shadowOpacity: 0.8,
