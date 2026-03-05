@@ -241,7 +241,7 @@ const AvatarWithFrame = ({
                                     <Stop offset="100%" stopColor="#b45309" />
                                 </RadialGradient>
                             </Defs>
-                            <Circle cx={size / 2} cy={size / 2} r={(size / 2)} stroke="url(#gold_grad)" strokeWidth={4 * scale} fill="none" />
+                            <Circle cx={size / 2} cy={size / 2} r={(size / 2) - (2 * scale)} stroke="url(#gold_grad)" strokeWidth={4 * scale} fill="none" />
                         </Svg>
 
                         {/* Thin sharp inner highlight */}
