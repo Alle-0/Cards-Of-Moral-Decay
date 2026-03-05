@@ -65,12 +65,24 @@ const AvatarWithFrame = ({
                         <Svg height="150%" width="150%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
                             <Defs>
                                 <RadialGradient id="capo_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
-                                    <Stop offset="0.55" stopColor="#ff00ff" stopOpacity="0" />
-                                    <Stop offset="0.7" stopColor="#ff00ff" stopOpacity="0.3" />
-                                    <Stop offset="0.85" stopColor="#ff00ff" stopOpacity="0" />
+                                    <Stop offset="0.55" stopColor="#d946ef" stopOpacity="0" />
+                                    <Stop offset="0.7" stopColor="#d946ef" stopOpacity="0.4" />
+                                    <Stop offset="0.85" stopColor="#d946ef" stopOpacity="0" />
                                 </RadialGradient>
                             </Defs>
                             <Circle cx="50" cy="50" r="50" fill="url(#capo_grad)" />
+                        </Svg>
+                    )}
+                    {frameId === 'rich' && (
+                        <Svg height="150%" width="150%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
+                            <Defs>
+                                <RadialGradient id="rich_grad" cx="50" cy="50" rx="50" ry="50" fx="50" fy="50" gradientUnits="userSpaceOnUse">
+                                    <Stop offset="0.55" stopColor="#10b981" stopOpacity="0" />
+                                    <Stop offset="0.7" stopColor="#10b981" stopOpacity="0.4" />
+                                    <Stop offset="0.85" stopColor="#10b981" stopOpacity="0" />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx="50" cy="50" r="50" fill="url(#rich_grad)" />
                         </Svg>
                     )}
                     {frameId === 'midas_touch' && (
@@ -104,7 +116,7 @@ const AvatarWithFrame = ({
             <View style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }}>
 
                 {/* 1. Base Avatar */}
-                <View style={{ width: size, height: size, borderRadius: borderRadius, overflow: 'visible', backgroundColor: theme.colors.cardBg || 'rgba(255,255,255,0.05)' }}>
+                <View style={{ width: size, height: size, borderRadius: borderRadius, overflow: 'hidden', backgroundColor: theme.colors.cardBg || 'rgba(255,255,255,0.05)' }}>
                     <LocalAvatar
                         size={size}
                         seed={avatar?.startsWith('http') ? avatar : (avatar || 'User')}
@@ -160,26 +172,60 @@ const AvatarWithFrame = ({
 
                 {/* RICH */}
                 {frameId === 'rich' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
-                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: '#10b981' }]} />
-                        <View style={{ position: 'absolute', top: -15 * scale, width: '100%', alignItems: 'center' }}>
-                            <MoneyIcon size={28 * scale} color="#10b981" />
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }]}>
+                        {/* Emerald Glow */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: 'rgba(16, 185, 129, 0.4)', shadowColor: '#059669', shadowOpacity: 1, shadowRadius: 10, overflow: 'visible' }]} />
+
+                        {/* Emerald/Gold SVG Gradient Frame */}
+                        <Svg height="100%" width="100%" style={{ position: 'absolute', overflow: 'visible' }}>
+                            <Defs>
+                                <RadialGradient id="rich_emerald_grad" cx="50%" cy="100%" r="100%">
+                                    <Stop offset="0%" stopColor="#047857" />
+                                    <Stop offset="60%" stopColor="#10b981" />
+                                    <Stop offset="100%" stopColor="#a7f3d0" />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx={size / 2} cy={size / 2} r={(size / 2) - (1.5 * scale)} stroke="url(#rich_emerald_grad)" strokeWidth={4 * scale} fill="none" />
+                        </Svg>
+
+                        {/* Inner Gold detail */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#fcd34d', margin: 4 * scale, borderStyle: 'dotted' }]} />
+
+                        {/* Custom Floating Money Icon Box */}
+                        <View style={{ position: 'absolute', top: -14 * scale, width: '100%', alignItems: 'center' }}>
+                            <View style={{ backgroundColor: '#064e3b', borderRadius: 16 * scale, padding: 3 * scale, borderWidth: 2 * scale, borderColor: '#34d399', shadowColor: '#10b981', shadowOpacity: 1, shadowRadius: 8, elevation: 6 }}>
+                                <MoneyIcon size={20 * scale} color="#a7f3d0" />
+                            </View>
                         </View>
                     </View>
                 )}
 
                 {/* CAPO */}
                 {frameId === 'capo' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
-                        {/* Glow Layer */}
-                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 6 * scale, borderColor: '#ff00ff', opacity: 0.5 }]} />
-                        {/* Main Gold Frame */}
-                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#ffd700', shadowColor: '#ffd700', shadowOpacity: 0.8, shadowRadius: 10, elevation: Platform.OS === 'android' ? 0 : 6 }]} />
-                        {/* Inner Detail */}
-                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#ff00ff', margin: 3 * scale }]} />
-                        {/* Floating Crown */}
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }]}>
+                        {/* Boss Imperial Glow */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: 'rgba(217, 70, 239, 0.4)', shadowColor: '#d946ef', shadowOpacity: 1, shadowRadius: 15, overflow: 'visible' }]} />
+
+                        {/* Purple/Gold Radiant Frame */}
+                        <Svg height="100%" width="100%" style={{ position: 'absolute', overflow: 'visible' }}>
+                            <Defs>
+                                <RadialGradient id="capo_magenta_grad" cx="50%" cy="0%" r="100%">
+                                    <Stop offset="0%" stopColor="#fbcfe8" />
+                                    <Stop offset="50%" stopColor="#d946ef" />
+                                    <Stop offset="100%" stopColor="#4a044e" />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx={size / 2} cy={size / 2} r={(size / 2) - (2 * scale)} stroke="url(#capo_magenta_grad)" strokeWidth={5 * scale} fill="none" />
+                        </Svg>
+
+                        {/* Intricate Inner Details */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#fef08a', margin: -1 * scale }]} />
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#fbcfe8', margin: 3 * scale }]} />
+
+                        {/* Grand Crown */}
                         <View style={{ position: 'absolute', top: -16 * scale, width: '100%', alignItems: 'center' }}>
-                            <CrownIcon size={20 * scale} color="#ffd700" />
+                            <View style={{ position: 'absolute', width: 20 * scale, height: 20 * scale, backgroundColor: '#fbbf24', borderRadius: 10 * scale, opacity: 0.5, filter: 'blur(5px)' }} />
+                            <CrownIcon size={28 * scale} color="#fef08a" />
                         </View>
                     </View>
                 )}
