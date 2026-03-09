@@ -15,7 +15,7 @@ import 'firebase/compat/auth';
 import 'firebase/compat/database';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBuHQR3RmMdgcNvy3GxOzT_koHcN39dfpU",
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
     authDomain: "carte-vs-umani.firebaseapp.com",
     databaseURL: "https://carte-vs-umani-default-rtdb.firebaseio.com",
     projectId: "carte-vs-umani",
