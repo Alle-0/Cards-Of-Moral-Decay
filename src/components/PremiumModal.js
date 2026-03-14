@@ -127,11 +127,12 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                         pointerEvents="box-none"
                         style={[{
                             width: '85%', maxWidth: 500, maxHeight: '90%',
-                            alignItems: 'center', justifyContent: 'center'
+                            alignItems: 'center', justifyContent: 'center',
+                            overflow: Platform.OS === 'web' ? 'visible' : 'hidden'
                         }, containerTransformStyle]}
                     >
                         {/* CONTAINER: constrained to parent size */}
-                        <View style={[{ width: '100%', alignItems: 'center' }, (modalHeight && modalHeight !== true) ? { height: modalHeight } : (modalHeight === true ? { height: '100%' } : { maxHeight: '100%' })]}>
+                        <View style={[{ width: '100%', alignItems: 'center', overflow: Platform.OS === 'web' ? 'visible' : 'hidden' }, (modalHeight && modalHeight !== true) ? { height: modalHeight } : (modalHeight === true ? { height: '100%' } : { maxHeight: '100%' })]}>
 
                             {/* ACTUAL CONTENT BOX */}
                             <AnimatedPressable
@@ -139,6 +140,7 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                                 style={[
                                     styles.modalBox,
                                     {
+                                        overflow: Platform.OS === 'web' ? 'hidden' : 'hidden',
                                         backgroundColor: backgroundColor || 'rgba(30, 30, 30, 0.95)',
                                         borderColor: borderColor || theme.colors.cardBorder,
                                         shadowColor: glowColor || '#000',
@@ -156,7 +158,7 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                             >
 
                                 {/* CONTENT: Rendered on top */}
-                                <View style={[{ width: '100%', zIndex: 1 }, modalHeight && { flex: 1 }]}>
+                                <View style={[{ width: '100%', zIndex: 1, overflow: Platform.OS === 'web' ? 'hidden' : 'hidden' }, modalHeight && { flex: 1 }]}>
                                     {/* Header */}
                                     {(title || showClose) && (
                                         <View style={[styles.header, { paddingTop: 20, paddingHorizontal: 20 }]}>
@@ -176,12 +178,15 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                                                 </Text>
                                             </View>
                                             {showClose && (
-                                                <View style={{ position: 'absolute', right: 5, top: 20, bottom: 0, justifyContent: 'center' }}>
+                                                <View style={Platform.OS === 'web'
+                                                    ? { position: 'absolute', right: 5, top: 15, zIndex: 10 }
+                                                    : { position: 'absolute', right: 5, top: 20, bottom: 0, justifyContent: 'center' }
+                                                }>
                                                     <PremiumIconButton
-                                                        icon={<CrossIcon size={24} color={closeIconColor || "#888"} />}
+                                                        icon={<CrossIcon size={Platform.OS === 'web' ? 20 : 24} color={closeIconColor || "#888"} />}
                                                         onPress={onClose}
                                                         enableSound={false}
-                                                        size={32}
+                                                        size={Platform.OS === 'web' ? 36 : 32}
                                                     />
                                                 </View>
                                             )}
@@ -227,7 +232,8 @@ const styles = StyleSheet.create({
         minHeight: 50,
         marginBottom: 15,
         position: 'relative',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        overflow: Platform.OS === 'web' ? 'visible' : 'hidden'
     },
     title: {
         fontSize: 24,

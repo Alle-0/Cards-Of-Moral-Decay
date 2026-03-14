@@ -14,6 +14,7 @@ const PremiumIconButton = ({
     size = 44,
     disabled = false,
     enableSound = false,
+    hoverColor = 'rgba(255, 255, 255, 0.08)',
 }) => {
     // Unfreeze styles once for Reanimated stability & Performance
     const mutableOuter = useMemo(() => ({ ...styles.outerContainer }), []);
@@ -32,21 +33,26 @@ const PremiumIconButton = ({
 
     return (
         <Animated.View style={[mutableOuter, { width: size, height: size }, style]}>
-            <PremiumPressable
-                onPress={onPress}
-                hitSlop={hitSlop}
-                disabled={disabled}
-                enableSound={enableSound}
-                scaleDown={0.9}
-                style={[
-                    mutableContainer,
-                    { width: size, height: size, borderRadius: size / 2 },
-                ]}
-                contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-                pressableStyle={{ flex: 1 }}
-            >
-                {renderIcon()}
-            </PremiumPressable>
+            <View style={{ flex: 1, width: '100%', borderRadius: size / 2, overflow: 'hidden' }}>
+                <PremiumPressable
+                    onPress={onPress}
+                    hitSlop={hitSlop}
+                    disabled={disabled}
+                    enableSound={enableSound}
+                    scaleDown={0.9}
+                    borderRadius={size / 2}
+                    hoverColor={hoverColor}
+                    style={[
+                        mutableContainer,
+                        { width: '100%', height: '100%' },
+                        { borderRadius: size / 2 }
+                    ]}
+                    contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+                    pressableStyle={{ flex: 1 }}
+                >
+                    {renderIcon()}
+                </PremiumPressable>
+            </View>
 
             {badge !== undefined && badge !== null && (
                 <View style={[styles.badge, badgeStyle]}>

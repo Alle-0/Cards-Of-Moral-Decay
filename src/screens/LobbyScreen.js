@@ -61,6 +61,10 @@ const LobbyScreen = ({ onStartLoading }) => {
 
     const [isLoading, setIsLoading] = useState(false);
     const { width, height } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && width >= 1024;
+    const availableWidth = isDesktop ? width - 250 : width;
+    const effectiveWidth = Math.min(availableWidth, 800);
+
     const [roomToJoin, setRoomToJoin] = useState('');
     const [showJoinInput, setShowJoinInput] = useState(false); // [NEW] Lifted state
     const [currentStep, setCurrentStep] = useState(authUser?.username ? STEPS.ACTION : STEPS.IDENTITY);
@@ -102,7 +106,7 @@ const LobbyScreen = ({ onStartLoading }) => {
     }));
 
     const animatedCarouselStyle = useAnimatedStyle(() => {
-        const slideWidth = width - 40;
+        const slideWidth = effectiveWidth - 40;
         return {
             transform: [{
                 translateX: withTiming(-stepProgress.value * slideWidth, {
@@ -521,7 +525,12 @@ const LobbyScreen = ({ onStartLoading }) => {
                     })()}
 
                     {/* UNIFIED FRAME STRUCTURE */}
-                    <View style={{ flex: 1, justifyContent: 'flex-start', paddingBottom: 80 + insets.bottom, paddingTop: insets.top + 100 }}>
+                    <View style={{ 
+                        flex: 1, 
+                        justifyContent: isDesktop ? 'center' : 'flex-start', 
+                        paddingBottom: isDesktop ? 0 : 80 + insets.bottom, 
+                        paddingTop: isDesktop ? 0 : insets.top + 100 
+                    }}>
                         <View style={styles.frameContainer}>
                             {currentStep === STEPS.IDENTITY && (
                                 <Animated.View
@@ -544,9 +553,9 @@ const LobbyScreen = ({ onStartLoading }) => {
                                     paddingHorizontal: 0,
                                 }]}
                             >
-                                <Animated.View style={[{ flexDirection: 'row', width: (width - 40) * 2, height: '100%', alignItems: 'flex-start' }, animatedCarouselStyle]}>
+                                <Animated.View style={[{ flexDirection: 'row', width: (effectiveWidth - 40) * 2, height: '100%', alignItems: 'flex-start' }, animatedCarouselStyle]}>
                                     {/* STEP 0: IDENTITY */}
-                                    <Animated.View style={[{ width: width - 40, height: '100%', alignItems: 'flex-start' }, identityOpacity]}>
+                                    <Animated.View style={[{ width: effectiveWidth - 40, height: '100%', alignItems: 'flex-start' }, identityOpacity]}>
                                         <IdentityStep
                                             theme={theme}
                                             name={localPlayerName}
@@ -558,7 +567,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                                     </Animated.View>
 
                                     {/* STEP 1: ACTIONS */}
-                                    <Animated.View style={[{ width: width - 40, height: '100%', alignItems: 'flex-start' }, actionOpacity]}>
+                                    <Animated.View style={[{ width: effectiveWidth - 40, height: '100%', alignItems: 'flex-start' }, actionOpacity]}>
                                         <MainMenuStep
                                             theme={theme}
                                             roomToJoin={roomToJoin}
@@ -793,6 +802,8 @@ const styles = StyleSheet.create({
     },
     frameContainer: {
         width: '100%',
+        maxWidth: 800,
+        alignSelf: 'center',
         paddingHorizontal: 20,
     },
     innerFrame: {

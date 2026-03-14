@@ -231,20 +231,28 @@ export const GameProvider = ({ children }) => {
 
     // --- HELPERS ---
 
+    const safeArray = (val) => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        if (typeof val === 'object') {
+            return Object.keys(val).sort((a,b) => Number(a)-Number(b)).map(k => val[k]);
+        }
+        return [];
+    };
+
+    const normalizeKeys = (obj) => {
+        if (!obj) return obj;
+        const normalized = {};
+        Object.keys(obj).forEach(key => {
+            normalized[key.trim()] = obj[key];
+        });
+        return normalized;
+    };
+
     const hydrateRoom = (room) => {
         if (!room) return room;
         const newRoom = { ...room };
-        const forcedLang = newRoom.language || newRoom.roomLanguage || null;
-
-        // [FIX] Global Key Normalization (Trim names)
-        const normalizeKeys = (obj) => {
-            if (!obj) return obj;
-            const normalized = {};
-            Object.keys(obj).forEach(key => {
-                normalized[key.trim()] = obj[key];
-            });
-            return normalized;
-        };
+        const forcedLang = room.roomLanguage || room.language || null;
 
         if (newRoom.giocatori) newRoom.giocatori = normalizeKeys(newRoom.giocatori);
         if (newRoom.punti) newRoom.punti = normalizeKeys(newRoom.punti);
@@ -275,7 +283,16 @@ export const GameProvider = ({ children }) => {
             });
         }
 
-        // 1. Black Card
+        // 1. Decks
+        newRoom.blackDeck = safeArray(newRoom.blackDeck)
+            .map(item => typeof item === 'number' ? GameDataService.getBlackCardByIndex(item, forcedLang) : item)
+            .filter(item => item !== null && item !== undefined);
+
+        newRoom.whiteDeck = safeArray(newRoom.whiteDeck)
+            .map(item => typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item, forcedLang) : item)
+            .filter(item => item !== null && item !== undefined);
+
+        // 2. Black Card
         if (typeof newRoom.cartaNera === 'number') {
             newRoom.cartaNera = GameDataService.getBlackCardByIndex(newRoom.cartaNera, forcedLang);
         }
@@ -283,10 +300,10 @@ export const GameProvider = ({ children }) => {
         // 3. Players Hands
         if (newRoom.giocatori) {
             Object.keys(newRoom.giocatori).forEach(pName => {
-                if (newRoom.giocatori[pName].carte && Array.isArray(newRoom.giocatori[pName].carte)) {
-                    newRoom.giocatori[pName].carte = newRoom.giocatori[pName].carte.map(item =>
-                        typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item, forcedLang) : item
-                    );
+                if (newRoom.giocatori[pName].carte) {
+                    newRoom.giocatori[pName].carte = safeArray(newRoom.giocatori[pName].carte)
+                        .map(item => typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item, forcedLang) : item)
+                        .filter(item => item !== null && item !== undefined);
                 }
             });
         }
@@ -295,17 +312,21 @@ export const GameProvider = ({ children }) => {
         if (newRoom.carteGiocate) {
             Object.keys(newRoom.carteGiocate).forEach(pName => {
                 const val = newRoom.carteGiocate[pName];
-                if (Array.isArray(val)) {
-                    newRoom.carteGiocate[pName] = val.map(item =>
-                        typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item, forcedLang) : item
-                    );
-                } else if (typeof val === 'number') {
-                    newRoom.carteGiocate[pName] = GameDataService.getWhiteCardByIndex(val, forcedLang);
+                if (val) {
+                    const arr = safeArray(val);
+                    newRoom.carteGiocate[pName] = arr
+                        .map(item => typeof item === 'number' ? GameDataService.getWhiteCardByIndex(item, forcedLang) : item)
+                        .filter(item => item !== null && item !== undefined);
                 }
             });
         }
 
         return newRoom;
+    };
+
+    // [INTERNAL HELPER] Get the active language for a room snapshot
+    const getRoomLang = (room) => {
+        return room?.roomLanguage || room?.language || GameDataService.language || 'it';
     };
 
     const scrubUndefined = (obj) => {
@@ -320,17 +341,7 @@ export const GameProvider = ({ children }) => {
     const dehydrateRoom = (room) => {
         if (!room) return room;
         const newRoom = { ...room };
-        const forcedLang = newRoom.roomLanguage || null;
-
-        // [FIX] Global Key Normalization (Ensure keys remain trimmed in DB)
-        const normalizeKeys = (obj) => {
-            if (!obj) return obj;
-            const normalized = {};
-            Object.keys(obj).forEach(key => {
-                normalized[key.trim()] = obj[key];
-            });
-            return normalized;
-        };
+        const forcedLang = newRoom.roomLanguage || newRoom.language || null;
 
         if (newRoom.giocatori) newRoom.giocatori = normalizeKeys(newRoom.giocatori);
         if (newRoom.punti) newRoom.punti = normalizeKeys(newRoom.punti);
@@ -349,28 +360,36 @@ export const GameProvider = ({ children }) => {
             newRoom.cartaNera = null;
         }
 
-        // 2. Decks (Safety Filter: remove any undefined/null that might have crept in)
-        if (newRoom.blackDeck && Array.isArray(newRoom.blackDeck)) {
-            newRoom.blackDeck = newRoom.blackDeck
-                .filter(item => item !== undefined && item !== null)
-                .map(item => typeof item === 'object' ? GameDataService.getBlackCardIndex(item, forcedLang) : item)
-                .filter(idx => idx !== -1);
-        }
-        if (newRoom.whiteDeck && Array.isArray(newRoom.whiteDeck)) {
-            newRoom.whiteDeck = newRoom.whiteDeck
-                .filter(item => item !== undefined && item !== null)
-                .map(item => typeof item === 'string' ? GameDataService.getWhiteCardIndex(item, forcedLang) : item)
-                .filter(idx => idx !== -1);
-        }
+        // 2. Decks
+        newRoom.blackDeck = safeArray(newRoom.blackDeck)
+            .filter(item => item !== undefined && item !== null)
+            .map(item => {
+                if (typeof item === 'number') return item;
+                const idx = GameDataService.getBlackCardIndex(item, forcedLang);
+                return idx !== -1 ? idx : item;
+            })
+            .filter(item => item !== null && item !== undefined);
+
+        newRoom.whiteDeck = safeArray(newRoom.whiteDeck)
+            .filter(item => item !== undefined && item !== null)
+            .map(item => {
+                if (typeof item === 'number') return item;
+                const idx = GameDataService.getWhiteCardIndex(item, forcedLang);
+                return idx !== -1 ? idx : item;
+            })
+            .filter(item => item !== null && item !== undefined);
 
         // 3. Players Hands
         if (newRoom.giocatori) {
             Object.keys(newRoom.giocatori).forEach(pName => {
-                if (newRoom.giocatori[pName].carte && Array.isArray(newRoom.giocatori[pName].carte)) {
-                    newRoom.giocatori[pName].carte = newRoom.giocatori[pName].carte
+                if (newRoom.giocatori[pName].carte) {
+                    newRoom.giocatori[pName].carte = safeArray(newRoom.giocatori[pName].carte)
                         .filter(item => item !== undefined && item !== null)
-                        .map(item => typeof item === 'string' ? GameDataService.getWhiteCardIndex(item, forcedLang) : item)
-                        .filter(idx => idx !== -1);
+                        .map(item => {
+                            if (typeof item !== 'string') return item;
+                            const idx = GameDataService.getWhiteCardIndex(item, forcedLang);
+                            return idx !== -1 ? idx : item; // [FIX] Keep string if index not found - CRITICAL
+                        });
                 }
             });
         }
@@ -379,16 +398,15 @@ export const GameProvider = ({ children }) => {
         if (newRoom.carteGiocate) {
             Object.keys(newRoom.carteGiocate).forEach(pName => {
                 const val = newRoom.carteGiocate[pName];
-                if (Array.isArray(val)) {
-                    newRoom.carteGiocate[pName] = val
+                if (val) {
+                    const arr = safeArray(val);
+                    newRoom.carteGiocate[pName] = arr
                         .filter(item => item !== undefined && item !== null)
-                        .map(item => typeof item === 'string' ? GameDataService.getWhiteCardIndex(item, forcedLang) : item)
-                        .filter(idx => idx !== -1);
-                } else if (val !== undefined && val !== null) {
-                    if (typeof val === 'string') {
-                        const idx = GameDataService.getWhiteCardIndex(val, forcedLang);
-                        newRoom.carteGiocate[pName] = idx !== -1 ? idx : null;
-                    }
+                        .map(item => {
+                            if (typeof item !== 'string') return item;
+                            const idx = GameDataService.getWhiteCardIndex(item, forcedLang);
+                            return idx !== -1 ? idx : item; // [FIX] Keep string if index not found
+                        });
                 } else {
                     newRoom.carteGiocate[pName] = null;
                 }
@@ -1096,7 +1114,7 @@ export const GameProvider = ({ children }) => {
 
                 if (weNeedRando && !room.carteGiocate['Rando'] && playedCount >= humanActivePlayers) {
                     if (!room.whiteDeck || room.whiteDeck.length < 10) {
-                        const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true }).carteBianche;
+                        const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true }, room.roomLanguage || room.language).carteBianche;
                         room.whiteDeck = shuffleArray([...allWhite]);
                     }
                     const blanks = room.cartaNera?.blanks || 1;
@@ -1309,7 +1327,7 @@ export const GameProvider = ({ children }) => {
                         arr.forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
                     });
 
-                    const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }).carteBianche;
+                    const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }, room.roomLanguage || room.language).carteBianche;
                     const availableCards = allWhite.filter(c => !excludedCards.has(c.trim()));
                     room.whiteDeck = [...(room.whiteDeck || []), ...shuffleArray(availableCards)];
 
@@ -1339,11 +1357,26 @@ export const GameProvider = ({ children }) => {
             await runTransaction(ref(db, `stanze/${roomCode}`), (rawRoom) => {
                 if (!rawRoom) return rawRoom;
                 const room = hydrateRoom(rawRoom);
-                const pName = roomPlayerName || user.name;
+                const currentMe = (roomPlayerName || user?.name || user?.username || '').trim();
+                const pName = Object.keys(room.giocatori || {}).find(k => k.trim().toLowerCase() === currentMe.toLowerCase()) || currentMe;
+                
                 const player = room.giocatori[pName];
                 if (!player || player.hasDiscarded) return dehydrateRoom(room);
-                const index = (player.carte || []).findIndex(c => (typeof c === 'string' ? c : c?.testo || '').trim() === (cardText || '').trim());
-                if (index > -1) { player.carte.splice(index, 1); player.hasDiscarded = true; }
+
+                // [FIX] Clean hand of invalid values before matching
+                player.carte = safeArray(player.carte).filter(c => c !== null && c !== undefined);
+
+                const searchTarget = (cardText || '').trim().toLowerCase();
+                const index = player.carte.findIndex(c => {
+                    const t = (typeof c === 'string' ? c : c?.testo || '').trim().toLowerCase();
+                    return t === searchTarget;
+                });
+
+                if (index > -1) { 
+                    player.carte.splice(index, 1); 
+                    player.hasDiscarded = true; 
+                }
+
                 if (!room.whiteDeck || room.whiteDeck.length === 0) {
                     const excludedCards = new Set();
                     Object.values(room.giocatori || {}).forEach(p => { (p.carte || []).forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); }); });
@@ -1352,11 +1385,19 @@ export const GameProvider = ({ children }) => {
                         arr.forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
                     });
 
-                    const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }).carteBianche;
+                    const roomLang = getRoomLang(room);
+                    const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true }, roomLang).carteBianche;
                     const availableCards = allWhite.filter(c => !excludedCards.has(c.trim()));
                     room.whiteDeck = shuffleArray(availableCards);
                 }
-                while ((player.carte || []).length < 10 && room.whiteDeck && room.whiteDeck.length > 0) { player.carte.push(room.whiteDeck.pop()); }
+
+                // [FIX] Ensure we only push valid cards and stop at 10
+                while (player.carte.length < 10 && room.whiteDeck && room.whiteDeck.length > 0) { 
+                    const nextCard = room.whiteDeck.pop();
+                    if (nextCard !== null && nextCard !== undefined) {
+                        player.carte.push(nextCard);
+                    }
+                }
                 return dehydrateRoom(room);
             });
         } catch (e) { console.error(e); subscribeToRoom(roomCode); }
@@ -1522,7 +1563,7 @@ export const GameProvider = ({ children }) => {
                         const arr = Array.isArray(cards) ? cards : [cards];
                         arr.forEach(c => { const text = typeof c === 'string' ? c : c?.testo; if (text) excludedCards.add(text.trim()); });
                     });
-                    const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }).carteBianche;
+                    const allWhite = GameDataService.getPackages(room.allowedPackages || { base: true, dark: false }, room.roomLanguage || room.language).carteBianche;
                     const availableCards = allWhite.filter(c => !excludedCards.has(c.trim()));
                     room.whiteDeck = shuffleArray(availableCards);
                 }

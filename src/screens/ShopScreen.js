@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, Modal, InteractionManager, BackHandler, Pressable, PanResponder } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, Modal, InteractionManager, BackHandler, Pressable, PanResponder, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import EfficientBlurView from '../components/EfficientBlurView';
 import CensoredText from '../components/CensoredText';
@@ -8,10 +8,10 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { THEMES, CARD_SKINS, AVATAR_FRAMES, TEXTURES } from '../context/ThemeContext';
-import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut, Easing, useSharedValue, withTiming, useAnimatedStyle, withRepeat, withSequence, withSpring, interpolateColor, useDerivedValue } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut, Easing, useSharedValue, withTiming, useAnimatedStyle, withRepeat, withSequence, withSpring, interpolateColor, useDerivedValue, interpolate } from 'react-native-reanimated';
 import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hooks/useLiquidAnimation';
 
-import { DirtyCashIcon, EyeIcon, CheckIcon } from '../components/Icons';
+import { DirtyCashIcon, EyeIcon, CheckIcon, CrossIcon } from '../components/Icons';
 import ToastNotification from '../components/ToastNotification';
 import ThemeBackground from '../components/ThemeBackground';
 import AvatarWithFrame from '../components/AvatarWithFrame';
@@ -23,6 +23,7 @@ import PaymentResultModal from '../components/PaymentResultModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import GameDataService from '../services/GameDataService';
 import PremiumSkeleton from '../components/PremiumSkeleton';
+import PremiumIconButton from '../components/PremiumIconButton';
 import { ShopThemeItem, ShopSkinItem, ShopFrameItem, ShopPackItem, ShopDCBundleItem } from '../components/ShopItems';
 
 const { width } = Dimensions.get('window');
@@ -73,11 +74,108 @@ const SPICY_PACK_PREVIEW = {
     ]
 };
 
+// [FIX] Move ShopTabItem outside to prevent re-creation cycles on Native APK
+const ShopTabItem = ({ itemTitle, index, activeTab, tabBarWidth, tabIndicatorX, hasDailyDC, colors }) => {
+    const isActive = activeTab === index;
+    const showBadge = index === 4 && hasDailyDC;
+
+    const textColorStyle = useAnimatedStyle(() => {
+        const currentWidth = tabBarWidth.value || 0;
+        if (currentWidth <= 50) return { color: colors.textPrimary + '88' };
+
+        const tabWidth = (currentWidth - 10) / 5;
+        const start = (index - 1) * tabWidth;
+        const center = index * tabWidth;
+        const end = (index + 1) * tabWidth;
+
+        const color = interpolateColor(
+            tabIndicatorX.value,
+            [start, center, end],
+            [colors.textPrimary + '88', '#000000', colors.textPrimary + '88']
+        );
+
+        return { color };
+    });
+
+    const badgeStyle = useAnimatedStyle(() => {
+        const currentWidth = tabBarWidth.value || 0;
+        if (currentWidth <= 50) return { backgroundColor: colors.accent };
+
+        const tabWidth = (currentWidth - 10) / 5;
+        const start = (index - 1) * tabWidth;
+        const center = index * tabWidth;
+        const end = (index + 1) * tabWidth;
+
+        const bgColor = interpolateColor(
+            tabIndicatorX.value,
+            [start, center, end],
+            [colors.accent, '#000000', colors.accent]
+        );
+
+        return {
+            backgroundColor: bgColor
+        };
+    });
+
+    return (
+        <View style={{
+            flex: 1,
+            paddingVertical: 10,
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10,
+        }} pointerEvents="none">
+            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+                <Animated.Text
+                    style={[
+                        {
+                            fontFamily: 'Outfit-Bold',
+                            fontSize: 11,
+                            textAlign: 'center',
+                            zIndex: 10,
+                            includeFontPadding: false,
+                            // [FIX] Fallback to solid colors if interpolation is buggy on APK
+                            color: isActive ? '#000000' : colors.textPrimary + '88'
+                        },
+                        textColorStyle
+                    ]}
+                    numberOfLines={1}
+                >
+                    {itemTitle}
+                </Animated.Text>
+                {showBadge && (
+                    <Animated.View style={[
+                        {
+                            position: 'absolute',
+                            top: -4,
+                            right: -10,
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            borderWidth: 1,
+                            borderColor: isActive ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
+                            zIndex: 11,
+                            backgroundColor: isActive ? '#000000' : colors.accent
+                        },
+                        badgeStyle
+                    ]} />
+                )}
+            </View>
+        </View>
+    );
+};
+
+// [REMOVED] Moved back inside ShopScreen for state stability (No, actually [STABILIZED] outside)
+
 export default function ShopScreen({ route }) {
     const { user, buyTheme, buySkin, buyFrame, buyPack, claimDailyFreeDC } = useAuth();
     const { theme } = useTheme();
     const { t, language } = useLanguage();
     const insets = useSafeAreaInsets();
+    const { width: windowWidth } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024;
+    const availableWidth = isDesktop ? windowWidth - 250 : windowWidth;
+    const effectiveWidth = Math.min(availableWidth, 1000);
 
     const [activeTab, setActiveTab] = useState(0);
     const tabs = [t('tab_themes'), t('tab_skins'), t('tab_frames'), t('tab_packs'), t('tab_dc')];
@@ -120,7 +218,7 @@ export default function ShopScreen({ route }) {
         const isReady = readyTabs.includes(index);
 
         return (
-            <View style={{ display: isVisible ? 'flex' : 'none', flex: 1 }}>
+            <View style={{ display: isVisible ? 'flex' : 'none', flex: 1, overflow: 'visible' }}>
                 {(!isReady || !visitedTabs.includes(index)) ? (
                     renderSkeleton()
                 ) : (
@@ -265,24 +363,25 @@ export default function ShopScreen({ route }) {
     // [NEW] Track activeTab in ref to avoid stale closure
     const activeTabRef = useRef(activeTab);
 
-    // [NEW] Track layout width on JS side for PanResponder
+    // [NEW] Track layout width on both React state and SharedValue
+    const [layoutWidth, setLayoutWidth] = useState(0);
     const tabBarWidthRef = useRef(0);
     const isInteracting = useRef(false);
 
-    // Sync animation when activeTab changes (only if NOT interacting)
+    // Sync animation when activeTab or layoutWidth changes
     useEffect(() => {
         activeTabRef.current = activeTab; // Sync ref
-        if (!isInteracting.current && tabBarWidth.value > 0) {
-            const tabWidth = (tabBarWidth.value - 10) / 5;
+        if (!isInteracting.current && layoutWidth > 0) {
+            const tabWidth = (layoutWidth - 10) / 5;
             const targetPos = activeTab * tabWidth;
 
-            // [FIX] Anchors for midpoint peak
+            // Anchors for midpoint peak
             startX.value = tabIndicatorX.value;
             targetX.value = targetPos;
 
             tabIndicatorX.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
         }
-    }, [activeTab]);
+    }, [activeTab, layoutWidth]);
 
     // [NEW] Scale Animation Shared Value
     const startX = useSharedValue(0);
@@ -297,7 +396,10 @@ export default function ShopScreen({ route }) {
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (evt, gestureState) => {
+                // Only intercept if we are moving horizontally more than vertically
+                return Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+            },
             // [FIX] Prevent parent from stealing the gesture (horizontal scroll/swipe back)
             onPanResponderTerminationRequest: () => false,
             onShouldBlockNativeResponder: () => true,
@@ -376,79 +478,41 @@ export default function ShopScreen({ route }) {
 
                 isInteracting.current = false;
                 isGrabbingIndicator.current = false;
+            },
+            onPanResponderTerminate: () => {
+                isInteracting.current = false;
+                isGrabbingIndicator.current = false;
+                isDraggingSV.value = false;
+                // Snap back to active tab
+                const tabWidth = (tabBarWidthRef.current - 10) / 5;
+                const targetPos = activeTabRef.current * tabWidth;
+                tabIndicatorX.value = withSpring(targetPos, SNAP_SPRING_CONFIG);
             }
         })
     ).current;
 
-    const indicatorStyle = useAnimatedStyle(() => ({
-        transform: [
-            { translateX: tabIndicatorX.value },
-            { scale: indicatorScale.value }
-        ],
-        width: tabBarWidth.value > 0 ? (tabBarWidth.value - 10) / 5 : 0,
-    }));
+    const indicatorStyle = useAnimatedStyle(() => {
+        const totalW = tabBarWidth.value || 0;
+        if (totalW <= 50) return { opacity: 0 };
 
-    // Helper Component for Dynamic Text Color
+        // Consistent with Inventory/Personalization pattern
+        const tabWidth = (totalW - 10) / 5;
+
+        return {
+            opacity: 1,
+            width: tabWidth,
+            transform: [
+                { translateX: tabIndicatorX.value },
+                { scale: indicatorScale.value }
+            ],
+        };
+    });
+
+    // Helper Component for Daily Badge logic
     const todayStr = new Date().toISOString().split('T')[0];
     const hasDailyDC = user?.lastFreeDCAwardDate !== todayStr;
 
-    const ShopTabItem = ({ title, index, tabIndicatorX, tabBarWidth }) => {
-        const textColorStyle = useAnimatedStyle(() => {
-            if (tabBarWidth.value <= 0) return {};
-            const tabWidth = (tabBarWidth.value - 10) / 5;
-            const itemCenter = index * tabWidth;
-
-            // Interpolate color based on indicator position
-            // Indicator width is tabWidth.
-            // When indicator is at 'itemCenter', color should be Accent.
-            // When indicator is away, color should be TextPrimary.
-
-            const color = interpolateColor(
-                tabIndicatorX.value,
-                [itemCenter - tabWidth, itemCenter, itemCenter + tabWidth],
-                [theme.colors.textPrimary, '#000', theme.colors.textPrimary]
-            );
-
-            return { color };
-        });
-        const showBadge = index === 4 && hasDailyDC;
-
-        const badgeStyle = useAnimatedStyle(() => {
-            if (tabBarWidth.value <= 0) return {};
-            const tabWidth = (tabBarWidth.value - 10) / 5;
-            const itemCenter = index * tabWidth;
-
-            const backgroundColor = interpolateColor(
-                tabIndicatorX.value,
-                [itemCenter - tabWidth / 2, itemCenter, itemCenter + tabWidth / 2],
-                [theme.colors.accent, '#000', theme.colors.accent]
-            );
-
-            return { backgroundColor };
-        });
-
-        return (
-            <View style={{ flex: 1, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', zIndex: 10 }} pointerEvents="none">
-                <View style={{ position: 'relative' }}>
-                    <Animated.Text style={[{ fontFamily: 'Outfit-Bold', fontSize: 11 }, textColorStyle]} numberOfLines={1}>
-                        {title}
-                    </Animated.Text>
-                    {showBadge && (
-                        <Animated.View style={[{
-                            position: 'absolute',
-                            top: 0,
-                            right: -8, // Adjust based on text length
-                            width: 8,
-                            height: 8,
-                            borderRadius: 4,
-                            borderWidth: 1,
-                            borderColor: theme.colors.surface || '#1a1a1a'
-                        }, badgeStyle]} />
-                    )}
-                </View>
-            </View>
-        );
-    };
+    {/* PREVIEW MODAL */ }
 
     const handleTabPress = (index) => {
         if (activeTab !== index) {
@@ -570,428 +634,480 @@ export default function ShopScreen({ route }) {
 
     return (
         // [MODIFIED] Removed LinearGradient/ThemeBackground - Now handled globally in AppNavigator
-        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-            {/* Header */}
-            <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
-                {t('shop_title')}
-            </Text>
+        <View style={{ flex: 1, backgroundColor: 'transparent', overflow: 'visible', paddingTop: insets.top }}>
+            <View style={{
+                width: '100%',
+                maxWidth: 1000,
+                alignSelf: 'center',
+                overflow: 'visible',
+                flex: 1
+            }}>
+                {/* Header */}
+                <Text style={{
+                    color: theme.colors.accent,
+                    fontFamily: 'Cinzel-Bold',
+                    fontSize: 24,
+                    marginTop: isDesktop ? 35 : 50,
+                    marginBottom: 20,
+                    textAlign: 'center'
+                }}>
+                    {t('shop_title')}
+                </Text>
 
-            {/* Balance */}
-            <View style={[styles.balanceContainer, { backgroundColor: theme.colors.accentWeak, borderColor: theme.colors.accent + '33' }]}>
-                <Text style={styles.balanceLabel}>{t('balance_label')}</Text>
-                <Text style={[styles.balanceValue, { color: theme.colors.accent }]}>{user?.balance || 0}</Text>
-                <DirtyCashIcon size={16} color={theme.colors.accent} />
-            </View>
-
-            <View style={{ flex: 1, paddingHorizontal: 20 }}>
-                {/* Tab Bar */}
-                {/* Tab Bar using ported Drag Logic */}
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        backgroundColor: 'rgba(255,255,255,0.05)',
-                        borderRadius: 12,
-                        padding: 4,
-                        marginBottom: 15,
-                        borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.1)'
-                    }}
-                    onLayout={(e) => {
-                        const w = e.nativeEvent.layout.width;
-                        tabBarWidth.value = w;
-                        tabBarWidthRef.current = w;
-                    }}
-                    {...panResponder.panHandlers}
-                >
-                    <Animated.View style={[
-                        {
-                            position: 'absolute',
-                            top: 4, bottom: 4, left: 5,
-                            backgroundColor: theme.colors.accent,
-                            borderRadius: 8,
-                        },
-                        indicatorStyle
-                    ]} pointerEvents="none" />
-
-                    {tabs.map((tab, index) => (
-                        <ShopTabItem
-                            key={index}
-                            title={tab}
-                            index={index}
-                            tabIndicatorX={tabIndicatorX}
-                            tabBarWidth={tabBarWidth}
-                        />
-                    ))}
+                {/* Balance */}
+                <View style={[styles.balanceContainer, { backgroundColor: theme.colors.accentWeak, borderColor: theme.colors.accent + '33' }]}>
+                    <Text style={styles.balanceLabel}>{t('balance_label')}</Text>
+                    <Text style={[styles.balanceValue, { color: theme.colors.accent }]}>{user?.balance || 0}</Text>
+                    <DirtyCashIcon size={16} color={theme.colors.accent} />
                 </View>
 
-                {/* Content List */}
-                {!ready ? (
-                    renderSkeleton()
-                ) : (
-                    <View style={{ flex: 1 }}>
-                        {/* TAB 0: THEMES */}
-                        {renderTabContent(0, (
-                            <FlatList
-                                data={themeData}
-                                keyExtractor={(item) => item.id}
-                                renderItem={({ item, index }) => (
-                                    <ShopThemeItem
-                                        item={item}
-                                        index={index}
-                                        isUnlocked={user?.unlockedThemes?.[item.id]}
-                                        userBalance={user.balance}
-                                        buyingId={buyingId}
-                                        onBuy={handleBuy}
-                                        onPreview={handlePreview}
-                                        t={t}
-                                        theme={theme}
-                                    />
-                                )}
-                                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
-                                showsVerticalScrollIndicator={false}
-                                removeClippedSubviews={true}
-                                initialNumToRender={6}
-                                windowSize={5}
-                            />
-                        ))}
+                <View style={{ flex: 1, paddingHorizontal: 20, overflow: 'visible' }}>
+                    {/* Tab Bar */}
+                    {/* Tab Bar using ported Drag Logic */}
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            borderRadius: 12,
+                            padding: 4,
+                            marginBottom: 15,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            position: 'relative',
+                            minHeight: 44, // [FIX] Ensure it doesn't collapse on Android
+                            width: '100%'
+                        }}
+                        onLayout={(e) => {
+                            const w = e.nativeEvent.layout.width;
+                            tabBarWidth.value = w;
+                            tabBarWidthRef.current = w;
+                            setLayoutWidth(w);
+                        }}
+                        {...panResponder.panHandlers}
+                    >
+                        <Animated.View style={[
+                            {
+                                position: 'absolute',
+                                top: 4, bottom: 4, left: 5,
+                                backgroundColor: theme.colors.accent,
+                                borderRadius: 8,
+                                zIndex: 1,
+                            },
+                            indicatorStyle
+                        ]} pointerEvents="none" />
 
-                        {/* TAB 1: SKINS */}
-                        {renderTabContent(1, (
-                            <FlatList
-                                data={skinData}
-                                keyExtractor={(item) => item.id}
-                                renderItem={({ item, index }) => (
-                                    <ShopSkinItem
-                                        item={item}
-                                        index={index}
-                                        isUnlocked={user?.unlockedSkins?.[item.id]}
-                                        userBalance={user.balance}
-                                        buyingId={buyingId}
-                                        onBuy={handleBuySkin}
-                                        onPreview={handlePreview}
-                                        t={t}
-                                        theme={theme}
-                                    />
-                                )}
-                                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
-                                showsVerticalScrollIndicator={false}
-                                removeClippedSubviews={true}
-                                initialNumToRender={6}
-                                windowSize={5}
-                            />
-                        ))}
-
-                        {/* TAB 2: FRAMES */}
-                        {renderTabContent(2, (
-                            <FlatList
-                                data={frameData}
-                                keyExtractor={(item) => item.id}
-                                renderItem={({ item, index }) => (
-                                    <ShopFrameItem
-                                        item={item}
-                                        index={index}
-                                        isUnlocked={user?.unlockedFrames?.[item.id] || parseFloat(item.price) === 0}
-                                        userBalance={user.balance}
-                                        buyingId={buyingId}
-                                        onBuy={handleBuyFrame}
-                                        onPreview={handlePreview}
-                                        t={t}
-                                        theme={theme}
-                                        userAvatar={user?.avatar}
-                                    />
-                                )}
-                                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
-                                showsVerticalScrollIndicator={false}
-                                numColumns={2}
-                                columnWrapperStyle={{ justifyContent: 'space-between' }}
-                                removeClippedSubviews={true}
-                                initialNumToRender={6}
-                                windowSize={5}
-                            />
-                        ))}
-
-                        {/* TAB 3: PACKS */}
-                        {renderTabContent(3, (
-                            <FlatList
-                                data={packData}
-                                keyExtractor={(item) => item.id}
-                                ListHeaderComponent={() => (
-                                    <Text style={{
-                                        fontFamily: 'Outfit',
-                                        fontSize: 12,
-                                        color: '#888',
-                                        textAlign: 'center',
-                                        marginBottom: 15,
-                                        paddingHorizontal: 10,
-                                        lineHeight: 18
-                                    }}>
-                                        {t('shop_pack_info')}
-                                    </Text>
-                                )}
-                                renderItem={({ item, index }) => (
-                                    <ShopPackItem
-                                        item={item}
-                                        index={index}
-                                        isUnlocked={user?.unlockedPacks?.[item.id]}
-                                        userBalance={user.balance}
-                                        isProcessing={isProcessing}
-                                        onBuy={(id, price, name) => {
-                                            if (id === 'dark') {
-                                                buyItem('dark_pack');
-                                            } else if (id === 'spicy') {
-                                                buyItem('spicy_pack_10');
-                                            } else {
-                                                handleBuyPack(id, price, name);
-                                            }
-                                        }}
-                                        onPreview={handlePreview}
-                                        t={t}
-                                        theme={theme}
-                                    />
-                                )}
-                                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
-                                showsVerticalScrollIndicator={false}
-                            />
-                        ))}
-
-                        {/* TAB 4: DC BUNDLES */}
-                        {renderTabContent(4, (
-                            <FlatList
-                                data={bundleData}
-                                keyExtractor={(item) => item.id}
-                                ListHeaderComponent={() => (
-                                    <Text style={{
-                                        fontFamily: 'Cinzel-Bold',
-                                        fontSize: 20,
-                                        color: theme.colors.accent,
-                                        textAlign: 'center',
-                                        marginBottom: 20
-                                    }}>
-                                        {t('tab_dc')}
-                                    </Text>
-                                )}
-                                renderItem={({ item, index }) => (
-                                    <ShopDCBundleItem
-                                        item={item}
-                                        index={index}
-                                        buyingId={buyingId}
-                                        onBuy={buyItem}
-                                        t={t}
-                                        theme={theme}
-                                    />
-                                )}
-                                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
-                                showsVerticalScrollIndicator={false}
+                        {tabs.map((tab, index) => (
+                            <ShopTabItem
+                                key={index}
+                                itemTitle={tab}
+                                index={index}
+                                activeTab={activeTab}
+                                tabBarWidth={tabBarWidth}
+                                tabIndicatorX={tabIndicatorX}
+                                hasDailyDC={hasDailyDC}
+                                colors={theme.colors}
                             />
                         ))}
                     </View>
-                )}
-            </View>
 
-            <ToastNotification
-                visible={toast.visible}
-                message={toast.message}
-                type={toast.type}
-                onClose={() => setToast(prev => ({ ...prev, visible: false }))}
-            />
+                    {/* Content List */}
+                    {!ready ? (
+                        renderSkeleton()
+                    ) : (
+                        <View style={{ flex: 1, overflow: 'visible' }}>
+                            {/* TAB 0: THEMES */}
+                            {renderTabContent(0, (
+                                <FlatList
+                                    key={isDesktop ? 'desktop-0' : 'mobile-0'}
+                                    data={themeData}
+                                    numColumns={isDesktop ? 3 : 1}
+                                    columnWrapperStyle={isDesktop ? { gap: 15, paddingHorizontal: 20, overflow: 'visible' } : undefined}
+                                    keyExtractor={(item) => item.id}
+                                    renderItem={({ item, index }) => (
+                                        <ShopThemeItem
+                                            item={item}
+                                            index={index}
+                                            isUnlocked={user?.unlockedThemes?.[item.id]}
+                                            userBalance={user.balance}
+                                            buyingId={buyingId}
+                                            onBuy={handleBuy}
+                                            onPreview={handlePreview}
+                                            t={t}
+                                            theme={theme}
+                                        />
+                                    )}
+                                    contentContainerStyle={{ paddingBottom: 80 + insets.bottom, paddingHorizontal: 10 }}
+                                    showsVerticalScrollIndicator={false}
+                                    style={{ flex: 1 }}
+                                />
+                            ))}
 
+                            {/* TAB 1: SKINS */}
+                            {renderTabContent(1, (
+                                <FlatList
+                                    key={isDesktop ? 'desktop-1' : 'mobile-1'}
+                                    data={skinData}
+                                    numColumns={isDesktop ? 3 : 1}
+                                    columnWrapperStyle={isDesktop ? { gap: 15, paddingHorizontal: 20, zIndex: 1, overflow: 'visible' } : undefined}
+                                    keyExtractor={(item) => item.id}
+                                    renderItem={({ item, index }) => (
+                                        <ShopSkinItem
+                                            item={item}
+                                            index={index}
+                                            isUnlocked={user?.unlockedSkins?.[item.id]}
+                                            userBalance={user.balance}
+                                            buyingId={buyingId}
+                                            onBuy={handleBuySkin}
+                                            onPreview={handlePreview}
+                                            t={t}
+                                            theme={theme}
+                                        />
+                                    )}
+                                    contentContainerStyle={{ paddingBottom: 80 + insets.bottom, paddingHorizontal: 10 }}
+                                    showsVerticalScrollIndicator={false}
+                                    style={{ flex: 1 }}
+                                />
+                            ))}
 
-            {/* Preview Modal */}
-            <Modal
-                transparent={true}
-                visible={!!preview}
-                animationType="fade"
-                onRequestClose={handleClosePreview}
-                statusBarTranslucent={true}
-                hardwareAccelerated={true}
-            >
-                {preview && (
-                    <Pressable
-                        style={styles.previewOverlayContainer}
-                        onPress={handleClosePreview}
-                    >
-                        {/* Blur backdrop */}
-                        <Animated.View
-                            entering={FadeIn.duration(300)}
-                            exiting={FadeOut.duration(300)}
-                            style={StyleSheet.absoluteFill}
-                            pointerEvents="none"
-                        >
-                            <EfficientBlurView intensity={Platform.OS === 'android' ? 20 : 40} tint="dark" style={StyleSheet.absoluteFill} />
-                        </Animated.View>
+                            {/* TAB 2: FRAMES */}
+                            {renderTabContent(2, (
+                                <FlatList
+                                    key={isDesktop ? 'desktop-2' : 'mobile-2'}
+                                    data={frameData}
+                                    numColumns={isDesktop ? 4 : 2}
+                                    columnWrapperStyle={isDesktop ? { gap: 15, paddingHorizontal: 20, zIndex: 1, overflow: 'visible' } : { gap: 15, justifyContent: 'space-between', zIndex: 1, overflow: 'visible' }}
+                                    keyExtractor={(item) => item.id}
+                                    renderItem={({ item, index }) => (
+                                        <ShopFrameItem
+                                            item={item}
+                                            index={index}
+                                            isUnlocked={user?.unlockedFrames?.[item.id] || parseFloat(item.price) === 0}
+                                            userBalance={user.balance}
+                                            buyingId={buyingId}
+                                            onBuy={handleBuyFrame}
+                                            onPreview={handlePreview}
+                                            t={t}
+                                            theme={theme}
+                                            userAvatar={user?.avatar}
+                                        />
+                                    )}
+                                    contentContainerStyle={{ paddingBottom: 80 + insets.bottom, paddingHorizontal: 10 }}
+                                    showsVerticalScrollIndicator={false}
+                                    style={{ flex: 1 }}
+                                />
+                            ))}
 
-                        {/* Modal content — stops propagation so tapping inside doesn't close */}
-                        <Animated.View
-                            entering={ZoomIn.delay(50).duration(300)}
-                            exiting={ZoomOut.duration(200)}
-                            style={[styles.previewModal, { backgroundColor: theme.colors.background[0] === 'transparent' ? '#111' : theme.colors.background[0], borderColor: theme.colors.accent, shadowOpacity: 0, elevation: 0 }]}
-                        >
-                            <Pressable onPress={(e) => e.stopPropagation()} style={{ width: '100%', alignItems: 'center' }}>
-                                <View style={styles.previewHeaderNew}>
-                                    <Text style={[styles.previewSubtitle, { color: theme.colors.accent }]}>
-                                        {preview?.type === 'skin' ? t('preview_subtitle_skin') :
-                                            (preview?.type === 'frame' ? t('preview_subtitle_frame') :
-                                                (preview?.type === 'pack' ? t('pack_' + preview?.item?.id).toUpperCase() : t('preview_subtitle_theme')))}
-                                    </Text>
-                                    {(preview?.type === 'skin' || preview?.type === 'frame' || preview?.type === 'pack') && (
-                                        <Text style={styles.previewTitleMain}>
-                                            {preview?.type === 'skin' ? t('skin_' + preview?.item?.id, preview?.item?.label) :
-                                                (preview?.type === 'frame' ? t('frame_' + preview?.item?.id, preview?.item?.label) :
-                                                    t('pack_' + preview?.item?.id))}
+                            {/* TAB 3: PACKS */}
+                            {renderTabContent(3, (
+                                <FlatList
+                                    key={isDesktop ? 'desktop-3' : 'mobile-3'}
+                                    data={packData}
+                                    numColumns={isDesktop ? 2 : 1}
+                                    columnWrapperStyle={isDesktop ? { gap: 15, paddingHorizontal: 20, zIndex: 1, overflow: 'visible' } : undefined}
+                                    keyExtractor={(item) => item.id}
+                                    ListHeaderComponent={() => (
+                                        <Text style={{
+                                            fontFamily: 'Outfit',
+                                            fontSize: 12,
+                                            color: '#888',
+                                            textAlign: 'center',
+                                            marginBottom: 15,
+                                            paddingHorizontal: 10,
+                                            lineHeight: 18
+                                        }}>
+                                            {t('shop_pack_info')}
                                         </Text>
                                     )}
-                                </View>
+                                    renderItem={({ item, index }) => (
+                                        <ShopPackItem
+                                            item={item}
+                                            index={index}
+                                            isUnlocked={user?.unlockedPacks?.[item.id]}
+                                            userBalance={user.balance}
+                                            isProcessing={isProcessing}
+                                            onBuy={(id, price, name) => {
+                                                if (id === 'dark') {
+                                                    buyItem('dark_pack');
+                                                } else if (id === 'spicy') {
+                                                    buyItem('spicy_pack_10');
+                                                } else {
+                                                    handleBuyPack(id, price, name);
+                                                }
+                                            }}
+                                            onPreview={handlePreview}
+                                            t={t}
+                                            theme={theme}
+                                        />
+                                    )}
+                                    contentContainerStyle={{ paddingBottom: 80 + insets.bottom, paddingHorizontal: 10 }}
+                                    showsVerticalScrollIndicator={false}
+                                    style={{ flex: 1 }}
+                                />
+                            ))}
 
-                                <View style={styles.previewContent}>
-                                    {preview?.type === 'skin' ? (
-                                        <View style={[styles.largeCard, {
-                                            backgroundColor: preview.item.styles.bg,
-                                            borderColor: preview.item.styles.border,
-                                            borderWidth: 1,
-                                        }]}>
-                                            {preview.item.styles.texture && TEXTURES[preview.item.styles.texture] && (
-                                                <Image
-                                                    source={TEXTURES[preview.item.styles.texture]}
-                                                    style={[StyleSheet.absoluteFill, {
-                                                        opacity: preview.item.id === 'mida' ? 0.6 : 0.25,
-                                                        transform: [{ scale: 1.1 }]
-                                                    }]}
-                                                    resizeMode="cover"
-                                                />
-                                            )}
-                                            <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16 }}>
-                                                <Text style={{
-                                                    color: preview.item.styles.text,
-                                                    fontFamily: preview.item.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') : 'Outfit',
-                                                    fontSize: 16,
-                                                    fontWeight: '600',
-                                                    textAlign: 'left',
-                                                    lineHeight: 22
-                                                }}>
-                                                    {t('flavor_corruption')}
-                                                </Text>
-                                            </View>
-                                            <View style={{ paddingBottom: 12, paddingLeft: 16, opacity: 0.8 }}>
-                                                <Text style={{ fontSize: 8, color: preview.item.styles.text, opacity: 0.6, fontFamily: 'Outfit-Bold' }}>
-                                                    CARDS OF MORAL DECAY
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    ) : preview?.type === 'pack' ? (
-                                        <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 20 }}>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-                                                {((preview.item.id === 'chill' ? (CHILL_PACK_PREVIEW[language] || CHILL_PACK_PREVIEW['en']) :
-                                                    (preview.item.id === 'spicy' ? (SPICY_PACK_PREVIEW[language] || SPICY_PACK_PREVIEW['en']) :
-                                                        (DARK_PACK_PREVIEW[language] || DARK_PACK_PREVIEW['en'])))).map((text, index) => {
-                                                            const censoredMatches = text.match(/\{[^}]+\}/g) || [];
-                                                            return (
-                                                                <View key={index} style={[styles.largeCard, {
-                                                                    backgroundColor: '#f5f5f5',
-                                                                    borderColor: '#ddd',
-                                                                    borderWidth: 1,
-                                                                    width: (width * 0.85 - 60) / 2,
-                                                                    height: ((width * 0.85 - 60) / 2) * 1.4,
-                                                                    padding: 8
-                                                                }]}>
-                                                                    <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 4 }}>
-                                                                        <CensoredText
-                                                                            text={text}
-                                                                            censoredWords={censoredMatches}
-                                                                            style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}
-                                                                            textStyle={{
-                                                                                color: '#000',
-                                                                                fontFamily: 'Outfit',
-                                                                                fontSize: 15,
-                                                                                fontWeight: '600',
-                                                                                lineHeight: 17,
-                                                                                textAlign: 'center'
-                                                                            }}
-                                                                        />
-                                                                    </View>
-                                                                    <View style={{ paddingBottom: 6, paddingLeft: 8, opacity: 0.8 }}>
-                                                                        <Text style={{ fontSize: 5, color: '#000', opacity: 0.8, fontFamily: 'Outfit-Bold' }}>
-                                                                            MORAL DECAY
-                                                                        </Text>
-                                                                    </View>
-                                                                </View>
-                                                            );
-                                                        })}
-                                            </View>
-                                            <Text style={{ color: '#888', fontFamily: 'Outfit', fontSize: 13, marginTop: 20, textAlign: 'center', paddingHorizontal: 30 }}>
-                                                {preview.item.id === 'dark' ? t('preview_pack_desc', 'Esplicito, Osceno e Moralmente Discutibile.') :
-                                                    (preview.item.id === 'chill' ? t('chill_content') : t('spicy_content'))}
+                            {/* TAB 4: DC BUNDLES */}
+                            {renderTabContent(4, (
+                                <FlatList
+                                    key={isDesktop ? 'desktop-4' : 'mobile-4'}
+                                    data={bundleData}
+                                    numColumns={isDesktop ? 2 : 1}
+                                    columnWrapperStyle={isDesktop ? { gap: 15, paddingHorizontal: 20, zIndex: 1, overflow: 'visible' } : undefined}
+                                    keyExtractor={(item) => item.id}
+                                    ListHeaderComponent={() => (
+                                        <Text style={{
+                                            fontFamily: 'Cinzel-Bold',
+                                            fontSize: 20,
+                                            color: theme.colors.accent,
+                                            textAlign: 'center',
+                                            marginBottom: 20
+                                        }}>
+                                            {t('tab_dc')}
+                                        </Text>
+                                    )}
+                                    renderItem={({ item, index }) => (
+                                        <ShopDCBundleItem
+                                            item={item}
+                                            index={index}
+                                            buyingId={buyingId}
+                                            onBuy={buyItem}
+                                            t={t}
+                                            theme={theme}
+                                        />
+                                    )}
+                                    contentContainerStyle={{ paddingBottom: 80 + insets.bottom, paddingHorizontal: 10 }}
+                                    showsVerticalScrollIndicator={false}
+                                    style={{ flex: 1 }}
+                                />
+                            ))}
+                        </View>
+                    )}
+                </View>
+
+                <ToastNotification
+                    visible={toast.visible}
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+                />
+
+
+                {/* Preview Modal */}
+                <Modal
+                    transparent={true}
+                    visible={!!preview}
+                    animationType="fade"
+                    onRequestClose={handleClosePreview}
+                    statusBarTranslucent={true}
+                    hardwareAccelerated={true}
+                >
+                    {preview && (
+                        <Pressable
+                            style={styles.previewOverlayContainer}
+                            onPress={handleClosePreview}
+                        >
+                            {/* Blur backdrop */}
+                            <Animated.View
+                                entering={FadeIn.duration(300)}
+                                exiting={FadeOut.duration(300)}
+                                style={StyleSheet.absoluteFill}
+                                pointerEvents="none"
+                            >
+                                <EfficientBlurView intensity={Platform.OS === 'android' ? 20 : 40} tint="dark" style={StyleSheet.absoluteFill} />
+                            </Animated.View>
+
+                            {/* Modal content — stops propagation so tapping inside doesn't close */}
+                            <Animated.View
+                                entering={ZoomIn.delay(50).duration(300)}
+                                exiting={ZoomOut.duration(200)}
+                                style={[
+                                    styles.previewModal,
+                                    {
+                                        backgroundColor: theme.colors.background[0] === 'transparent' ? '#111' : theme.colors.background[0],
+                                        borderColor: theme.colors.accent,
+                                        shadowOpacity: 0,
+                                        elevation: 0,
+                                        maxWidth: 600, // [NEW] Limit width on desktop
+                                    }
+                                ]}
+                            >
+                                <Pressable onPress={(e) => e.stopPropagation()} style={Platform.OS === 'web' ? { width: '100%', alignItems: 'center' } : { width: '100%', alignItems: 'center' }}>
+
+
+                                    <View style={styles.previewHeaderNew}>
+                                        <Text style={[styles.previewSubtitle, { color: theme.colors.accent }]}>
+                                            {preview?.type === 'skin' ? t('preview_subtitle_skin') :
+                                                (preview?.type === 'frame' ? t('preview_subtitle_frame') :
+                                                    (preview?.type === 'pack' ? t('pack_' + preview?.item?.id).toUpperCase() : t('preview_subtitle_theme')))}
+                                        </Text>
+                                        {(preview?.type === 'skin' || preview?.type === 'frame' || preview?.type === 'pack') && (
+                                            <Text style={styles.previewTitleMain}>
+                                                {preview?.type === 'skin' ? t('skin_' + preview?.item?.id, preview?.item?.label) :
+                                                    (preview?.type === 'frame' ? t('frame_' + preview?.item?.id, preview?.item?.label) :
+                                                        t('pack_' + preview?.item?.id))}
                                             </Text>
-                                        </View>
-                                    ) : preview?.type === 'theme' ? (
-                                        <View style={[styles.themePreviewContainer, { borderColor: preview.item.colors.cardBorder, borderWidth: 1 }]}>
-                                            <LinearGradient
-                                                colors={preview.item.colors.background}
-                                                style={StyleSheet.absoluteFill}
-                                            />
-                                            <ThemeBackground forceTheme={preview.item} visible={true} />
-                                            <View style={[StyleSheet.absoluteFill, {
-                                                backgroundColor: 'rgba(0,0,0,0.3)',
-                                                justifyContent: 'center',
-                                                alignItems: 'center',
-                                                padding: 20
+                                        )}
+                                    </View>
+
+                                    <View style={styles.previewContent}>
+                                        {preview?.type === 'skin' ? (
+                                            <View style={[styles.largeCard, {
+                                                backgroundColor: preview.item.styles.bg,
+                                                borderColor: preview.item.styles.border,
+                                                borderWidth: 2,
+                                                // [NEW] Fixed dimensions logic for preview
+                                                width: Math.min(availableWidth * 0.7, 280),
+                                                height: Math.min(availableWidth * 0.7, 280) * 1.4,
                                             }]}>
-                                                <Text style={[styles.themeCardTitle, { color: preview.item.colors.textPrimary }]}>
-                                                    {t('theme_' + preview.item.id, preview.item.label)}
-                                                </Text>
-                                                <Text style={[styles.themeCardSubtitle, { color: preview.item.colors.accent }]}>
-                                                    {preview.item.particleConfig ? t('theme_dynamic_effect') : t('theme_static_decor')}
+                                                {preview.item.styles.texture && TEXTURES[preview.item.styles.texture] && (
+                                                    <Image
+                                                        source={TEXTURES[preview.item.styles.texture]}
+                                                        style={[StyleSheet.absoluteFill, {
+                                                            opacity: preview.item.id === 'mida' ? 0.6 : 0.25,
+                                                            transform: [{ scale: 1.1 }]
+                                                        }]}
+                                                        resizeMode="cover"
+                                                    />
+                                                )}
+                                                <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24 }}>
+                                                    <Text style={{
+                                                        color: preview.item.styles.text,
+                                                        fontFamily: preview.item.id === 'narco' ? (Platform.OS === 'ios' ? 'Courier' : 'monospace') : 'Outfit',
+                                                        fontSize: 20,
+                                                        fontWeight: '600',
+                                                        textAlign: 'center',
+                                                        lineHeight: 28
+                                                    }}>
+                                                        {t('flavor_corruption')}
+                                                    </Text>
+                                                </View>
+                                                <View style={{ paddingBottom: 16, paddingLeft: 20, opacity: 0.8 }}>
+                                                    <Text style={{ fontSize: 10, color: preview.item.styles.text, opacity: 0.6, fontFamily: 'Outfit-Bold', letterSpacing: 2 }}>
+                                                        CARDS OF MORAL DECAY
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        ) : preview?.type === 'pack' ? (
+                                            <View style={{ alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 15, justifyContent: 'center', width: '100%' }}>
+                                                    {((preview.item.id === 'chill' ? (CHILL_PACK_PREVIEW[language] || CHILL_PACK_PREVIEW['en']) :
+                                                        (preview.item.id === 'spicy' ? (SPICY_PACK_PREVIEW[language] || SPICY_PACK_PREVIEW['en']) :
+                                                            (DARK_PACK_PREVIEW[language] || DARK_PACK_PREVIEW['en'])))).map((text, index) => {
+                                                                const censoredMatches = text.match(/\{[^}]+\}/g) || [];
+                                                                const cardW = Math.min((availableWidth * 0.85 - 60) / 2, 140);
+                                                                return (
+                                                                    <View key={index} style={[styles.largeCard, {
+                                                                        backgroundColor: '#f5f5f5',
+                                                                        borderColor: '#ddd',
+                                                                        borderWidth: 1,
+                                                                        width: cardW,
+                                                                        height: cardW * 1.4,
+                                                                        padding: 10,
+                                                                        elevation: 4,
+                                                                        shadowColor: '#000',
+                                                                        shadowOffset: { width: 0, height: 2 },
+                                                                        shadowOpacity: 0.2,
+                                                                        shadowRadius: 4
+                                                                    }]}>
+                                                                        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 4 }}>
+                                                                            <CensoredText
+                                                                                text={text}
+                                                                                censoredWords={censoredMatches}
+                                                                                style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}
+                                                                                textStyle={{
+                                                                                    color: '#000',
+                                                                                    fontFamily: 'Outfit',
+                                                                                    fontSize: cardW < 120 ? 12 : 14,
+                                                                                    fontWeight: '600',
+                                                                                    lineHeight: cardW < 120 ? 14 : 17,
+                                                                                    textAlign: 'center'
+                                                                                }}
+                                                                            />
+                                                                        </View>
+                                                                        <View style={{ paddingBottom: 6, opacity: 0.5, alignItems: 'center' }}>
+                                                                            <Text style={{ fontSize: 6, color: '#000', fontFamily: 'Outfit-Bold' }}>
+                                                                                MORAL DECAY
+                                                                            </Text>
+                                                                        </View>
+                                                                    </View>
+                                                                );
+                                                            })}
+                                                </View>
+                                                <Text style={{ color: '#aaa', fontFamily: 'Outfit', fontSize: 13, marginTop: 25, textAlign: 'center', paddingHorizontal: 20, fontStyle: 'italic' }}>
+                                                    {preview.item.id === 'dark' ? t('preview_pack_desc', 'Esplicito, Osceno e Moralmente Discutibile.') :
+                                                        (preview.item.id === 'chill' ? t('chill_content') : t('spicy_content'))}
                                                 </Text>
                                             </View>
-                                        </View>
-                                    ) : preview?.type === 'frame' ? (
-                                        <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 20 }}>
-                                            <AvatarWithFrame
-                                                avatar={user?.avatar || 'user'}
-                                                frameId={preview.item.id}
-                                                size={120}
-                                            />
-                                            <Text style={{ color: '#888', fontFamily: 'Outfit', fontSize: 13, marginTop: 20, textAlign: 'center', paddingHorizontal: 30 }}>
-                                                {t('preview_frame_desc')}
-                                            </Text>
-                                        </View>
-                                    ) : null}
-                                </View>
+                                        ) : preview?.type === 'theme' ? (
+                                            <View style={[styles.themePreviewContainer, { borderColor: preview.item.colors.cardBorder, borderWidth: 1, height: isDesktop ? 220 : 180 }]}>
+                                                <LinearGradient
+                                                    colors={preview.item.colors.background}
+                                                    style={StyleSheet.absoluteFill}
+                                                />
+                                                <ThemeBackground forceTheme={preview.item} visible={true} />
+                                                <View style={[StyleSheet.absoluteFill, {
+                                                    backgroundColor: 'rgba(0,0,0,0.4)',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                    padding: 20
+                                                }]}>
+                                                    <Text style={[styles.themeCardTitle, { color: preview.item.colors.textPrimary, fontSize: isDesktop ? 32 : 24 }]}>
+                                                        {t('theme_' + preview.item.id, preview.item.label)}
+                                                    </Text>
+                                                    <View style={{ height: 2, width: 40, backgroundColor: preview.item.colors.accent, marginVertical: 10, borderRadius: 1 }} />
+                                                    <Text style={[styles.themeCardSubtitle, { color: preview.item.colors.accent }]}>
+                                                        {preview.item.particleConfig ? t('theme_dynamic_effect') : t('theme_static_decor')}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        ) : preview?.type === 'frame' ? (
+                                            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 20 }}>
+                                                <AvatarWithFrame
+                                                    avatar={user?.avatar || 'user'}
+                                                    frameId={preview.item.id}
+                                                    size={140}
+                                                />
+                                                <Text style={{ color: '#aaa', fontFamily: 'Outfit', fontSize: 14, marginTop: 25, textAlign: 'center', paddingHorizontal: 30, lineHeight: 20 }}>
+                                                    {t('preview_frame_desc')}
+                                                </Text>
+                                            </View>
+                                        ) : null}
+                                    </View>
 
-                                <TouchableOpacity
-                                    style={[styles.closeButton, { borderColor: 'rgba(255,255,255,0.2)' }]}
-                                    onPress={handleClosePreview}
-                                >
-                                    <Text style={styles.closeButtonText}>{t('close_preview')}</Text>
-                                </TouchableOpacity>
-                            </Pressable>
-                        </Animated.View>
-                    </Pressable>
-                )}
-            </Modal>
+                                    <TouchableOpacity
+                                        style={[styles.closeButton, { borderColor: theme.colors.accent, backgroundColor: 'transparent', borderWidth: 1 }]}
+                                        onPress={handleClosePreview}
+                                    >
+                                        <Text style={[styles.closeButtonText, { color: theme.colors.accent }]}>{t('close_preview').toUpperCase()}</Text>
+                                    </TouchableOpacity>
+                                </Pressable>
+                            </Animated.View>
+                        </Pressable>
+                    )}
+                </Modal>
 
-            <ConfirmationModal
-                visible={showExitModal}
-                onClose={() => setShowExitModal(false)}
-                title={t('exit_app_title')}
-                message={t('exit_app_msg')}
-                confirmText={t('exit_btn_small')}
-                onConfirm={() => BackHandler.exitApp()}
-            />
+                <ConfirmationModal
+                    visible={showExitModal}
+                    onClose={() => setShowExitModal(false)}
+                    title={t('exit_app_title')}
+                    message={t('exit_app_msg')}
+                    confirmText={t('exit_btn_small')}
+                    onConfirm={() => BackHandler.exitApp()}
+                />
 
-            <PaymentResultModal
-                visible={paymentResult.visible}
-                result={paymentResult.result}
-                onClose={() => setPaymentResult({ ...paymentResult, visible: false })}
-            />
+                <PaymentResultModal
+                    visible={paymentResult.visible}
+                    result={paymentResult.result}
+                    onClose={() => setPaymentResult({ ...paymentResult, visible: false })}
+                />
 
-            <ToastNotification
-                visible={toast.visible}
-                message={toast.message}
-                type={toast.type}
-                onHide={() => setToast({ ...toast, visible: false })}
-            />
+                <ToastNotification
+                    visible={toast.visible}
+                    message={toast.message}
+                    type={toast.type}
+                    onHide={() => setToast({ ...toast, visible: false })}
+                />
 
-
+            </View>
         </View>
     );
 }
@@ -1052,7 +1168,8 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         backgroundColor: 'rgba(255,255,255,0.03)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)'
+        borderColor: 'rgba(255,255,255,0.05)',
+        overflow: 'visible'
     },
     cardFrame: {
         width: '48.5%', // [FIX] Stable 2-column layout
@@ -1062,7 +1179,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.03)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
-        alignItems: 'center'
+        alignItems: 'center',
+        overflow: 'visible'
     },
     previewCircle: {
         width: 48,
@@ -1142,11 +1260,13 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         padding: 20,
         alignItems: 'center',
-        elevation: 0
+        elevation: 0,
+        overflow: Platform.OS === 'web' ? 'visible' : 'hidden'
     },
     previewHeaderNew: {
         marginBottom: 20,
-        alignItems: 'center'
+        alignItems: 'center',
+        overflow: Platform.OS === 'web' ? 'visible' : 'hidden'
     },
     previewSubtitle: {
         fontFamily: 'Outfit-Bold',
@@ -1163,7 +1283,8 @@ const styles = StyleSheet.create({
     previewContent: {
         width: '100%',
         alignItems: 'center',
-        marginBottom: 20
+        marginBottom: 20,
+        overflow: Platform.OS === 'web' ? 'visible' : 'hidden'
     },
     largeCard: {
         width: width * 0.55,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, Platform, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { DirtyCashIcon, EyeIcon, CheckIcon } from './Icons';
 import AvatarWithFrame from './AvatarWithFrame';
 import { TEXTURES } from '../context/ThemeContext';
@@ -11,18 +11,29 @@ const { width } = Dimensions.get('window');
 const ShopThemeItem = React.memo(({ item, index, isUnlocked, userBalance, buyingId, onBuy, onPreview, t, theme }) => {
     const price = item.price || 500;
     const isBuying = buyingId === item.id;
+    const hoverScale = useSharedValue(1);
+    const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: hoverScale.value }] }));
+
+    const { width: windowWidth } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024 && typeof navigator !== 'undefined' && !(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
 
     return (
         <Animated.View
             entering={FadeIn.delay((index % 6) * 50).duration(400)}
             style={[
                 styles.card,
+                animatedStyle,
                 {
                     borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
                     borderWidth: isUnlocked ? 2 : 1,
-                    backgroundColor: 'rgba(255,255,255,0.03)'
+                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    ...(isDesktop && { cursor: 'pointer' })
                 }
             ]}
+            {...(isDesktop ? {
+                onMouseEnter: () => hoverScale.value = withSpring(1.02, { mass: 0.5, stiffness: 200, damping: 15 }),
+                onMouseLeave: () => hoverScale.value = withSpring(1, { mass: 0.5, stiffness: 200, damping: 15 })
+            } : {})}
         >
             <View style={[styles.previewCircle, { overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: '#000' }]}>
                 <LinearGradient
@@ -80,18 +91,29 @@ const ShopThemeItem = React.memo(({ item, index, isUnlocked, userBalance, buying
 
 const ShopSkinItem = React.memo(({ item, index, isUnlocked, userBalance, buyingId, onBuy, onPreview, t, theme }) => {
     const isBuying = buyingId === item.id;
+    const hoverScale = useSharedValue(1);
+    const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: hoverScale.value }] }));
+
+    const { width: windowWidth } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024 && typeof navigator !== 'undefined' && !(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
 
     return (
         <Animated.View
             entering={FadeIn.delay((index % 6) * 50).duration(400)}
             style={[
                 styles.card,
+                animatedStyle,
                 {
                     borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
                     borderWidth: isUnlocked ? 2 : 1,
-                    backgroundColor: 'rgba(255,255,255,0.03)'
+                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    ...(isDesktop && { cursor: 'pointer' })
                 }
             ]}
+            {...(isDesktop ? {
+                onMouseEnter: () => hoverScale.value = withSpring(1.02, { mass: 0.5, stiffness: 200, damping: 15 }),
+                onMouseLeave: () => hoverScale.value = withSpring(1, { mass: 0.5, stiffness: 200, damping: 15 })
+            } : {})}
         >
             <View style={[styles.skinPreview, {
                 backgroundColor: item.styles.bg,
@@ -146,18 +168,29 @@ const ShopSkinItem = React.memo(({ item, index, isUnlocked, userBalance, buyingI
 const ShopFrameItem = React.memo(({ item, index, isUnlocked, userBalance, buyingId, onBuy, onPreview, t, theme, userAvatar }) => {
     const isBuying = buyingId === item.id;
     const price = item.price;
+    const hoverScale = useSharedValue(1);
+    const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: hoverScale.value }] }));
+
+    const { width: windowWidth } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024 && typeof navigator !== 'undefined' && !(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
 
     return (
         <Animated.View
             entering={FadeIn.delay((index % 6) * 50).duration(400)}
             style={[
                 styles.cardFrame,
+                animatedStyle,
                 {
                     borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
                     borderWidth: isUnlocked ? 2 : 1,
-                    backgroundColor: 'rgba(255,255,255,0.03)'
+                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    ...(isDesktop && { cursor: 'pointer' })
                 }
             ]}
+            {...(isDesktop ? {
+                onMouseEnter: () => hoverScale.value = withSpring(1.02, { mass: 0.5, stiffness: 200, damping: 15 }),
+                onMouseLeave: () => hoverScale.value = withSpring(1, { mass: 0.5, stiffness: 200, damping: 15 })
+            } : {})}
         >
             <AvatarWithFrame avatar={userAvatar || 'user'} frameId={item.id} size={65} style={{ marginBottom: 12 }} />
             <Text style={[styles.itemName, { color: theme.colors.textPrimary, textAlign: 'center', fontSize: 13, marginBottom: 4 }]} numberOfLines={1}>
@@ -207,18 +240,29 @@ const ShopPackItem = React.memo(({ item, index, isUnlocked, userBalance, isProce
     const isBuying = isProcessing && (item.id === 'dark' || item.id === 'spicy'); // Simplified logic
     const isFiat = item.id === 'dark' || item.id === 'spicy';
     const canAfford = isFiat || userBalance >= price;
+    const hoverScale = useSharedValue(1);
+    const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: hoverScale.value }] }));
+
+    const { width: windowWidth } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024 && typeof navigator !== 'undefined' && !(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
 
     return (
         <Animated.View
             entering={FadeIn.delay(index * 50).duration(400)}
             style={[
                 styles.card,
+                animatedStyle,
                 {
                     borderColor: isUnlocked ? '#2c7d4aff' : 'rgba(255,255,255,0.1)',
                     borderWidth: isUnlocked ? 2 : 1,
-                    backgroundColor: 'rgba(255,255,255,0.03)'
+                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    ...(isDesktop && { cursor: 'pointer' })
                 }
             ]}
+            {...(isDesktop ? {
+                onMouseEnter: () => hoverScale.value = withSpring(1.02, { mass: 0.5, stiffness: 200, damping: 15 }),
+                onMouseLeave: () => hoverScale.value = withSpring(1, { mass: 0.5, stiffness: 200, damping: 15 })
+            } : {})}
         >
             <View style={[styles.skinPreview, { backgroundColor: item.color || '#333', justifyContent: 'center', alignItems: 'center' }]}>
             </View>
@@ -300,14 +344,31 @@ const ShopDCBundleItem = React.memo(({ item, index, buyingId, onBuy, t, theme })
     // 1. Outer container (no border, no overflow hidden)
     // 2. Inner container (with border, overflow hidden)
     // 3. Badges (on top of inner container's corner)
+
+    const hoverScale = useSharedValue(1);
+    const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: hoverScale.value }] }));
+
+    const { width: windowWidth } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024 && typeof navigator !== 'undefined' && !(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+
     return (
         <Animated.View
             entering={FadeIn.delay((index % 6) * 50).duration(400)}
-            style={{
-                marginBottom: 10,
-                height: 84, // Fixed height to handle absolute layers (80 content + 4 border)
-                opacity: isClaimed ? 0.7 : 1, // [FIX] Increased opacity slightly for better readability of the timer
-            }}
+            style={[
+                animatedStyle,
+                {
+                    flex: 1, // Let flatlist column control width
+                    marginBottom: 10,
+                    height: 84, // Fixed height to handle absolute layers (80 content + 4 border)
+                    minHeight: 84,
+                    opacity: isClaimed ? 0.7 : 1, // [FIX] Increased opacity slightly for better readability of the timer
+                    ...(isDesktop && { cursor: 'pointer' })
+                }
+            ]}
+            {...(isDesktop && !isClaimed ? {
+                onMouseEnter: () => hoverScale.value = withSpring(1.02, { mass: 0.5, stiffness: 200, damping: 15 }),
+                onMouseLeave: () => hoverScale.value = withSpring(1, { mass: 0.5, stiffness: 200, damping: 15 })
+            } : {})}
         >
             {/* Inner Bordered Container */}
             <View style={{
@@ -409,6 +470,7 @@ const ShopDCBundleItem = React.memo(({ item, index, buyingId, onBuy, t, theme })
 
 const styles = StyleSheet.create({
     card: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         padding: 10,
@@ -416,17 +478,19 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         backgroundColor: 'rgba(255,255,255,0.03)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)'
+        borderColor: 'rgba(255,255,255,0.05)',
+        overflow: 'visible'
     },
     cardFrame: {
-        width: '48.5%',
+        flex: 1,
         padding: 15,
         marginBottom: 15,
         borderRadius: 16,
         backgroundColor: 'rgba(255,255,255,0.03)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
-        alignItems: 'center'
+        alignItems: 'center',
+        overflow: 'visible'
     },
     previewCircle: {
         width: 48,

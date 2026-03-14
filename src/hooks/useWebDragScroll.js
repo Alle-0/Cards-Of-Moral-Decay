@@ -1,19 +1,21 @@
 import { useRef } from 'react';
 import { PanResponder, Platform } from 'react-native';
 
-export const useWebDragScroll = (horizontal = false) => {
+export const useWebDragScroll = (horizontal = false, enabled = true) => {
     const scrollRef = useRef(null);
     const lastPos = useRef(0);
 
+    // [FIX] Detect if it's a touch device to avoid interfering with native scrolling
+    const isTouchDevice = Platform.OS !== 'web' || (typeof navigator !== 'undefined' && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window));
+    const isActuallyEnabled = enabled && !isTouchDevice;
+
     const panResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => Platform.OS === 'web',
-            onStartShouldSetPanResponderCapture: () => Platform.OS === 'web',
-            onMoveShouldSetPanResponder: () => Platform.OS === 'web',
-            onMoveShouldSetPanResponderCapture: () => Platform.OS === 'web',
+            onStartShouldSetPanResponder: () => Platform.OS === 'web' && isActuallyEnabled,
+            onMoveShouldSetPanResponder: () => Platform.OS === 'web' && isActuallyEnabled,
 
             onPanResponderGrant: (evt, gestureState) => {
-                if (Platform.OS !== 'web') return;
+                if (Platform.OS !== 'web' || !isActuallyEnabled) return;
                 lastPos.current = horizontal ? gestureState.x0 : gestureState.y0;
                 if (document.body) {
                     document.body.style.cursor = 'grabbing';
@@ -22,7 +24,7 @@ export const useWebDragScroll = (horizontal = false) => {
             },
 
             onPanResponderMove: (evt, gestureState) => {
-                if (Platform.OS !== 'web' || !scrollRef.current) return;
+                if (Platform.OS !== 'web' || !isActuallyEnabled || !scrollRef.current) return;
 
                 const node = scrollRef.current.getScrollableNode?.() || scrollRef.current;
 
@@ -42,14 +44,14 @@ export const useWebDragScroll = (horizontal = false) => {
             },
 
             onPanResponderRelease: () => {
-                if (Platform.OS !== 'web') return;
+                if (Platform.OS !== 'web' || !isActuallyEnabled) return;
                 if (document.body) {
                     document.body.style.cursor = '';
                     document.body.style.userSelect = '';
                 }
             },
             onPanResponderTerminate: () => {
-                if (Platform.OS !== 'web') return;
+                if (Platform.OS !== 'web' || !isActuallyEnabled) return;
                 if (document.body) {
                     document.body.style.cursor = '';
                     document.body.style.userSelect = '';
@@ -59,7 +61,7 @@ export const useWebDragScroll = (horizontal = false) => {
     ).current;
 
     return {
-        scrollRef, // Stick this to the ScrollView
-        panHandlers: panResponder.panHandlers // Stick this to the ScrollView (or wrapper)
+        scrollRef,
+        panHandlers: isActuallyEnabled ? panResponder.panHandlers : {}
     };
 };

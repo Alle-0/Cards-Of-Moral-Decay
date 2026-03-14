@@ -33,7 +33,13 @@ const RoomItem = memo(({ roomName, playerCount, state, onJoin, onLongPress, crea
                         backgroundColor: 'rgba(0,0,0,0.3)'
                     }
                 ]}
-                contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                contentContainerStyle={{ 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    paddingVertical: 10,
+                    paddingHorizontal: 14
+                }}
             >
                 <View style={styles.leftContent}>
                     <View style={{ marginRight: 10 }}>
@@ -76,8 +82,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         borderRadius: 14,
         borderWidth: 1.5,
-        paddingVertical: 10,
-        paddingHorizontal: 14,
         marginBottom: 6,
         width: '80%',
         alignSelf: 'center',

@@ -47,7 +47,41 @@ import { CHAOS_EVENTS, CHAOS_EVENT_DETAILS } from '../constants/ChaosEvents'; //
 
 
 
-// --- NUOVI COMPONENTI GRAFICI (Mettili prima di GameScreen o in fondo) ---
+// 2. Player Item for Lobby (Desktop Hover Support)
+const PlayerLobbyItem = ({ player: p, index, t }) => {
+    const hoverScale = useSharedValue(1);
+    const animStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: hoverScale.value }]
+    }));
+
+    return (
+        <Animated.View entering={ZoomIn.delay(index * 100).springify()} style={{ alignItems: 'center', gap: 6 }}>
+            <Pressable
+                onHoverIn={() => { hoverScale.value = withTiming(1.1, { duration: 150 }); }}
+                onHoverOut={() => { hoverScale.value = withTiming(1, { duration: 150 }); }}
+                style={{ position: 'relative' }}
+            >
+                <Animated.View style={animStyle}>
+                    <AvatarWithFrame avatar={p.avatar || p.name} frameId={p.activeFrame || 'basic'} size={72} isDominus={p.isDominus} />
+                </Animated.View>
+                <View style={{
+                    position: 'absolute', bottom: 2, right: 2,
+                    width: 14, height: 14, borderRadius: 7,
+                    backgroundColor: (p.isOnline || p.name === 'Rando') ? '#4ade80' : '#666',
+                    borderWidth: 2, borderColor: '#111'
+                }} />
+            </Pressable>
+            <Text style={{ color: '#e2e8f0', fontFamily: 'Outfit-Bold', fontSize: 13, textAlign: 'center', maxWidth: 80 }} numberOfLines={1}>
+                {p.name}
+            </Text>
+            {p.rank && (
+                <Text style={{ color: p.name === 'Rando' ? '#ef4444' : (RANK_COLORS[getRankKey(p.rank)] || '#888'), fontFamily: 'Outfit', fontSize: 10, textAlign: 'center' }} numberOfLines={1}>
+                    {t(getRankKey(p.rank))}
+                </Text>
+            )}
+        </Animated.View>
+    );
+}
 
 // 3. Chaos Event Banner (Moved outside to prevent re-renders)
 const ChaosBanner = ({ event, roomData, t }) => {
@@ -103,6 +137,8 @@ const GameScreen = ({ onStartLoading }) => {
     const [initialSettingsView, setInitialSettingsView] = useState(null);
     const { t } = useLanguage(); // [NEW]
     const { height: screenHeight, width: screenWidth } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && screenWidth >= 1024;
+    const isMobilePWA = Platform.OS === 'web' && screenWidth < 1024; // Web on phone/PWA (not native APK)
     const isSmallScreen = screenHeight < 700;
 
 
@@ -870,431 +906,525 @@ const GameScreen = ({ onStartLoading }) => {
         );
     };
 
-    const renderLobbyContent = () => (
-        <ScrollView
-            style={{ flex: 1, width: '100%' }}
-            contentContainerStyle={styles.lobbyScrollViewContent}
-            showsVerticalScrollIndicator={false}
-        >
-            <View style={{ alignItems: 'center', width: '100%' }}>
-                <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'Cinzel-Bold' }, pulsatingStyle]}>
-                    {t('waiting_title')}
-                </Animated.Text>
-
-                <View style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
-                    gap: 15,
-                    marginVertical: 20,
-                    width: '100%',
-                    maxWidth: 400
-                }}>
-                    {playersList.map((p, index) => (
-                        <Animated.View
-                            key={p.name}
-                            entering={ZoomIn.delay(index * 100).springify()}
-                            style={{ alignItems: 'center' }}
-                        >
-                            <View style={{ marginBottom: 8, position: 'relative' }}>
-                                <AvatarWithFrame
-                                    avatar={p.avatar || p.name}
-                                    frameId={p.activeFrame || 'basic'}
-                                    size={54}
-                                    isDominus={p.isDominus}
-                                />
-                                {/* [NEW] Online / Offline Badge on Avatar */}
-                                <View style={{
-                                    position: 'absolute',
-                                    bottom: 0,
-                                    right: 0,
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: 6,
-                                    backgroundColor: (p.isOnline || p.name === 'Rando') ? '#4ade80' : '#666',
-                                    borderWidth: 2,
-                                    borderColor: '#111' // Match background
-                                }} />
-                            </View>
+    const renderLobbyContent = () => {
+        // Player avatars section — shared between desktop columns and mobile
+        const playersSection = (
+            <View style={{
+                flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center',
+                gap: 15, marginVertical: isDesktop ? 0 : 20, width: '100%',
+                maxWidth: isDesktop ? '100%' : 400,
+            }}>
+                {playersList.map((p, index) => (
+                    <Animated.View key={p.name} entering={ZoomIn.delay(index * 100).springify()} style={{ alignItems: 'center' }}>
+                        <View style={{ marginBottom: 8, position: 'relative' }}>
+                            <AvatarWithFrame avatar={p.avatar || p.name} frameId={p.activeFrame || 'basic'} size={54} isDominus={p.isDominus} />
+                            <View style={{
+                                position: 'absolute', bottom: 0, right: 0,
+                                width: 12, height: 12, borderRadius: 6,
+                                backgroundColor: (p.isOnline || p.name === 'Rando') ? '#4ade80' : '#666',
+                                borderWidth: 2, borderColor: '#111'
+                            }} />
+                        </View>
+                        <Text style={{ color: '#e2e8f0', fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', maxWidth: 60 }} numberOfLines={1}>
+                            {p.name}
+                        </Text>
+                        {p.rank && (
                             <Text style={{
-                                color: '#e2e8f0',
-                                fontFamily: 'Outfit',
-                                fontSize: 11,
-                                textAlign: 'center',
-                                maxWidth: 60
+                                color: p.name === 'Rando' ? '#ef4444' : (RANK_COLORS[getRankKey(p.rank)] || '#888'),
+                                fontFamily: 'Outfit', fontSize: 9, textAlign: 'center', maxWidth: 80, marginTop: 2
                             }} numberOfLines={1}>
-                                {p.name}
+                                {t(getRankKey(p.rank))}
                             </Text>
-                            {/* [NEW] Rank Display below name */}
-                            {p.rank && (
-                                <Text style={{
-                                    color: p.name === 'Rando' ? '#ef4444' : (RANK_COLORS[getRankKey(p.rank)] || '#888'), // Dynamic Rank Color
-                                    fontFamily: 'Outfit',
-                                    fontSize: 9,
-                                    textAlign: 'center',
-                                    maxWidth: 80,
-                                    marginTop: 2
-                                }} numberOfLines={1}>
-                                    {t(getRankKey(p.rank))}
-                                </Text>
-                            )}
-                        </Animated.View>
-                    ))}
-                </View>
+                        )}
+                    </Animated.View>
+                ))}
+            </View>
+        );
 
-                {/* --- INVITA AMICI (Condizionale < 3 giocatori) --- */}
-                {playersList.length < 2 && (
-                    <View style={{ width: '100%', alignItems: 'center', marginBottom: 20 }}>
-                        <PremiumPressable
-                            onPress={handleShareRoom}
-                            style={{
-                                paddingVertical: 8,
-                                paddingHorizontal: 16,
-                                borderRadius: 20,
-                                backgroundColor: 'rgba(212, 175, 55, 0.05)',
-                                borderWidth: 1,
-                                borderColor: 'rgba(212, 175, 55, 0.2)'
-                            }}
-                            rippleColor="rgba(212, 175, 55, 0.1)"
-                        >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <ShareIcon size={12} color="#d4af37" />
-                                <Text style={{
-                                    fontFamily: 'Cinzel-Bold',
-                                    fontSize: 11,
-                                    color: '#d4af37',
-                                    letterSpacing: 1
-                                }}>
-                                    {t('invite_friends_btn', { defaultValue: "INVITA" })}
-                                </Text>
-                            </View>
-                        </PremiumPressable>
-                        <Text style={{
-                            fontFamily: 'Outfit',
-                            fontSize: 10,
-                            color: 'rgba(255,255,255,0.4)',
-                            marginTop: 6
-                        }}>
-                            {t('min_players_hint', { defaultValue: "Serve almeno 1 amico." })}
+        const inviteSection = playersList.length < 2 && (
+            <View style={{ width: '100%', alignItems: 'center', marginTop: isDesktop ? 20 : 0, marginBottom: isDesktop ? 0 : 20 }}>
+                <PremiumPressable
+                    onPress={handleShareRoom}
+                    style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: 'rgba(212, 175, 55, 0.05)', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.2)' }}
+                    rippleColor="rgba(212, 175, 55, 0.1)"
+                >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <ShareIcon size={12} color="#d4af37" />
+                        <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 11, color: '#d4af37', letterSpacing: 1 }}>
+                            {t('invite_friends_btn', { defaultValue: "INVITA" })}
                         </Text>
                     </View>
-                )}
-
-                {/* --- IMPOSTAZIONI DEL CREATORE --- */}
-                {isCreator && (
-                    <View style={{ width: '100%', marginBottom: 10 }}>
-                        <LobbySettingsPanel
-                            isHost={true}
-                            settings={{
-                                language: roomLanguage,
-                                points: targetPoints,
-                                chaosMode: roomData?.chaosMode,
-                                packs: Object.keys(allowedPackages).filter(k => allowedPackages[k])
-                            }}
-                            unlockedPacks={authUser?.unlockedPacks || {}}
-                            updateSettings={(key, value) => {
-                                if (key === 'packs') {
-                                    const newPackages = { base: false, dark: false, chill: false, spicy: false };
-                                    value.forEach(p => newPackages[p] = true);
-                                    setAllowedPackages(newPackages);
-                                    updateRoomSettings({ allowedPackages: newPackages });
-                                } else if (key === 'language') {
-                                    setRoomLanguage(value);
-                                    updateRoomSettings({ roomLanguage: value });
-                                } else if (key === 'points') {
-                                    setTargetPoints(value);
-                                    updateRoomSettings({ puntiPerVincere: value });
-                                } else if (key === 'chaosMode') {
-                                    updateRoomSettings({ chaosMode: value });
-                                }
-                            }}
-                            onPreviewPack={handlePreviewPack}
-                            onOpenChaosRules={() => {
-                                setInitialSettingsView('rules_chaos');
-                                setShowSettings(true);
-                            }}
-                        />
-                    </View>
-                )}
-
-                {/* Pulsante Avvio */}
-                <View style={{ marginTop: 5 }}>
-                    {isCreator ? (
-                        <PremiumButton
-                            title={(playersList.length === 2 || (playersList.length === 3 && playersList.some(p => p.name === 'Rando')))
-                                ? t('start_game_bot_btn', { defaultValue: 'AVVIA PARTITA CON 2 + BOT' })
-                                : t('start_game_btn')}
-                            haptic="heavy"
-                            disabled={playersList.length < 2 && !playersList.some(p => p.name === 'Rando' && playersList.length === 3)}
-                            onPress={() => {
-                                if (playersList.length < 2) return; // Should be handled by disabled but safety first
-
-                                // [NEW] Prevent starting without packs
-                                const selectedPacks = Object.keys(allowedPackages || {}).filter(k => allowedPackages[k]);
-                                if (selectedPacks.length === 0) {
-                                    import('../services/SoundService').then(m => m.default.play('error'));
-                                    triggerShake();
-                                    setToast({ visible: true, message: t('select_at_least_one_pack') || "Seleziona almeno un pack!", type: 'error' });
-                                    return;
-                                }
-
-                                AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
-                                startGame(targetPoints);
-                            }}
-                            style={{
-                                minWidth: 240,
-                                height: 54,
-                                borderRadius: 27,
-                                shadowColor: theme.colors?.accent || '#ffce6a',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.3,
-                                shadowRadius: 10,
-                                elevation: 8
-                            }}
-                            textStyle={{
-                                fontSize: 14,
-                                letterSpacing: 1.5
-                            }}
-                        />
-                    ) : (
-                        renderGuestSettingsSummary()
-                    )}
-                </View>
+                </PremiumPressable>
+                <Text style={{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>
+                    {t('min_players_hint', { defaultValue: "Serve almeno 1 amico." })}
+                </Text>
             </View>
-        </ScrollView>
-    );
+        );
 
+        const startButton = (
+            <View style={{ marginTop: 16, alignItems: isDesktop ? 'stretch' : 'center' }}>
+                {isCreator ? (
+                    <PremiumButton
+                        title={(playersList.length === 2 || (playersList.length === 3 && playersList.some(p => p.name === 'Rando')))
+                            ? t('start_game_bot_btn', { defaultValue: 'AVVIA PARTITA CON 2 + BOT' })
+                            : t('start_game_btn')}
+                        haptic="heavy"
+                        disabled={playersList.length < 2 && !playersList.some(p => p.name === 'Rando' && playersList.length === 3)}
+                        onPress={() => {
+                            if (playersList.length < 2) return;
+                            const selectedPacks = Object.keys(allowedPackages || {}).filter(k => allowedPackages[k]);
+                            if (selectedPacks.length === 0) {
+                                import('../services/SoundService').then(m => m.default.play('error'));
+                                triggerShake();
+                                setToast({ visible: true, message: t('select_at_least_one_pack') || "Seleziona almeno un pack!", type: 'error' });
+                                return;
+                            }
+                            AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
+                            startGame(targetPoints);
+                        }}
+                        style={{ minWidth: 240, height: 54, borderRadius: 27, shadowColor: theme.colors?.accent || '#ffce6a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 }}
+                        textStyle={{ fontSize: 14, letterSpacing: 1.5 }}
+                    />
+                ) : (
+                    renderGuestSettingsSummary()
+                )}
+            </View>
+        );
 
-    const renderGameContent = () => (
-        <>
-            <GameTable
-                blackCard={roomData?.cartaNera}
-                playedCards={roomData?.carteGiocate}
-                status={roomData?.statoTurno}
-                showPlayedArea={isDominus || !roomData?.carteGiocate?.[user.name]}
-                isDominus={isDominus}
-                onSelectWinner={handlePickWinner}
-                dominusName={roomData?.dominus}
-                playerCount={playersList.length}
-                players={roomData?.giocatori} // [NEW] Pass players for skins
-                optimisticWinner={optimisticWinner} // [NEW]
-                isSmallScreen={isSmallScreen}
-                style={[
-                    !isDominus ? { flex: isSmallScreen ? 0.6 : 0.7, maxHeight: isSmallScreen ? '40%' : '45%' } : { flex: 1 },
-                    Platform.OS === 'web' && !isDominus ? { maxHeight: '40%' } : {}
-                ]}
-            />
+        // DESKTOP: 2-column layout (Option 1)
+        if (isDesktop) {
+            return (
+                <ScrollView
+                    style={{ flex: 1, width: '100%' }}
+                    contentContainerStyle={[styles.lobbyScrollViewContent, { paddingHorizontal: 48, paddingTop: 32, paddingBottom: 40 }]}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Two columns — title lives inside right column */}
+                    <View style={{ flexDirection: 'row', gap: 28, alignItems: 'flex-start', width: '100%' }}>
 
-            {/* DominusOverlay moved to root render */}
+                        {/* LEFT COLUMN (flex:2): Players + Invite */}
+                        <View style={{ flex: 2, alignItems: 'center', justifyContent: 'center', paddingTop: 64, gap: 20 }}>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 20 }}>
+                                {playersList.map((p, index) => (
+                                    <PlayerLobbyItem key={p.name} player={p} index={index} t={t} />
+                                ))}
+                            </View>
 
+                            {playersList.length < 2 && (
+                                <View style={{ alignItems: 'center', gap: 6 }}>
+                                    <PremiumPressable
+                                        onPress={handleShareRoom}
+                                        style={{ paddingVertical: 10, paddingHorizontal: 22, borderRadius: 22, backgroundColor: 'rgba(212, 175, 55, 0.06)', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.25)' }}
+                                        rippleColor="rgba(212, 175, 55, 0.1)"
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                            <ShareIcon size={13} color="#d4af37" />
+                                            <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 12, color: '#d4af37', letterSpacing: 1 }}>
+                                                {t('invite_friends_btn', { defaultValue: "INVITE FRIENDS" })}
+                                            </Text>
+                                        </View>
+                                    </PremiumPressable>
+                                    <Text style={{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
+                                        {t('min_players_hint', { defaultValue: "You need at least 1 friend to play." })}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
 
-            {(() => {
-                if (isAnimatingPlay || roomData?.carteGiocate?.[user.name]) {
-                    const playedRef = roomData?.carteGiocate?.[user.name];
-                    const skin = CARD_SKINS[authUser?.activeCardSkin || 'classic'] || CARD_SKINS.classic; // [FIX] Use local auth user skin
-                    let playedText = t('played_card_default');
-                    // Use temp text if animating, otherwise real data
-                    if (isAnimatingPlay && tempPlayedText) playedText = tempPlayedText;
-                    else if (typeof playedRef === 'string') playedText = playedRef;
-                    else if (playedRef?.text) playedText = playedRef.text;
-                    else if (Array.isArray(playedRef)) {
-                        // Join texts if it's an array (strings or objects)
-                        playedText = playedRef.map(c => (typeof c === 'string' ? c : c?.text || '')).join(' / ');
-                    }
+                        {/* RIGHT COLUMN (flex:3): Title + Settings + Start */}
+                        <View style={{ flex: 3, gap: 16 }}>
+                            {/* Title centered within right column */}
+                            <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'Cinzel-Bold', marginBottom: 4, textAlign: 'center' }, pulsatingStyle]}>
+                                {t('waiting_title')}
+                            </Animated.Text>
 
-                    return (
-                        <View style={{
-                            position: 'absolute',
-                            top: 40, bottom: 0, left: 0, right: 0, // Full screen coverage
-                            justifyContent: 'center', alignItems: 'center',
-                            zIndex: 900, // Below Header (999) and Leaderboard (1001)
-                            pointerEvents: 'box-none'
-                        }}>
-
-                            <View style={{ transform: [{ translateY: 60 }] }}>
-                                <Animated.View
-                                    entering={ZoomIn.delay(700).duration(400).easing(Easing.out(Easing.back(1.5)))}
-                                    style={{
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        padding: 20,
-                                        width: 200,
-                                        minHeight: 250,
-                                        borderWidth: 2,
-                                        borderColor: '#676767ff',
-                                        borderStyle: 'dashed',
-                                        borderRadius: 20,
-                                        backgroundColor: 'rgba(26, 26, 26, 0.60)', // Semi-transparent dark bg
-                                        position: 'relative',
-                                        shadowColor: "#000", shadowOffset: { width: 0, height: 5 },
-                                        shadowOpacity: 0.5, shadowRadius: 10, elevation: 10,
+                            {isCreator && (
+                                <LobbySettingsPanel
+                                    isHost={true}
+                                    settings={{ language: roomLanguage, points: targetPoints, chaosMode: roomData?.chaosMode, packs: Object.keys(allowedPackages).filter(k => allowedPackages[k]) }}
+                                    unlockedPacks={authUser?.unlockedPacks || {}}
+                                    updateSettings={(key, value) => {
+                                        if (key === 'packs') {
+                                            const newPackages = { base: false, dark: false, chill: false, spicy: false };
+                                            value.forEach(p => newPackages[p] = true);
+                                            setAllowedPackages(newPackages);
+                                            updateRoomSettings({ allowedPackages: newPackages });
+                                        } else if (key === 'language') { setRoomLanguage(value); updateRoomSettings({ roomLanguage: value }); }
+                                        else if (key === 'points') { setTargetPoints(value); updateRoomSettings({ puntiPerVincere: value }); }
+                                        else if (key === 'chaosMode') { updateRoomSettings({ chaosMode: value }); }
                                     }}
-                                >
-                                    <View style={{
-                                        position: 'absolute',
-                                        top: -14,
-                                        backgroundColor: 'rgba(26, 26, 26, 1)', // Match container transparency
-                                        paddingHorizontal: 10,
-                                        zIndex: 10,
-                                        borderRadius: 12,
-                                        paddingVertical: 5,
-                                    }}>
-                                        <Text style={{
-                                            color: '#858585ff',
-                                            fontFamily: 'Cinzel-Bold',
-                                            fontSize: 12,
-                                            letterSpacing: 1.5,
-                                            textTransform: 'uppercase',
-                                        }}>
-                                            {t('you_played_label')}
-                                        </Text>
-                                    </View>
+                                    onPreviewPack={handlePreviewPack}
+                                    onOpenChaosRules={() => { setInitialSettingsView('rules_chaos'); setShowSettings(true); }}
+                                />
+                            )}
+                            {!isCreator && renderGuestSettingsSummary()}
 
-                                    <View style={{
-                                        width: 140, height: 195, // [FIX] Slightly more height
-                                        backgroundColor: skin ? skin.styles.bg : 'white',
-                                        borderRadius: 16,
-                                        padding: 12, // [FIX] Uniform padding
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
-                                        shadowOpacity: 0.25, shadowRadius: 5, elevation: 6,
-                                        transform: [{ rotate: '-2deg' }],
-                                        overflow: 'hidden',
-                                        borderWidth: 1.5,
-                                        borderColor: skin ? skin.styles.border : 'rgba(0,0,0,0.1)'
-                                    }}>
-                                        {/* [NEW] TEXTURE LAYER */}
-                                        {skin?.styles?.texture && TEXTURES[skin.styles.texture] && (() => {
-                                            const hash = (playedText || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                                            const rotations = [0, 90, 180, 270];
-                                            const rotation = rotations[hash % 4];
-                                            const baseScale = skin.id === 'omissis' ? 0.7 : 1.3;
-                                            const scaleFactor = baseScale + (hash % 5) * 0.1;
+                            {/* START GAME inside right column */}
+                            {isCreator && (
+                                <PremiumButton
+                                    title={(playersList.length === 2 || (playersList.length === 3 && playersList.some(p => p.name === 'Rando')))
+                                        ? t('start_game_bot_btn', { defaultValue: 'START WITH 2 + BOT' })
+                                        : t('start_game_btn')}
+                                    haptic="heavy"
+                                    disabled={playersList.length < 2 && !playersList.some(p => p.name === 'Rando' && playersList.length === 3)}
+                                    onPress={() => {
+                                        if (playersList.length < 2) return;
+                                        const selectedPacks = Object.keys(allowedPackages || {}).filter(k => allowedPackages[k]);
+                                        if (selectedPacks.length === 0) {
+                                            import('../services/SoundService').then(m => m.default.play('error'));
+                                            triggerShake();
+                                            setToast({ visible: true, message: t('select_at_least_one_pack') || "Seleziona almeno un pack!", type: 'error' });
+                                            return;
+                                        }
+                                        AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
+                                        startGame(targetPoints);
+                                    }}
+                                    style={{ height: 54, borderRadius: 27, shadowColor: theme.colors?.accent || '#ffce6a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 }}
+                                    textStyle={{ fontSize: 14, letterSpacing: 1.5 }}
+                                />
+                            )}
+                        </View>
+                    </View>
+                </ScrollView>
+            );
+        }
 
-                                            return (
-                                                <Image
-                                                    source={TEXTURES[skin.styles.texture]}
-                                                    style={[
-                                                        StyleSheet.absoluteFill,
-                                                        {
-                                                            opacity: skin.id === 'mida' ? 0.4 : 0.15,
-                                                            borderRadius: 14,
-                                                            transform: [
-                                                                { rotate: `${rotation}deg` },
-                                                                { scale: scaleFactor }
-                                                            ]
-                                                        }
-                                                    ]}
-                                                    resizeMode="cover"
-                                                />
-                                            );
-                                        })()}
 
-                                        <View style={{
-                                            height: 145, // [FIX] More room for the scale-to-fit box
-                                            width: '100%',
-                                            justifyContent: 'center',
+
+        // MOBILE: original single-column layout
+        return (
+            <ScrollView
+                style={{ flex: 1, width: '100%' }}
+                contentContainerStyle={styles.lobbyScrollViewContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={{ alignItems: 'center', width: '100%' }}>
+                    <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'Cinzel-Bold' }, pulsatingStyle]}>
+                        {t('waiting_title')}
+                    </Animated.Text>
+
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 15, marginVertical: 20, width: '100%', maxWidth: 400 }}>
+                        {playersList.map((p, index) => (
+                            <Animated.View key={p.name} entering={ZoomIn.delay(index * 100).springify()} style={{ alignItems: 'center' }}>
+                                <View style={{ marginBottom: 8, position: 'relative' }}>
+                                    <AvatarWithFrame avatar={p.avatar || p.name} frameId={p.activeFrame || 'basic'} size={54} isDominus={p.isDominus} />
+                                    <View style={{ position: 'absolute', bottom: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: (p.isOnline || p.name === 'Rando') ? '#4ade80' : '#666', borderWidth: 2, borderColor: '#111' }} />
+                                </View>
+                                <Text style={{ color: '#e2e8f0', fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', maxWidth: 60 }} numberOfLines={1}>{p.name}</Text>
+                                {p.rank && <Text style={{ color: p.name === 'Rando' ? '#ef4444' : (RANK_COLORS[getRankKey(p.rank)] || '#888'), fontFamily: 'Outfit', fontSize: 9, textAlign: 'center', maxWidth: 80, marginTop: 2 }} numberOfLines={1}>{t(getRankKey(p.rank))}</Text>}
+                            </Animated.View>
+                        ))}
+                    </View>
+
+                    {playersList.length < 2 && (
+                        <View style={{ width: '100%', alignItems: 'center', marginBottom: 20 }}>
+                            <PremiumPressable onPress={handleShareRoom} style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: 'rgba(212, 175, 55, 0.05)', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.2)' }} rippleColor="rgba(212, 175, 55, 0.1)">
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <ShareIcon size={12} color="#d4af37" />
+                                    <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 11, color: '#d4af37', letterSpacing: 1 }}>{t('invite_friends_btn', { defaultValue: "INVITA" })}</Text>
+                                </View>
+                            </PremiumPressable>
+                            <Text style={{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>{t('min_players_hint', { defaultValue: "Serve almeno 1 amico." })}</Text>
+                        </View>
+                    )}
+
+                    {isCreator && (
+                        <View style={{ width: '100%', marginBottom: 10 }}>
+                            <LobbySettingsPanel
+                                isHost={true}
+                                settings={{ language: roomLanguage, points: targetPoints, chaosMode: roomData?.chaosMode, packs: Object.keys(allowedPackages).filter(k => allowedPackages[k]) }}
+                                unlockedPacks={authUser?.unlockedPacks || {}}
+                                updateSettings={(key, value) => {
+                                    if (key === 'packs') { const newPackages = { base: false, dark: false, chill: false, spicy: false }; value.forEach(p => newPackages[p] = true); setAllowedPackages(newPackages); updateRoomSettings({ allowedPackages: newPackages }); }
+                                    else if (key === 'language') { setRoomLanguage(value); updateRoomSettings({ roomLanguage: value }); }
+                                    else if (key === 'points') { setTargetPoints(value); updateRoomSettings({ puntiPerVincere: value }); }
+                                    else if (key === 'chaosMode') { updateRoomSettings({ chaosMode: value }); }
+                                }}
+                                onPreviewPack={handlePreviewPack}
+                                onOpenChaosRules={() => { setInitialSettingsView('rules_chaos'); setShowSettings(true); }}
+                            />
+                        </View>
+                    )}
+
+                    <View style={{ marginTop: 5 }}>
+                        {isCreator ? (
+                            <PremiumButton
+                                title={(playersList.length === 2 || (playersList.length === 3 && playersList.some(p => p.name === 'Rando'))) ? t('start_game_bot_btn', { defaultValue: 'AVVIA PARTITA CON 2 + BOT' }) : t('start_game_btn')}
+                                haptic="heavy"
+                                disabled={playersList.length < 2 && !playersList.some(p => p.name === 'Rando' && playersList.length === 3)}
+                                onPress={() => {
+                                    if (playersList.length < 2) return;
+                                    const selectedPacks = Object.keys(allowedPackages || {}).filter(k => allowedPackages[k]);
+                                    if (selectedPacks.length === 0) { import('../services/SoundService').then(m => m.default.play('error')); triggerShake(); setToast({ visible: true, message: t('select_at_least_one_pack') || "Seleziona almeno un pack!", type: 'error' }); return; }
+                                    AnalyticsService.logGameStart(roomCode, playersList.length, targetPoints);
+                                    startGame(targetPoints);
+                                }}
+                                style={{ minWidth: 240, height: 54, borderRadius: 27, shadowColor: theme.colors?.accent || '#ffce6a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 }}
+                                textStyle={{ fontSize: 14, letterSpacing: 1.5 }}
+                            />
+                        ) : (
+                            renderGuestSettingsSummary()
+                        )}
+                    </View>
+                </View>
+            </ScrollView>
+        );
+    };
+
+
+    const renderGameContent = () => {
+        const playingFieldContent = (
+            <View style={{ flex: 1, justifyContent: isDesktop ? 'flex-start' : (isMobilePWA ? 'space-between' : 'flex-start'), alignItems: 'center', width: '100%', maxWidth: isDesktop ? 900 : '100%' }}>
+                <GameTable
+                    blackCard={roomData?.cartaNera}
+                    playedCards={roomData?.carteGiocate}
+                    status={roomData?.statoTurno}
+                    showPlayedArea={isDominus || !roomData?.carteGiocate?.[user.name]}
+                    isDominus={isDominus}
+                    onSelectWinner={handlePickWinner}
+                    dominusName={roomData?.dominus}
+                    playerCount={playersList.length}
+                    players={roomData?.giocatori} // [NEW] Pass players for skins
+                    optimisticWinner={optimisticWinner} // [NEW]
+                    isSmallScreen={isSmallScreen}
+                    isDesktop={isDesktop}
+                    style={[
+                        !isDominus ? { flex: isSmallScreen ? 0.6 : 0.6, minHeight: isDesktop ? 350 : 250 } : { flex: 1 },
+                        { zIndex: 1, elevation: 1, marginBottom: isDesktop ? 0 : 20 }
+                    ]}
+                />
+
+                {/* DominusOverlay moved to root render */}
+
+
+                {(() => {
+                    if (isAnimatingPlay || roomData?.carteGiocate?.[user.name]) {
+                        const playedRef = roomData?.carteGiocate?.[user.name];
+                        const skin = CARD_SKINS[authUser?.activeCardSkin || 'classic'] || CARD_SKINS.classic; // [FIX] Use local auth user skin
+                        let playedText = t('played_card_default');
+                        // Use temp text if animating, otherwise real data
+                        if (isAnimatingPlay && tempPlayedText) playedText = tempPlayedText;
+                        else if (typeof playedRef === 'string') playedText = playedRef;
+                        else if (playedRef?.text) playedText = playedRef.text;
+                        else if (Array.isArray(playedRef)) {
+                            // Join texts if it's an array (strings or objects)
+                            playedText = playedRef.map(c => (typeof c === 'string' ? c : c?.text || '')).join(' / ');
+                        }
+
+                        return (
+                            <View style={{
+                                alignItems: 'center',
+                                marginTop: isDesktop ? 10 : 75,
+                                zIndex: 900, // Below Header (999) and Leaderboard (1001)
+                                elevation: 900,
+                                pointerEvents: 'box-none'
+                            }}>
+
+                                <View style={{ transform: [{ translateY: 0 }], alignItems: 'center' }}>
+                                    <Animated.View
+                                        entering={ZoomIn.delay(700).duration(400).easing(Easing.out(Easing.back(1.5)))}
+                                        style={{
                                             alignItems: 'center',
-                                            paddingTop: 5, // [FIX] Balance centering
+                                            justifyContent: 'center',
+                                            width: 180,
+                                            minHeight: 240,
+                                            borderWidth: 2,
+                                            borderColor: '#676767ff',
+                                            borderStyle: 'dashed',
+                                            borderRadius: 20,
+                                            backgroundColor: 'rgba(26, 26, 26, 0.60)', // Semi-transparent dark bg
+                                            position: 'relative',
+                                            shadowColor: "#000", shadowOffset: { width: 0, height: 5 },
+                                            shadowOpacity: 0.5, shadowRadius: 10, elevation: 10,
+                                        }}
+                                    >
+                                        <View style={{
+                                            position: 'absolute',
+                                            top: -14,
+                                            alignSelf: 'center',
+                                            backgroundColor: 'rgba(26, 26, 26, 1)', // Match container transparency
+                                            paddingHorizontal: 16,
+                                            zIndex: 10,
+                                            borderRadius: 12,
+                                            paddingVertical: 5,
                                         }}>
-                                            <Text
-                                                style={[
-                                                    styles.cardText,
-                                                    skin ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {},
-                                                    {
-                                                        textAlign: 'center',
-                                                        fontSize: (() => {
-                                                            const len = playedText?.length || 0;
-                                                            const words = (playedText || '').split(/\s+/);
-                                                            const maxWord = Math.max(...words.map(w => w.length));
-
-                                                            // Start smaller if total text is very long
-                                                            let base = len > 60 ? 14 : 16;
-
-                                                            if (maxWord >= 14) return Math.min(base, 14);
-                                                            if (maxWord >= 13) return Math.min(base, 15);
-                                                            return base;
-                                                        })(),
-                                                        paddingBottom: 15
-                                                    }
-                                                ]}
-                                                numberOfLines={10}
-                                                adjustsFontSizeToFit={true}
-                                                minimumFontScale={0.4}
-                                            >
-                                                {playedText || ''}
+                                            <Text style={{
+                                                color: '#858585ff',
+                                                fontFamily: 'Cinzel-Bold',
+                                                fontSize: 12,
+                                                letterSpacing: 1.5,
+                                                textTransform: 'uppercase',
+                                            }}>
+                                                {t('you_played_label')}
                                             </Text>
                                         </View>
 
-                                        {/* Reserved space at the bottom for the absolutely positioned lock */}
-                                        <View style={{ height: 20 }} />
+                                        <View style={{
+                                            width: 140, height: 195, // [FIX] Slightly more height
+                                            backgroundColor: skin ? skin.styles.bg : 'white',
+                                            borderRadius: 16,
+                                            padding: 12, // [FIX] Uniform padding
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
+                                            shadowOpacity: 0.25, shadowRadius: 5, elevation: 6,
+                                            transform: [{ rotate: '-2deg' }],
+                                            overflow: 'hidden',
+                                            borderWidth: 1.5,
+                                            borderColor: skin ? skin.styles.border : 'rgba(0,0,0,0.1)'
+                                        }}>
+                                            {/* [NEW] TEXTURE LAYER */}
+                                            {skin?.styles?.texture && TEXTURES[skin.styles.texture] && (() => {
+                                                const hash = (playedText || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                                                const rotations = [0, 90, 180, 270];
+                                                const rotation = rotations[hash % 4];
+                                                const baseScale = skin.id === 'omissis' ? 0.7 : 1.3;
+                                                const scaleFactor = baseScale + (hash % 5) * 0.1;
 
-                                        {/* [NEW] CENSOR BAR LAYER FOR OMISSIS */}
-                                        {skin?.id === 'omissis' && (
-                                            <View
-                                                style={{
-                                                    position: 'absolute',
-                                                    top: '20%',
-                                                    left: 10,
-                                                    right: 10,
-                                                    height: 15,
-                                                    backgroundColor: '#000',
-                                                    opacity: 0.8,
-                                                    transform: [{ rotate: '-2deg' }]
-                                                }}
-                                            />
-                                        )}
+                                                return (
+                                                    <Image
+                                                        source={TEXTURES[skin.styles.texture]}
+                                                        style={[
+                                                            StyleSheet.absoluteFill,
+                                                            {
+                                                                opacity: skin.id === 'mida' ? 0.4 : 0.15,
+                                                                borderRadius: 14,
+                                                                transform: [
+                                                                    { rotate: `${rotation}deg` },
+                                                                    { scale: scaleFactor }
+                                                                ]
+                                                            }
+                                                        ]}
+                                                        resizeMode="cover"
+                                                    />
+                                                );
+                                            })()}
 
-                                        <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
-                                            <LockIcon size={16} color={skin ? skin.styles.text : "#222"} />
+                                            <View style={{
+                                                height: 145, // [FIX] More room for the scale-to-fit box
+                                                width: '100%',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                paddingTop: 5, // [FIX] Balance centering
+                                            }}>
+                                                <Text
+                                                    style={[
+                                                        styles.cardText,
+                                                        skin ? { color: skin.styles.text, fontWeight: skin.id === 'mida' ? '700' : '600' } : {},
+                                                        {
+                                                            textAlign: 'center',
+                                                            fontSize: (() => {
+                                                                const len = playedText?.length || 0;
+                                                                const words = (playedText || '').split(/\s+/);
+                                                                const maxWord = Math.max(...words.map(w => w.length));
+
+                                                                // Start smaller if total text is very long
+                                                                let base = len > 60 ? 14 : 16;
+
+                                                                if (maxWord >= 14) return Math.min(base, 14);
+                                                                if (maxWord >= 13) return Math.min(base, 15);
+                                                                return base;
+                                                            })(),
+                                                            paddingBottom: 15
+                                                        }
+                                                    ]}
+                                                    numberOfLines={10}
+                                                    adjustsFontSizeToFit={true}
+                                                    minimumFontScale={0.4}
+                                                >
+                                                    {playedText || ''}
+                                                </Text>
+                                            </View>
+
+                                            {/* Reserved space at the bottom for the absolutely positioned lock */}
+                                            <View style={{ height: 20 }} />
+
+                                            {/* [NEW] CENSOR BAR LAYER FOR OMISSIS */}
+                                            {skin?.id === 'omissis' && (
+                                                <View
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '20%',
+                                                        left: 10,
+                                                        right: 10,
+                                                        height: 15,
+                                                        backgroundColor: '#000',
+                                                        opacity: 0.8,
+                                                        transform: [{ rotate: '-2deg' }]
+                                                    }}
+                                                />
+                                            )}
+
+                                            <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
+                                                <LockIcon size={16} color={skin ? skin.styles.text : "#222"} />
+                                            </View>
                                         </View>
-                                    </View>
-                                </Animated.View>
+                                    </Animated.View>
+                                </View>
                             </View>
+                        );
+                    }
+                    return null;
+                })()}
+            </View>
+        );
+
+        const playerHandContent = !isDominus && (
+            <View style={[styles.footer, { flex: isDesktop ? 1 : 1.3, width: isDesktop ? '100%' : 'auto', minHeight: isMobilePWA ? 200 : undefined }]}>
+                <PlayerHand
+                    isDesktop={isDesktop}
+                    hand={myHand}
+                    selectedCards={selectedCards}
+                    onSelectCard={handleSelectCard}
+                    maxSelection={roomData?.cartaNera?.blanks || 1}
+                    disabled={!!roomData?.carteGiocate?.[roomPlayerName || user.name]}
+                    isPlaying={isAnimatingPlay}
+                    onPlay={handlePlay}
+                    jokers={roomData?.giocatori?.[roomPlayerName || user.name]?.jokers || 0}
+                    onAIJoker={handleJokerPress}
+                    onDiscard={(card) => {
+                        discardCard(card);
+                        if (selectedCards.includes(card)) {
+                            setSelectedCards(prev => prev.filter(c => c !== card));
+                        }
+                    }}
+                    onBribe={!isDominus ? handleBribePress : null}
+                    bribes={roomData?.giocatori?.[roomPlayerName || user.name]?.bribes !== undefined ? roomData.giocatori[roomPlayerName || user.name].bribes : Math.max(0, 5 - (roomData?.giocatori?.[roomPlayerName || user.name]?.bribeCount || 0))}
+                    hasDiscarded={!!roomData?.giocatori?.[roomPlayerName || user.name]?.hasDiscarded}
+                    skin={CARD_SKINS[authUser?.activeCardSkin || 'classic'] || CARD_SKINS.classic}
+                    balance={authUser?.balance || 0}
+                    isSmallScreen={isSmallScreen}
+                    onBackgroundPress={() => setSelectedCards([])}
+                    isBlackout={roomData?.activeChaosEvent === CHAOS_EVENTS.BLACKOUT}
+                    isBribing={isBribing}
+                />
+            </View>
+        );
+
+        if (isDesktop) {
+            return (
+                <View style={{ flex: 1, flexDirection: 'row', width: '100%', height: '100%' }}>
+                    {/* Left side: Game Table (Black Card & Played Cards) */}
+                    <View style={{ flex: 1, borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                        {playingFieldContent}
+                    </View>
+                    {/* Right side: PlayerHand */}
+                    {!isDominus && (
+                        <View style={{ flex: 1.2, justifyContent: 'center' }}>
+                            {playerHandContent}
                         </View>
-                    );
-                }
-                return null;
-            })()}
-
-
-
-            {!isDominus && (
-                <View style={[styles.footer, { flex: isSmallScreen ? 1.4 : 1.3 }]}>
-                    <PlayerHand
-                        hand={myHand}
-                        selectedCards={selectedCards}
-                        onSelectCard={handleSelectCard}
-                        maxSelection={roomData?.cartaNera?.blanks || 1}
-                        disabled={!!roomData?.carteGiocate?.[roomPlayerName || user.name]}
-                        isPlaying={isAnimatingPlay}
-                        onPlay={handlePlay}
-                        jokers={roomData?.giocatori?.[roomPlayerName || user.name]?.jokers || 0}
-                        onAIJoker={handleJokerPress}
-                        onDiscard={(card) => {
-                            discardCard(card);
-                            if (selectedCards.includes(card)) {
-                                setSelectedCards(prev => prev.filter(c => c !== card));
-                            }
-                        }}
-                        onBribe={!isDominus ? handleBribePress : null}
-                        bribes={roomData?.giocatori?.[roomPlayerName || user.name]?.bribes !== undefined ? roomData.giocatori[roomPlayerName || user.name].bribes : Math.max(0, 5 - (roomData?.giocatori?.[roomPlayerName || user.name]?.bribeCount || 0))}
-                        hasDiscarded={!!roomData?.giocatori?.[roomPlayerName || user.name]?.hasDiscarded}
-                        skin={CARD_SKINS[authUser?.activeCardSkin || 'classic'] || CARD_SKINS.classic}
-                        balance={authUser?.balance || 0}
-                        isSmallScreen={isSmallScreen}
-                        onBackgroundPress={() => setSelectedCards([])}
-                        isBlackout={roomData?.activeChaosEvent === CHAOS_EVENTS.BLACKOUT}
-                        isBribing={isBribing}
-                    />
+                    )}
                 </View>
-            )}
+            );
+        }
 
-
-
-        </>
-    );
+        return (
+            <View style={{ flex: 1, flexDirection: 'column', width: '100%', justifyContent: isMobilePWA ? 'space-between' : 'flex-start' }}>
+                {playingFieldContent}
+                {playerHandContent}
+            </View>
+        );
+    };
 
     return (
         <Animated.View style={[{ flex: 1 }, animatedContainerStyle]}>
@@ -1472,6 +1602,7 @@ const GameScreen = ({ onStartLoading }) => {
                     onKick={handleKickRequest}
                     status={roomData?.statoTurno} // [NEW] Pass turn status
                     playedPlayers={roomData?.carteGiocate ? Object.keys(roomData.carteGiocate) : []} // [NEW] Pass who played
+                    isDesktop={isDesktop}
                 />
 
                 <SettingsModal

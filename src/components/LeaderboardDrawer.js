@@ -19,7 +19,7 @@ const SCREEN_HEIGHT = Dimensions.get('screen').height + 120;
 
 const getRankColor = (rank) => RANK_COLORS[rank] || '#888';
 
-const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserName, isCreator, onKick, status, playedPlayers = [] }) => {
+const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserName, isCreator, onKick, status, playedPlayers = [], isDesktop }) => {
     const { reportPlayer } = useAuth();
     // ... (rest of component start)
 
@@ -32,6 +32,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
     const defaultHeight = Math.min(calculatedHeight, SCREEN_HEIGHT * 0.85);
 
     const height = useSharedValue(0);
+    const offsetX = useSharedValue(400); // Start off-screen right
     const opacity = useSharedValue(0);
     const [isDragging, setIsDragging] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false); // [NEW] Track animation state
@@ -49,23 +50,33 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
         easing: Easing.out(Easing.quad),
     };
 
-
-
     useEffect(() => {
         if (visible) {
             setIsAnimating(true);
-            height.value = withTiming(defaultHeight, ANIM_CONFIG, (finished) => {
-                if (finished) runOnJS(setIsAnimating)(false);
-            });
+            if (isDesktop) {
+                offsetX.value = withTiming(0, ANIM_CONFIG, (finished) => {
+                    if (finished) runOnJS(setIsAnimating)(false);
+                });
+            } else {
+                height.value = withTiming(defaultHeight, ANIM_CONFIG, (finished) => {
+                    if (finished) runOnJS(setIsAnimating)(false);
+                });
+            }
             opacity.value = withTiming(1, { duration: 200 });
         } else {
             setIsAnimating(true);
-            height.value = withTiming(0, { duration: 250 }, (finished) => {
-                if (finished) runOnJS(setIsAnimating)(false);
-            });
+            if (isDesktop) {
+                offsetX.value = withTiming(400, { duration: 250 }, (finished) => {
+                    if (finished) runOnJS(setIsAnimating)(false);
+                });
+            } else {
+                height.value = withTiming(0, { duration: 250 }, (finished) => {
+                    if (finished) runOnJS(setIsAnimating)(false);
+                });
+            }
             opacity.value = withTiming(0, { duration: 200 });
         }
-    }, [visible, defaultHeight]);
+    }, [visible, defaultHeight, isDesktop]);
 
     const panResponder = useRef(
         PanResponder.create({
@@ -111,6 +122,13 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
     ).current;
 
     const animatedStyle = useAnimatedStyle(() => {
+        if (isDesktop) {
+            return {
+                transform: [{ translateX: offsetX.value }],
+                opacity: opacity.value,
+                height: '100%',
+            };
+        }
         return {
             height: height.value,
             opacity: opacity.value
@@ -123,6 +141,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
 
     // Handle Opacity: Fade out when approaching full screen
     const handleStyle = useAnimatedStyle(() => {
+        if (isDesktop) return { opacity: 0 };
         const op = interpolate(
             height.value,
             [SCREEN_HEIGHT - 220, SCREEN_HEIGHT - 120], // Adjusted for buffer
@@ -154,7 +173,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
 
 
             <Animated.View
-                style={[styles.drawer, animatedStyle]}
+                style={[styles.drawer, isDesktop && styles.desktopDrawer, animatedStyle]}
                 pointerEvents={visible ? 'auto' : 'none'}
                 renderToHardwareTextureAndroid={true} // [NEW] Smooth optimization
             >
@@ -224,6 +243,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                                                     size={32}
                                                     onPress={() => onKick && onKick(player)}
                                                     style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)', borderColor: 'rgba(255, 107, 107, 0.3)', borderWidth: 1, borderRadius: 20 }}
+                                                    hoverColor="rgba(255, 107, 107, 0.25)"
                                                 />
                                             ) : (
                                                 <View style={{ width: 32 }} />
@@ -240,6 +260,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                                                     setShowReportModal(true);
                                                 }}
                                                 style={{ marginLeft: 10, backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)', borderWidth: 1, borderRadius: 20 }}
+                                                hoverColor="rgba(239, 68, 68, 0.2)"
                                             />
                                         )}
                                     </View>
@@ -250,12 +271,14 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                 </View>
 
                 {/* Draggable Handle Area - Fades out at Fullscreen */}
-                <Animated.View
-                    style={[styles.handleContainer, handleStyle]}
-                    {...panResponder.panHandlers}
-                >
-                    <View style={styles.handle} />
-                </Animated.View>
+                {!isDesktop && (
+                    <Animated.View
+                        style={[styles.handleContainer, handleStyle]}
+                        {...panResponder.panHandlers}
+                    >
+                        <View style={styles.handle} />
+                    </Animated.View>
+                )}
 
                 {/* Report Confirmation Modal */}
                 <ConfirmationModal
@@ -309,6 +332,15 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         elevation: Platform.OS === 'android' ? 4 : 20, // [PERF] Lower elevation on Android
         overflow: 'hidden',
+    },
+    desktopDrawer: {
+        bottom: 0,
+        left: 'auto',
+        width: 350,
+        borderBottomRightRadius: 0,
+        borderBottomLeftRadius: 24,
+        borderTopLeftRadius: 24,
+        paddingTop: 30,
     },
     header: {
         flexDirection: 'row',

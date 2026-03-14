@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo, forwardRef, useImperativeHandle } from 'react';
-import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator, Text, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator, Text, Platform, useWindowDimensions } from 'react-native';
 // import { SvgUri } from 'react-native-svg'; // [REMOVED]
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing, ZoomIn } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
@@ -14,7 +14,9 @@ import { DiceIcon } from './Icons';
 
 const AvatarCarousel = memo(forwardRef(({ seeds, onSelectAvatar, selectedAvatar }, ref) => {
     const { theme } = useTheme();
-    const { scrollRef, panHandlers } = useWebDragScroll(true);
+    const { width: windowWidth } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024;
+    const { scrollRef, panHandlers } = useWebDragScroll(true, isDesktop);
 
     // Merge refs: the one from parent and our local hook ref
     useImperativeHandle(ref, () => scrollRef.current);

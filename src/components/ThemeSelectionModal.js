@@ -19,9 +19,10 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
     // Calculate item width for 3 columns with gap
     // Window - padding (24*2) - gap (10*2) / 3
     // Window - padding (24*2) - gap (10*2) / 3
-    const containerPadding = 0;
     const gap = 8;
-    const availableWidth = Math.min(windowWidth * 0.85, 340) - 48; // Total width inside modal padding
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024;
+    const limitWidth = (isDesktop && hideBackButton) ? 600 : 340;
+    const availableWidth = Math.min(windowWidth * 0.85, limitWidth) - 48; // Total width inside modal padding
     const itemWidth = Math.floor((availableWidth - (gap * 2)) / 3) - 2; // -2px checks out against rounding errors
 
     const { scrollRef, panHandlers } = useWebDragScroll(); // [FIX] Enable web drag scrolling
@@ -63,7 +64,8 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
                 entering={FadeInDown.delay(delay).springify()}
                 style={{
                     width: '31%',
-                    marginBottom: gap + 4
+                    marginBottom: gap + 4,
+                    overflow: 'visible'
                 }}
             >
                 <PremiumPressable
@@ -71,6 +73,7 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
                     disabled={!isUnlocked || isSettingTheme}
                     enableSound={isUnlocked}
                     scaleDown={isUnlocked ? 0.95 : 1}
+                    overflow="visible"
                     style={[
                         styles.themeCard,
                         {
@@ -127,18 +130,19 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
     const themeList = React.useMemo(() => Object.values(themes), [themes]);
 
     return (
-        <View style={{ flex: 1, maxHeight: hideBackButton ? '100%' : 450 }}>
+        <View style={{ flex: 1, maxHeight: hideBackButton ? '100%' : 450, overflow: 'visible' }}>
             <Animated.FlatList
+                style={{ flex: 1 }}
                 ref={scrollRef}
                 data={themeList}
                 renderItem={renderItem}
                 keyExtractor={item => item.id}
                 numColumns={3}
-                columnWrapperStyle={{ justifyContent: 'space-between' }}
+                columnWrapperStyle={{ justifyContent: 'space-between', overflow: 'visible' }}
                 contentContainerStyle={{
                     flexGrow: 1,
                     paddingBottom: 110,
-                    paddingHorizontal: 5,
+                    paddingHorizontal: 10,
                     paddingTop: 10
                 }}
                 showsVerticalScrollIndicator={false}
@@ -167,7 +171,7 @@ const ThemeSelectionModal = ({ onBack, hideBackButton }) => {
 const styles = StyleSheet.create({
     themeCard: {
         borderRadius: 12,
-        overflow: 'hidden',
+        overflow: 'visible',
     },
     previewCircle: {
         width: 48,

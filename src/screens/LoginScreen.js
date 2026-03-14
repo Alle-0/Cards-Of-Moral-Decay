@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { isProfane, validateUsername } from '../utils/ValidationUtils';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ScrollView, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ScrollView, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform, useWindowDimensions, Pressable } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { auth, db } from '../services/firebase';
 import { ref, get } from 'firebase/database';
@@ -30,9 +30,10 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import PremiumBackground from '../components/PremiumBackground';
 import EulaModal from '../components/EulaModal';
 
-const { width } = Dimensions.get('window');
+// [REMOVED] const { width } = Dimensions.get('window');
 
-const TabItem = ({ label, index, dragX }) => {
+const TabItem = ({ label, index, dragX, onPress }) => {
+    const hoverScale = useSharedValue(1);
     const textStyle = useAnimatedStyle(() => {
         const itemCenter = index * 50;
         const color = interpolateColor(
@@ -43,18 +44,29 @@ const TabItem = ({ label, index, dragX }) => {
         return { color, fontWeight: 'bold' };
     });
 
+    const hoverStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: hoverScale.value }]
+    }));
+
     return (
-        <View style={{ flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', zIndex: 2 }} pointerEvents="none">
-            <Animated.Text style={[{ fontSize: 13, letterSpacing: 0.5, fontFamily: 'Cinzel-Bold' }, textStyle]}>
+        <Pressable 
+            onPress={onPress}
+            onHoverIn={() => { hoverScale.value = withTiming(1.05, { duration: 150 }); }}
+            onHoverOut={() => { hoverScale.value = withTiming(1, { duration: 150 }); }}
+            style={{ flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', zIndex: 2 }}
+        >
+            <Animated.Text style={[{ fontSize: 13, letterSpacing: 0.5, fontFamily: 'Cinzel-Bold' }, textStyle, hoverStyle]}>
                 {label}
             </Animated.Text>
-        </View>
+        </Pressable>
     );
 };
 
 export default function LoginScreen() {
     const { signUp, recoverAccount, devLogin, loading: authLoading, user: authUserSession } = useAuth();
     const { t } = useLanguage();
+    const { width } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && width >= 1024;
     const [activeTab, setActiveTab] = useState('new'); // 'new' | 'recover'
 
     // [NEW] Monitor for Database Index Errors
@@ -73,6 +85,7 @@ export default function LoginScreen() {
     const startX = useSharedValue(0);
     const targetX = useSharedValue(0);
     const isDraggingSV = useSharedValue(false);
+    const carouselWidthSV = useSharedValue(0); // [NEW] Track actual width for perfect alignment
 
     const tabScale = useLiquidScale(dragXPercent, startX, targetX, isDraggingSV, 1.05);
 
@@ -155,10 +168,11 @@ export default function LoginScreen() {
         };
     });
 
-    const animatedContentStyle = useAnimatedStyle(() => ({
-        // We must subtract the padding (24 * 2 = 48) from the width to get the correct inner width
-        transform: [{ translateX: -(dragXPercent.value / 50) * (width * 0.9 - 48) }]
-    }));
+    const animatedContentStyle = useAnimatedStyle(() => {
+        return {
+            transform: [{ translateX: -(dragXPercent.value / 50) * carouselWidthSV.value }]
+        };
+    });
 
     // Form States
     const [username, setUsername] = useState('');
@@ -296,27 +310,37 @@ export default function LoginScreen() {
                     {['it', 'en'].map((lang) => {
                         const { language, setLanguage } = useLanguage();
                         const isActive = language === lang;
+                        const hoverScale = useSharedValue(1);
+                        const hoverStyle = useAnimatedStyle(() => ({
+                            transform: [{ scale: hoverScale.value }],
+                            backgroundColor: isActive ? 'rgba(255, 215, 0, 0.25)' : 'rgba(255,255,255,0.05)'
+                        }));
+
                         return (
-                            <TouchableOpacity
+                            <Pressable
                                 key={lang}
                                 onPress={() => setLanguage(lang)}
-                                style={{
-                                    paddingVertical: 4,
-                                    paddingHorizontal: 8,
-                                    borderRadius: 6,
-                                    backgroundColor: isActive ? 'rgba(255, 215, 0, 0.2)' : 'transparent',
-                                    borderWidth: 1,
-                                    borderColor: isActive ? '#FFD700' : 'rgba(255,255,255,0.1)'
-                                }}
+                                onHoverIn={() => { hoverScale.value = withTiming(1.1, { duration: 150 }); }}
+                                onHoverOut={() => { hoverScale.value = withTiming(1, { duration: 150 }); }}
                             >
-                                <Text style={{
-                                    color: isActive ? '#FFD700' : '#666',
-                                    fontFamily: 'Cinzel-Bold',
-                                    fontSize: 10
-                                }}>
-                                    {lang.toUpperCase()}
-                                </Text>
-                            </TouchableOpacity>
+                                <Animated.View
+                                    style={[{
+                                        paddingVertical: 5,
+                                        paddingHorizontal: 10,
+                                        borderRadius: 8,
+                                        borderWidth: 1,
+                                        borderColor: isActive ? '#FFD700' : 'rgba(255,255,255,0.1)'
+                                    }, hoverStyle]}
+                                >
+                                    <Text style={{
+                                        color: isActive ? '#FFD700' : '#888',
+                                        fontFamily: 'Cinzel-Bold',
+                                        fontSize: 11
+                                    }}>
+                                        {lang.toUpperCase()}
+                                    </Text>
+                                </Animated.View>
+                            </Pressable>
                         );
                     })}
                 </View>
@@ -347,18 +371,25 @@ export default function LoginScreen() {
                                 { width: '50%', top: 2, bottom: 2, borderRadius: 10 }
                             ]}
                         />
-                        <TabItem label={t('login_new_player')} index={0} dragX={dragXPercent} />
-                        <TabItem label={t('login_recover')} index={1} dragX={dragXPercent} />
+                        <TabItem label={t('login_new_player')} index={0} dragX={dragXPercent} onPress={() => setActiveTab('new')} />
+                        <TabItem label={t('login_recover')} index={1} dragX={dragXPercent} onPress={() => setActiveTab('recover')} />
 
-                        <View
-                            style={StyleSheet.absoluteFill}
-                            {...panResponder.panHandlers}
-                        />
+                        {Platform.OS !== 'web' && (
+                            <View
+                                style={StyleSheet.absoluteFill}
+                                {...panResponder.panHandlers}
+                            />
+                        )}
                     </View>
                 </View>
 
                 {/* Content Area - Carousel Wrapper */}
-                <View style={styles.carouselContainer}>
+                <View 
+                    style={styles.carouselContainer}
+                    onLayout={(e) => {
+                        carouselWidthSV.value = e.nativeEvent.layout.width;
+                    }}
+                >
                     <Animated.View style={[styles.carouselTrack, animatedContentStyle]}>
 
                         {/* SLIDE 1: NEW PLAYER */}
@@ -392,22 +423,28 @@ export default function LoginScreen() {
                                 )}
                             </View>
 
-                            <TouchableOpacity
-                                style={[styles.button, loading && styles.buttonDisabled]}
+                            <Pressable
+                                style={({ pressed }) => [
+                                    styles.button,
+                                    loading && styles.buttonDisabled,
+                                    { transform: [{ scale: pressed ? 0.98 : 1 }] }
+                                ]}
                                 onPress={handleSignUp}
                                 disabled={loading}
                             >
-                                <LinearGradient
-                                    colors={['#FFD700', '#FFA500']}
-                                    style={styles.gradientButton}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                >
-                                    <Text style={styles.buttonText}>
-                                        {loading ? t('login_btn_creating') : t('login_btn_create')}
-                                    </Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                {({ hovered }) => (
+                                    <LinearGradient
+                                        colors={hovered ? ['#FFE040', '#FFB820'] : ['#FFD700', '#FFA500']}
+                                        style={[styles.gradientButton, hovered && { shadowOpacity: 0.4, shadowRadius: 15 }]}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                    >
+                                        <Animated.Text style={[styles.buttonText, hovered && { transform: [{ scale: 1.02 }] }]}>
+                                            {loading ? t('login_btn_creating') : t('login_btn_create')}
+                                        </Animated.Text>
+                                    </LinearGradient>
+                                )}
+                            </Pressable>
 
                             <Text style={styles.disclaimer}>
                                 {t('login_disclaimer')}
@@ -457,22 +494,28 @@ export default function LoginScreen() {
                                 </Animated.View>
                             </View>
 
-                            <TouchableOpacity
-                                style={[styles.button, loading && styles.buttonDisabled]}
+                            <Pressable
+                                style={({ pressed }) => [
+                                    styles.button,
+                                    loading && styles.buttonDisabled,
+                                    { transform: [{ scale: pressed ? 0.98 : 1 }] }
+                                ]}
                                 onPress={handleRecovery}
                                 disabled={loading}
                             >
-                                <LinearGradient
-                                    colors={['#ef4444', '#b91c1c']}
-                                    style={styles.gradientButton}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                >
-                                    <Text style={[styles.buttonText, { color: '#fff' }]}>
-                                        {loading ? t('login_btn_verifying') : t('login_btn_recover')}
-                                    </Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                {({ hovered }) => (
+                                    <LinearGradient
+                                        colors={hovered ? ['#ff5555', '#cc2222'] : ['#ef4444', '#b91c1c']}
+                                        style={styles.gradientButton}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                    >
+                                        <Text style={[styles.buttonText, { color: '#fff' }]}>
+                                            {loading ? t('login_btn_verifying') : t('login_btn_recover')}
+                                        </Text>
+                                    </LinearGradient>
+                                )}
+                            </Pressable>
                         </View>
 
                     </Animated.View>
@@ -499,18 +542,21 @@ export default function LoginScreen() {
             {__DEV__ && (
                 <Animated.View
                     entering={FadeInDown.delay(800)}
-                    style={styles.devContainer}
+                    style={[styles.devContainer, isDesktop && { maxWidth: 500, alignSelf: 'center' }]}
                 >
                     <Text style={styles.devLabel}>DEV QUICK LOGIN:</Text>
                     <View style={styles.devButtons}>
                         {['Prova', 'Prova2', 'Prova3'].map((name) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={name}
-                                style={styles.devButton}
+                                style={({ hovered }) => [
+                                    styles.devButton,
+                                    hovered && { backgroundColor: 'rgba(255,215,0,0.15)', borderColor: '#FFD700' }
+                                ]}
                                 onPress={() => devLogin(name)}
                             >
                                 <Text style={styles.devButtonText}>{name}</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </View>
                 </Animated.View>
@@ -554,14 +600,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     content: {
-        width: width * 0.9,
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        borderRadius: 24,
-        padding: 24,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 215, 0, 0.15)',
+        width: '90%',
+        maxWidth: 600, // Enforce max width on desktop
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        borderRadius: 32,
+        padding: 32,
+        borderWidth: 1.5,
+        borderColor: 'rgba(255, 215, 0, 0.2)',
         alignItems: 'center',
         overflow: 'hidden',
+        backdropFilter: 'blur(10px)', // Support for web
     },
     title: {
         fontFamily: 'Cinzel-Bold',

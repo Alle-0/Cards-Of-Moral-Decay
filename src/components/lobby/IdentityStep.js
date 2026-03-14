@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import PremiumPressable from '../PremiumPressable';
 import Animated, { SlideInLeft, SlideOutLeft } from 'react-native-reanimated';
 import PremiumInput from '../PremiumInput';
 import PremiumButton from '../PremiumButton';
@@ -39,9 +40,11 @@ const IdentityStep = ({
             {/* Input Row with Avatar Bubble */}
             <View style={styles.inputRow}>
                 {/* Avatar Bubble */}
-                <TouchableOpacity
+                <PremiumPressable
                     onPress={onEditAvatar}
                     style={styles.avatarBubble}
+                    overflow="visible"
+                    contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}
                 >
                     {avatar === '###RANDOM###' ? (
                         <DiceIcon size={30} color={theme.colors.accent} />
@@ -51,7 +54,7 @@ const IdentityStep = ({
                     <View style={styles.editBadge}>
                         <EditIcon size={14} color="#000" />
                     </View>
-                </TouchableOpacity>
+                </PremiumPressable>
 
                 {/* Name Input */}
                 <View style={{ flex: 1 }}>

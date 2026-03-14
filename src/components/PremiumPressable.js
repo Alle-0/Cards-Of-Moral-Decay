@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Pressable, View, Platform } from 'react-native';
+import { StyleSheet, Pressable, View, Platform, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring, Easing } from 'react-native-reanimated';
 import HapticsService from '../services/HapticsService';
 import SoundService from '../services/SoundService';
@@ -28,8 +28,27 @@ const PremiumPressable = ({
     enableRipple = true,
     enableSound = false, // [MODIFIED] Default false as per user request (only modals pop)
     pressInDuration = 100,
-    pressOutDuration = 150
+    pressOutDuration = 150,
+    borderRadius = 12, // [NEW] Customizable radius for hover overlay
+    hoverColor = 'rgba(255, 255, 255, 0.08)', // [NEW] Custom hover overlay color
+    activeScale = null, // [NEW] Override automatic scaleDown if provided
 }) => {
+    const { width: windowWidth } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024 && typeof navigator !== 'undefined' && !(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+
+    // [NEW] Attempt to extract borderRadius from style to ensure hover alignment
+    const getStyleProp = (property) => {
+        if (!style) return null;
+        const styles = Array.isArray(style) ? style : [style];
+        for (let i = styles.length - 1; i >= 0; i--) {
+            const s = styles[i];
+            if (s && typeof s === 'object' && s[property] !== undefined) return s[property];
+        }
+        return null;
+    };
+
+    const effectiveBorderRadius = borderRadius !== 12 ? borderRadius : (getStyleProp('borderRadius') ?? 12);
+
     const scale = useSharedValue(1);
 
     // Ripple shared values
@@ -87,27 +106,55 @@ const PremiumPressable = ({
                 disabled={disabled}
                 hitSlop={hitSlop}
                 android_disableSound={true} // [FIX] Silence native Android touch sound
-                style={[{ width: '100%' }, Platform.OS === 'web' && { flex: 1, outlineStyle: 'none' }, pressableStyle]}
+                style={({ pressed, hovered }) => {
+                    // [NEW] Robust Web Hover feedback - ONLY FOR DESKTOP PC (>= 1024px)
+                    if (isDesktop && !disabled && !pressed) {
+                        if (hovered) {
+                            scale.value = withSpring(1.02, { mass: 0.5, stiffness: 200, damping: 15 });
+                        } else {
+                            scale.value = withSpring(1, { mass: 0.5, stiffness: 200, damping: 15 });
+                        }
+                    }
+                    return [
+                        { width: '100%', borderRadius: effectiveBorderRadius },
+                        Platform.OS === 'web' && { flex: 1, outlineStyle: 'none', cursor: disabled ? 'default' : 'pointer', borderRadius: effectiveBorderRadius },
+                        pressableStyle
+                    ];
+                }}
             >
-                <View style={[StyleSheet.absoluteFill, { zIndex: 0 }]}>
-                    {enableRipple && (
-                        <Animated.View
-                            style={[
-                                rippleStyle,
-                                styles.rippleBase,
-                                { backgroundColor: rippleColor }
-                            ]}
-                        />
-                    )}
-                </View>
+                {({ pressed, hovered }) => (
+                    <>
+                        <View style={[StyleSheet.absoluteFill, { zIndex: 0, borderRadius: effectiveBorderRadius, overflow: 'hidden' }]}>
+                            {enableRipple && (
+                                <Animated.View
+                                    style={[
+                                        rippleStyle,
+                                        styles.rippleBase,
+                                        { backgroundColor: rippleColor }
+                                    ]}
+                                />
+                            )}
+                            {/* [NEW] Subtle Hover Overlay for Web DESKTOP PC */}
+                            {isDesktop && hovered && !disabled && (
+                                <Animated.View
+                                    style={[
+                                        StyleSheet.absoluteFill,
+                                        { backgroundColor: hoverColor, borderRadius: effectiveBorderRadius, zIndex: 1 }
+                                    ]}
+                                    pointerEvents="none"
+                                />
+                            )}
+                        </View>
 
-                {/* Content Rendered ON TOP of Ripple */}
-                <View
-                    style={[{ zIndex: 1, width: '100%' }, contentContainerStyle]}
-                    pointerEvents="none"
-                >
-                    {children}
-                </View>
+                        {/* Content Rendered ON TOP of Ripple */}
+                        <View
+                            style={[{ zIndex: 2, width: '100%', borderRadius: effectiveBorderRadius }, contentContainerStyle]}
+                            pointerEvents="none"
+                        >
+                            {children}
+                        </View>
+                    </>
+                )}
             </Pressable>
         </Animated.View>
     );

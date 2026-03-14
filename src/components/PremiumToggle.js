@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 const PremiumToggle = ({ value, onValueChange, size = 28, activeColor }) => {
     const { theme } = useTheme();
     const resolvedColor = activeColor || theme.colors.accent;
+    const hoverScale = useSharedValue(1);
     const offset = useSharedValue(value ? 1 : 0);
 
     // Track dimensions
@@ -30,7 +31,10 @@ const PremiumToggle = ({ value, onValueChange, size = 28, activeColor }) => {
             [0, 1],
             ['#333333', resolvedColor]
         );
-        return { backgroundColor };
+        return { 
+            backgroundColor,
+            transform: [{ scale: hoverScale.value }]
+        };
     });
 
     const thumbAnimatedStyle = useAnimatedStyle(() => {
@@ -41,7 +45,20 @@ const PremiumToggle = ({ value, onValueChange, size = 28, activeColor }) => {
     });
 
     return (
-        <Pressable onPress={handlePress} activeOpacity={0.8} hitSlop={10} android_disableSound={true}>
+        <Pressable 
+            onPress={handlePress} 
+            activeOpacity={0.8} 
+            hitSlop={10} 
+            android_disableSound={true}
+            onHoverIn={() => { 
+                const isDesktop = Platform.OS === 'web' && typeof navigator !== 'undefined' && !(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+                if (isDesktop) hoverScale.value = withTiming(1.1, { duration: 150 }); 
+            }}
+            onHoverOut={() => { 
+                const isDesktop = Platform.OS === 'web' && typeof navigator !== 'undefined' && !(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+                if (isDesktop) hoverScale.value = withTiming(1, { duration: 150 }); 
+            }}
+        >
             <Animated.View style={[
                 styles.track,
                 { width: trackWidth, height: trackHeight, borderRadius: trackHeight / 2, padding },

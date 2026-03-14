@@ -157,12 +157,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                 >
                     <View style={{
                         zIndex: 10,
-                        overflow: 'visible',
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 10 },
-                        shadowOpacity: 0.8,
-                        shadowRadius: 15,
-                        elevation: 20
+                        overflow: 'visible'
                     }}>
                         <AvatarWithFrame
                             avatar={winnerInfo?.avatar?.startsWith('http') ? winnerInfo.avatar : (winnerInfo?.avatar || 'User')}

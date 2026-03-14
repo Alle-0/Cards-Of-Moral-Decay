@@ -81,6 +81,7 @@ const styles = StyleSheet.create({
     },
     container: {
         width: width * 0.8,
+        maxWidth: 500,
         padding: 30,
         borderRadius: 20,
         borderWidth: 2,

@@ -10,18 +10,29 @@ import { CrownIcon } from './Icons';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers, t, isSmallScreen }) => (
-    <View style={[styles.blackCard, isSmallScreen && { paddingHorizontal: 5 }]}>
+const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers, t, isSmallScreen, isDesktop }) => (
+    <View style={[
+        styles.blackCard,
+        isSmallScreen && { paddingHorizontal: 5 },
+        isDesktop && { width: '100%', maxWidth: 900, alignSelf: 'center', marginBottom: 20 }
+    ]}>
         {/* Texture removed per user request "solo sulle bianche" */}
         <Text style={styles.headerTitle}>{t('black_card_label')}</Text>
-        <View style={styles.cardInternal}>
+        <View style={[
+            styles.cardInternal,
+            isDesktop && { minHeight: 300, padding: 30 },
+            !isDesktop && { minHeight: 200 } // [FIX] Increase base height on mobile
+        ]}>
             <Text
                 style={[
                     styles.blackCardText,
                     {
-                        fontSize: isSmallScreen
-                            ? ((text?.length || 0) > 80 ? 14 : ((text?.length || 0) > 40 ? 16 : 18))
-                            : ((text?.length || 0) > 80 ? 16 : ((text?.length || 0) > 40 ? 18 : 20))
+                        fontSize: isDesktop 
+                            ? ((text?.length || 0) > 80 ? 32 : ((text?.length || 0) > 40 ? 38 : 46))
+                        : isSmallScreen
+                            ? ((text?.length || 0) > 80 ? 15 : ((text?.length || 0) > 40 ? 18 : 20))
+                            : ((text?.length || 0) > 80 ? 18 : ((text?.length || 0) > 40 ? 22 : 26)),
+                        lineHeight: isDesktop ? 54 : 32
                     }
                 ]}
                 numberOfLines={isSmallScreen ? 8 : 10}
@@ -38,7 +49,7 @@ const BlackCard = memo(({ text, dominusName, answerCount, totalAnswers, t, isSma
                     <Text style={[styles.footerText, isSmallScreen && { fontSize: 10 }]}>{t('dominus_label')} <Text style={{ color: '#ffd36a' }}>{dominusName || '?'}</Text></Text>
                 </View>
                 {answerCount < totalAnswers && (
-                    <Text style={styles.footerText}>{t('answers_label')} <Text style={{ color: '#ffd36a' }}>{answerCount}/{totalAnswers}</Text></Text>
+                    <Text style={[styles.footerText, isDesktop && { fontSize: 14 }]}>{t('answers_label')} <Text style={{ color: '#ffd36a' }}>{answerCount}/{totalAnswers}</Text></Text>
                 )}
             </View>
         </View>
@@ -250,7 +261,7 @@ const PlayedCard = memo(({ cards, playerName, isDominus, onPickWinner, revealed,
     );
 });
 
-const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnswers, t, isSmallScreen }) => {
+const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnswers, t, isSmallScreen, isDesktop }) => {
     // Local state for the card content being currently displayed
     const [displayedCard, setDisplayedCard] = useState(blackCard);
     const rotateX = useSharedValue(0);
@@ -285,7 +296,7 @@ const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnsw
     }));
 
     return (
-        <Animated.View style={[{ width: '100%', alignItems: 'center', marginBottom: isSmallScreen ? 10 : 20, zIndex: 10 }, animatedStyle]}>
+        <Animated.View style={[{ width: '100%', alignItems: 'center', marginBottom: 20, zIndex: 10 }, animatedStyle]}>
             <BlackCard
                 text={displayedCard?.testo || displayedCard || t?.('select_card_placeholder') || 'Seleziona una carta'}
                 dominusName={dominusName}
@@ -298,7 +309,7 @@ const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnsw
     );
 });
 
-const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, status, dominusName, playerCount, onSkip, onReveal, showPlayedArea = true, style, players, optimisticWinner, isSmallScreen }) => { // [NEW] optimisticWinner, isSmallScreen
+const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, status, dominusName, playerCount, onSkip, onReveal, showPlayedArea = true, style, players, optimisticWinner, isSmallScreen, isDesktop }) => { // [NEW] optimisticWinner, isSmallScreen, isDesktop
     const { theme } = useTheme();
     const { t } = useLanguage();
     const { user } = useAuth(); // [NEW] Get user for skins
@@ -359,6 +370,7 @@ const GameTable = ({ blackCard, playedCards = {}, isDominus, onSelectWinner, sta
                 totalAnswers={totalAnswers}
                 t={t}
                 isSmallScreen={isSmallScreen}
+                isDesktop={isDesktop}
             />
 
             <ScrollView

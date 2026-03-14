@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
+import PremiumPressable from '../PremiumPressable';
 import Animated, {
     SlideInRight,
     SlideOutRight,
@@ -77,12 +78,16 @@ const MainMenuStep = ({
             <View style={{ width: '100%', flex: 1 }}>
                 <View style={styles.contentWrapper}>
                     {/* PROFILE EDIT BUTTON */}
-                    <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                    <PremiumPressable 
+                        onPress={onBack} 
+                        style={styles.backButton}
+                        overflow="visible"
+                    >
                         <View style={styles.backButtonInner}>
                             <EditIcon size={18} color="rgba(255,255,255,0.6)" />
                             <Text style={styles.backButtonText}>{t('edit_profile')}</Text>
                         </View>
-                    </TouchableOpacity>
+                    </PremiumPressable>
 
                     {/* MAIN CARD CONTAINER */}
                     <Animated.View
@@ -95,15 +100,16 @@ const MainMenuStep = ({
                             ref={ref => TutorialRegistry.register('quickjoin', ref)}
                             collapsable={false}
                         >
-                            <TouchableOpacity
+                            <PremiumPressable
                                 style={[styles.quickJoinButton, { backgroundColor: theme.colors.accent }]}
+                                contentContainerStyle={{ alignItems: 'center', paddingVertical: 18 }}
                                 onPress={onQuickJoin}
-                                activeOpacity={0.8}
                                 disabled={isLoading}
+                                overflow="visible"
                             >
                                 <Text style={styles.quickJoinText}>{t('quick_join_btn')}</Text>
                                 <Text style={styles.quickJoinSubtext}>{t('quick_join_subtitle')}</Text>
-                            </TouchableOpacity>
+                            </PremiumPressable>
                         </View>
 
                         {/* CREATE / JOIN BUTTONS */}
@@ -114,7 +120,7 @@ const MainMenuStep = ({
                         >
                             <View style={styles.actionRow}>
                                 {/* CREATE BUTTON */}
-                                <TouchableOpacity
+                                <PremiumPressable
                                     style={[
                                         styles.actionCard,
                                         {
@@ -122,15 +128,16 @@ const MainMenuStep = ({
                                             backgroundColor: 'rgba(0,0,0,0.3)'
                                         }
                                     ]}
+                                    contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 12, alignItems: 'center' }}
                                     onPress={() => onCreateRoom({})}
                                     disabled={isLoading}
-                                    activeOpacity={0.7}
+                                    overflow="visible"
                                 >
                                     <Text style={styles.actionCardText}>{t('create_room')}</Text>
-                                </TouchableOpacity>
+                                </PremiumPressable>
 
                                 {/* JOIN BUTTON */}
-                                <TouchableOpacity
+                                <PremiumPressable
                                     style={[
                                         styles.actionCard,
                                         {
@@ -138,8 +145,9 @@ const MainMenuStep = ({
                                             backgroundColor: showJoinInput ? theme.colors.accent : 'rgba(0,0,0,0.3)'
                                         }
                                     ]}
+                                    contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 12, alignItems: 'center' }}
                                     onPress={toggleJoinInput}
-                                    activeOpacity={0.7}
+                                    overflow="visible"
                                 >
                                     <Text style={[
                                         styles.actionCardText,
@@ -147,7 +155,7 @@ const MainMenuStep = ({
                                     ]}>
                                         {t('insert_code')}
                                     </Text>
-                                </TouchableOpacity>
+                                </PremiumPressable>
                             </View>
                         </View>
 
@@ -167,13 +175,15 @@ const MainMenuStep = ({
                                             style={{ marginVertical: 0, height: 50 }}
                                         />
                                     </View>
-                                    <TouchableOpacity
+                                    <PremiumPressable
                                         style={[styles.goButton, { backgroundColor: theme.colors.accent }]}
+                                        contentContainerStyle={{ height: 50, width: 70, alignItems: 'center', justifyContent: 'center' }}
                                         onPress={() => onJoinRoom(roomToJoin)}
                                         disabled={!roomToJoin || isLoading}
+                                        overflow="visible"
                                     >
                                         <Text style={styles.goButtonText}>GO</Text>
-                                    </TouchableOpacity>
+                                    </PremiumPressable>
                                 </View>
                             </Animated.View>
                         </Animated.View>
@@ -253,9 +263,7 @@ const styles = StyleSheet.create({
     // QUICK JOIN
     quickJoinButton: {
         width: '100%',
-        paddingVertical: 18,
         borderRadius: 16,
-        alignItems: 'center',
         shadowColor: '#d4af37',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.4,
@@ -284,12 +292,8 @@ const styles = StyleSheet.create({
     },
     actionCard: {
         flex: 1,
-        paddingVertical: 16,
-        paddingHorizontal: 12,
         borderRadius: 14,
         borderWidth: 1.5,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     actionCardText: {
         color: 'rgba(255,255,255,0.7)',
@@ -322,11 +326,7 @@ const styles = StyleSheet.create({
         letterSpacing: 1
     },
     goButton: {
-        height: 50,
-        width: 70,
         borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
         borderWidth: 1.2,
         borderColor: 'rgba(255,255,255,0.15)',
         shadowColor: '#000',

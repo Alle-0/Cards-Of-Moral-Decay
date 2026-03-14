@@ -85,10 +85,15 @@ const PersonalizationScreen = () => {
     }, [activeTab]);
 
     // Skeleton Helpers - Refined for Personalization
+    const windowWidth = Dimensions.get('window').width;
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024;
+    const referenceWidth = isDesktop ? Math.min(windowWidth * 0.85, 600) : windowWidth;
+    const itemWidthRef = (referenceWidth - 64) / 3;
+
     const SkeletonThemeItem = () => (
         <View style={{
             width: '31%',
-            aspectRatio: 0.83, // 1 / 1.2
+            height: itemWidthRef * 1.2, 
             marginBottom: 8,
             borderRadius: 12,
             marginTop: 15,
@@ -107,7 +112,7 @@ const PersonalizationScreen = () => {
     const SkeletonSkinItem = () => (
         <View style={{
             width: '31%',
-            height: (Dimensions.get('window').width - 32) / 3 * 1.25, // Height logic kept similar for consistency
+            height: itemWidthRef * 1.25, 
             marginBottom: 8,
             borderRadius: 12,
             marginTop: 15,
@@ -180,7 +185,7 @@ const PersonalizationScreen = () => {
         const isReady = readyTabs.includes(index);
 
         return (
-            <View style={{ display: isVisible ? 'flex' : 'none', flex: 1 }}>
+            <View style={{ display: isVisible ? 'flex' : 'none', flex: 1, overflow: 'visible' }}>
                 {(!isReady || !visitedTabs.includes(index)) ? (
                     renderSkeleton()
                 ) : (
@@ -240,8 +245,14 @@ const PersonalizationScreen = () => {
             onStartShouldSetPanResponder: () => true,
             // [FIX] Aggressively capture touch to prevent parent ScrollView/Pager from stealing it
             onStartShouldSetPanResponderCapture: () => true,
-            onMoveShouldSetPanResponderCapture: () => true,
-            onMoveShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+                // Only intercept capture if horizontal move is significant
+                return Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+            },
+            onMoveShouldSetPanResponder: (evt, gestureState) => {
+                // Only intercept moving horizontally more than vertically
+                return Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+            },
             onPanResponderTerminationRequest: () => false,
             onShouldBlockNativeResponder: () => true,
             onPanResponderGrant: (evt) => {
@@ -353,14 +364,14 @@ const PersonalizationScreen = () => {
     }));
 
     return (
-        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+        <View style={{ flex: 1, backgroundColor: 'transparent', paddingTop: insets.top }}>
             {/* Header Title */}
-            <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
+            <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: isDesktop ? 35 : 50, marginBottom: 20, textAlign: 'center' }}>
                 {t('inventory_title')}
             </Text>
 
 
-            <View style={{ flex: 1, paddingHorizontal: 20 }}>
+            <View style={[{ flex: 1, paddingHorizontal: 20 }, isDesktop && { maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
                 {/* Tab Bar */}
                 <View
                     style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}

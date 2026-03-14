@@ -64,7 +64,7 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                 contentContainerStyle={{
                     flexGrow: 1,
                     paddingBottom: 110,
-                    paddingHorizontal: 4
+                    paddingHorizontal: 10
                 }}
                 showsVerticalScrollIndicator={false}
             >
@@ -88,18 +88,18 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                                 <Animated.View
                                     key={frame.id}
                                     entering={FadeInDown.delay(index * 50).springify()}
-                                    style={{ width: itemWidth }}
+                                    style={{ width: itemWidth, overflow: 'visible' }}
                                 >
                                     <PremiumPressable
                                         onPress={isUnlocked ? () => handleEquip(frame.id) : null}
                                         disabled={!isUnlocked}
                                         enableSound={isUnlocked}
                                         scaleDown={isUnlocked ? 0.95 : 1}
+                                        overflow="visible"
                                         style={[
                                             styles.frameCard,
                                             {
-                                                paddingVertical: 15,
-                                                backgroundColor: 'rgba(255,255,255,0.03)',
+                                                backgroundColor: isSelected ? theme.colors.accentWeak : 'rgba(255,255,255,0.03)',
                                                 borderColor: isSelected ? theme.colors.accent : (isUnlocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)'),
                                                 borderWidth: isSelected ? 2 : 1,
                                                 opacity: isUnlocked ? 1 : 0.5
@@ -109,6 +109,7 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             width: '100%',
+                                            paddingVertical: 15,
                                         }}
                                     >
                                         {/* Frame Preview using standardized component */}
@@ -159,7 +160,7 @@ const FrameSelectionModal = ({ onBack, hideBackButton }) => {
 const styles = StyleSheet.create({
     frameCard: {
         borderRadius: 12,
-        overflow: 'hidden',
+        overflow: 'visible',
     },
     frameLabel: {
         fontSize: 11,

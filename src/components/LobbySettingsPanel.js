@@ -13,6 +13,9 @@ import { translations } from '../i18n/translations';
 import { useTheme } from '../context/ThemeContext'; // [NEW]
 
 const PointItem = ({ pts, index, dragX, theme, onPress }) => {
+    const hoverScale = useSharedValue(1);
+    const [isHovered, setIsHovered] = React.useState(false);
+
     const textStyle = useAnimatedStyle(() => {
         const itemCenter = index * 70;
         const color = interpolateColor(
@@ -23,34 +26,61 @@ const PointItem = ({ pts, index, dragX, theme, onPress }) => {
         return { color, fontWeight: '900' };
     });
 
+    const hoverStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: hoverScale.value }],
+    }));
+
     return (
-        <Pressable
-            onPress={() => onPress && onPress(pts)}
-            style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center', borderRadius: 15, zIndex: 2 }}
-        >
-            <Animated.Text style={[{ fontSize: 20, lineHeight: 22, marginTop: 2 }, textStyle]}>
-                {pts}
-            </Animated.Text>
-            <Animated.Text style={[{ fontSize: 8, fontWeight: 'bold', lineHeight: 10 }, textStyle]}>PTS</Animated.Text>
-        </Pressable>
+        <View style={{ zIndex: isHovered ? 10 : 2 }}>
+            <Pressable
+                onPress={() => onPress && onPress(pts)}
+                onHoverIn={() => {
+                    setIsHovered(true);
+                    hoverScale.value = withTiming(1.15, { duration: 120 });
+                }}
+                onHoverOut={() => {
+                    setIsHovered(false);
+                    hoverScale.value = withTiming(1, { duration: 150 });
+                }}
+                style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center', borderRadius: 15 }}
+            >
+                <Animated.View style={[{ alignItems: 'center', justifyContent: 'center' }, hoverStyle]}>
+                    <Animated.Text style={[{ fontSize: 20, lineHeight: 22, marginTop: 2 }, textStyle]}>
+                        {pts}
+                    </Animated.Text>
+                    <Animated.Text style={[{ fontSize: 8, fontWeight: 'bold', lineHeight: 10 }, textStyle]}>PTS</Animated.Text>
+                </Animated.View>
+            </Pressable>
+        </View>
     );
 };
 
 const LanguageItem = ({ lang, index, dragX, theme, displayLang, onPress }) => {
+    const hoverOpacity = useSharedValue(1);
+    const [isHovered, setIsHovered] = React.useState(false);
+
     const textStyle = useAnimatedStyle(() => {
-        const itemCenter = index * 52; // [FIX] Stride 52
+        const itemCenter = index * 52;
         const color = interpolateColor(
             dragX.value,
-            [itemCenter - 52, itemCenter, itemCenter + 52], // [FIX] Stride 52
+            [itemCenter - 52, itemCenter, itemCenter + 52],
             ['rgba(255,255,255,0.3)', '#FFFFFF', 'rgba(255,255,255,0.3)']
         );
-        return { color, fontWeight: 'bold' };
+        return { color, fontWeight: 'bold', opacity: hoverOpacity.value };
     });
 
     return (
         <Pressable
             onPress={() => onPress && onPress(lang)}
-            style={{ width: 52, height: 36, alignItems: 'center', justifyContent: 'center', zIndex: 2 }} // [FIX] Width 52
+            onHoverIn={() => {
+                setIsHovered(true);
+                hoverOpacity.value = withTiming(1, { duration: 100 });
+            }}
+            onHoverOut={() => {
+                setIsHovered(false);
+                hoverOpacity.value = withTiming(0.7, { duration: 150 });
+            }}
+            style={{ width: 52, height: 36, alignItems: 'center', justifyContent: 'center', zIndex: isHovered ? 10 : 2 }}
         >
             <Animated.Text style={[{ fontSize: 12 }, textStyle]}>
                 {displayLang}
@@ -62,9 +92,10 @@ const LanguageItem = ({ lang, index, dragX, theme, displayLang, onPress }) => {
 // [NEW] Memoized Animated Pack Card to prevent glitches
 const PackCard = React.memo(({ pack, isSelected, isOwned, onToggle, onPreview, theme, t }) => {
     // Shared Values for animation
-    const opacitySV = useSharedValue(isSelected ? 1 : (isOwned ? 0.8 : 0.5)); // [FIX] Higher base opacity to avoid "muddy" look
+    const opacitySV = useSharedValue(isSelected ? 1 : (isOwned ? 0.8 : 0.5));
     const selectionProgress = useSharedValue(isSelected ? 1 : 0);
     const borderColorSV = useSharedValue(isSelected ? theme.colors.accent : (isOwned ? 'rgba(255,255,255,0.05)' : '#111'));
+    const [isHovered, setIsHovered] = React.useState(false);
 
     useEffect(() => {
         opacitySV.value = withSpring(
@@ -84,8 +115,7 @@ const PackCard = React.memo(({ pack, isSelected, isOwned, onToggle, onPreview, t
     const containerStyle = useAnimatedStyle(() => ({
         opacity: opacitySV.value,
         borderColor: borderColorSV.value,
-        // Static dark background to prevent "transparent black" interpolation issues
-        backgroundColor: 'rgba(20, 20, 30, 0.4)',
+        backgroundColor: isHovered ? 'rgba(30, 30, 45, 0.6)' : 'rgba(20, 20, 30, 0.4)',
     }));
 
     const overlayStyle = useAnimatedStyle(() => ({
@@ -102,6 +132,8 @@ const PackCard = React.memo(({ pack, isSelected, isOwned, onToggle, onPreview, t
     return (
         <Pressable
             onPress={() => onToggle(pack.id)}
+            onHoverIn={() => setIsHovered(true)}
+            onHoverOut={() => setIsHovered(false)}
             style={{ width: '48%' }}
         >
             <Animated.View style={[styles.packCard, { width: '100%' }, containerStyle, { overflow: 'hidden' }]}>
@@ -127,7 +159,7 @@ const PackCard = React.memo(({ pack, isSelected, isOwned, onToggle, onPreview, t
                 </View>
                 {isSelected && <View style={[styles.checkBadge, { backgroundColor: pack.color }]} />}
 
-                <TouchableOpacity
+                <Pressable
                     style={styles.previewEye}
                     onPress={(e) => {
                         e.stopPropagation();
@@ -136,8 +168,10 @@ const PackCard = React.memo(({ pack, isSelected, isOwned, onToggle, onPreview, t
                     }}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                    <EyeIcon size={16} color="#666" />
-                </TouchableOpacity>
+                    {({ hovered }) => (
+                        <EyeIcon size={16} color={hovered ? theme.colors.textPrimary : "#666"} />
+                    )}
+                </Pressable>
             </Animated.View>
         </Pressable>
     );
@@ -513,12 +547,18 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
                         <Animated.Text style={[styles.chaosTitle, animatedTextStyle]}>
                             {t.chaos_mode_label}
                         </Animated.Text>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => onOpenChaosRules && onOpenChaosRules()}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Ionicons name="information-circle-outline" size={16} color={theme.colors.textPrimary?.startsWith('#') ? theme.colors.textPrimary + '66' : theme.colors.textPrimary} />
-                        </TouchableOpacity>
+                            {({ hovered }) => (
+                                <Ionicons 
+                                    name="information-circle-outline" 
+                                    size={16} 
+                                    color={hovered ? theme.colors.accent : (theme.colors.textPrimary?.startsWith('#') ? theme.colors.textPrimary + '66' : theme.colors.textPrimary)} 
+                                />
+                            )}
+                        </Pressable>
                     </View>
                     <Text style={styles.chaosDesc}>{t.chaos_mode_desc || "Random events enabled."}</Text>
                 </View>

@@ -6,13 +6,13 @@ import { useTheme, TEXTURES } from '../context/ThemeContext';
 import HapticsService from '../services/HapticsService';
 import PremiumIconButton from './PremiumIconButton';
 import PremiumPressable from './PremiumPressable';
-import { CardsIcon, RobotIcon, TrashIcon, CashBagIcon, EyeOffIcon } from './Icons'; // [NEW] CashBagIcon, EyeOffIcon
+import { CardsIcon, RobotIcon, TrashIcon, CashBagIcon, EyeOffIcon, LockIcon } from './Icons'; // [NEW] CashBagIcon, EyeOffIcon, LockIcon
 import { useWebScroll } from '../hooks/useWebScroll';
 import { useLanguage } from '../context/LanguageContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, showPlayButton, onPlay, onDiscard, isPlaying, selectionOrder, hasDiscarded, isSelectionFull, isSinglePick, skin, t, isBlackout }) => {
+const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, showPlayButton, onPlay, onDiscard, isPlaying, selectionOrder, hasDiscarded, isSelectionFull, isSinglePick, skin, t, isBlackout, isDesktop }) => {
     const { theme } = useTheme();
     const [isEliminating, setIsEliminating] = useState(false);
 
@@ -143,17 +143,24 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
     });
 
     const eliminaPillAnimatedStyle = useAnimatedStyle(() => {
+        if (isDesktop) {
+            return {
+                opacity: slideElimina.value,
+                pointerEvents: slideElimina.value > 0.9 ? 'auto' : 'none',
+                transform: [
+                    { translateY: (1 - slideElimina.value) * 15 },
+                    { scale: 0.9 + (slideElimina.value * 0.1) }
+                ],
+                zIndex: 1000,
+            };
+        }
         return {
-            opacity: slideElimina.value > 0.01 ? 1 : 0,
+            opacity: slideElimina.value,
             pointerEvents: slideElimina.value > 0.9 ? 'auto' : 'none',
             transform: [
-                // Origin displacement X (~78 to right). Center is 0.
                 { translateX: (1 - slideElimina.value) * 78 },
-                // Origin displacement Y (higher up -28). Bottom edge is 0.
                 { translateY: (1 - slideElimina.value) * -28 },
-                // SCALE: follows slideElimina directly to ensure it shrinks on re-entry
                 { scale: slideElimina.value },
-                // ROTATION: Rolling! (0 to 360 degrees)
                 { rotate: `${slideElimina.value * 360}deg` }
             ],
             zIndex: 1000,
@@ -337,8 +344,8 @@ const CardItem = React.memo(({ text, isSelected, onSelect, disabled, index, show
                 )}
 
                 {disabled && (
-                    <View style={{ position: 'absolute', bottom: 5, right: 5 }}>
-                        <Text style={{ fontSize: 16, opacity: 0.5 }}>🔒</Text>
+                    <View style={{ position: 'absolute', bottom: 8, right: 8, opacity: 0.5 }}>
+                        <LockIcon size={16} color={skin && skin.styles && skin.styles.text ? skin.styles.text : "#222"} />
                     </View>
                 )}
             </Animated.View>
@@ -394,6 +401,7 @@ const PlayerHand = ({
     onBackgroundPress,
     isBlackout = false,
     isBribing = false,
+    isDesktop = false,
 }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
@@ -442,7 +450,7 @@ const PlayerHand = ({
     }, [isPlaying, disabled, containerHeight]);
 
     const handAnimatedStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: handOffset.value }],
+        transform: [{ translateY: isDesktop ? 0 : handOffset.value }],
     }));
 
     const renderCard = useCallback(({ item, index }) => {
@@ -454,7 +462,7 @@ const PlayerHand = ({
             <Animated.View
                 entering={entering}
                 layout={LinearTransition.duration(200)}
-                style={{ width: '48%', height: isSmallScreen ? 120 : 140, marginBottom: 30 }}
+                style={isDesktop ? { width: 140, height: 195, margin: 10 } : { width: '48%', height: isSmallScreen ? 120 : 140, marginBottom: 30 }}
             >
                 <CardItem
                     text={item}
@@ -473,10 +481,11 @@ const PlayerHand = ({
                     isSelectionFull={selectedCards.length >= maxSelection}
                     t={t}
                     isBlackout={isBlackout}
+                    isDesktop={isDesktop}
                 />
             </Animated.View>
         );
-    }, [selectedCards, isSmallScreen, onSelectCard, disabled, isPlaying, onPlay, onDiscard, maxSelection, hasDiscarded, skin, t, isBlackout]);
+    }, [selectedCards, isSmallScreen, onSelectCard, disabled, isPlaying, onPlay, onDiscard, maxSelection, hasDiscarded, skin, t, isBlackout, isDesktop]);
 
     const keyExtractor = useCallback((item, index) => `${item}-${index}`, []);
 
@@ -490,8 +499,8 @@ const PlayerHand = ({
 
     return (
         <Animated.View
-            style={[styles.container, handAnimatedStyle]}
-            onLayout={onLayout}
+            style={[styles.container, handAnimatedStyle, isDesktop && { backgroundColor: 'transparent', borderTopLeftRadius: 0, borderTopRightRadius: 0, overflow: 'visible' }]}
+            onLayout={!isDesktop ? onLayout : undefined}
         >
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -550,21 +559,33 @@ const PlayerHand = ({
             <View style={{ flex: 1, position: 'relative' }}>
                 <TouchableWithoutFeedback onPress={() => onBackgroundPress && onBackgroundPress()}>
                     <Animated.View style={cardsContainerStyle}>
-                        <FlatList
-                            ref={flatListRef}
-                            data={cardsVisible ? hand : []}
-                            renderItem={renderCard}
-                            keyExtractor={keyExtractor}
-                            numColumns={2}
-                            columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 15 }} // Apply gap and padding here
-                            contentContainerStyle={{ paddingTop: 25, paddingBottom: 60 }} // Vertical padding
-                            showsVerticalScrollIndicator={false}
-                            removeClippedSubviews={true}
-                            initialNumToRender={6}
-                            maxToRenderPerBatch={6} // optimized batch
-                            windowSize={5} // reduced window size
-                            getItemLayout={getItemLayout}
-                        />
+                        {isDesktop ? (
+                            <ScrollView showsVerticalScrollIndicator={false} style={{ overflow: 'visible' }} contentContainerStyle={{ paddingTop: 25, paddingBottom: 60, overflow: 'visible' }}>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', paddingHorizontal: 15 }}>
+                                    {(cardsVisible ? hand : []).map((item, index) => (
+                                        <View key={`${item}-${index}`}>
+                                            {renderCard({ item, index })}
+                                        </View>
+                                    ))}
+                                </View>
+                            </ScrollView>
+                        ) : (
+                            <FlatList
+                                ref={flatListRef}
+                                data={cardsVisible ? hand : []}
+                                renderItem={renderCard}
+                                keyExtractor={keyExtractor}
+                                numColumns={2}
+                                columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 15 }} // Apply gap and padding here
+                                contentContainerStyle={{ paddingTop: 25, paddingBottom: 60 }} // Vertical padding
+                                showsVerticalScrollIndicator={false}
+                                removeClippedSubviews={true}
+                                initialNumToRender={6}
+                                maxToRenderPerBatch={6} // optimized batch
+                                windowSize={5} // reduced window size
+                                getItemLayout={getItemLayout}
+                            />
+                        )}
                     </Animated.View>
                 </TouchableWithoutFeedback>
 

@@ -58,7 +58,9 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
 
     // [FIX] Switch to 3 columns to match Frame/Theme selection size
     // Window - padding (roughly 20-40) / 3
-    const numericItemWidth = (windowWidth - 32) / 3;
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024;
+    const referenceWidth = (isDesktop && hideBackButton) ? Math.min(windowWidth * 0.85, 600) : windowWidth;
+    const numericItemWidth = (referenceWidth - 32) / 3;
 
     return (
         <View style={{ flex: 1, maxHeight: hideBackButton ? '100%' : 450 }}>
@@ -69,7 +71,7 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
                 contentContainerStyle={{
                     flexGrow: 1,
                     paddingBottom: 110,
-                    paddingHorizontal: 4,
+                    paddingHorizontal: 10,
                 }}
                 showsVerticalScrollIndicator={false}
             >
@@ -91,18 +93,19 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
                             <Animated.View
                                 key={skin.id}
                                 entering={FadeInDown.delay(index * 50).springify()}
-                                style={{ width: '31%' }}
+                                style={{ width: '31%', overflow: 'visible' }}
                             >
                                 <PremiumPressable
                                     onPress={isUnlocked ? () => handleEquip(skin.id) : null}
                                     disabled={!isUnlocked}
                                     enableSound={isUnlocked}
                                     scaleDown={isUnlocked ? 0.95 : 1}
+                                    overflow="visible"
                                     style={[
                                         styles.skinCard,
                                         {
                                             height: numericItemWidth * 1.25, // Fixed Numeric Height (Aspect Ratio 1.25)
-                                            backgroundColor: 'rgba(255,255,255,0.03)',
+                                            backgroundColor: isSelected ? theme.colors.accentWeak : 'rgba(255,255,255,0.03)',
                                             borderColor: isSelected ? theme.colors.accent : (isUnlocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)'),
                                             borderWidth: isSelected ? 2 : 1,
                                             opacity: isUnlocked ? 1 : 0.5
@@ -178,7 +181,7 @@ const SkinSelectionModal = ({ onBack, hideBackButton }) => {
 const styles = StyleSheet.create({
     skinCard: {
         borderRadius: 12,
-        overflow: 'hidden',
+        overflow: 'visible',
     },
     previewContainer: {
         width: 40,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Image, BackHandler, ScrollView, TouchableOpacity, LayoutAnimation, UIManager, Platform } from 'react-native';
+import { StyleSheet, View, Text, Image, BackHandler, ScrollView, TouchableOpacity, LayoutAnimation, UIManager, Platform, Dimensions } from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -31,6 +31,8 @@ const VictoryScreen = ({ winnerName, onExit }) => {
     const { roomData, isCreator, startGame, leaveRoom } = useGame();
     const { t } = useLanguage();
     const { theme } = useTheme();
+    const { width: screenWidth } = Dimensions.get('window');
+    const isDesktop = Platform.OS === 'web' && screenWidth >= 1024;
 
     const [exiting, setExiting] = useState(false);
     const [showRankUp, setShowRankUp] = useState(false);
@@ -168,7 +170,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
 
             <ScrollView
                 style={{ width: '100%' }}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, isDesktop && { paddingVertical: 40 }]}
                 showsVerticalScrollIndicator={false}
             >
                 <Animated.View
@@ -179,12 +181,14 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                             backgroundColor: 'rgba(255, 255, 255, 0.05)', // Fallback
                             borderRadius: 35,
                             overflow: 'hidden',
-                            marginTop: 30,
+                            marginTop: isDesktop ? 0 : 30, // [NEW] No extra margin on desktop
                             marginBottom: 20,
-                            marginHorizontal: 15, // [NEW] Added horizontal margin
                             paddingTop: 10, // Add top padding for the gradient space
                             paddingBottom: 0,
                             paddingHorizontal: 0,
+                            width: isDesktop ? '90%' : '94%', // [NEW] Safe width for centering
+                            maxWidth: isDesktop ? 900 : 500, // [NEW] Constraint for PC
+                            alignSelf: 'center'
                         }
                     ]}
                 >
@@ -204,7 +208,9 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                                 textShadowColor: 'rgba(212, 175, 55, 0.8)',
                                 textShadowOffset: { width: 0, height: 0 },
                                 textShadowRadius: 20,
-                                letterSpacing: 2
+                                letterSpacing: 2,
+                                fontSize: isDesktop ? 72 : 48, // [NEW] Larger on PC
+                                marginBottom: isDesktop ? 50 : 30
                             }]}
                         >
                             {t('winner_match')}
@@ -216,10 +222,12 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                                 borderColor: theme.colors.accent,
                                 // Removed shadow mapping per request
                                 borderWidth: 0,
+                                width: isDesktop ? 220 : 150, // [NEW] Larger on PC
+                                height: isDesktop ? 220 : 150,
                             }]}
                         >
                             <AvatarWithFrame
-                                size={138}
+                                size={isDesktop ? 200 : 138} // [NEW]
                                 avatar={winner?.avatar?.startsWith('http') ? winner.avatar : (winner?.avatar || 'Winner')}
                                 frameId={isWinnerRando ? 'glitch' : (winner?.activeFrame || 'basic')}
                             />
@@ -227,14 +235,14 @@ const VictoryScreen = ({ winnerName, onExit }) => {
 
                         <Animated.Text
                             entering={FadeIn.delay(800)}
-                            style={[styles.winnerName, { color: theme.colors.textPrimary }]}
+                            style={[styles.winnerName, { color: theme.colors.textPrimary, fontSize: isDesktop ? 48 : 32 }]}
                         >
                             {winnerName}
                         </Animated.Text>
 
                         <Animated.Text
                             entering={FadeIn.delay(1000)}
-                            style={styles.subtitle}
+                            style={[styles.subtitle, isDesktop && { fontSize: 20, marginBottom: 50 }]}
                         >
                             {t('winner_summary', { points: isWinnerRando ? roomData?.randoPoints : roomData?.punti?.[winnerName] })}
                         </Animated.Text>
@@ -244,11 +252,13 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                             entering={FadeInDown.delay(1200).springify().damping(25).stiffness(80)}
                             style={[styles.leaderboardContainer, {
                                 overflow: 'hidden',
-                                padding: 18,
+                                padding: isDesktop ? 24 : 18,
                                 marginTop: 10,
                                 backgroundColor: theme.colors.surface?.startsWith('#')
                                     ? theme.colors.surface + 'E6'
-                                    : (theme.colors.surface || 'rgba(0,0,0,0.9)')
+                                    : (theme.colors.surface || 'rgba(0,0,0,0.9)'),
+                                maxWidth: isDesktop ? 700 : '100%',
+                                alignSelf: 'center'
                             }]}
                         >
                             <LinearGradient
@@ -256,7 +266,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                                 style={StyleSheet.absoluteFill}
                             />
                             <View style={[StyleSheet.absoluteFill, { borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 20 }]} />
-                            <Text style={[styles.leaderboardTitle, { color: '#888' }]}>{t('final_leaderboard')}</Text>
+                            <Text style={[styles.leaderboardTitle, { color: '#888', fontSize: isDesktop ? 16 : 12 }]}>{t('final_leaderboard')}</Text>
                             {(() => {
                                 // [NEW] Use the global ranking (already sorted descending)
                                 // Filter out the absolute winner and the absolute loser
@@ -296,8 +306,8 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                                                 />
                                             </View>
                                             <View style={{ flex: 1 }}>
-                                                <Text style={[styles.playerName, { color: theme.colors.textPrimary }]}>{name}</Text>
-                                                <Text style={{ fontSize: 9, color: RANK_COLORS[playerRank] || '#888', fontWeight: 'bold' }}>
+                                                <Text style={[styles.playerName, { color: theme.colors.textPrimary, fontSize: isDesktop ? 20 : 16 }]}>{name}</Text>
+                                                <Text style={{ fontSize: isDesktop ? 12 : 9, color: RANK_COLORS[playerRank] || '#888', fontWeight: 'bold' }}>
                                                     {isRowRando ? 'BOT' : (playerRank ? t(`rank_${playerRank.toLowerCase().replace(/ /g, '_')}`, { defaultValue: playerRank }) : t('rank_anima_candida'))}
                                                 </Text>
                                             </View>
@@ -340,7 +350,13 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                         {loserName && (
                             <Animated.View
                                 entering={ZoomIn.delay(2200).springify().damping(20).stiffness(90)}
-                                style={[styles.shameContainer, { overflow: 'hidden', backgroundColor: 'rgba(217, 119, 6, 0.08)' }]}
+                                style={[styles.shameContainer, { 
+                                    overflow: 'hidden', 
+                                    backgroundColor: 'rgba(217, 119, 6, 0.08)',
+                                    maxWidth: isDesktop ? 700 : '100%',
+                                    padding: isDesktop ? 24 : 18,
+                                    alignSelf: 'center'
+                                }]}
                             >
                                 <LinearGradient
                                     colors={['rgba(217, 119, 6, 0.15)', 'transparent']}
@@ -349,7 +365,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                                     end={{ x: 1, y: 1 }}
                                 />
                                 <View style={[StyleSheet.absoluteFill, { borderWidth: 1, borderColor: 'rgba(217, 119, 6, 0.4)', borderStyle: 'dashed', borderRadius: 20, opacity: 0.8 }]} />
-                                <Text style={[styles.shameTitle, { color: '#d97706' }]}>🏆 {t('shame_award')}</Text>
+                                <Text style={[styles.shameTitle, { color: '#d97706', fontSize: isDesktop ? 18 : 12 }]}>🏆 {t('shame_award')}</Text>
                                 <View style={styles.shameRow}>
                                     <View style={{ marginRight: 20, position: 'relative' }}>
                                         <View style={[styles.shameAvatarContainer, { borderColor: '#d97706', backgroundColor: '#1a1a1a' }]}>
@@ -367,8 +383,8 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                                         </View>
                                     </View>
                                     <View style={styles.shameTextContainer}>
-                                        <Text style={[styles.loserName, { color: '#fff' }]}>{loserName}</Text>
-                                        <Text style={[styles.loserPoints, { color: '#d97706', opacity: 0.9 }]}>
+                                        <Text style={[styles.loserName, { color: '#fff', fontSize: isDesktop ? 22 : 18 }]}>{loserName}</Text>
+                                        <Text style={[styles.loserPoints, { color: '#d97706', opacity: 0.9, fontSize: isDesktop ? 16 : 13 }]}>
                                             {t('shame_award')} {t('shame_award_msg', { points: loser?.[1] })}
                                         </Text>
                                     </View>
@@ -379,7 +395,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                         {isCreator ? (
                             <Animated.View
                                 entering={FadeIn.delay(1500)}
-                                style={{ width: '80%', marginTop: 20, gap: 10, paddingBottom: 40 }}
+                                style={{ width: isDesktop ? 400 : '80%', marginTop: 20, gap: 10, paddingBottom: 40 }}
                             >
                                 <PremiumButton
                                     title={t('play_again')}
@@ -395,7 +411,7 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                         ) : (
                             <Animated.View
                                 entering={FadeIn.delay(1500)}
-                                style={{ width: '80%', marginTop: 20, alignItems: 'center', gap: 20, paddingBottom: 40 }}
+                                style={{ width: isDesktop ? 400 : '80%', marginTop: 20, alignItems: 'center', gap: 20, paddingBottom: 40 }}
                             >
                                 <Text style={[styles.waitingText, { color: '#e0e0e0', marginTop: 0, fontStyle: 'normal', textAlign: 'center' }]}>
                                     {t('waiting_restart_msg')}
@@ -465,7 +481,6 @@ const styles = StyleSheet.create({
     },
     content: {
         alignItems: 'center',
-        width: '98%', // [NEW] Allows margins
         paddingHorizontal: 0,
     },
     title: {

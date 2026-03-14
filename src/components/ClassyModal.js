@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, Pressable, Dimensions, useWindowDimensions, Platform, Image } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Dimensions, useWindowDimensions, Platform, Image, Modal } from 'react-native';
 import { BlurView } from 'expo-blur';
 import EfficientBlurView from './EfficientBlurView';
 import Animated, {
@@ -33,6 +33,7 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
     const fallbackSV = useSharedValue(0);
     const sensorX = (parallaxResult && parallaxResult.sensorX) ? parallaxResult.sensorX : fallbackSV;
     const sensorY = (parallaxResult && parallaxResult.sensorY) ? parallaxResult.sensorY : fallbackSV;
+    const [internalVisible, setInternalVisible] = React.useState(visible);
     const [isAnimating, setIsAnimating] = React.useState(false); // [NEW] Track animation state
 
     // Default icon color to theme accent if not provided
@@ -40,16 +41,20 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
 
     useEffect(() => {
         if (visible) {
-            setIsAnimating(true); // [NEW]
-            SoundService.play('tap'); // [NEW] Pop sound on open
+            setInternalVisible(true);
+            setIsAnimating(true);
+            SoundService.play('tap');
             opacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) }, (finished) => {
                 if (finished) runOnJS(setIsAnimating)(false);
             });
             scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) });
         } else {
-            setIsAnimating(true); // [NEW]
+            setIsAnimating(true);
             opacity.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.quad) }, (finished) => {
-                if (finished) runOnJS(setIsAnimating)(false);
+                if (finished) {
+                    runOnJS(setIsAnimating)(false);
+                    runOnJS(setInternalVisible)(false);
+                }
             });
             scale.value = withTiming(0.8, { duration: 200, easing: Easing.in(Easing.quad) });
         }
@@ -96,98 +101,115 @@ const ClassyModal = ({ visible, onClose, title, children, icon = "⚙️", iconC
         };
     });
 
+    if (!visible && !internalVisible) return null;
+
     return (
-        <Animated.View
-            style={[StyleSheet.absoluteFill, { zIndex: 9000, elevation: 9000 }, rootStyle]}
+        <Modal
+            transparent
+            visible={internalVisible}
+            onRequestClose={onClose}
+            animationType="none"
+            statusBarTranslucent
         >
-            <View style={styles.overlay}>
+            <Animated.View
+                style={[
+                    StyleSheet.absoluteFill,
+                    { zIndex: 10000, elevation: 10000 },
+                    rootStyle
+                ]}
+            >
+                <View style={styles.overlay}>
 
-                {(visible || isAnimating) && (
-                    <Animated.View style={[StyleSheet.absoluteFill, { zIndex: -1, backgroundColor: 'rgba(0,0,0,0.5)' }, backdropStyle]} pointerEvents="none">
-                        {(!isAnimating || Platform.OS === 'ios') && (
-                            <EfficientBlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill} />
-                        )}
-                    </Animated.View>
-                )}
-
-                <Pressable
-                    style={StyleSheet.absoluteFill}
-                    onPress={onClose}
-                />
-
-                <Animated.View
-                    layout={LinearTransition.duration(300).easing(Easing.out(Easing.quad))} // Smooth resize, no bounce
-                    style={[
-                        styles.modalBox,
-                        {
-                            width: Math.min(windowWidth * 0.85, 340),
-                            backgroundColor: '#121214',
-                            borderColor: theme.colors.cardBorder,
-                            borderWidth: 1.5,
-                            maxHeight: Platform.OS === 'web' ? '90%' : '90%', // Ensure it doesn't overflow screen
-                        },
-                        animatedStyle
-                    ]}
-                >
-                    {/* Texture Layer - Clipped but separate from floating elements */}
-                    <View style={[StyleSheet.absoluteFill, { borderRadius: 22, overflow: 'hidden' }]}>
-                        {texture && (
-                            <Image
-                                source={texture}
-                                style={[StyleSheet.absoluteFill, { opacity: 0.05, tintColor: '#fff' }]}
-                                resizeMode="repeat"
-                            />
-                        )}
-                    </View>
-
-                    <View style={styles.innerContainer}>
-
-
-                        <PremiumIconButton
-                            onPress={onClose}
-                            enableSound={false}
-                            style={styles.closeButton}
-                            icon={<CrossIcon size={20} color="#888" />}
-                            size={32}
-                        />
-
-
-                        <Animated.View style={[styles.iconWrapper, iconParallaxStyle]}>
-                            <View
-                                style={[
-                                    styles.iconCircle,
-                                    {
-                                        backgroundColor: '#18181b',
-                                        borderColor: theme.colors.cardBorder,
-                                        borderWidth: 1.5,
-                                    }
-                                ]}
-                            >
-                                <Animated.View
-                                    key={title} // Trigger animation when title/section changes
-                                    entering={ZoomIn.duration(500).easing(Easing.out(Easing.quad))}
-                                    exiting={ZoomOut.duration(400)}
-                                    style={{ alignItems: 'center', justifyContent: 'center' }}
-                                >
-                                    {typeof icon === 'string' ? (
-                                        <Text style={{ fontSize: 32, color: finalIconColor }}>{icon}</Text>
-                                    ) : (
-                                        icon
-                                    )}
-                                </Animated.View>
-                            </View>
+                    {(visible || isAnimating) && (
+                        <Animated.View
+                            style={[
+                                StyleSheet.absoluteFill,
+                                { zIndex: -1, backgroundColor: 'rgba(0,0,0,0.6)' },
+                                backdropStyle
+                            ]}
+                            pointerEvents="none"
+                        >
+                            {(!isAnimating || Platform.OS === 'ios') && (
+                                <EfficientBlurView intensity={15} tint="dark" style={StyleSheet.absoluteFill} />
+                            )}
                         </Animated.View>
+                    )}
 
-                        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
+                    <Pressable
+                        style={StyleSheet.absoluteFill}
+                        onPress={onClose}
+                    />
 
-                        {/* Clip content relative to inner container, but allow full width */}
-                        <View style={[styles.content, { overflow: 'visible' }]}>
-                            {children}
+                    <Animated.View
+                        layout={LinearTransition.duration(300).easing(Easing.out(Easing.quad))}
+                        style={[
+                            styles.modalBox,
+                            {
+                                width: Math.min(windowWidth * 0.85, 340),
+                                backgroundColor: '#121214',
+                                borderColor: theme.colors.cardBorder,
+                                borderWidth: 1.5,
+                                maxHeight: '90%',
+                            },
+                            animatedStyle
+                        ]}
+                    >
+                        {/* Texture Layer */}
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: 22, overflow: 'hidden' }]}>
+                            {texture && (
+                                <Image
+                                    source={texture}
+                                    style={[StyleSheet.absoluteFill, { opacity: 0.05, tintColor: '#fff' }]}
+                                    resizeMode="repeat"
+                                />
+                            )}
                         </View>
-                    </View>
-                </Animated.View>
-            </View>
-        </Animated.View>
+
+                        <View style={styles.innerContainer}>
+                            <PremiumIconButton
+                                onPress={onClose}
+                                enableSound={false}
+                                style={styles.closeButton}
+                                icon={<CrossIcon size={20} color="#888" />}
+                                size={32}
+                            />
+
+                            <Animated.View style={[styles.iconWrapper, iconParallaxStyle]}>
+                                <View
+                                    style={[
+                                        styles.iconCircle,
+                                        {
+                                            backgroundColor: '#18181b',
+                                            borderColor: theme.colors.cardBorder,
+                                            borderWidth: 1.5,
+                                        }
+                                    ]}
+                                >
+                                    <Animated.View
+                                        key={title}
+                                        entering={ZoomIn.duration(500).easing(Easing.out(Easing.quad))}
+                                        exiting={ZoomOut.duration(400)}
+                                        style={{ alignItems: 'center', justifyContent: 'center' }}
+                                    >
+                                        {typeof icon === 'string' ? (
+                                            <Text style={{ fontSize: 32, color: finalIconColor }}>{icon}</Text>
+                                        ) : (
+                                            icon
+                                        )}
+                                    </Animated.View>
+                                </View>
+                            </Animated.View>
+
+                            <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
+
+                            <View style={[styles.content, { overflow: 'visible' }]}>
+                                {children}
+                            </View>
+                        </View>
+                    </Animated.View>
+                </View>
+            </Animated.View>
+        </Modal>
     );
 };
 

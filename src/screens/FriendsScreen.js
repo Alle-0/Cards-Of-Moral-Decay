@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, BackHandler, Platform, Share } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, BackHandler, Platform, Share, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
@@ -22,6 +22,8 @@ const FriendsScreen = () => {
     const { theme } = useTheme();
     const { t } = useLanguage();
     const insets = useSafeAreaInsets();
+    const { width: windowWidth } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && windowWidth >= 1024;
     const {
         user: authUser,
         sendFriendRequest,
@@ -123,10 +125,25 @@ const FriendsScreen = () => {
 
     return (
         <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-            {/* Main Content Container with conditional opacity */}
-            <View style={{ flex: 1 }}>
+            <View style={[
+                { flex: 1 },
+                isDesktop && { 
+                    alignSelf: 'center', 
+                    width: '100%', 
+                    maxWidth: 720, 
+                    paddingHorizontal: 40,
+                    justifyContent: 'center'
+                }
+            ]}>
                 {/* Header Title */}
-                <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: 50, marginBottom: 20, textAlign: 'center' }}>
+                <Text style={{ 
+                    color: theme.colors.accent, 
+                    fontFamily: 'Cinzel-Bold', 
+                    fontSize: 24, 
+                    marginTop: isDesktop ? 35 : 50, 
+                    marginBottom: 20, 
+                    textAlign: 'center' 
+                }}>
                     {t('friends_title')}
                 </Text>
 
@@ -221,6 +238,7 @@ const FriendsScreen = () => {
                                                 onPress={() => setFriendToDelete(friendName)}
                                                 size={36}
                                                 style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: 32 }}
+                                                hoverColor="rgba(239, 68, 68, 0.25)"
                                             />
                                         </View>
                                     ))}

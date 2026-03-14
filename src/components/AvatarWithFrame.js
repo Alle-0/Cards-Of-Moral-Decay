@@ -137,7 +137,7 @@ const AvatarWithFrame = ({
 
                 {/* ANGEL */}
                 {frameId === 'angel' && (
-                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                    <View style={[StyleSheet.absoluteFill, { overflow: 'visible' }]} pointerEvents="none">
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#fff', shadowColor: '#fbbf24', shadowOpacity: 1, shadowRadius: 12, elevation: Platform.OS === 'android' ? 0 : 6 }]} />
                         <View style={{ position: 'absolute', top: -20 * scale, width: '100%', alignItems: 'center' }}>
                             <HaloIcon size={30 * scale} color="#fbbf24" />
@@ -147,7 +147,7 @@ const AvatarWithFrame = ({
 
                 {/* DEMON */}
                 {frameId === 'demon' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', overflow: 'visible' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: '#7f1d1d', shadowColor: '#ef4444', shadowOpacity: 0.8, shadowRadius: 8, elevation: Platform.OS === 'android' ? 0 : 6 }]} />
                         <View style={{ position: 'absolute', top: -18 * scale, width: '100%', alignItems: 'center' }}>
                             <HornsIcon size={30 * scale} color="#ef4444" />
@@ -162,7 +162,7 @@ const AvatarWithFrame = ({
 
                 {/* LOVE */}
                 {frameId === 'love' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', overflow: 'visible' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#f472b6' }]} />
                         <View style={{ position: 'absolute', bottom: -12 * scale, width: '100%', alignItems: 'center' }}>
                             <HeartIcon size={24 * scale} color="#f472b6" />
@@ -185,7 +185,7 @@ const AvatarWithFrame = ({
                                     <Stop offset="100%" stopColor="#a7f3d0" />
                                 </RadialGradient>
                             </Defs>
-                            <Circle cx={size / 2} cy={size / 2} r={(size / 2) - (1.5 * scale)} stroke="url(#rich_emerald_grad)" strokeWidth={4 * scale} fill="none" />
+                            <Circle cx={size / 2} cy={size / 2} r={(size / 2) - (2 * scale)} stroke="url(#rich_emerald_grad)" strokeWidth={4 * scale} fill="none" />
                         </Svg>
 
                         {/* Inner Gold detail */}
@@ -215,7 +215,7 @@ const AvatarWithFrame = ({
                                     <Stop offset="100%" stopColor="#4a044e" />
                                 </RadialGradient>
                             </Defs>
-                            <Circle cx={size / 2} cy={size / 2} r={(size / 2) - (2 * scale)} stroke="url(#capo_magenta_grad)" strokeWidth={5 * scale} fill="none" />
+                            <Circle cx={size / 2} cy={size / 2} r={(size / 2) - (2.5 * scale)} stroke="url(#capo_magenta_grad)" strokeWidth={5 * scale} fill="none" />
                         </Svg>
 
                         {/* Intricate Inner Details */}
@@ -253,7 +253,7 @@ const AvatarWithFrame = ({
                 )}
 
                 {frameId === 'cat' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', overflow: 'visible' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 2 * scale, borderColor: '#f472b6' }]} />
                         <View style={{ position: 'absolute', top: -18 * scale, width: '100%', alignItems: 'center' }}>
                             <CatIcon size={size * 0.7} color="#f472b6" />
@@ -263,7 +263,7 @@ const AvatarWithFrame = ({
 
                 {/* ICE KING */}
                 {frameId === 'ice_king' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', overflow: 'visible' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#a5f3fc', shadowColor: '#0891b2', shadowOpacity: 0.8, shadowRadius: 10 }]} />
 
                         <View style={{ position: 'absolute', bottom: -10 * scale, width: '100%', alignItems: 'center' }}>
