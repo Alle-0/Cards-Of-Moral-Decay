@@ -32,15 +32,12 @@ const AnalyticsService = {
             setUserProperties(analytics, properties);
             if (__DEV__) console.log('[Analytics] User properties set:', properties);
         } catch (error) {
-            console.warn('[Analytics] Error setting User properties:', error);
+            if (__DEV__) console.warn('[Analytics] Error setting User properties:', error);
         }
     },
 
     log: (eventName, params = {}) => {
         if (!analytics) {
-            if (__DEV__) {
-                console.log(`[Analytics] Analytics not ready, queuing event: ${eventName}`, params);
-            }
             eventQueue.push({ eventName, params });
             return;
         }
@@ -70,7 +67,7 @@ const AnalyticsService = {
                 console.log(`[Analytics] ${eventName}:`, cleanParams);
             }
         } catch (error) {
-            console.warn('[Analytics] Error logging event:', error);
+            if (__DEV__) console.warn('[Analytics] Error logging event:', error);
         }
     },
 

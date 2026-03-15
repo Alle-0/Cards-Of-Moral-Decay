@@ -93,20 +93,19 @@ class SoundService {
                 preloaded.seekTo(0);
                 const result = preloaded.play();
                 if (result && typeof result.catch === 'function') {
-                    result.catch(() => { }); // DEFENSIVE: Handle immediately for web
+                    result.catch(() => { }); 
                 }
             } catch (e) {
-                console.log(`[SoundService] Replay Error '${name}':`, e.message);
                 // Attempt to recreate the player if it failed
                 try {
                     const player = createAudioPlayer(SOUND_MAP[name]);
                     this.preloadedSounds[name] = player;
                     const result = player.play();
                     if (result && typeof result.catch === 'function') {
-                        result.catch(() => { }); // DEFENSIVE: Handle immediately for web
+                        result.catch(() => { }); 
                     }
                 } catch (reloadError) {
-                    console.log(`[SoundService] New player launch failed '${name}':`, reloadError.message);
+                    // Silently fail
                 }
             }
             return;
@@ -115,7 +114,6 @@ class SoundService {
         // 2. Fallback for non-preloaded sounds
         const soundSource = SOUND_MAP[name];
         if (!soundSource) {
-            console.warn(`Sound '${name}' not defined in SOUND_MAP`);
             return;
         }
 
@@ -127,8 +125,7 @@ class SoundService {
                 result.catch(() => { }); // [CRITICAL] Suppress Uncaught promise rejection for web
             }
         } catch (error) {
-            // Log but don't crash
-            console.log(`[SoundService] playOnce failed for '${name}':`, error.message);
+            // Silently fail
         }
     }
 

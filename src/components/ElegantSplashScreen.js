@@ -45,7 +45,7 @@ const StaggeredWord = ({ text, style, color, baseDelay = 0 }) => {
 };
 // ------------------------
 
-const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = false }) => {
+const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = false, isMaintenance = false }) => {
     const { theme, isThemeReady } = useTheme(); // [NEW] isThemeReady
     const [animationFinished, setAnimationFinished] = useState(false);
 
@@ -69,11 +69,9 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
         const exitDelay = fastMode ? 500 : totalEntranceTime + 500;
         const explosionDuration = fastMode ? 400 : 700;
 
-        // [NEW] Diagnostic log
-        console.log("[Splash] Mount. isThemeReady:", isThemeReady, "isInitialLaunch:", isInitialLaunch);
-
         if (isThemeReady && !fastMode && isInitialLaunch) {
-            console.log("[Splash] JS Splash Screen fully active.");
+            // Hide native splash once JS one is ready to animate
+            SplashScreen.hideAsync().catch(() => {});
 
             // Transizione colore ultra-lenta (4s) con curva in-out per evitare scatti iniziali/finali
             bgProgress.value = withTiming(1, {
@@ -90,8 +88,9 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
             );
         }, totalEntranceTime);
 
-        // 2. Sequenza di Uscita
         const timer = setTimeout(() => {
+            if (isMaintenance) return; // [NEW] Never finish if in maintenance, stay on splash
+
             // Anticipazione Morbida (niente scatti)
             contentScale.value = withTiming(0.95, { duration: 500, easing: Easing.out(Easing.cubic) });
             contentTranslateY.value = withTiming(10, { duration: 500, easing: Easing.out(Easing.cubic) });
@@ -107,10 +106,8 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
                 duration: explosionDuration,
                 easing: Easing.inOut(Easing.exp)
             }, (finished) => {
-                console.log("[Splash] Animation finished callback:", finished);
                 if (finished) {
                     if (onFinish) {
-                        console.log("[Splash] Calling onFinish...");
                         runOnJS(onFinish)();
                     }
                     runOnJS(setAnimationFinished)(true);
@@ -121,8 +118,9 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
 
         // [NEW] Emergency Exit: If the JS animation sequence hangs for > 5s, force finish
         const emergencyTimer = setTimeout(() => {
+            if (isMaintenance) return; // [NEW] Stay on splash during maintenance
             if (!animationFinished) {
-                console.warn("[Splash] EMERGENCY EXIT triggered (5s timeout).");
+                if (__DEV__) console.warn("[Splash] EMERGENCY EXIT triggered (5s timeout).");
                 if (onFinish) onFinish();
                 setAnimationFinished(true);
             }
@@ -176,33 +174,37 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
 
                     {/* 1. CARDS - Entrata Fluida */}
                     <StaggeredWord
-                        text="CARDS"
+                        text={isMaintenance ? "MANUTENZIONE" : "CARDS"}
                         color={darkColor}
-                        style={styles.logoText}
+                        style={[styles.logoText, isMaintenance && { fontSize: 42, lineHeight: 52 }]}
                         baseDelay={200}
                     />
 
                     {/* 2. Linea - Zoom senza rimbalzo (back rimosso) */}
-                    <Animated.View
-                        entering={ZoomIn.delay(800).duration(800).easing(Easing.out(Easing.cubic))}
-                        style={{
-                            height: 2,
-                            width: 80,
-                            backgroundColor: darkColor,
-                            marginVertical: 10,
-                            borderRadius: 1
-                        }}
-                    />
+                    {!isMaintenance && (
+                        <Animated.View
+                            entering={ZoomIn.delay(800).duration(800).easing(Easing.out(Easing.cubic))}
+                            style={{
+                                height: 2,
+                                width: 80,
+                                backgroundColor: darkColor,
+                                marginVertical: 10,
+                                borderRadius: 1
+                            }}
+                        />
+                    )}
 
                     {/* 3. SUBTITLE - Fade Up senza rimbalzo */}
-                    <View style={{ overflow: 'hidden' }}>
-                        <Animated.Text
-                            entering={FadeInUp.delay(1000).duration(1000).easing(Easing.out(Easing.cubic))}
-                            style={[styles.subText, { color: darkColor }]}
-                        >
-                            OF MORAL DECAY
-                        </Animated.Text>
-                    </View>
+                    {!isMaintenance && (
+                        <View style={{ overflow: 'hidden' }}>
+                            <Animated.Text
+                                entering={FadeInUp.delay(1000).duration(1000).easing(Easing.out(Easing.cubic))}
+                                style={[styles.subText, { color: darkColor }]}
+                            >
+                                OF MORAL DECAY
+                            </Animated.Text>
+                        </View>
+                    )}
 
                 </Animated.View>
             </View>

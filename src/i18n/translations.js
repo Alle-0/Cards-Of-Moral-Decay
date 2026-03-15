@@ -629,7 +629,8 @@ export const translations = {
         tut_settings: "Gestisci notifiche, suoni, animazioni, l'account o invia un'idea per una nuova carta.",
         tut_prev: "Indietro",
         tut_next: "Avanti",
-        tut_finish: "Ho capito"
+        tut_finish: "Ho capito",
+        server_down_msg: "IL SERVER È TEMPORANEAMENTE IN MANUTENZIONE"
     },
     en: {
         play: "PLAY",
@@ -798,6 +799,7 @@ export const translations = {
         coming_soon_msg: "The illegal currency market will open soon. Prepare your Dirty Cash.",
         toast_no_money: "Not enough Dirty Cash.",
         toast_theme_bought: "You obtained the theme",
+        server_down_msg: "THE SERVER IS TEMPORARILY UNDER MAINTENANCE",
         toast_skin_bought: "You obtained the skin",
         toast_frame_bought: "You obtained the frame",
         toast_pack_bought: "You obtained the pack",

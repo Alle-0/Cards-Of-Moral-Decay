@@ -552,13 +552,11 @@ export const ThemeProvider = ({ children }) => {
     const loadTheme = async () => {
         const timeout = setTimeout(() => {
             if (!isThemeReady) {
-                console.warn("[THEME] Safety timeout reached. Forcing isThemeReady.");
                 setIsThemeReady(true);
             }
         }, 5000);
 
         try {
-            console.log("[THEME] Loading stored theme...");
             const storedTheme = await AsyncStorage.getItem('cah_theme');
             const storedAnim = await AsyncStorage.getItem('cah_animations');
 
@@ -571,9 +569,8 @@ export const ThemeProvider = ({ children }) => {
             } else {
                 setCurrentTheme(getThemeWithOverrides(THEMES.default));
             }
-            console.log("[THEME] Theme loaded successfully.");
-        } catch (e) {
-            console.warn('Failed to load theme', e);
+        } catch (error) {
+            // Silently fail
         } finally {
             clearTimeout(timeout);
             setIsThemeReady(true);
@@ -584,8 +581,8 @@ export const ThemeProvider = ({ children }) => {
         setAnimationsEnabled(val);
         try {
             await AsyncStorage.setItem('cah_animations', val.toString());
-        } catch (e) {
-            console.warn('Failed to save anim settings', e);
+        } catch (error) {
+            // Silently fail
         }
     };
 
@@ -594,8 +591,8 @@ export const ThemeProvider = ({ children }) => {
             setCurrentTheme(getThemeWithOverrides(THEMES[themeId]));
             try {
                 await AsyncStorage.setItem('cah_theme', themeId);
-            } catch (e) {
-                console.warn('Failed to save theme', e);
+            } catch (error) {
+                // Silently fail
             }
         }
     };

@@ -35,7 +35,7 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 import SoundService from './src/services/SoundService';
 import GameDataService from './src/services/GameDataService';
 import UpdateOverlay from './src/components/UpdateOverlay';
-import { APP_VERSION } from './src/constants/Config';
+import { APP_VERSION, MAINTENANCE_MODE } from './src/constants/Config';
 import PaymentResultModal from './src/components/PaymentResultModal'; // [NEW] Global Feedback
 import PwaInstallPrompt from './src/components/PwaInstallPrompt'; // [NEW] PWA Install Prompt
 import { useLanguage } from './src/context/LanguageContext';
@@ -87,7 +87,28 @@ export default function App() {
     }, [fontsLoaded]);
 
 
+    useEffect(() => {
+        if (appIsReady && MAINTENANCE_MODE) {
+            SplashScreen.hideAsync().catch(() => {});
+        }
+    }, [appIsReady]);
+
     if (!appIsReady) return null;
+
+    if (MAINTENANCE_MODE) {
+        return (
+            <View style={{ flex: 1, backgroundColor: '#0d0d0d', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+                <StatusBar hidden />
+                <Text style={{ color: '#FFD700', fontFamily: 'Cinzel-Bold', fontSize: 24, textAlign: 'center', marginBottom: 20 }}>
+                    MANUTENZIONE
+                </Text>
+                <Text style={{ color: '#aaa', fontFamily: 'Outfit', fontSize: 16, textAlign: 'center', lineHeight: 24 }}>
+                    IL SERVER È TEMPORANEAMENTE IN MANUTENZIONE PER AGGIORNAMENTI.
+                </Text>
+                <View style={{ marginTop: 40, width: 60, height: 2, backgroundColor: '#FFD700' }} />
+            </View>
+        );
+    }
 
     return (
         <StripeAppWrapper>
@@ -100,7 +121,11 @@ export default function App() {
                                     <AudioProvider>
                                         {!splashAnimationFinished ? (
                                             <Animated.View style={{ flex: 1 }} exiting={FadeOut.duration(500)}>
-                                                <ElegantSplashScreen onFinish={() => setSplashAnimationFinished(true)} isInitialLaunch={true} />
+                                                <ElegantSplashScreen 
+                                                    onFinish={() => setSplashAnimationFinished(true)} 
+                                                    isInitialLaunch={true} 
+                                                    isMaintenance={MAINTENANCE_MODE} 
+                                                />
                                             </Animated.View>
                                         ) : (
                                             <NavigationContainer
@@ -242,7 +267,7 @@ const AppContent = () => {
     useEffect(() => {
         const subscription = Notifications.addNotificationResponseReceivedListener(response => {
             const data = response.notification.request.content.data;
-            console.log("[PUSH] Click detected (Listener). Data:", data);
+            if (__DEV__) console.log("[PUSH] Click detected (Listener). Data:", data);
 
             if (data?.roomCode || data?.room || data?.roomId) {
                 const code = data.roomCode || data.room || data.roomId;
@@ -271,7 +296,7 @@ const AppContent = () => {
                     response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
                 ) {
                     const data = response.notification.request.content.data;
-                    console.log("[PUSH] Cold Start Click detected. Data:", data);
+                    if (__DEV__) console.log("[PUSH] Cold Start Click detected. Data:", data);
 
                     if (data?.roomCode || data?.room || data?.roomId) {
                         const code = data.roomCode || data.room || data.roomId;
@@ -293,7 +318,7 @@ const AppContent = () => {
     // [NEW] Handle pending tab from Deep Link
     useEffect(() => {
         if (pendingTab && navigationRef.current) {
-            console.log(`[DEEP LINK] Navigating to pending tab: ${pendingTab}`);
+            if (__DEV__) console.log(`[DEEP LINK] Navigating to pending tab: ${pendingTab}`);
             navigationRef.current.navigate(pendingTab);
             setPendingTab(null);
 
@@ -345,32 +370,7 @@ const AppContent = () => {
     if (!user) return <LoginScreen />;
 
     return (
-    const maintenanceMessage = "IL SERVER È TEMPORANEAMENTE IN MANUTENZIONE PER AGGIORNAMENTI.";
-
-    if (require('./src/constants/Config').MAINTENANCE_MODE) {
-        return (
-            <View style={{ flex: 1, backgroundColor: '#0d0d0d', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-                <StatusBar hidden />
-                <Text style={{ color: '#FFD700', fontFamily: 'Cinzel-Bold', fontSize: 24, textAlign: 'center', marginBottom: 20 }}>
-                    MANUTENZIONE
-                </Text>
-                <Text style={{ color: '#aaa', fontFamily: 'Outfit', fontSize: 16, textAlign: 'center', lineHeight: 24 }}>
-                    {maintenanceMessage}
-                </Text>
-                <View style={{ marginTop: 40, width: 60, height: 2, backgroundColor: '#FFD700' }} />
-            </View>
-        );
-    }
-
-    return (
         <View style={{ flex: 1 }}>
-            {/* [NEW] Server Down Banner (Backup) */}
-            <View style={{ backgroundColor: '#ef4444', paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center', zIndex: 10001 }}>
-                <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 12, letterSpacing: 1 }}>
-                    {t('server_down_msg') || "IL SERVER È TEMPORANEAMENTE IN MANUTENZIONE"}
-                </Text>
-            </View>
-
             {roomCode ? (
                 <GameScreen onStartLoading={handleStartLoading} />
             ) : (

@@ -39,7 +39,6 @@ export const AuthProvider = ({ children }) => {
         // Safety Timeout to prevent infinite black screen
         const safetyTimer = setTimeout(() => {
             if (mounted && loading) {
-                console.warn("[AUTH] Safety timeout reached in useEffect. Forcing loading = false.");
                 setLoading(false);
             }
         }, 8000);
@@ -68,7 +67,7 @@ export const AuthProvider = ({ children }) => {
                 if (savedTab && mounted) setPendingTab(savedTab);
 
             } catch (e) {
-                console.warn("[AUTH] Cache load failed", e);
+                // Cache load failed silently
             }
         };
         loadCache();
@@ -167,7 +166,6 @@ export const AuthProvider = ({ children }) => {
                     const newTokenStr = typeof token === 'string' ? token : JSON.stringify(token);
 
                     if (currentTokenStr !== newTokenStr) {
-                        console.log(`[PUSH] Updating token for ${user.username}...`);
                         await update(ref(db, `users/${user.username}`), {
                             pushToken: token
                         });
@@ -199,7 +197,6 @@ export const AuthProvider = ({ children }) => {
                     const roomMatch = url.match(/[?&]room=([^&]+)/);
                     if (roomMatch && roomMatch[1]) {
                         const roomCode = roomMatch[1].trim();
-                        console.log(`[DEEP LINK] Detected room: ${roomCode}`);
                         setPendingRoom(roomCode);
                         AsyncStorage.setItem(PENDING_ROOM_KEY, roomCode);
                     }
@@ -210,7 +207,6 @@ export const AuthProvider = ({ children }) => {
                     const match = url.match(/[?&]invite=([^&]+)/);
                     if (match && match[1]) {
                         inviteName = decodeURIComponent(match[1]).trim();
-                        console.log(`[DEEP LINK] Detected invite: ${inviteName}`);
                         setPendingInvite(inviteName);
                         AsyncStorage.setItem(PENDING_INVITE_KEY, inviteName);
                     }
@@ -221,7 +217,6 @@ export const AuthProvider = ({ children }) => {
                     const tabMatch = url.match(/[?&]tab=([^&]+)/);
                     if (tabMatch && tabMatch[1]) {
                         const tabName = tabMatch[1].trim();
-                        console.log(`[DEEP LINK] Detected tab: ${tabName}`);
                         setPendingTab(tabName);
                         AsyncStorage.setItem(PENDING_TAB_KEY, tabName);
                     }
@@ -260,7 +255,6 @@ export const AuthProvider = ({ children }) => {
         if (user?.username && pendingInvite && pendingInvite !== user.username) {
             const processInvite = async () => {
                 try {
-                    console.log(`[INVITE] Processing pending invite from: ${pendingInvite}`);
                     // check if already friends
                     if (user.friends && user.friends[pendingInvite]) {
                         setPendingInvite(null);
@@ -313,7 +307,7 @@ export const AuthProvider = ({ children }) => {
 
             if (found) {
                 try {
-                    console.log(`[AUTO-ACCEPT] Accepting invites from: ${lastInviter}`);
+                    if (__DEV__) console.log(`[AUTO-ACCEPT] Accepting invites from: ${lastInviter}`);
                     await update(ref(db), updates);
                     // Feedback for the original inviter
                     Alert.alert(
@@ -352,7 +346,7 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         if (user) {
             AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(user))
-                .catch(err => console.error("[AUTH] Persistence error:", err));
+                .catch(err => { /* silent */ });
         }
     }, [user]);
 
@@ -369,14 +363,12 @@ export const AuthProvider = ({ children }) => {
 
     // --- Helper: Load User by UID ---
     const loadUserByUid = async (uid) => {
-        console.log(`[AUTH] loadUserByUid starting for: ${uid}`);
         try {
             const uidRef = ref(db, `uids/${uid}`);
             const uidSnapshot = await get(uidRef);
 
             if (uidSnapshot.exists()) {
                 const username = uidSnapshot.val();
-                console.log(`[AUTH] UID matches username: ${username}`);
                 const userSnapshot = await get(ref(db, `users/${username}`));
 
                 if (userSnapshot.exists()) {
@@ -389,17 +381,14 @@ export const AuthProvider = ({ children }) => {
                     }
                     const processedData = applySpecialOverrides(userData, username);
                     setUser({ username, ...processedData });
-                    console.log(`[AUTH] User ${username} loaded and set.`);
                     return;
                 }
             }
-            console.log("[AUTH] No user found for this UID.");
             setUser(null);
         } catch (error) {
             console.error("[AUTH] Error loading user by UID:", error);
             setUser(null);
         } finally {
-            console.log("[AUTH] setLoading(false) triggered in AuthContext.");
             setLoading(false);
         }
     };
@@ -686,7 +675,6 @@ export const AuthProvider = ({ children }) => {
             }
 
             if (currentDaily >= DAILY_EARNINGS_CAP) {
-                console.log("[ANTI-FARMER] Daily Cap reached. Prize Blocked.");
                 return { success: false, reason: 'daily_cap' };
             }
 
@@ -719,7 +707,6 @@ export const AuthProvider = ({ children }) => {
             const finalAmount = Math.floor(amount * multiplier);
 
             if (finalAmount <= 0) {
-                console.log(`[ANTI-FARMER] Nemesis Block. Matches: ${maxMatches}. Prize 0.`);
                 return { success: false, reason: 'nemesis' };
             }
 

@@ -54,19 +54,16 @@ export const LanguageProvider = ({ children }) => {
                 if (savedLanguage) {
                     setLanguageState(savedLanguage);
                     GameDataService.setLanguage(savedLanguage);
-                    console.log(`[LanguageContext] Loaded saved language: ${savedLanguage}`);
                 } else {
                     // [NEW] Auto-detect language
                     const locales = Localization.getLocales();
                     const deviceLanguage = locales[0]?.languageCode === 'it' ? 'it' : 'en';
 
-                    console.log(`[LanguageContext] No saved language. Auto-detected: ${deviceLanguage} (Device: ${locales[0]?.languageCode})`);
-
                     setLanguageState(deviceLanguage);
                     GameDataService.setLanguage(deviceLanguage);
                 }
             } catch (e) {
-                console.error('Failed to load language preference', e);
+                // console.error('Failed to load language preference', e); // Removed or wrapped
                 GameDataService.setLanguage(language);
             } finally {
                 setIsLoaded(true);
