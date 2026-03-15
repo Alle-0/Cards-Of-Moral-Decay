@@ -83,7 +83,7 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
         // 1. Respiro solenne (lento e impercettibile)
         setTimeout(() => {
             contentScale.value = withRepeat(
-                withTiming(1.02, { duration: breathingDuration, easing: Easing.inOut(Easing.sin) }), // Sine è più morbido (Fixed: sine -> sin)
+                withTiming(1.02, { duration: breathingDuration, easing: Easing.bezier(0.445, 0.05, 0.55, 0.95) }), // Sine equivalent for web
                 -1, true
             );
         }, totalEntranceTime);

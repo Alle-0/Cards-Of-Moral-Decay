@@ -1224,7 +1224,7 @@ const GameScreen = ({ onStartLoading }) => {
 
                                 <View style={{ transform: [{ translateY: 0 }], alignItems: 'center' }}>
                                     <Animated.View
-                                        entering={ZoomIn.delay(700).duration(400).easing(Easing.out(Easing.back(1.5)))}
+                                        entering={ZoomIn.delay(700).duration(400).easing(Easing.bezier(0.175, 0.885, 0.32, 1.275))}
                                         style={{
                                             alignItems: 'center',
                                             justifyContent: 'center',

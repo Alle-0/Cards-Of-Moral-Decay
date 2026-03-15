@@ -265,6 +265,8 @@ const AppContent = () => {
 
     // [NEW] Notification click listener (Background / Foreground)
     useEffect(() => {
+        if (Platform.OS === 'web') return;
+
         const subscription = Notifications.addNotificationResponseReceivedListener(response => {
             const data = response.notification.request.content.data;
             if (__DEV__) console.log("[PUSH] Click detected (Listener). Data:", data);

@@ -151,32 +151,37 @@ async function registerForPushNotificationsAsync(vapidKey = 'BMcF2h_kIAUPpErVAh-
                 options.applicationId = experienceId;
             }
 
-            console.log("[PUSH] Attempting Registration (Strategy 1)...");
-            try {
-                const tokenResponse = await Notifications.getExpoPushTokenAsync(options);
-                token = tokenResponse.data;
-                console.log("[PUSH] Success! Expo Push Token (S1):", token);
-            } catch (s1Error) {
-                console.warn("[PUSH] Strategy 1 failed (likely CORS):", s1Error.message);
-
-                // Strategy 2: ProjectID as ApplicationID (Fallback)
-                console.log("[PUSH] Attempting Registration (Strategy 2)...");
+            // Only attempt Strategy 1 & 2 (Expo Token) on Native to avoid CORS on Web
+            if (Platform.OS !== 'web') {
+                console.log("[PUSH] Attempting Registration (Strategy 1)...");
                 try {
-                    options.applicationId = projectId;
                     const tokenResponse = await Notifications.getExpoPushTokenAsync(options);
                     token = tokenResponse.data;
-                    console.log("[PUSH] Success! Expo Push Token (S2):", token);
-                } catch (s2Error) {
-                    console.warn("[PUSH] Strategy 2 failed. Falling back to Native Browser Token.");
+                    console.log("[PUSH] Success! Expo Push Token (S1):", token);
+                } catch (s1Error) {
+                    console.warn("[PUSH] Strategy 1 failed:", s1Error.message);
 
-                    // Strategy 3: NATIVE FALLBACK (Crucial for bypass CORS)
+                    // Strategy 2: ProjectID as ApplicationID (Fallback)
+                    console.log("[PUSH] Attempting Registration (Strategy 2)...");
                     try {
-                        const deviceToken = await Notifications.getDevicePushTokenAsync();
-                        token = deviceToken; // This is an object: { type, data }
-                        console.log("[PUSH] Using Native Browser Token (Success):", JSON.stringify(token));
-                    } catch (deviceError) {
-                        console.error("[PUSH] All registration strategies failed.", deviceError);
+                        options.applicationId = projectId;
+                        const tokenResponse = await Notifications.getExpoPushTokenAsync(options);
+                        token = tokenResponse.data;
+                        console.log("[PUSH] Success! Expo Push Token (S2):", token);
+                    } catch (s2Error) {
+                        console.warn("[PUSH] Strategy 2 failed.");
                     }
+                }
+            }
+
+            // Strategy 3 (WEB / NATIVE FALLBACK): NATIVE FALLBACK (Crucial for bypass CORS on Web)
+            if (!token) {
+                try {
+                    const deviceToken = await Notifications.getDevicePushTokenAsync();
+                    token = deviceToken; // This is an object: { type, data }
+                    console.log("[PUSH] Using Native Device Token (Success):", JSON.stringify(token));
+                } catch (deviceError) {
+                    console.error("[PUSH] Native registration failed.", deviceError);
                 }
             }
         } catch (e) {

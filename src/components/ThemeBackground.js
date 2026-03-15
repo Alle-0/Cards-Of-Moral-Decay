@@ -306,8 +306,8 @@ const BubbleParticle = React.memo(({ color }) => {
 
         // Random Sway
         translateX.value = withDelay(delay, withRepeat(withSequence(
-            withTiming(startX + swayAmount, { duration: duration / 2, easing: Easing.inOut(Easing.sin) }),
-            withTiming(startX - swayAmount, { duration: duration / 2, easing: Easing.inOut(Easing.sin) })
+            withTiming(startX + swayAmount, { duration: duration / 2, easing: Easing.bezier(0.445, 0.05, 0.55, 0.95) }),
+            withTiming(startX - swayAmount, { duration: duration / 2, easing: Easing.bezier(0.445, 0.05, 0.55, 0.95) })
         ), -1, true));
 
         scale.value = withDelay(delay, withRepeat(withSequence(withTiming(1, { duration: 1000 }), withTiming(1, { duration: duration - 1500 }), withTiming(0, { duration: 500 })), -1));
@@ -476,7 +476,7 @@ const SmokePuff = React.memo(() => {
             withTiming(0.25, { duration: duration / 2 }),
             withTiming(0, { duration: duration / 2 })
         ), -1));
-        scale.value = withDelay(delay, withRepeat(withTiming(1.2, { duration, easing: Easing.out(Easing.sin) }), -1));
+        scale.value = withDelay(delay, withRepeat(withTiming(1.2, { duration, easing: Easing.bezier(0.39, 0.575, 0.565, 1) }), -1));
         return () => { cancelAnimation(opacity); cancelAnimation(scale); };
     }, []);
 
@@ -556,7 +556,7 @@ const VoidFloatParticle = React.memo(({ color }) => {
             withTiming(0.4, { duration: duration / 2 }),
             withTiming(0, { duration: duration / 2 })
         ), -1));
-        scale.value = withDelay(delay, withRepeat(withTiming(1, { duration, easing: Easing.inOut(Easing.sin) }), -1, true));
+        scale.value = withDelay(delay, withRepeat(withTiming(1, { duration, easing: Easing.bezier(0.445, 0.05, 0.55, 0.95) }), -1, true));
         return () => { cancelAnimation(opacity); cancelAnimation(scale); };
     }, []);
 

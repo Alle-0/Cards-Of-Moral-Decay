@@ -421,8 +421,8 @@ const PlayerHand = ({
         } else {
             // Show new cards first (invisible), then animate in
             setCardsVisible(true);
-            cardsOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.back(1.2)) });
-            cardsScale.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.back(1.2)) });
+            cardsOpacity.value = withTiming(1, { duration: 350, easing: Easing.bezier(0.175, 0.885, 0.32, 1.275) });
+            cardsScale.value = withTiming(1, { duration: 350, easing: Easing.bezier(0.175, 0.885, 0.32, 1.275) });
         }
     }, [isBribing]);
 

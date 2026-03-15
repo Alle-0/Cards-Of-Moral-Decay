@@ -466,8 +466,8 @@ const SettingsScreen = ({ navigation }) => {
                     {showRules ? (
                         <Animated.View
                             key="rules"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(250).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
+                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
                             style={[StyleSheet.absoluteFill, { padding: 20, paddingTop: 50, paddingBottom: 80 + insets.bottom }]}
                         >
                             <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, marginBottom: 15 }} contentContainerStyle={{ paddingBottom: 30 }}>
@@ -556,8 +556,8 @@ const SettingsScreen = ({ navigation }) => {
                     ) : showNotifications ? (
                         <Animated.View
                             key="notifications"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(250).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
+                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
                             style={[StyleSheet.absoluteFill, { padding: 20, paddingTop: 50, gap: 15, paddingBottom: 80 + insets.bottom }]}
                         >
                             <View style={[styles.settingsGroup, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
@@ -632,8 +632,8 @@ const SettingsScreen = ({ navigation }) => {
                     ) : showPreferences ? (
                         <Animated.View
                             key="preferences"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(250).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
+                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
                             style={[StyleSheet.absoluteFill, { padding: 20, paddingTop: 50, gap: 15, paddingBottom: 80 + insets.bottom }]}
                         >
                             <View style={[styles.settingsGroup, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
@@ -753,8 +753,8 @@ const SettingsScreen = ({ navigation }) => {
                     ) : showAccount ? (
                         <Animated.View
                             key="account"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(250).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
+                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
                             style={[StyleSheet.absoluteFill, { padding: 20, paddingTop: 50, gap: 15, paddingBottom: 80 + insets.bottom }]}
                         >
                             {/* Profile Header */}
@@ -1099,8 +1099,8 @@ const SettingsScreen = ({ navigation }) => {
                     ) : (
                         <Animated.View
                             key="main"
-                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(250).easing(Easing.out(Easing.quad))}
-                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.out(Easing.quad))}
+                            entering={(navDir === 'forward' ? SlideInRight : SlideInLeft).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
+                            exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
                             style={[StyleSheet.absoluteFill, { padding: 20 }]}
                         >
                             <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: isDesktop ? 35 : 50, marginBottom: 20, textAlign: 'center' }}>

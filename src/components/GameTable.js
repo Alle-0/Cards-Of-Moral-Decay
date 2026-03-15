@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
-import { StyleSheet, View, Text, ScrollView, Dimensions, Pressable, Image } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Dimensions, Pressable, Image, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring, Easing, withSequence, runOnJS, interpolate } from 'react-native-reanimated';
 import { useTheme, CARD_SKINS, TEXTURES } from '../context/ThemeContext'; // [NEW] CARD_SKINS, TEXTURES
 import PremiumIconButton from './PremiumIconButton';

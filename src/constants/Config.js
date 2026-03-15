@@ -1,4 +1,4 @@
-export const APP_VERSION = '4.12.6';
+export const APP_VERSION = '4.12.7';
 export const MAINTENANCE_MODE = false;
 export const BASE_URL = "https://carte-vs-umani.web.app";
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Image, Pressable, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, Image, Pressable, Dimensions, Platform } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown, useAnimatedStyle, useSharedValue, withTiming, interpolate, Easing, useDerivedValue } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -22,7 +22,7 @@ const DominusOverlay = ({ status, onSkip, onReveal }) => {
     useEffect(() => {
         expansion.value = withTiming(isExpanded ? 1 : 0, {
             duration: 400,
-            easing: Easing.out(Easing.back(1))
+            easing: Easing.bezier(0.175, 0.885, 0.32, 1.275)
         });
     }, [isExpanded]);
 
