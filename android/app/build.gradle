@@ -37,7 +37,7 @@ react {
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
-    // nodeExecutableAndArgs = ["node"]
+    nodeExecutableAndArgs = ["C:/Program Files/nodejs/node.exe"]
 
     //
     //   The path to the CLI configuration file. Default is empty.
@@ -99,8 +99,8 @@ android {
         applicationId 'com.anonymous.cardsofmoraldecay'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 52
-        versionName "4.12.0"
+        versionCode 55
+        versionName "4.12.3"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }

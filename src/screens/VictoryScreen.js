@@ -59,14 +59,18 @@ const VictoryScreen = ({ winnerName, onExit }) => {
     const isWinnerRando = winnerName === 'Rando';
     const winner = isWinnerRando ? { avatar: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Rando' } : roomData?.giocatori?.[winnerName];
 
-    // Calculate loser BEFORE useEffect to avoid ReferenceError
+    // [FIX] Rando should only be shown if there are exactly 2 human players (1v1) or if Rando is the winner.
+    const humanPlayers = roomData?.giocatori || {};
+    const humanCount = Object.keys(humanPlayers).length;
+    const shouldShowRando = humanCount === 2 || isWinnerRando;
+
     const allScoresRaw = { ...(roomData?.punti || {}) };
-    if (roomData?.randoPoints !== undefined || winnerName === 'Rando') {
+    if (shouldShowRando && (roomData?.randoPoints !== undefined || isWinnerRando)) {
         allScoresRaw['Rando'] = roomData?.randoPoints || 0;
     }
 
     const allSortedGlobal = Object.entries(allScoresRaw)
-        .filter(([name]) => name === 'Rando' || roomData?.giocatori?.[name])
+        .filter(([name]) => (name === 'Rando' && shouldShowRando) || roomData?.giocatori?.[name])
         .sort(([, a], [, b]) => b - a); // Descending (Standard Leaderboard)
 
     const potentialLosers = [...allSortedGlobal].reverse().filter(([name]) => name !== winnerName);

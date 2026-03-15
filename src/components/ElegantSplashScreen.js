@@ -72,7 +72,7 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
         // [NEW] Sfumatura colore sfondo (solo al boot iniziale, per fondersi con la splash nativa)
         if (isThemeReady && !fastMode && isInitialLaunch) {
             // Scompare la splash nativa con un leggero margine per garantire che la JS view sia renderizzata
-            setTimeout(() => {
+            const hideTimer = setTimeout(() => {
                 SplashScreen.hideAsync().catch(() => { });
             }, 100);
 
@@ -81,6 +81,8 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
                 duration: 4000,
                 easing: Easing.inOut(Easing.ease)
             });
+
+            return () => clearTimeout(hideTimer);
         }
 
         // 1. Respiro solenne (lento e impercettibile)
