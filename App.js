@@ -345,7 +345,32 @@ const AppContent = () => {
     if (!user) return <LoginScreen />;
 
     return (
+    const maintenanceMessage = "IL SERVER È TEMPORANEAMENTE IN MANUTENZIONE PER AGGIORNAMENTI.";
+
+    if (require('./src/constants/Config').MAINTENANCE_MODE) {
+        return (
+            <View style={{ flex: 1, backgroundColor: '#0d0d0d', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+                <StatusBar hidden />
+                <Text style={{ color: '#FFD700', fontFamily: 'Cinzel-Bold', fontSize: 24, textAlign: 'center', marginBottom: 20 }}>
+                    MANUTENZIONE
+                </Text>
+                <Text style={{ color: '#aaa', fontFamily: 'Outfit', fontSize: 16, textAlign: 'center', lineHeight: 24 }}>
+                    {maintenanceMessage}
+                </Text>
+                <View style={{ marginTop: 40, width: 60, height: 2, backgroundColor: '#FFD700' }} />
+            </View>
+        );
+    }
+
+    return (
         <View style={{ flex: 1 }}>
+            {/* [NEW] Server Down Banner (Backup) */}
+            <View style={{ backgroundColor: '#ef4444', paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center', zIndex: 10001 }}>
+                <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 12, letterSpacing: 1 }}>
+                    {t('server_down_msg') || "IL SERVER È TEMPORANEAMENTE IN MANUTENZIONE"}
+                </Text>
+            </View>
+
             {roomCode ? (
                 <GameScreen onStartLoading={handleStartLoading} />
             ) : (

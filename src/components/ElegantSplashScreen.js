@@ -73,8 +73,6 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
         console.log("[Splash] Mount. isThemeReady:", isThemeReady, "isInitialLaunch:", isInitialLaunch);
 
         if (isThemeReady && !fastMode && isInitialLaunch) {
-            // [MODIFIED] The native splash hide is now handled in App.js.
-            // We just log that we are here.
             console.log("[Splash] JS Splash Screen fully active.");
 
             // Transizione colore ultra-lenta (4s) con curva in-out per evitare scatti iniziali/finali
@@ -82,8 +80,6 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
                 duration: 4000,
                 easing: Easing.inOut(Easing.ease)
             });
-
-            return;
         }
 
         // 1. Respiro solenne (lento e impercettibile)

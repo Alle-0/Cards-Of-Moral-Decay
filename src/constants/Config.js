@@ -1,4 +1,5 @@
-export const APP_VERSION = '4.12.3';
+export const APP_VERSION = '4.12.5';
+export const MAINTENANCE_MODE = true;
 export const BASE_URL = "https://carte-vs-umani.web.app";
 
 // --- ANTI-FARMING CONFIG ---
