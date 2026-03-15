@@ -110,9 +110,13 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
                 duration: explosionDuration,
                 easing: Easing.inOut(Easing.exp)
             }, (finished) => {
+                console.log("[Splash] Animation finished callback:", finished);
                 if (finished) {
+                    if (onFinish) {
+                        console.log("[Splash] Calling onFinish...");
+                        runOnJS(onFinish)();
+                    }
                     runOnJS(setAnimationFinished)(true);
-                    if (onFinish) runOnJS(onFinish)();
                 }
             }));
 

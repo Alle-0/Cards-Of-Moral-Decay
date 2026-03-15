@@ -75,16 +75,8 @@ export default function App() {
     useEffect(() => {
         async function prepare() {
             try {
-                // Set a fallback timer to ensure the app becomes "ready" even if assets hang
-                const timeout = setTimeout(() => {
-                    if (!appIsReady) {
-                        console.log("[App] Fallback: Marking app as ready after timeout");
-                        setAppIsReady(true);
-                    }
-                }, 3500);
 
                 await SoundService.loadSounds();
-                clearTimeout(timeout);
             } catch (e) {
                 console.warn("[App] Error during prepare:", e);
             } finally {
@@ -94,13 +86,6 @@ export default function App() {
         if (fontsLoaded) prepare();
     }, [fontsLoaded]);
 
-    // Safety fallback: Hide splash screen no matter what after 6 seconds
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            SplashScreen.hideAsync().catch(() => {});
-        }, 6000);
-        return () => clearTimeout(timer);
-    }, []);
 
     if (!appIsReady) return null;
 
