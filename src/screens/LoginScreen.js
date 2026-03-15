@@ -619,9 +619,13 @@ const styles = StyleSheet.create({
         marginBottom: 30,
         letterSpacing: 1.5,
         paddingLeft: 1.5, // [FIX] Compensate for letterSpacing to ensure perfect centering
-        textShadowColor: 'rgba(255, 215, 0, 0.3)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 10
+        ...(Platform.OS === 'web' ? {
+            textShadow: `0px 2px 10px rgba(255, 215, 0, 0.3)`,
+        } : {
+            textShadowColor: 'rgba(255, 215, 0, 0.3)',
+            textShadowOffset: { width: 0, height: 2 },
+            textShadowRadius: 10
+        })
     },
     tabContainer: {
         flexDirection: 'row',
@@ -714,11 +718,15 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         overflow: 'hidden',
         outlineStyle: 'none',
-        shadowColor: '#FFD700',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 5
+        ...(Platform.OS === 'web' ? {
+            boxShadow: `0px 4px 8px #FFD70033`, // 0.2 opacity in hex is approx 33
+        } : {
+            shadowColor: '#FFD700',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 5
+        })
     },
     buttonDisabled: {
         opacity: 0.7

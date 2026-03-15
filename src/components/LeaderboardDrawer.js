@@ -428,7 +428,7 @@ const AvatarItem = memo(({ player, isThinking, theme }) => {
     useEffect(() => {
         if (isThinking) {
             ringProgress.value = withRepeat(
-                withTiming(1, { duration: 1500, easing: Easing.out(Easing.ease) }),
+                withTiming(1, { duration: 1500, easing: Easing.out(Easing.quad) }),
                 -1,
                 false
             );

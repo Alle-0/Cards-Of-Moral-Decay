@@ -276,14 +276,14 @@ const AnimatedBlackCard = memo(({ blackCard, dominusName, answerCount, totalAnsw
 
         // 1. Flip to 90 degrees (hide)
         rotateX.value = withSequence(
-            withTiming(90, { duration: 300, easing: Easing.in(Easing.ease) }, () => {
+            withTiming(90, { duration: 300, easing: Easing.in(Easing.quad) }, () => {
                 // 2. Swap content while invisible
                 runOnJS(setDisplayedCard)(blackCard);
             }),
             // 3. Snap to -90 degrees instantly
             withTiming(-90, { duration: 0 }),
             // 4. Flip from -90 to 0 degrees (show new)
-            withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) })
+            withTiming(0, { duration: 300, easing: Easing.out(Easing.quad) })
         );
     }, [blackCard]);
 
@@ -471,11 +471,15 @@ const styles = StyleSheet.create({
         backgroundColor: '#1a1a1a',
         borderRadius: 20,
         padding: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.5,
-        shadowRadius: 5,
-        elevation: 8,
+        ...(Platform.OS === 'web' ? {
+            boxShadow: `0px 4px 5px rgba(0,0,0,0.5)`,
+        } : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.5,
+            shadowRadius: 5,
+            elevation: 8,
+        }),
         justifyContent: 'space-between',
         borderWidth: 2,
         borderColor: '#e0e0e0', // Restored bright border
@@ -521,10 +525,14 @@ const styles = StyleSheet.create({
         width: 140,
         height: 190,
         borderRadius: 15,
-        shadowColor: '#000',
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 3,
+        ...(Platform.OS === 'web' ? {
+            boxShadow: `0px 0px 4px rgba(0,0,0,0.3)`,
+        } : {
+            shadowColor: '#000',
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+            elevation: 3,
+        }),
         backgroundColor: '#000', // Ensure background is black
         overflow: 'hidden' // Clip inner content
     },
@@ -555,11 +563,15 @@ const styles = StyleSheet.create({
         // padding: 10, removed to let absoluteFill highlight touch edges
         justifyContent: 'center', // Center vertical
         alignItems: 'center',     // Center horizontal
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
+        ...(Platform.OS === 'web' ? {
+            boxShadow: `0px 2px 3.84px rgba(0,0,0,0.25)`,
+        } : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+            elevation: 5,
+        }),
         overflow: 'hidden', // [FIX] Clip texture to card borders
     },
     whiteCardText: {
@@ -582,11 +594,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#2a2a2a', // Darker solid background for better contrast
         borderColor: '#444',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
-        elevation: 4,
+        ...(Platform.OS === 'web' ? {
+            boxShadow: `0px 2px 3px rgba(0,0,0,0.3)`,
+        } : {
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 3,
+            elevation: 4,
+        }),
     },
     czarBtnText: {
         fontFamily: 'Cinzel-Bold',

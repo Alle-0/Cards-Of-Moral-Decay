@@ -30,8 +30,8 @@ const JokerOverlay = ({ visible, onFinish }) => {
             // Pulse Animation
             scale.value = withRepeat(
                 withSequence(
-                    withTiming(1.2, { duration: 500, easing: Easing.inOut(Easing.ease) }),
-                    withTiming(1, { duration: 500, easing: Easing.inOut(Easing.ease) })
+                    withTiming(1.2, { duration: 500, easing: Easing.inOut(Easing.quad) }),
+                    withTiming(1, { duration: 500, easing: Easing.inOut(Easing.quad) })
                 ),
                 -1,
                 true

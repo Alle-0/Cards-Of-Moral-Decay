@@ -441,7 +441,7 @@ const LobbyScreen = ({ onStartLoading }) => {
 
     return (
         <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-            <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); }}>
+            <Pressable style={{ flex: 1 }} onPress={() => { Keyboard.dismiss(); }}>
                 <View style={{ flex: 1 }}>
                     <StatusBar hidden={true} />
 
@@ -590,7 +590,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                         </View>
                     </View>
                 </View>
-            </TouchableWithoutFeedback >
+            </Pressable >
 
             <AvatarSelectionModal
                 visible={showAvatarModal}
@@ -850,7 +850,14 @@ const styles = StyleSheet.create({
         fontSize: 12,
         textTransform: 'uppercase',
         letterSpacing: 2,
-        textShadowOffset: { width: 0, height: 0 },
+        ...Platform.select({
+            web: {
+                textShadow: '0 0 0 rgba(0,0,0,0)'
+            },
+            default: {
+                textShadowOffset: { width: 0, height: 0 },
+            }
+        }),
         includeFontPadding: false,
         textAlignVertical: 'center',
     }

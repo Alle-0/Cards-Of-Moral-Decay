@@ -22,11 +22,15 @@ const PremiumButton = ({
             backgroundColor: 'rgba(30, 27, 26, 0.95)',
             borderColor: theme.colors.cardBorder,
             borderWidth: 1.5,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.4,
-            shadowRadius: 12,
-            elevation: 8,
+            ...(Platform.OS === 'web' ? {
+                boxShadow: `0px 6px 12px rgba(0,0,0,0.4)`,
+            } : {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.4,
+                shadowRadius: 12,
+                elevation: 8,
+            }),
         };
 
         if (variant === 'outline') {

@@ -76,7 +76,7 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
             // Transizione colore ultra-lenta (4s) con curva in-out per evitare scatti iniziali/finali
             bgProgress.value = withTiming(1, {
                 duration: 4000,
-                easing: Easing.inOut(Easing.ease)
+                easing: Easing.inOut(Easing.quad)
             });
         }
 

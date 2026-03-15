@@ -209,9 +209,13 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                             entering={FadeInDown.duration(1000).springify().damping(25).stiffness(80)}
                             style={[styles.title, {
                                 color: theme.colors.accent,
-                                textShadowColor: 'rgba(212, 175, 55, 0.8)',
-                                textShadowOffset: { width: 0, height: 0 },
-                                textShadowRadius: 20,
+                                ...(Platform.OS === 'web' ? {
+                                    textShadow: `0px 0px 20px rgba(212, 175, 55, 0.8)`,
+                                } : {
+                                    textShadowColor: 'rgba(212, 175, 55, 0.8)',
+                                    textShadowOffset: { width: 0, height: 0 },
+                                    textShadowRadius: 20,
+                                }),
                                 letterSpacing: 2,
                                 fontSize: isDesktop ? 72 : 48, // [NEW] Larger on PC
                                 marginBottom: isDesktop ? 50 : 30
@@ -491,9 +495,13 @@ const styles = StyleSheet.create({
         fontFamily: 'Cinzel-Bold',
         fontSize: 48,
         marginBottom: 30,
-        textShadowColor: 'rgba(0,0,0,0.5)',
-        textShadowOffset: { width: 0, height: 4 },
-        textShadowRadius: 10,
+        ...(Platform.OS === 'web' ? {
+            textShadow: `0px 4px 10px rgba(0,0,0,0.5)`,
+        } : {
+            textShadowColor: 'rgba(0,0,0,0.5)',
+            textShadowOffset: { width: 0, height: 4 },
+            textShadowRadius: 10,
+        }),
     },
     avatarContainer: {
         width: 150, // Slightly smaller to fit leaderboard

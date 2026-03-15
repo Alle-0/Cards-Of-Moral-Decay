@@ -78,7 +78,11 @@ const DominusOverlay = ({ status, onSkip, onReveal }) => {
                     onPress={toggleExpanded}
                     style={[styles.triggerButton, {
                         borderColor: isJudging ? theme.colors.accent : '#ffd700',
-                        shadowColor: isJudging ? theme.colors.accent : '#ffd700'
+                        ...(Platform.OS === 'web' ? {
+                            boxShadow: `0px 4px 8px ${isJudging ? theme.colors.accent : '#ffd700'}`,
+                        } : {
+                            shadowColor: isJudging ? theme.colors.accent : '#ffd700'
+                        })
                     }]}
                     rippleColor={isJudging ? theme.colors.accent + '30' : '#ffd70030'}
                     scaleDown={0.9}
@@ -183,10 +187,14 @@ const styles = StyleSheet.create({
         borderRadius: 28, // Fully circular
         backgroundColor: '#1a1a1a', // Dark theme background
         borderWidth: 1.5,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
+        ...(Platform.OS === 'web' ? {
+            boxShadow: `0px 4px 8px rgba(0,0,0,0.3)`,
+        } : {
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
+        }),
     },
 
     // Expanded Styles
@@ -214,11 +222,15 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         borderWidth: 1,
         padding: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.5,
-        shadowRadius: 12,
-        elevation: 12,
+        ...(Platform.OS === 'web' ? {
+            boxShadow: `0px 8px 12px rgba(0,0,0,0.5)`,
+        } : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.5,
+            shadowRadius: 12,
+            elevation: 12,
+        }),
         gap: 16
     },
     closeButton: {

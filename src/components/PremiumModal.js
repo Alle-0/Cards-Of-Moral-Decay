@@ -143,9 +143,14 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                                         overflow: Platform.OS === 'web' ? 'hidden' : 'hidden',
                                         backgroundColor: backgroundColor || 'rgba(30, 30, 30, 0.95)',
                                         borderColor: borderColor || theme.colors.cardBorder,
-                                        shadowColor: glowColor || '#000',
-                                        shadowOpacity: glowColor ? 0.6 : 0.5,
-                                        shadowRadius: glowColor ? 35 : 30,
+                                        ...(Platform.OS === 'web' 
+                                            ? { boxShadow: `0 0 ${glowColor ? 35 : 30}px ${glowColor || 'rgba(0,0,0,0.5)'}` }
+                                            : {
+                                                shadowColor: glowColor || '#000',
+                                                shadowOpacity: glowColor ? 0.6 : 0.5,
+                                                shadowRadius: glowColor ? 35 : 30,
+                                            }
+                                        ),
                                         // [PERF] Reduce elevation cost on Android
                                         elevation: Platform.OS === 'android' ? 3 : 10,
                                         width: '100%',
@@ -221,10 +226,17 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(30, 30, 30, 0.95)',
         borderRadius: 20,
         borderWidth: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.5,
-        shadowRadius: 30,
+        ...Platform.select({
+            web: {
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+            },
+            default: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.5,
+                shadowRadius: 30,
+            }
+        }),
         elevation: 3, // [PERF] Lower elevation = cheaper shadow on Android
     },
     header: {

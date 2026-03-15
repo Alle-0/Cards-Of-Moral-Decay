@@ -110,14 +110,14 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                     </Animated.View>
                 )}
 
-                {/* DIRTY WIN REWARD MSG */}
-                {activeChaosEvent === 'DIRTY_WIN' && (
                     <Animated.View entering={FadeInDown.delay(200)} style={{ alignItems: 'center', marginBottom: 5 }}>
-                        <Text style={{ color: '#10b981', fontFamily: 'Cinzel-Bold', fontSize: 16, textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 }}>
+                        <Text style={[
+                            { color: '#10b981', fontFamily: 'Cinzel-Bold', fontSize: 16 },
+                            Platform.OS === 'web' ? { textShadow: '0px 0px 4px rgba(0,0,0,0.5)' } : { textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 }
+                        ]}>
                             +100 DIRTY CASH
                         </Text>
                     </Animated.View>
-                )}
 
                 <Animated.View
                     entering={FadeInDown.delay(500).duration(500)}
@@ -182,9 +182,13 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                         fontSize: 24,
                         textAlign: 'center',
                         letterSpacing: 1,
-                        textShadowColor: activeChaosEvent === 'DIRTY_WIN' ? 'rgba(0,0,0,0.8)' : 'rgba(212, 175, 55, 0.4)',
-                        textShadowOffset: { width: 0, height: 0 },
-                        textShadowRadius: 12
+                        ...(Platform.OS === 'web' ? {
+                            textShadow: `0px 0px 12px ${activeChaosEvent === 'DIRTY_WIN' ? 'rgba(0,0,0,0.8)' : 'rgba(212, 175, 55, 0.4)'}`,
+                        } : {
+                            textShadowColor: activeChaosEvent === 'DIRTY_WIN' ? 'rgba(0,0,0,0.8)' : 'rgba(212, 175, 55, 0.4)',
+                            textShadowOffset: { width: 0, height: 0 },
+                            textShadowRadius: 12
+                        })
                     }}>
                         {winnerInfo?.name}
                     </Text>
@@ -204,11 +208,15 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                                 justifyContent: 'center',
                                 alignItems: 'center',
                                 // DEEPER 3D SHADOW
-                                shadowColor: "#000",
-                                shadowOffset: { width: 0, height: 25 },
-                                shadowOpacity: 0.8,
-                                shadowRadius: 30,
-                                elevation: 35,
+                                ...(Platform.OS === 'web' ? {
+                                    boxShadow: `0px 25px 30px rgba(0,0,0,0.8)`,
+                                } : {
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 0, height: 25 },
+                                    shadowOpacity: 0.8,
+                                    shadowRadius: 30,
+                                    elevation: 35,
+                                }),
                                 transform: [
                                     { rotate: '-3deg' },
                                     { perspective: 1000 },

@@ -1212,13 +1212,15 @@ const GameScreen = ({ onStartLoading }) => {
                         }
 
                         return (
-                            <View style={{
-                                alignItems: 'center',
-                                marginTop: isDesktop ? 10 : 75,
-                                zIndex: 900, // Below Header (999) and Leaderboard (1001)
-                                elevation: 900,
-                                pointerEvents: 'box-none'
-                            }}>
+                            <View 
+                                pointerEvents="box-none"
+                                style={{
+                                    alignItems: 'center',
+                                    marginTop: isDesktop ? 10 : 75,
+                                    zIndex: 900, // Below Header (999) and Leaderboard (1001)
+                                    elevation: 900,
+                                }}
+                            >
 
                                 <View style={{ transform: [{ translateY: 0 }], alignItems: 'center' }}>
                                     <Animated.View
@@ -1677,7 +1679,7 @@ const GameScreen = ({ onStartLoading }) => {
 
                 {/* [NEW] Dominus Alert Overlay */}
                 {showDominusAlert && (
-                    <View style={[StyleSheet.absoluteFill, { zIndex: 9999, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.85)', pointerEvents: 'none', top: -50 }]}>
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { zIndex: 9999, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.85)', top: -50 }]}>
                         <Animated.View
                             entering={ZoomIn.duration(600).springify()}
                             exiting={ZoomOut.duration(400)}
@@ -1689,11 +1691,15 @@ const GameScreen = ({ onStartLoading }) => {
                                 borderWidth: 1.5, // Slightly thinner
                                 borderColor: theme.colors.accent, // Using theme accent
                                 backgroundColor: '#202020', // Clean dark gray
-                                shadowColor: theme.colors.accent,
-                                shadowOffset: { width: 0, height: 4 }, // Much less shadow
-                                shadowOpacity: 0.4,
-                                shadowRadius: 10,
-                                elevation: 8,
+                                ...(Platform.OS === 'web' ? {
+                                    boxShadow: `0px 4px 10px ${theme.colors.accent}`,
+                                } : {
+                                    shadowColor: theme.colors.accent,
+                                    shadowOffset: { width: 0, height: 4 }, // Much less shadow
+                                    shadowOpacity: 0.4,
+                                    shadowRadius: 10,
+                                    elevation: 8,
+                                }),
                             }}
                         >
                             {/* Crown Icon Container (Absolute Floating) */}
@@ -1705,11 +1711,15 @@ const GameScreen = ({ onStartLoading }) => {
                                 borderRadius: 30,
                                 borderWidth: 1.5,
                                 borderColor: theme.colors.accent,
-                                shadowColor: theme.colors.accent,
-                                shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.3, // Less shadow
-                                shadowRadius: 4,
-                                elevation: 4,
+                                ...(Platform.OS === 'web' ? {
+                                    boxShadow: `0px 2px 4px ${theme.colors.accent}`,
+                                } : {
+                                    shadowColor: theme.colors.accent,
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.3, // Less shadow
+                                    shadowRadius: 4,
+                                    elevation: 4,
+                                }),
                                 alignItems: 'center',
                                 justifyContent: 'center'
                             }}>
@@ -1727,9 +1737,13 @@ const GameScreen = ({ onStartLoading }) => {
                                 textAlign: 'center',
                                 letterSpacing: 1.5,
                                 textTransform: 'uppercase',
-                                textShadowColor: theme.colors.accent,
-                                textShadowOffset: { width: 0, height: 0 },
-                                textShadowRadius: 6, // Reduced glow
+                                ...(Platform.OS === 'web' ? {
+                                    textShadow: `0px 0px 6px ${theme.colors.accent}`,
+                                } : {
+                                    textShadowColor: theme.colors.accent,
+                                    textShadowOffset: { width: 0, height: 0 },
+                                    textShadowRadius: 6, // Reduced glow
+                                }),
                                 marginBottom: 4
                             }}>
                                 {t('you_are_dominus')}

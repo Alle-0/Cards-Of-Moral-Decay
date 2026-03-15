@@ -24,7 +24,7 @@ const AvatarWithFrame = ({
 
             {/* GLOW LAYER (Background) */}
             {(Platform.OS === 'android' || Platform.OS === 'web') && (
-                <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', overflow: 'visible' }]}>
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', overflow: 'visible' }]}>
                     {frameId === 'neon' && (
                         <Svg height="150%" width="150%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
                             <Defs>
@@ -127,12 +127,12 @@ const AvatarWithFrame = ({
 
                 {/* GLITCH */}
                 {frameId === 'glitch' && (
-                    <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#00ff00', borderStyle: 'dashed', pointerEvents: 'none' }]} />
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#00ff00', borderStyle: 'dashed' }]} />
                 )}
 
                 {/* NEON */}
                 {frameId === 'neon' && (
-                    <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#06b6d4', shadowColor: '#06b6d4', shadowOpacity: 1, shadowRadius: 10, elevation: Platform.OS === 'android' ? 0 : 6, pointerEvents: 'none' }]} />
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#06b6d4', shadowColor: '#06b6d4', shadowOpacity: 1, shadowRadius: 10, elevation: Platform.OS === 'android' ? 0 : 6 }]} />
                 )}
 
                 {/* ANGEL */}
@@ -147,7 +147,7 @@ const AvatarWithFrame = ({
 
                 {/* DEMON */}
                 {frameId === 'demon' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', overflow: 'visible' }]}>
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { overflow: 'visible' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: '#7f1d1d', shadowColor: '#ef4444', shadowOpacity: 0.8, shadowRadius: 8, elevation: Platform.OS === 'android' ? 0 : 6 }]} />
                         <View style={{ position: 'absolute', top: -18 * scale, width: '100%', alignItems: 'center' }}>
                             <HornsIcon size={30 * scale} color="#ef4444" />
@@ -157,12 +157,12 @@ const AvatarWithFrame = ({
 
                 {/* PIXEL */}
                 {frameId === 'pixel' && (
-                    <View style={[StyleSheet.absoluteFill, { borderRadius: 4 * scale, borderWidth: 4 * scale, borderColor: '#ec4899', borderStyle: 'dotted', pointerEvents: 'none' }]} />
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: 4 * scale, borderWidth: 4 * scale, borderColor: '#ec4899', borderStyle: 'dotted' }]} />
                 )}
 
                 {/* LOVE */}
                 {frameId === 'love' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', overflow: 'visible' }]}>
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { overflow: 'visible' }]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: '#f472b6' }]} />
                         <View style={{ position: 'absolute', bottom: -12 * scale, width: '100%', alignItems: 'center' }}>
                             <HeartIcon size={24 * scale} color="#f472b6" />
@@ -172,7 +172,7 @@ const AvatarWithFrame = ({
 
                 {/* RICH */}
                 {frameId === 'rich' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }]}>
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', overflow: 'visible' }]}>
                         {/* Emerald Glow */}
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 3 * scale, borderColor: 'rgba(16, 185, 129, 0.4)', shadowColor: '#059669', shadowOpacity: 1, shadowRadius: 10, overflow: 'visible' }]} />
 
@@ -202,7 +202,7 @@ const AvatarWithFrame = ({
 
                 {/* CAPO */}
                 {frameId === 'capo' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }]}>
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', overflow: 'visible' }]}>
                         {/* Boss Imperial Glow */}
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 4 * scale, borderColor: 'rgba(217, 70, 239, 0.4)', shadowColor: '#d946ef', shadowOpacity: 1, shadowRadius: 15, overflow: 'visible' }]} />
 
@@ -232,7 +232,7 @@ const AvatarWithFrame = ({
 
                 {/* WANTED */}
                 {frameId === 'wanted' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: 4 * scale, borderWidth: 8 * scale, borderColor: '#78350f', backgroundColor: 'transparent' }]} />
                         <View style={[StyleSheet.absoluteFill, { borderRadius: 2 * scale, borderWidth: 2 * scale, borderColor: '#d97706', margin: 2 * scale }]} />
                         <View style={{ position: 'absolute', top: 2 * scale, width: '100%', alignItems: 'center' }}>
@@ -243,7 +243,7 @@ const AvatarWithFrame = ({
 
                 {/* TOILET */}
                 {frameId === 'toilet' && (
-                    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+                    <View pointerEvents="none" style={[StyleSheet.absoluteFill]}>
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 6 * scale, borderColor: '#f1f5f9' }]} />
                         <View style={[StyleSheet.absoluteFill, { borderRadius: borderRadius, borderWidth: 1 * scale, borderColor: '#cbd5e1', margin: 4 * scale }]} />
                         <View style={{ position: 'absolute', top: -4 * scale, width: '100%', alignItems: 'center' }}>

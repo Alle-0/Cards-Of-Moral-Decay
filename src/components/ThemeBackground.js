@@ -50,7 +50,19 @@ const MatrixRain = React.memo(() => {
                     {char}
                 </Text>
             ))}
-            <Text style={[styles.matrixText, { opacity: 1, color: '#00ff41', fontSize: 22, textShadowRadius: 15, fontWeight: 'bold', marginTop: -2, textShadowColor: '#00ff41' }]}>
+            <Text style={[styles.matrixText, { 
+                opacity: 1, 
+                color: '#00ff41', 
+                fontSize: 22, 
+                fontWeight: 'bold', 
+                marginTop: -2,
+                ...(Platform.OS === 'web' ? {
+                    textShadow: `0px 0px 15px #00ff41`,
+                } : {
+                    textShadowColor: '#00ff41',
+                    textShadowRadius: 15,
+                })
+            }]}>
                 {headChar}
             </Text>
         </Animated.View>
@@ -92,16 +104,16 @@ const PoliceLights = React.memo(() => {
     useEffect(() => {
         // [REFINED] Much slower alternating effect ("Mooolto più lento")
         opacityBlue.value = withRepeat(withSequence(
-            withTiming(0.3, { duration: 2000, easing: Easing.inOut(Easing.ease) }), // Fade in
+            withTiming(0.3, { duration: 2000, easing: Easing.inOut(Easing.quad) }), // Fade in
             withTiming(0.3, { duration: 1000 }), // Hold
-            withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) }), // Fade out
+            withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.quad) }), // Fade out
             withTiming(0, { duration: 4000 }) // Wait for red (overlap slightly less)
         ), -1, false);
 
         opacityRed.value = withDelay(4000, withRepeat(withSequence(
-            withTiming(0.3, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+            withTiming(0.3, { duration: 2000, easing: Easing.inOut(Easing.quad) }),
             withTiming(0.3, { duration: 1000 }),
-            withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+            withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.quad) }),
             withTiming(0, { duration: 4000 })
         ), -1, false));
 
@@ -157,7 +169,7 @@ const RippleRing = React.memo(({ delay, color }) => {
     const opacity = useSharedValue(0.8);
 
     useEffect(() => {
-        scale.value = withDelay(delay, withTiming(4, { duration: 4000, easing: Easing.out(Easing.ease) }));
+        scale.value = withDelay(delay, withTiming(4, { duration: 4000, easing: Easing.out(Easing.quad) }));
         opacity.value = withDelay(delay, withTiming(0, { duration: 4000 }));
         return () => { cancelAnimation(scale); cancelAnimation(opacity); };
     }, []);
@@ -422,7 +434,7 @@ const LightSweep = React.memo(() => {
     const translateX = useSharedValue(-width * 2);
 
     useEffect(() => {
-        translateX.value = withRepeat(withDelay(10000, withTiming(width * 2, { duration: 3000, easing: Easing.inOut(Easing.ease) })), -1);
+        translateX.value = withRepeat(withDelay(10000, withTiming(width * 2, { duration: 3000, easing: Easing.inOut(Easing.quad) })), -1);
         return () => cancelAnimation(translateX);
     }, []);
 
@@ -689,7 +701,16 @@ const styles = StyleSheet.create({
     container: { ...StyleSheet.absoluteFillObject, zIndex: 0, overflow: 'hidden' },
     texture: { width: '100%', height: '100%' },
     matrixColumn: { position: 'absolute', top: 0, alignItems: 'center', width: 30 },
-    matrixText: { color: '#00ff41', fontWeight: 'bold', textShadowColor: '#00ff41', textShadowRadius: 10 },
+    matrixText: { 
+        color: '#00ff41', 
+        fontWeight: 'bold', 
+        ...(Platform.OS === 'web' ? {
+            textShadow: `0px 0px 10px #00ff41`,
+        } : {
+            textShadowColor: '#00ff41', 
+            textShadowRadius: 10 
+        })
+    },
     ripple: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 2, left: -50, top: -50 }
 });
 
