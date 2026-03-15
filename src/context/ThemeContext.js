@@ -550,9 +550,17 @@ export const ThemeProvider = ({ children }) => {
     }, []);
 
     const loadTheme = async () => {
+        const timeout = setTimeout(() => {
+            if (!isThemeReady) {
+                console.warn("[THEME] Safety timeout reached. Forcing isThemeReady.");
+                setIsThemeReady(true);
+            }
+        }, 5000);
+
         try {
+            console.log("[THEME] Loading stored theme...");
             const storedTheme = await AsyncStorage.getItem('cah_theme');
-            const storedAnim = await AsyncStorage.getItem('cah_animations'); // [NEW]
+            const storedAnim = await AsyncStorage.getItem('cah_animations');
 
             if (storedAnim !== null) {
                 setAnimationsEnabled(storedAnim !== 'false');
@@ -563,10 +571,12 @@ export const ThemeProvider = ({ children }) => {
             } else {
                 setCurrentTheme(getThemeWithOverrides(THEMES.default));
             }
+            console.log("[THEME] Theme loaded successfully.");
         } catch (e) {
             console.warn('Failed to load theme', e);
         } finally {
-            setIsThemeReady(true); // [NEW] Ensure app can proceed
+            clearTimeout(timeout);
+            setIsThemeReady(true);
         }
     };
 

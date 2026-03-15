@@ -38,8 +38,8 @@ export const AuthProvider = ({ children }) => {
 
         // Safety Timeout to prevent infinite black screen
         const safetyTimer = setTimeout(() => {
-            if (mounted) {
-                // console.warn("[AUTH] Safety timeout reached. Forcing app entry.");
+            if (mounted && loading) {
+                console.warn("[AUTH] Safety timeout reached in useEffect. Forcing loading = false.");
                 setLoading(false);
             }
         }, 8000);
@@ -369,40 +369,37 @@ export const AuthProvider = ({ children }) => {
 
     // --- Helper: Load User by UID ---
     const loadUserByUid = async (uid) => {
+        console.log(`[AUTH] loadUserByUid starting for: ${uid}`);
         try {
-            // 1. Try Direct Lookup by UID Map (Secure & Scalable)
             const uidRef = ref(db, `uids/${uid}`);
             const uidSnapshot = await get(uidRef);
 
             if (uidSnapshot.exists()) {
                 const username = uidSnapshot.val();
+                console.log(`[AUTH] UID matches username: ${username}`);
                 const userSnapshot = await get(ref(db, `users/${username}`));
 
                 if (userSnapshot.exists()) {
                     const userData = userSnapshot.val();
-
-                    // [SECURITY] Check if this UID is still the valid owner
                     if (userData.uid && userData.uid !== uid) {
                         console.warn(`[SECURITY] UID mismatch! ${uid} maps to ${username}, but owner is ${userData.uid}.`);
                         await set(uidRef, null);
                         setUser(null);
                         return;
                     }
-
-                    // Apply special overrides
                     const processedData = applySpecialOverrides(userData, username);
-                    const finalUser = { username, ...processedData };
-                    setUser(finalUser);
+                    setUser({ username, ...processedData });
+                    console.log(`[AUTH] User ${username} loaded and set.`);
                     return;
                 }
             }
-
+            console.log("[AUTH] No user found for this UID.");
             setUser(null);
-            console.warn("UID not mapped. User must login or recover.");
         } catch (error) {
-            console.error("Error loading user by UID:", error);
+            console.error("[AUTH] Error loading user by UID:", error);
             setUser(null);
         } finally {
+            console.log("[AUTH] setAppIsReady(false) triggered in AuthContext.");
             setLoading(false);
         }
     };
