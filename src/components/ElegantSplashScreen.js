@@ -69,12 +69,13 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
         const exitDelay = fastMode ? 500 : totalEntranceTime + 500;
         const explosionDuration = fastMode ? 400 : 700;
 
-        // [NEW] Sfumatura colore sfondo (solo al boot iniziale, per fondersi con la splash nativa)
+        // [NEW] Diagnostic log
+        console.log("[Splash] Mount. isThemeReady:", isThemeReady, "isInitialLaunch:", isInitialLaunch);
+
         if (isThemeReady && !fastMode && isInitialLaunch) {
-            // Scompare la splash nativa con un leggero margine per garantire che la JS view sia renderizzata
-            const hideTimer = setTimeout(() => {
-                SplashScreen.hideAsync().catch(() => { });
-            }, 100);
+            // [MODIFIED] The native splash hide is now handled in App.js.
+            // We just log that we are here.
+            console.log("[Splash] JS Splash Screen fully active.");
 
             // Transizione colore ultra-lenta (4s) con curva in-out per evitare scatti iniziali/finali
             bgProgress.value = withTiming(1, {
@@ -82,7 +83,7 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
                 easing: Easing.inOut(Easing.ease)
             });
 
-            return () => clearTimeout(hideTimer);
+            return;
         }
 
         // 1. Respiro solenne (lento e impercettibile)
@@ -122,7 +123,19 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
 
         }, exitDelay);
 
-        return () => clearTimeout(timer);
+        // [NEW] Emergency Exit: If the JS animation sequence hangs for > 5s, force finish
+        const emergencyTimer = setTimeout(() => {
+            if (!animationFinished) {
+                console.warn("[Splash] EMERGENCY EXIT triggered (5s timeout).");
+                if (onFinish) onFinish();
+                setAnimationFinished(true);
+            }
+        }, 5000);
+
+        return () => {
+            clearTimeout(timer);
+            clearTimeout(emergencyTimer);
+        };
     }, [fastMode, isThemeReady]); // [FIX] Added isThemeReady
 
 

@@ -399,7 +399,7 @@ export const AuthProvider = ({ children }) => {
             console.error("[AUTH] Error loading user by UID:", error);
             setUser(null);
         } finally {
-            console.log("[AUTH] setAppIsReady(false) triggered in AuthContext.");
+            console.log("[AUTH] setLoading(false) triggered in AuthContext.");
             setLoading(false);
         }
     };
