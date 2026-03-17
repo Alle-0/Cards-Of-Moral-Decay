@@ -491,7 +491,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
                     <Text style={[styles.sectionLabel, { marginBottom: 0 }]}>{t.select_packages || "CONTENT PACKS"}</Text>
                     {(!settings.packs || settings.packs.length === 0) && (
-                        <Text style={{ color: '#EF4444', fontSize: 10, fontFamily: 'Outfit-Bold' }}>
+                        <Text style={{ color: '#EF4444', fontSize: 10, fontFamily: 'OutfitBold' }}>
                             {t.select_at_least_one_pack || "Seleziona almeno un pack"}
                         </Text>
                     )}
@@ -758,3 +758,4 @@ const styles = StyleSheet.create({
 });
 
 export default LobbySettingsPanel;
+

@@ -14,20 +14,22 @@ import HapticsService from '../../services/HapticsService';
 import PremiumSkeleton from '../PremiumSkeleton';
 import ConfirmationModal from '../ConfirmationModal';
 
-const TabItem = ({ label, index, dragX }) => {
+const TabItem = ({ label, index, dragX, theme }) => {
     const textStyle = useAnimatedStyle(() => {
         const itemCenter = index * 50;
+        const activeColor = '#000000';
+        const inactiveColor = theme.colors.textPrimary + '80';
         const color = interpolateColor(
             dragX.value,
             [itemCenter - 25, itemCenter, itemCenter + 25],
-            ['rgba(255,255,255,0.3)', '#000000', 'rgba(255,255,255,0.3)']
+            [inactiveColor, activeColor, inactiveColor]
         );
-        return { color, fontWeight: 'bold' };
+        return { color };
     });
 
     return (
         <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center', zIndex: 2 }} pointerEvents="none">
-            <Animated.Text style={[{ fontSize: 11, letterSpacing: 0.5, fontFamily: 'Cinzel-Bold' }, textStyle]}>
+            <Animated.Text style={[{ fontSize: 11, letterSpacing: 0.5, fontFamily: 'CinzelBold' }, textStyle]}>
                 {label}
             </Animated.Text>
         </View>
@@ -158,12 +160,17 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
     ).current;
 
     const indicatorStyle = useAnimatedStyle(() => {
+        if (containerWidthRef.current <= 0) return { opacity: 0 };
+        const tabWidth = (containerWidthRef.current - 6) / 2; // 6 = 2 * (1px border + 2px padding)
+        const translateX = (dragXPercent.value / 50) * tabWidth;
+
         return {
+            opacity: 1,
+            width: tabWidth,
             transform: [
-                { translateX: interpolate(dragXPercent.value, [0, 50], [2, 0.5]) },
+                { translateX: translateX },
                 { scale: tabScale.value }
             ],
-            left: `${dragXPercent.value}%`
         };
     });
 
@@ -211,8 +218,8 @@ const RoomListStep = ({ friendsRooms, publicRooms, onJoinRoom, scrollEnabled = t
                             { backgroundColor: theme.colors.accent }
                         ]}
                     />
-                    <TabItem label={t('tab_friends_rooms')} index={0} dragX={dragXPercent} />
-                    <TabItem label={t('tab_public_rooms')} index={1} dragX={dragXPercent} />
+                    <TabItem label={t('tab_friends_rooms')} index={0} dragX={dragXPercent} theme={theme} />
+                    <TabItem label={t('tab_public_rooms')} index={1} dragX={dragXPercent} theme={theme} />
                     <View
                         style={StyleSheet.absoluteFill}
                         {...panResponder.panHandlers}
@@ -289,19 +296,21 @@ const styles = StyleSheet.create({
     tabsContainer: {
         flexDirection: 'row',
         backgroundColor: 'rgba(0,0,0,0.3)',
-        borderRadius: 20,
-        padding: 2,
+        borderRadius: 20, // Restored
+        padding: 2, // Restored
         marginBottom: 15,
         borderWidth: 1,
         alignSelf: 'center',
         width: '80%',
+        position: 'relative'
     },
     animatedBackground: {
         position: 'absolute',
-        top: 2,
-        bottom: 2,
-        width: '50%',
-        borderRadius: 18,
+        top: 2, // Restored
+        bottom: 2, // Restored
+        left: 3, // [FIX] Math for 1px border + 2px padding
+        // width handled by indicatorStyle
+        borderRadius: 18, // Restored
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.2)',
         zIndex: 1
@@ -321,3 +330,4 @@ const styles = StyleSheet.create({
 });
 
 export default RoomListStep;
+

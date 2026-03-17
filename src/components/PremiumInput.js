@@ -74,7 +74,7 @@ const PremiumInput = ({
                 <Animated.View style={[styles.inputContainer, borderStyle, { height: customHeight }]}>
                     <TextInput
                         ref={inputRef}
-                        style={[styles.input, { color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', backgroundColor: 'transparent' }]}
+                        style={[styles.input, { color: theme.colors.textPrimary, fontFamily: 'CinzelBold', backgroundColor: 'transparent' }]}
                         value={value}
                         onChangeText={onChangeText}
                         onFocus={handleFocus}
@@ -145,3 +145,4 @@ const styles = StyleSheet.create({
 });
 
 export default PremiumInput;
+

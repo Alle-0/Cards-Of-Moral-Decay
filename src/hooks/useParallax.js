@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Gyroscope } from 'expo-sensors';
 import { useSharedValue, withSpring, useAnimatedStyle, interpolate, SensorType } from 'react-native-reanimated';
 
@@ -8,7 +9,7 @@ export const useParallax = (sensitivity = 1) => {
 
     useEffect(() => {
         // [FIX] Guard for web or non-gyro devices
-        if (require('react-native').Platform.OS === 'web') return;
+        if (Platform.OS === 'web') return;
 
         // Check if gyroscope is available
         Gyroscope.isAvailableAsync().then(available => {

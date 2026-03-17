@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import HapticsService from '../services/HapticsService';
 import Animated, { FadeIn, ZoomIn, SlideInUp, FadeInDown } from 'react-native-reanimated';
@@ -96,7 +96,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                 {/* CHAOS SWAP MESSAGE */}
                 {swapDetails && (winnerInfo?.name !== swapDetails.original) && (
                     <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', marginBottom: 5 }}>
-                        <Text style={{ color: swapDetails.type === 'ROBIN_HOOD' ? '#10b981' : '#ef4444', fontFamily: 'Cinzel-Bold', fontSize: 14, textAlign: 'center' }}>
+                        <Text style={{ color: swapDetails.type === 'ROBIN_HOOD' ? '#10b981' : '#ef4444', fontFamily: 'CinzelBold', fontSize: 14, textAlign: 'center' }}>
                             {swapDetails.type === 'ROBIN_HOOD'
                                 ? t('chaos_robin_hood_msg', { defaultValue: "ROBIN HOOD HA RUBATO IL PUNTO!" })
                                 : t('chaos_theft_original_winner', { name: swapDetails.original, defaultValue: `IL DOMINUS AVEVA SCELTO ${swapDetails.original}` })
@@ -112,10 +112,10 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
 
                     <Animated.View entering={FadeInDown.delay(200)} style={{ alignItems: 'center', marginBottom: 5 }}>
                         <Text style={[
-                            { color: '#10b981', fontFamily: 'Cinzel-Bold', fontSize: 16 },
+                            { color: '#10b981', fontFamily: 'CinzelBold', fontSize: 16 },
                             Platform.OS === 'web' ? { textShadow: '0px 0px 4px rgba(0,0,0,0.5)' } : { textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 }
                         ]}>
-                            +100 DIRTY CASH
+                            +100 DC
                         </Text>
                     </Animated.View>
 
@@ -124,7 +124,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                     style={{ width: '100%', alignItems: 'center', marginBottom: 25 }}
                 >
                     <Text style={{
-                        fontFamily: 'Cinzel-Bold',
+                        fontFamily: 'CinzelBold',
                         color: theme.colors?.accent || '#ffce6a',
                         fontSize: 26,
                         textAlign: 'center'
@@ -132,7 +132,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                         {t('winner_label')}
                     </Text>
                     <Text style={{
-                        fontFamily: 'Cinzel-Bold',
+                        fontFamily: 'CinzelBold',
                         color: theme.colors?.accent || '#ffce6a',
                         fontSize: 16,
                         textAlign: 'center',
@@ -177,7 +177,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                     }}
                 >
                     <Text style={{
-                        fontFamily: 'Cinzel-Bold',
+                        fontFamily: 'CinzelBold',
                         color: activeChaosEvent === 'DIRTY_WIN' ? '#10b981' : (theme.colors?.accent || '#ffce6a'),
                         fontSize: 24,
                         textAlign: 'center',
@@ -225,13 +225,13 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                             }}
                         >
                             <View style={{ position: 'absolute', top: 12, left: 12, opacity: 0.2 }}>
-                                <Text style={{ fontSize: 9, fontFamily: 'Cinzel-Bold', color: '#000' }}>{t('dominus_choice_label')}</Text>
+                                <Text style={{ fontSize: 9, fontFamily: 'CinzelBold', color: '#000' }}>{t('dominus_choice_label')}</Text>
                             </View>
 
                             <Text
                                 style={{
                                     color: '#111',
-                                    fontFamily: 'Outfit-Bold',
+                                    fontFamily: 'OutfitBold',
                                     fontSize: getWinningCardsText().length > 60 ? 18 : (getWinningCardsText().length > 30 ? 22 : 28),
                                     textAlign: 'center',
                                     width: '100%',
@@ -243,7 +243,7 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
                             </Text>
 
                             <View style={{ position: 'absolute', bottom: 12, right: 12 }}>
-                                <Text style={{ fontSize: 8, color: '#999', fontFamily: 'Cinzel-Bold' }}>CARDS OF MORAL DECAY</Text>
+                                <Text style={{ fontSize: 8, color: '#999', fontFamily: 'CinzelBold' }}>CARDS OF MORAL DECAY</Text>
                             </View>
                         </Animated.View>
                     )}
@@ -268,3 +268,4 @@ const RoundWinnerModal = ({ visible, onClose, winnerInfo, playersList = [], swap
 };
 
 export default RoundWinnerModal;
+

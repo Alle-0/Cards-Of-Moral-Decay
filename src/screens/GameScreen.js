@@ -71,7 +71,7 @@ const PlayerLobbyItem = ({ player: p, index, t }) => {
                     borderWidth: 2, borderColor: '#111'
                 }} />
             </Pressable>
-            <Text style={{ color: '#e2e8f0', fontFamily: 'Outfit-Bold', fontSize: 13, textAlign: 'center', maxWidth: 80 }} numberOfLines={1}>
+            <Text style={{ color: '#e2e8f0', fontFamily: 'OutfitBold', fontSize: 13, textAlign: 'center', maxWidth: 80 }} numberOfLines={1}>
                 {p.name}
             </Text>
             {p.rank && (
@@ -115,7 +115,7 @@ const ChaosBanner = ({ event, roomData, t }) => {
             }}
         >
             <Icon size={16} color="#fff" />
-            <Text style={{ fontFamily: 'Cinzel-Bold', color: '#fff', fontSize: 10, letterSpacing: 1.5 }}>
+            <Text style={{ fontFamily: 'CinzelBold', color: '#fff', fontSize: 10, letterSpacing: 1.5 }}>
                 {t(details.titleKey).toUpperCase()}
             </Text>
         </Animated.View>
@@ -873,7 +873,7 @@ const GameScreen = ({ onStartLoading }) => {
                     gap: 10
                 }}>
                     <Text style={{
-                        fontFamily: 'Cinzel-Bold',
+                        fontFamily: 'CinzelBold',
                         fontSize: 10,
                         color: '#d4af37',
                         letterSpacing: 1
@@ -884,7 +884,7 @@ const GameScreen = ({ onStartLoading }) => {
                     <Text style={{ color: 'rgba(255,255,255,0.1)', fontSize: 10 }}>•</Text>
 
                     <Text style={{
-                        fontFamily: 'Outfit-Bold',
+                        fontFamily: 'OutfitBold',
                         fontSize: 10,
                         color: '#888',
                         letterSpacing: 0.5
@@ -897,7 +897,7 @@ const GameScreen = ({ onStartLoading }) => {
                             <Text style={{ color: 'rgba(255,255,255,0.1)', fontSize: 10 }}>•</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                 <ThornsIcon size={10} color="#ef4444" />
-                                <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 9, color: '#ef4444' }}>CHAOS</Text>
+                                <Text style={{ fontFamily: 'CinzelBold', fontSize: 9, color: '#ef4444' }}>CHAOS</Text>
                             </View>
                         </>
                     )}
@@ -950,7 +950,7 @@ const GameScreen = ({ onStartLoading }) => {
                 >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <ShareIcon size={12} color="#d4af37" />
-                        <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 11, color: '#d4af37', letterSpacing: 1 }}>
+                        <Text style={{ fontFamily: 'CinzelBold', fontSize: 11, color: '#d4af37', letterSpacing: 1 }}>
                             {t('invite_friends_btn', { defaultValue: "INVITA" })}
                         </Text>
                     </View>
@@ -1019,7 +1019,7 @@ const GameScreen = ({ onStartLoading }) => {
                                     >
                                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                             <ShareIcon size={13} color="#d4af37" />
-                                            <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 12, color: '#d4af37', letterSpacing: 1 }}>
+                                            <Text style={{ fontFamily: 'CinzelBold', fontSize: 12, color: '#d4af37', letterSpacing: 1 }}>
                                                 {t('invite_friends_btn', { defaultValue: "INVITE FRIENDS" })}
                                             </Text>
                                         </View>
@@ -1034,7 +1034,7 @@ const GameScreen = ({ onStartLoading }) => {
                         {/* RIGHT COLUMN (flex:3): Title + Settings + Start */}
                         <View style={{ flex: 3, gap: 16 }}>
                             {/* Title centered within right column */}
-                            <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'Cinzel-Bold', marginBottom: 4, textAlign: 'center' }, pulsatingStyle]}>
+                            <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'CinzelBold', marginBottom: 4, textAlign: 'center' }, pulsatingStyle]}>
                                 {t('waiting_title')}
                             </Animated.Text>
 
@@ -1099,7 +1099,7 @@ const GameScreen = ({ onStartLoading }) => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={{ alignItems: 'center', width: '100%' }}>
-                    <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'Cinzel-Bold' }, pulsatingStyle]}>
+                    <Animated.Text style={[styles.lobbyTitle, { color: theme.colors?.textPrimary || '#fff', fontFamily: 'CinzelBold' }, pulsatingStyle]}>
                         {t('waiting_title')}
                     </Animated.Text>
 
@@ -1121,7 +1121,7 @@ const GameScreen = ({ onStartLoading }) => {
                             <PremiumPressable onPress={handleShareRoom} style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: 'rgba(212, 175, 55, 0.05)', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.2)' }} rippleColor="rgba(212, 175, 55, 0.1)">
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                     <ShareIcon size={12} color="#d4af37" />
-                                    <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 11, color: '#d4af37', letterSpacing: 1 }}>{t('invite_friends_btn', { defaultValue: "INVITA" })}</Text>
+                                    <Text style={{ fontFamily: 'CinzelBold', fontSize: 11, color: '#d4af37', letterSpacing: 1 }}>{t('invite_friends_btn', { defaultValue: "INVITA" })}</Text>
                                 </View>
                             </PremiumPressable>
                             <Text style={{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>{t('min_players_hint', { defaultValue: "Serve almeno 1 amico." })}</Text>
@@ -1252,7 +1252,7 @@ const GameScreen = ({ onStartLoading }) => {
                                         }}>
                                             <Text style={{
                                                 color: '#858585ff',
-                                                fontFamily: 'Cinzel-Bold',
+                                                fontFamily: 'CinzelBold',
                                                 fontSize: 12,
                                                 letterSpacing: 1.5,
                                                 textTransform: 'uppercase',
@@ -1493,7 +1493,7 @@ const GameScreen = ({ onStartLoading }) => {
                                     style={{ alignItems: 'center', width: 70 }}
                                 >
                                     <AvatarWithFrame avatar={p.avatar} frameId={p.activeFrame} size={54} />
-                                    <Text style={{ color: 'white', fontFamily: 'Cinzel-Bold', marginTop: 8, fontSize: 10 }} numberOfLines={1}>{p.name}</Text>
+                                    <Text style={{ color: 'white', fontFamily: 'CinzelBold', marginTop: 8, fontSize: 10 }} numberOfLines={1}>{p.name}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -1522,7 +1522,7 @@ const GameScreen = ({ onStartLoading }) => {
                             <Text style={{ color: '#fff', textAlign: 'center', fontFamily: 'Outfit', fontSize: 16 }}>
                                 {t('joker_desc')}
                             </Text>
-                            <Text style={{ color: '#ef4444', textAlign: 'center', fontFamily: 'Outfit-Bold', fontSize: 14, marginBottom: 15 }}>
+                            <Text style={{ color: '#ef4444', textAlign: 'center', fontFamily: 'OutfitBold', fontSize: 14, marginBottom: 15 }}>
                                 {t('joker_warning')}
                             </Text>
                         </View>
@@ -1540,7 +1540,7 @@ const GameScreen = ({ onStartLoading }) => {
                                 enableSound={false}
                                 onPress={handleConfirmJoker}
                                 style={{ flex: 1 }}
-                                textStyle={{ fontSize: 13, fontFamily: 'Cinzel-Bold' }}
+                                textStyle={{ fontSize: 13, fontFamily: 'CinzelBold' }}
                             />
                         </View>
                     </View>
@@ -1569,7 +1569,7 @@ const GameScreen = ({ onStartLoading }) => {
                             marginBottom: 20,
                             alignSelf: 'center'
                         }}>
-                            <Text style={{ color: '#10b981', textAlign: 'center', fontFamily: 'Cinzel-Bold', fontSize: 18, letterSpacing: 1 }}>{t('bribe_cost_label')}</Text>
+                            <Text style={{ color: '#10b981', textAlign: 'center', fontFamily: 'CinzelBold', fontSize: 18, letterSpacing: 1 }}>{t('bribe_cost_label')}</Text>
                         </View>
 
                         <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
@@ -1586,7 +1586,7 @@ const GameScreen = ({ onStartLoading }) => {
                                 enableSound={false}
                                 onPress={handleConfirmBribe}
                                 style={{ flex: 1 }}
-                                textStyle={{ fontSize: 13, fontFamily: 'Cinzel-Bold' }}
+                                textStyle={{ fontSize: 13, fontFamily: 'CinzelBold' }}
                             />
                         </View>
                     </View>
@@ -1732,7 +1732,7 @@ const GameScreen = ({ onStartLoading }) => {
                             {/* Title */}
                             <Text style={{
                                 color: theme.colors.accent,
-                                fontFamily: 'Cinzel-Bold',
+                                fontFamily: 'CinzelBold',
                                 fontSize: 18, // Smaller
                                 textAlign: 'center',
                                 letterSpacing: 1.5,
@@ -1809,7 +1809,7 @@ const GameScreen = ({ onStartLoading }) => {
                                 }}
                             >
                                 <Text style={{
-                                    fontFamily: 'Cinzel-Bold',
+                                    fontFamily: 'CinzelBold',
                                     fontSize: 18,
                                     color: theme.colors.accent,
                                     marginBottom: 4,
@@ -1878,7 +1878,7 @@ const GameScreen = ({ onStartLoading }) => {
                                                                 )}
                                                             </View>
                                                             <View style={{ paddingBottom: 6, paddingLeft: 8, opacity: 0.8 }}>
-                                                                <Text style={{ fontSize: 5, color: '#000', opacity: 0.8, fontFamily: 'Outfit-Bold' }}>
+                                                                <Text style={{ fontSize: 5, color: '#000', opacity: 0.8, fontFamily: 'OutfitBold' }}>
                                                                     MORAL DECAY
                                                                 </Text>
                                                             </View>
@@ -1897,7 +1897,7 @@ const GameScreen = ({ onStartLoading }) => {
                                         borderRadius: 20
                                     }}
                                 >
-                                    <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 12 }}>
+                                    <Text style={{ color: '#fff', fontFamily: 'CinzelBold', fontSize: 12 }}>
                                         {t('close_btn', { defaultValue: 'CHIUDI' })}
                                     </Text>
                                 </TouchableOpacity>
@@ -1925,7 +1925,7 @@ const styles = StyleSheet.create({
         elevation: 20, // For Android
     },
     headerLogo: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 16,
         letterSpacing: 1,
     },
@@ -2015,7 +2015,7 @@ const styles = StyleSheet.create({
     },
     sectionLabel: {
         color: 'rgba(212, 175, 55, 0.6)',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         marginBottom: 12,
         fontSize: 10,
         letterSpacing: 2,
@@ -2041,7 +2041,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#d4af37',
     },
     toggleText: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 11, // Slightly larger for readability
         color: 'rgba(255,255,255,0.4)',
         textAlign: 'center',
@@ -2067,7 +2067,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     packText: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 10, // Slightly bigger
         textAlign: 'center',
         letterSpacing: 0.5,
@@ -2094,13 +2094,13 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
     },
     pointValue: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 18,
         zIndex: 1,
         textAlign: 'center',
     },
     pointLabel: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 7,
         color: 'rgba(212, 175, 55, 0.4)',
         letterSpacing: 1.5,
@@ -2144,9 +2144,10 @@ const styles = StyleSheet.create({
     pillText: {
         color: '#d4af37',
         fontSize: 11,
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         textAlign: 'center',
     }
 });
 
 export default GameScreen;
+

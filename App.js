@@ -6,15 +6,13 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native'; // [NEW] Navigation Helper
 import {
-    useFonts,
     Cinzel_400Regular,
     Cinzel_700Bold
 } from '@expo-google-fonts/cinzel';
+import * as Font from 'expo-font';
+import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications'; // [NEW] Notification listener
-import {
-    CinzelDecorative_400Regular,
-    CinzelDecorative_700Bold
-} from '@expo-google-fonts/cinzel-decorative';
+
 import {
     Outfit_400Regular,
     Outfit_700Bold
@@ -62,36 +60,65 @@ const navigationRef = React.createRef(); // [NEW] Global ref for deep link navig
 export default function App() {
     const [appIsReady, setAppIsReady] = useState(false);
     const [splashAnimationFinished, setSplashAnimationFinished] = useState(false);
-
-    const [fontsLoaded] = useFonts({
+    const [fontsLoaded, fontError] = useFonts({
+        // Standard names used in theme.js
         'Cinzel': Cinzel_400Regular,
-        'Cinzel-Bold': Cinzel_700Bold,
-        'Cinzel Decorative': CinzelDecorative_400Regular,
-        'Cinzel Decorative-Bold': CinzelDecorative_700Bold,
+        'CinzelBold': Cinzel_700Bold,
+
         'Outfit': Outfit_400Regular,
+        'OutfitBold': Outfit_700Bold,
+        
+        // Redundant / Legacy Aliases for safety
+        'Cinzel-Bold': Cinzel_700Bold,
+        'Cinzel_700Bold': Cinzel_700Bold,
+        'Cinzel Regular': Cinzel_400Regular,
+        'Cinzel_400Regular': Cinzel_400Regular,
+        
+
+        
         'Outfit-Bold': Outfit_700Bold,
+        'Outfit_700Bold': Outfit_700Bold,
+        'Outfit Regular': Outfit_400Regular,
+        'Outfit_400Regular': Outfit_400Regular,
     });
 
     useEffect(() => {
         async function prepare() {
-            try {
+            // [NEW] Safety timeout: Force app ready after 10 seconds even if something hangs
+            const safetyTimeout = setTimeout(() => {
+                if (!appIsReady) {
+                    if (__DEV__) console.warn("[App] Emergency Ready Triggered (10s)!");
+                    setAppIsReady(true);
+                }
+            }, 10000);
 
+            try {
+                // Verify font registration objects
+                if (__DEV__) {
+                    console.log("[App] Font Check:", {
+                        Cinzel: !!Cinzel_400Regular,
+                        CinzelBold: !!Cinzel_700Bold,
+
+                        Outfit: !!Outfit_400Regular
+                    });
+                }
+                
+                // Sound Loading
                 await SoundService.loadSounds();
             } catch (e) {
-                console.warn("[App] Error during prepare:", e);
+                console.error("[App] Initialization error:", e);
             } finally {
-                if (fontsLoaded) setAppIsReady(true);
+                clearTimeout(safetyTimeout);
+                // We Wait for fontsLoaded before proceed, unless it takes too long
+                if (fontsLoaded || fontError) {
+                    setAppIsReady(true);
+                    SplashScreen.hideAsync().catch(() => {});
+                }
             }
         }
-        if (fontsLoaded) prepare();
-    }, [fontsLoaded]);
 
-
-    useEffect(() => {
-        if (appIsReady && MAINTENANCE_MODE) {
-            SplashScreen.hideAsync().catch(() => {});
-        }
-    }, [appIsReady]);
+        prepare();
+    }, [fontsLoaded, fontError]);
 
     if (!appIsReady) return null;
 
@@ -99,7 +126,7 @@ export default function App() {
         return (
             <View style={{ flex: 1, backgroundColor: '#0d0d0d', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
                 <StatusBar hidden />
-                <Text style={{ color: '#FFD700', fontFamily: 'Cinzel-Bold', fontSize: 24, textAlign: 'center', marginBottom: 20 }}>
+                <Text style={{ color: '#FFD700', fontFamily: 'CinzelBold', fontSize: 24, textAlign: 'center', marginBottom: 20 }}>
                     MANUTENZIONE
                 </Text>
                 <Text style={{ color: '#aaa', fontFamily: 'Outfit', fontSize: 16, textAlign: 'center', lineHeight: 24 }}>
@@ -163,7 +190,7 @@ export default function App() {
                                                     }
                                                 }}
                                             >
-                                                <AppContent />
+                                                <AppContent fontsLoaded={fontsLoaded} fontError={fontError} />
                                             </NavigationContainer>
                                         )}
                                     </AudioProvider>
@@ -177,7 +204,7 @@ export default function App() {
     );
 }
 
-const AppContent = () => {
+const AppContent = ({ fontsLoaded, fontError }) => {
     const { roomCode, joinRoom } = useGame();
     const { user, loading: authLoading, isConnected, pendingTab, setPendingTab } = useAuth();
     const { playMusic } = useAudio(); // [NEW]

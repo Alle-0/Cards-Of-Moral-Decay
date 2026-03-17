@@ -84,7 +84,7 @@ const SettingsLanguageItem = ({ lang, translateX, theme }) => {
 
     return (
         <View pointerEvents="none" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-            <Animated.Text style={[{ fontFamily: 'Cinzel-Bold', fontSize: 10 }, textStyle]}>
+            <Animated.Text style={[{ fontFamily: 'CinzelBold', fontSize: 10 }, textStyle]}>
                 {lang === 'it' ? 'IT' : 'EN'}
             </Animated.Text>
         </View>
@@ -475,7 +475,7 @@ const SettingsScreen = ({ navigation }) => {
                                     {/* Introduction */}
                                     <View style={{ alignItems: 'center', marginBottom: 10 }}>
                                         <View style={{ width: 40, height: 1.5, backgroundColor: theme.colors.accent, opacity: 0.5, marginBottom: 15 }} />
-                                        <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 18, letterSpacing: 2 }}>{t('criminal_manual').toUpperCase()}</Text>
+                                        <Text style={{ color: theme.colors.accent, fontFamily: 'CinzelBold', fontSize: 18, letterSpacing: 2 }}>{t('criminal_manual').toUpperCase()}</Text>
                                         <Text style={{ color: '#666', fontFamily: 'Outfit', fontSize: 12, marginTop: 4 }}>{t('rule_intro_subtitle')}</Text>
                                     </View>
 
@@ -612,7 +612,7 @@ const SettingsScreen = ({ navigation }) => {
                                         style={{ marginTop: 20, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 12, paddingVertical: 12 }}
                                         contentContainerStyle={{ alignItems: 'center' }}
                                     >
-                                        <Text style={{ color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 14 }}>
+                                        <Text style={{ color: theme.colors.textPrimary, fontFamily: 'CinzelBold', fontSize: 14 }}>
                                             Test Notifica (DEV)
                                         </Text>
                                     </PremiumPressable>
@@ -798,7 +798,7 @@ const SettingsScreen = ({ navigation }) => {
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                         <Text style={{
                                             color: '#fff',
-                                            fontFamily: 'Cinzel-Bold',
+                                            fontFamily: 'CinzelBold',
                                             fontSize: 24,
                                             letterSpacing: 1,
                                             textAlign: 'center'
@@ -816,7 +816,7 @@ const SettingsScreen = ({ navigation }) => {
                                     <Text style={{
                                         color: theme.colors.accent,
                                         opacity: 0.6,
-                                        fontFamily: 'Outfit-Bold',
+                                        fontFamily: 'OutfitBold',
                                         fontSize: 12,
                                         marginTop: 2,
                                         letterSpacing: 0.5,
@@ -855,11 +855,11 @@ const SettingsScreen = ({ navigation }) => {
                                         }}>
                                             {/* Top Section: Rank */}
                                             <View style={{ padding: 16, alignItems: 'center' }}>
-                                                <Text style={{ color: rankColor, fontFamily: 'Cinzel-Bold', fontSize: 13, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+                                                <Text style={{ color: rankColor, fontFamily: 'CinzelBold', fontSize: 13, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
                                                     {t(getRankKey(user?.rank))}
                                                 </Text>
 
-                                                <Text style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'Outfit-Bold', fontSize: 10, letterSpacing: 1, marginBottom: 12 }}>
+                                                <Text style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'OutfitBold', fontSize: 10, letterSpacing: 1, marginBottom: 12 }}>
                                                     {score.toLocaleString()} SCORE
                                                 </Text>
 
@@ -879,7 +879,7 @@ const SettingsScreen = ({ navigation }) => {
                                                             </View>
                                                             <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 6, fontFamily: 'Outfit', textAlign: 'center' }}>
                                                                 {prefix}
-                                                                <Text style={{ color: nextRankColor, fontFamily: 'Outfit-Bold' }}>{nextRankName}</Text>
+                                                                <Text style={{ color: nextRankColor, fontFamily: 'OutfitBold' }}>{nextRankName}</Text>
                                                                 {suffix}
                                                             </Text>
                                                         </View>
@@ -903,7 +903,7 @@ const SettingsScreen = ({ navigation }) => {
                                                 paddingHorizontal: 10
                                             }}>
                                                 <View style={{ flex: 1, alignItems: 'center' }}>
-                                                    <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Cinzel-Bold', fontSize: 15 }}>
+                                                    <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'CinzelBold', fontSize: 15 }}>
                                                         {Object.keys(user?.friends || {}).length}
                                                     </Text>
                                                     <Text style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Outfit', fontSize: 8, textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 }}>
@@ -913,7 +913,7 @@ const SettingsScreen = ({ navigation }) => {
                                                 <View style={{ width: 1, height: '50%', backgroundColor: 'rgba(255,255,255,0.05)', alignSelf: 'center' }} />
                                                 <View style={{ flex: 1, alignItems: 'center' }}>
                                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                                        <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 15 }}>
+                                                        <Text style={{ color: theme.colors.accent, fontFamily: 'CinzelBold', fontSize: 15 }}>
                                                             {user?.balance?.toLocaleString() || 0}
                                                         </Text>
                                                         <DirtyCashIcon size={12} color={theme.colors.accent} />
@@ -1061,7 +1061,7 @@ const SettingsScreen = ({ navigation }) => {
                                     contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: '100%' }}
                                 >
                                     <OpenDoorIcon size={18} color="rgba(255, 255, 255, 0.6)" />
-                                    <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: 'Outfit-Bold', fontSize: 13 }}>
+                                    <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: 'OutfitBold', fontSize: 13 }}>
                                         {t('logout_account')}
                                     </Text>
                                 </PremiumPressable>
@@ -1080,7 +1080,7 @@ const SettingsScreen = ({ navigation }) => {
                                     contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: '100%' }}
                                 >
                                     <ShieldIcon size={18} color="rgba(239, 68, 68, 0.6)" />
-                                    <Text style={{ color: 'rgba(239, 68, 68, 0.6)', fontFamily: 'Outfit-Bold', fontSize: 13 }}>
+                                    <Text style={{ color: 'rgba(239, 68, 68, 0.6)', fontFamily: 'OutfitBold', fontSize: 13 }}>
                                         {t('delete_account')}
                                     </Text>
                                 </PremiumPressable>
@@ -1103,7 +1103,7 @@ const SettingsScreen = ({ navigation }) => {
                             exiting={(navDir === 'forward' ? SlideOutLeft : SlideOutRight).duration(250).easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
                             style={[StyleSheet.absoluteFill, { padding: 20 }]}
                         >
-                            <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: isDesktop ? 35 : 50, marginBottom: 20, textAlign: 'center' }}>
+                            <Text style={{ color: theme.colors.accent, fontFamily: 'CinzelBold', fontSize: 24, marginTop: isDesktop ? 35 : 50, marginBottom: 20, textAlign: 'center' }}>
                                 {t('settings')}
                             </Text>
 
@@ -1281,7 +1281,7 @@ const SettingsScreen = ({ navigation }) => {
                         }}
                         borderRadius={15}
                     >
-                        <Text style={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 16 }}>
+                        <Text style={{ color: '#000', fontFamily: 'CinzelBold', fontSize: 16 }}>
                             {t('save_btn') || "SAVE"}
                         </Text>
                     </PremiumPressable>
@@ -1338,7 +1338,7 @@ const CategoryTile = ({ title, subtitle, icon, color, onPress }) => {
                 {icon}
             </View>
             <View style={{ flex: 1 }}>
-                <Text style={{ color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 1.2 }}>{title}</Text>
+                <Text style={{ color: theme.colors.textPrimary, fontFamily: 'CinzelBold', fontSize: 13, letterSpacing: 1.2 }}>{title}</Text>
                 <Text style={{ color: theme.colors.textPrimary + '44', fontFamily: 'Outfit', fontSize: 10, marginTop: 5 }}>{subtitle}</Text>
             </View>
             <View style={{ opacity: 0.4, marginRight: 5 }}>
@@ -1361,7 +1361,7 @@ const SecondaryAction = ({ icon, label, onPress, bgColor, color }) => {
             <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.2)', alignItems: 'center', justifyContent: 'center' }}>
                 {icon}
             </View>
-            <Text style={{ color: color, fontFamily: 'Cinzel-Bold', fontSize: 11, letterSpacing: 1.5 }}>{label}</Text>
+            <Text style={{ color: color, fontFamily: 'CinzelBold', fontSize: 11, letterSpacing: 1.5 }}>{label}</Text>
         </PremiumPressable>
     );
 };
@@ -1382,7 +1382,7 @@ const styles = StyleSheet.create({
     },
     backButtonText: {
         color: '#fff',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         letterSpacing: 1,
         fontSize: 14,
     },
@@ -1400,7 +1400,7 @@ const styles = StyleSheet.create({
     rowLabel: {
         color: '#fff',
         fontSize: 13,
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
     },
     rowSub: {
         color: '#94a3b8',
@@ -1429,7 +1429,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     menuCardText: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 13,
     },
 });
@@ -1463,7 +1463,7 @@ const RuleCard = ({ title, icon, content }) => {
                 </View>
                 <Text style={{
                     color: theme.colors.textPrimary,
-                    fontFamily: 'Cinzel-Bold',
+                    fontFamily: 'CinzelBold',
                     fontSize: 13,
                     letterSpacing: 1.5
                 }}>{title}</Text>
@@ -1497,3 +1497,4 @@ const RuleCard = ({ title, icon, content }) => {
 };
 
 export default SettingsScreen;
+

@@ -307,15 +307,16 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
     },
     prevText: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 14,
         textTransform: 'uppercase',
     },
     nextText: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 16,
         textTransform: 'uppercase',
     }
 });
 
 export default React.memo(IntroTutorialOverlay);
+

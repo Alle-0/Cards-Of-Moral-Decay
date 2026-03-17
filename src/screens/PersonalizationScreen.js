@@ -54,7 +54,7 @@ const TabItem = ({ title, index, tabBarWidth, tabIndicatorX, theme }) => {
         >
             <Animated.Text style={[
                 {
-                    fontFamily: 'Outfit-Bold',
+                    fontFamily: 'OutfitBold',
                     fontSize: 13,
                     includeFontPadding: false
                 },
@@ -256,12 +256,11 @@ const PersonalizationScreen = () => {
             onPanResponderTerminationRequest: () => false,
             onShouldBlockNativeResponder: () => true,
             onPanResponderGrant: (evt) => {
-                const { locationX } = evt.nativeEvent;
                 if (tabBarWidthRef.current <= 0) return;
                 const tabWidth = (tabBarWidthRef.current - 10) / 3;
 
                 // Determine which tab was touched relative to the bar
-                const touchedIndex = Math.floor((locationX - 4) / tabWidth);
+                const touchedIndex = Math.floor((evt.nativeEvent.locationX - 5) / tabWidth);
 
                 // [FIX] Only allow drag if touching the ACTIVE tab (the indicator)
                 const isGrabbing = (touchedIndex === activeTabRef.current);
@@ -366,7 +365,7 @@ const PersonalizationScreen = () => {
     return (
         <View style={{ flex: 1, backgroundColor: 'transparent', paddingTop: insets.top }}>
             {/* Header Title */}
-            <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 24, marginTop: isDesktop ? 35 : 50, marginBottom: 20, textAlign: 'center' }}>
+            <Text style={{ color: theme.colors.accent, fontFamily: 'CinzelBold', fontSize: 24, marginTop: isDesktop ? 35 : 50, marginBottom: 20, textAlign: 'center' }}>
                 {t('inventory_title')}
             </Text>
 
@@ -427,3 +426,4 @@ const styles = StyleSheet.create({
 });
 
 export default PersonalizationScreen;
+

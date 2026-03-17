@@ -131,14 +131,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     headerLogo: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 12,
         letterSpacing: 4,
         opacity: 0.8,
         marginBottom: -5,
     },
     headerLogoLarge: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 18,
         letterSpacing: 1,
     },
@@ -160,8 +160,9 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     navLabel: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 16,
         letterSpacing: 1,
     }
 });
+

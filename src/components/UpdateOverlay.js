@@ -51,7 +51,7 @@ const UpdateOverlay = ({ downloadUrl }) => {
                             title={t(Platform.OS === 'web' ? 'refresh_now' : 'download_now')}
                             onPress={handleUpdate}
                             style={{ backgroundColor: theme.colors.accent, width: '100%', height: 60 }}
-                            textStyle={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 16 }}
+                            textStyle={{ color: '#000', fontFamily: 'CinzelBold', fontSize: 16 }}
                         />
 
                         {Platform.OS !== 'web' && (
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 18,
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         textAlign: 'center',
         letterSpacing: 2,
         marginBottom: 15,
@@ -122,3 +122,4 @@ const styles = StyleSheet.create({
 });
 
 export default UpdateOverlay;
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, LayoutAnimation, Platform, UIManager, BackHandler } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, LayoutAnimation, Platform, UIManager, BackHandler, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     ArrowLeftIcon,
@@ -13,7 +13,8 @@ import {
     LockIcon,
     GithubIcon,
     HornsIcon,
-    CardsIcon
+    CardsIcon,
+    MailIcon
 } from '../components/Icons';
 import ToastNotification from '../components/ToastNotification';
 import PremiumBackground from '../components/PremiumBackground';
@@ -25,6 +26,8 @@ import { useLanguage } from '../context/LanguageContext';
 import AnalyticsService from '../services/AnalyticsService';
 import { APP_VERSION } from '../constants/Config';
 import FeedbackModal from '../components/FeedbackModal'; // [NEW] Import
+
+
 
 const InfoScreen = ({ onClose }) => {
     const { theme } = useTheme();
@@ -54,7 +57,7 @@ const InfoScreen = ({ onClose }) => {
         {
             id: 'donate',
             title: t('section_donate'),
-            icon: <CrownIcon size={20} color="#000" />,
+            icon: <CrownIcon size={20} color={theme.colors.accentWeak} />,
             content: t('donate_content'),
             action: t('donate_action'),
             url: 'https://paypal.me/AlessandroBasile0/2eur', // <--- INSERISCI IL TUO USERNAME PAYPAL
@@ -84,10 +87,31 @@ const InfoScreen = ({ onClose }) => {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.actionButton, { borderColor: theme.colors.accent, marginTop: 10 }]}
+                        onPress={() => handleLink('https://www.reddit.com/r/CardsOfMoralDecay/')}
+                    >
+                        <Text style={[styles.actionButtonText, { color: theme.colors.accent }]}>REDDIT</Text>
+                        <PeopleIcon size={16} color={theme.colors.accent} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { borderColor: theme.colors.accent, marginTop: 10 }]}
                         onPress={() => setShowFeedbackModal(true)}
                     >
                         <Text style={[styles.actionButtonText, { color: theme.colors.accent }]}>INVIA FEEDBACK</Text>
                         <LinkIcon size={16} color={theme.colors.accent} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { borderColor: theme.colors.accent, marginTop: 10 }]}
+                        onPress={() => handleLink('https://alle-0.itch.io/card-of-moral-decay')}
+                    >
+                        <Text style={[styles.actionButtonText, { color: theme.colors.accent }]}>ITCH.IO</Text>
+                        <LinkIcon size={16} color={theme.colors.accent} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { borderColor: theme.colors.accent, marginTop: 10 }]}
+                        onPress={() => handleLink('mailto:cardsofmoraldecay@gmail.com')}
+                    >
+                        <Text style={[styles.actionButtonText, { color: theme.colors.accent }]}>EMAIL</Text>
+                        <MailIcon size={16} color={theme.colors.accent} />
                     </TouchableOpacity>
                 </View>
             )
@@ -283,7 +307,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     headerTitle: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 22,
         letterSpacing: 2,
     },
@@ -323,7 +347,7 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     cardTitle: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 14,
         color: '#eee',
         letterSpacing: 1,
@@ -353,7 +377,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
     },
     actionButtonText: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 13,
         letterSpacing: 1,
     },
@@ -369,10 +393,11 @@ const styles = StyleSheet.create({
     },
     footerText: {
         fontFamily: 'Outfit',
-        color: '#333',
+        color: 'rgba(136, 136, 136, 0.5)',
         fontSize: 10,
         letterSpacing: 1,
     }
 });
 
 export default InfoScreen;
+

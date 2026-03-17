@@ -1,5 +1,5 @@
 import { useStripe } from '@stripe/stripe-react-native';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 

@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
         zIndex: 2,
     },
     text: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 24,
         letterSpacing: 2,
         marginBottom: 10,
@@ -143,3 +143,4 @@ const styles = StyleSheet.create({
 });
 
 export default JokerOverlay;
+

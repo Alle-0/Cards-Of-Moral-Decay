@@ -61,7 +61,7 @@ const MinimalPackCard = ({ label, type, selected, onPress, owned = true, onPrevi
 
                     <View style={{ flex: 1, marginLeft: 8 }}>
                         <Text style={{
-                            fontFamily: 'Cinzel-Bold',
+                            fontFamily: 'CinzelBold',
                             color: selected ? baseColor : '#888',
                             fontSize: 10,
                             letterSpacing: 0.5
@@ -104,3 +104,4 @@ const MinimalPackCard = ({ label, type, selected, onPress, owned = true, onPrevi
 };
 
 export default MinimalPackCard;
+

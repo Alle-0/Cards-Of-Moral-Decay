@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     title: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 12,
         letterSpacing: 1,
         marginBottom: 2,
@@ -89,3 +89,4 @@ const styles = StyleSheet.create({
 });
 
 export default ConnectivityOverlay;
+

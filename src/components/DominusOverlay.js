@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 11,
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         letterSpacing: 2,
         marginBottom: 2
     },
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
         gap: 8
     },
     actionBtnText: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 13,
         color: '#ddd',
         letterSpacing: 0.5
@@ -280,3 +280,4 @@ const styles = StyleSheet.create({
 });
 
 export default DominusOverlay;
+

@@ -178,7 +178,7 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                 renderToHardwareTextureAndroid={true} // [NEW] Smooth optimization
             >
                 <View style={styles.header}>
-                    <Text style={[styles.title, { color: theme.colors.accent, fontFamily: 'Cinzel-Bold' }]}>
+                    <Text style={[styles.title, { color: theme.colors.accent, fontFamily: 'CinzelBold' }]}>
                         {t('leaderboard_title')}
                     </Text>
                     <Pressable onPress={onClose} style={styles.closeBtn}>
@@ -394,12 +394,12 @@ const styles = StyleSheet.create({
     name: {
         flexShrink: 1,
         fontSize: 16,
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
     },
     score: {
         fontSize: 18,
         fontWeight: 'bold',
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
     },
     handleContainer: {
         width: '100%',
@@ -514,3 +514,4 @@ const AvatarItem = memo(({ player, isThinking, theme }) => {
 });
 
 export default LeaderboardDrawer;
+

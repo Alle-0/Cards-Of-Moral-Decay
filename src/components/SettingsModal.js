@@ -45,7 +45,7 @@ const ModalLanguageItem = ({ lang, translateX, theme, onPress }) => {
             onPress={onPress}
             style={{ flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
         >
-            <Animated.Text style={[{ fontFamily: 'Cinzel-Bold', fontSize: 10 }, textStyle]}>
+            <Animated.Text style={[{ fontFamily: 'CinzelBold', fontSize: 10 }, textStyle]}>
                 {lang === 'it' ? 'IT' : 'EN'}
             </Animated.Text>
         </Pressable>
@@ -74,7 +74,7 @@ const SettingsTabItem = ({ title, index, onPress, tabIndicatorX, tabBarWidth, th
             onPress={onPress}
             style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8, zIndex: 1 }}
         >
-            <Animated.Text style={[{ fontFamily: 'Outfit-Bold', fontSize: 13, includeFontPadding: false }, textStyle]}>
+            <Animated.Text style={[{ fontFamily: 'OutfitBold', fontSize: 13, includeFontPadding: false }, textStyle]}>
                 {title}
             </Animated.Text>
         </Pressable>
@@ -682,7 +682,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                                 <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
                                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 }}>
                                                         <DirtyCashIcon size={20} color="#10b981" />
-                                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_economy_title')}</Text>
+                                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'CinzelBold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_economy_title')}</Text>
                                                     </View>
                                                     <View style={{ gap: 2 }}>
                                                         <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>{t('rule_economy_1')}</Text>
@@ -694,7 +694,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                                 <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
                                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 }}>
                                                         <CrownIcon size={20} color="#FDB931" />
-                                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_objective_title')}</Text>
+                                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'CinzelBold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_objective_title')}</Text>
                                                     </View>
                                                     <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>{t('rule_objective_content')}</Text>
                                                 </View>
@@ -702,7 +702,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                                 <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
                                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 }}>
                                                         <CardsIcon size={20} color="#3b82f6" />
-                                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_dynamics_title')}</Text>
+                                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'CinzelBold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_dynamics_title')}</Text>
                                                     </View>
                                                     <View style={{ gap: 2 }}>
                                                         <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', fontSize: 13 }]}>1. {t('rule_dynamics_1')}</Text>
@@ -716,7 +716,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                                 <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
                                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 }}>
                                                         <RankIcon size={20} color="#8b5cf6" />
-                                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_ranks_title')}</Text>
+                                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'CinzelBold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_ranks_title')}</Text>
                                                     </View>
                                                     <View style={{ gap: 2 }}>
                                                         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
@@ -760,7 +760,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                                 >
                                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 }}>
                                                         <HornsIcon size={20} color="#ef4444" />
-                                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_chaos_title')}</Text>
+                                                        <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary, fontFamily: 'CinzelBold', fontSize: 13, letterSpacing: 0.5 }}>{t('rule_chaos_title')}</Text>
                                                     </View>
 
                                                     <Text style={{ color: theme.colors.textPrimary, opacity: 0.8, fontFamily: 'Outfit', marginBottom: 12, fontSize: 13, lineHeight: 20 }}>{t('chaos_intro_desc')}</Text>
@@ -1031,7 +1031,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                                     ) : (
                                                         <EyeIcon size={20} color="#ef4444" />
                                                     )}
-                                                    <Text style={{ color: '#ef4444', fontFamily: 'Cinzel-Bold', fontSize: 13, letterSpacing: 1 }}>{t('recovery_code')}</Text>
+                                                    <Text style={{ color: '#ef4444', fontFamily: 'CinzelBold', fontSize: 13, letterSpacing: 1 }}>{t('recovery_code')}</Text>
                                                 </View>
                                                 <Text style={{ color: '#aaa', fontFamily: 'Outfit', fontSize: 11, marginBottom: 15 }}>
                                                     {t('recovery_sub')}
@@ -1054,7 +1054,7 @@ const SettingsModal = ({ visible, onClose, onStartLoading, onLeaveRequest, onLog
                                                             }
                                                         }}
                                                     >
-                                                        <Text style={{ color: '#fff', fontFamily: 'Outfit-Bold', fontSize: 11, textAlign: 'center', includeFontPadding: false }}>
+                                                        <Text style={{ color: '#fff', fontFamily: 'OutfitBold', fontSize: 11, textAlign: 'center', includeFontPadding: false }}>
                                                             {showRecoveryCode ? t('recovery_copy_btn') : t('recovery_view_btn')}
                                                         </Text>
                                                     </PremiumPressable>
@@ -1210,7 +1210,7 @@ const CategoryTile = ({ title, subtitle, icon, onPress }) => {
             }}>
                 {icon}
             </View>
-            <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 11, letterSpacing: 1.5, textAlign: 'center' }}>{title}</Text>
+            <Text style={{ color: '#fff', fontFamily: 'CinzelBold', fontSize: 11, letterSpacing: 1.5, textAlign: 'center' }}>{title}</Text>
             <Text style={{ color: '#666', fontFamily: 'Outfit', fontSize: 9, marginTop: 2, textAlign: 'center' }}>{subtitle}</Text>
         </PremiumPressable>
     );
@@ -1227,7 +1227,7 @@ const SecondaryAction = ({ icon, label, onPress, bgColor, color }) => {
             <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.2)', alignItems: 'center', justifyContent: 'center' }}>
                 {icon}
             </View>
-            <Text style={{ color: color, fontFamily: 'Cinzel-Bold', fontSize: 11, letterSpacing: 1.5 }}>{label}</Text>
+            <Text style={{ color: color, fontFamily: 'CinzelBold', fontSize: 11, letterSpacing: 1.5 }}>{label}</Text>
         </PremiumPressable>
     );
 };
@@ -1253,7 +1253,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     menuCardText: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 14,
     },
     sectionHeader: {
@@ -1306,7 +1306,7 @@ const styles = StyleSheet.create({
     rowLabel: {
         color: '#fff',
         fontSize: 13,
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
     },
     rowSub: {
         color: '#94a3b8',
@@ -1346,10 +1346,11 @@ const styles = StyleSheet.create({
     },
     backButtonText: {
         color: '#fff',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         letterSpacing: 1,
         fontSize: 14,
     }
 });
 
 export default SettingsModal;
+

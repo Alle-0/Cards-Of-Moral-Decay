@@ -84,7 +84,7 @@ const IdentityStep = ({
                     }}
                     textStyle={{
                         color: '#000',
-                        fontFamily: 'Cinzel-Bold',
+                        fontFamily: 'CinzelBold',
                         fontSize: 20
                     }}
                 />
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 22,
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         marginBottom: 5,
         textAlign: 'left',
         color: '#FFFFFF'
@@ -147,3 +147,4 @@ const styles = StyleSheet.create({
 });
 
 export default IdentityStep;
+

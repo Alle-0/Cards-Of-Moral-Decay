@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 32,
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         marginBottom: 10,
     },
     subtitle: {
@@ -49,3 +49,4 @@ const styles = StyleSheet.create({
 });
 
 export default BankScreen;
+

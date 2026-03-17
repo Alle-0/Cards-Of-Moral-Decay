@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     },
     backButtonText: {
         color: 'rgba(255,255,255,0.7)',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 11,
         letterSpacing: 1,
         textTransform: 'uppercase'
@@ -273,13 +273,13 @@ const styles = StyleSheet.create({
     quickJoinText: {
         color: '#000',
         fontSize: 18,
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         letterSpacing: 1.5,
     },
     quickJoinSubtext: {
         color: 'rgba(0,0,0,0.6)',
         fontSize: 9,
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         marginTop: 3,
         textTransform: 'uppercase',
         letterSpacing: 0.5
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     },
     actionCardText: {
         color: 'rgba(255,255,255,0.7)',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 13,
         letterSpacing: 0.5,
         textAlign: 'center' // [FIX] Ensure text centers when wrapping
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         padding: 10,
         textAlign: 'center',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 10,
         letterSpacing: 1
     },
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     },
     goButtonText: {
         color: '#000',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 16,
         letterSpacing: 2,
     },
@@ -350,3 +350,4 @@ const styles = StyleSheet.create({
 });
 
 export default MainMenuStep;
+

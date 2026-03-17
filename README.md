@@ -14,9 +14,11 @@
 
 [![Github Latest Release](https://img.shields.io/github/v/release/Alle-0/Cards-Of-Moral-Decay?style=for-the-badge&label=VERSION&color=D4AF37&labelColor=000000&logo=github&logoColor=D4AF37)](https://github.com/Alle-0/Cards-Of-Moral-Decay/releases/latest)
 [![Platform](https://img.shields.io/badge/PLATFORM-ANDROID_%26_WEB-D4AF37?style=for-the-badge&labelColor=000000&logo=googlechrome&logoColor=D4AF37)](https://carte-vs-umani.web.app)
-[![License](https://img.shields.io/badge/RATING-18%2B-D4AF37?style=for-the-badge&labelColor=000000&logo=adblock&logoColor=D4AF37)](https://github.com/Alle-0/Cards-Of-Moral-Decay)
+[![Rating](https://img.shields.io/badge/RATING-18%2B-D4AF37?style=for-the-badge&labelColor=000000&logo=adblock&logoColor=D4AF37)](https://github.com/Alle-0/Cards-Of-Moral-Decay)
+[![Reddit](https://img.shields.io/badge/COMMUNITY-REDDIT-FF4500?style=for-the-badge&labelColor=000000&logo=reddit&logoColor=FF4500)](https://www.reddit.com/r/CardsOfMoralDecay/)
 
 #### (Showcase Website: <a href="https://alle-0.github.io/Cards-Of-Moral-Decay/">Cards Of Moral Decay</a>)
+#### (Community Hub: <a href="https://www.reddit.com/r/CardsOfMoralDecay/">Official Subreddit</a>)
 
 <br/>
 

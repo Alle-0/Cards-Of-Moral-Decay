@@ -52,7 +52,7 @@ const ConfirmationModal = ({
                         }}
                         style={{ flex: 1, maxWidth: '100%', width: 'auto' }}
                         contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 4 }}
-                        textStyle={{ fontSize: 11, fontFamily: 'Cinzel-Bold' }}
+                        textStyle={{ fontSize: 11, fontFamily: 'CinzelBold' }}
                     />
                 </View>
             </View>
@@ -79,3 +79,4 @@ const styles = StyleSheet.create({
 });
 
 export default ConfirmationModal;
+

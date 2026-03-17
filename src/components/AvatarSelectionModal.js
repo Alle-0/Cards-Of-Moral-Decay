@@ -61,7 +61,7 @@ const AvatarSelectionModal = ({ visible, onClose, onSelect, currentAvatar, avata
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8 }}
                     >
                         <RefreshIcon size={20} color={theme.colors.accent} />
-                        <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 14 }}>{t('refresh_avatars_btn')}</Text>
+                        <Text style={{ color: theme.colors.accent, fontFamily: 'CinzelBold', fontSize: 14 }}>{t('refresh_avatars_btn')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -123,3 +123,4 @@ const styles = StyleSheet.create({
 });
 
 export default AvatarSelectionModal;
+

@@ -55,7 +55,7 @@ const TabItem = ({ label, index, dragX, onPress }) => {
             onHoverOut={() => { hoverScale.value = withTiming(1, { duration: 150 }); }}
             style={{ flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', zIndex: 2 }}
         >
-            <Animated.Text style={[{ fontSize: 13, letterSpacing: 0.5, fontFamily: 'Cinzel-Bold' }, textStyle, hoverStyle]}>
+            <Animated.Text style={[{ fontSize: 13, letterSpacing: 0.5, fontFamily: 'CinzelBold' }, textStyle, hoverStyle]}>
                 {label}
             </Animated.Text>
         </Pressable>
@@ -334,7 +334,7 @@ export default function LoginScreen() {
                                 >
                                     <Text style={{
                                         color: isActive ? '#FFD700' : '#888',
-                                        fontFamily: 'Cinzel-Bold',
+                                        fontFamily: 'CinzelBold',
                                         fontSize: 11
                                     }}>
                                         {lang.toUpperCase()}
@@ -567,7 +567,7 @@ export default function LoginScreen() {
     if (authLoading) {
         return (
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#0f0c29' }]}>
-                <Text style={{ color: '#FFD700', fontFamily: 'Cinzel-Bold', fontSize: 16 }}>
+                <Text style={{ color: '#FFD700', fontFamily: 'CinzelBold', fontSize: 16 }}>
                     {t('loading')}
                 </Text>
             </View>
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
         backdropFilter: 'blur(10px)', // Support for web
     },
     title: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 28,
         color: '#FFD700',
         textAlign: 'center',
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     tabText: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         color: '#666',
         fontSize: 14,
     },
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12, // Small padding to prevent text hitting edges
     },
     subtitle: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         color: '#fff',
         fontSize: 18,
         marginBottom: 8,
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     buttonText: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         color: '#000',
         fontSize: 16,
         letterSpacing: 1
@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     devLabel: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 10,
         color: '#FFD700',
         marginBottom: 10,
@@ -782,7 +782,7 @@ const styles = StyleSheet.create({
     },
     devButtonText: {
         color: '#fff',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 12
     },
     validationText: {
@@ -801,3 +801,4 @@ const styles = StyleSheet.create({
         color: '#aaa',
     }
 });
+

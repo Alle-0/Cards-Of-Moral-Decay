@@ -129,7 +129,7 @@ const ShopTabItem = ({ itemTitle, index, activeTab, tabBarWidth, tabIndicatorX, 
                 <Animated.Text
                     style={[
                         {
-                            fontFamily: 'Outfit-Bold',
+                            fontFamily: 'OutfitBold',
                             fontSize: 11,
                             textAlign: 'center',
                             zIndex: 10,
@@ -409,7 +409,7 @@ export default function ShopScreen({ route }) {
                 const { locationX } = evt.nativeEvent;
 
                 // Determine which tab was touched
-                const touchedIndex = Math.floor((locationX - 4) / tabWidth);
+                const touchedIndex = Math.floor((locationX - 5) / tabWidth);
 
                 // [FIX] Only allow drag if touching the ACTIVE tab
                 const isGrabbing = (touchedIndex === activeTabRef.current);
@@ -445,7 +445,7 @@ export default function ShopScreen({ route }) {
 
                 if (isClick) {
                     const touchX = evt.nativeEvent.locationX;
-                    targetIndex = Math.floor((touchX - 4) / tabWidth);
+                    targetIndex = Math.floor((touchX - 5) / tabWidth);
                 } else if (isGrabbingIndicator.current) {
                     // [FIX] Only snap calculate if we were dragging
                     const currentX = tabIndicatorX.value;
@@ -645,7 +645,7 @@ export default function ShopScreen({ route }) {
                 {/* Header */}
                 <Text style={{
                     color: theme.colors.accent,
-                    fontFamily: 'Cinzel-Bold',
+                    fontFamily: 'CinzelBold',
                     fontSize: 24,
                     marginTop: isDesktop ? 35 : 50,
                     marginBottom: 20,
@@ -853,17 +853,6 @@ export default function ShopScreen({ route }) {
                                     numColumns={isDesktop ? 2 : 1}
                                     columnWrapperStyle={isDesktop ? { gap: 15, paddingHorizontal: 20, zIndex: 1, overflow: 'visible' } : undefined}
                                     keyExtractor={(item) => item.id}
-                                    ListHeaderComponent={() => (
-                                        <Text style={{
-                                            fontFamily: 'Cinzel-Bold',
-                                            fontSize: 20,
-                                            color: theme.colors.accent,
-                                            textAlign: 'center',
-                                            marginBottom: 20
-                                        }}>
-                                            {t('tab_dc')}
-                                        </Text>
-                                    )}
                                     renderItem={({ item, index }) => (
                                         <ShopDCBundleItem
                                             item={item}
@@ -981,7 +970,7 @@ export default function ShopScreen({ route }) {
                                                     </Text>
                                                 </View>
                                                 <View style={{ paddingBottom: 16, paddingLeft: 20, opacity: 0.8 }}>
-                                                    <Text style={{ fontSize: 10, color: preview.item.styles.text, opacity: 0.6, fontFamily: 'Outfit-Bold', letterSpacing: 2 }}>
+                                                    <Text style={{ fontSize: 10, color: preview.item.styles.text, opacity: 0.6, fontFamily: 'OutfitBold', letterSpacing: 2 }}>
                                                         CARDS OF MORAL DECAY
                                                     </Text>
                                                 </View>
@@ -1024,7 +1013,7 @@ export default function ShopScreen({ route }) {
                                                                             />
                                                                         </View>
                                                                         <View style={{ paddingBottom: 6, opacity: 0.5, alignItems: 'center' }}>
-                                                                            <Text style={{ fontSize: 6, color: '#000', fontFamily: 'Outfit-Bold' }}>
+                                                                            <Text style={{ fontSize: 6, color: '#000', fontFamily: 'OutfitBold' }}>
                                                                                 MORAL DECAY
                                                                             </Text>
                                                                         </View>
@@ -1129,13 +1118,13 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(212, 175, 55, 0.3)'
     },
     balanceLabel: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         color: '#888',
         fontSize: 10,
         letterSpacing: 2
     },
     balanceValue: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         color: '#d4af37',
         fontSize: 18
     },
@@ -1204,7 +1193,7 @@ const styles = StyleSheet.create({
         marginRight: 10
     },
     itemName: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 14,
         marginBottom: 2
     },
@@ -1232,7 +1221,7 @@ const styles = StyleSheet.create({
         borderWidth: 1
     },
     buyText: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 12
     },
     ownedBadge: {
@@ -1269,14 +1258,14 @@ const styles = StyleSheet.create({
         overflow: Platform.OS === 'web' ? 'visible' : 'hidden'
     },
     previewSubtitle: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 10,
         letterSpacing: 2,
         marginBottom: 5
     },
     previewTitleMain: {
         color: '#fff',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 22,
         letterSpacing: 1
     },
@@ -1300,13 +1289,13 @@ const styles = StyleSheet.create({
         position: 'relative'
     },
     themeCardTitle: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 24,
         marginBottom: 5,
         textAlign: 'center'
     },
     themeCardSubtitle: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 10,
         letterSpacing: 2
     },
@@ -1319,8 +1308,9 @@ const styles = StyleSheet.create({
     },
     closeButtonText: {
         color: '#fff',
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 12,
         letterSpacing: 1
     }
 });
+

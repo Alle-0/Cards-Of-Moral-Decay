@@ -453,8 +453,8 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                             entering={ZoomIn.duration(800).springify()}
                             style={{ alignItems: 'center' }}
                         >
-                            <Text style={{ color: '#d4af37', fontFamily: 'Cinzel-Bold', fontSize: 14, letterSpacing: 2 }}>{t('new_rank_title') || "NUOVO GRADO RAGGIUNTO"}</Text>
-                            <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 42, textAlign: 'center', marginVertical: 20 }}>{user.rank}</Text>
+                            <Text style={{ color: '#d4af37', fontFamily: 'CinzelBold', fontSize: 14, letterSpacing: 2 }}>{t('new_rank_title') || "NUOVO GRADO RAGGIUNTO"}</Text>
+                            <Text style={{ color: '#fff', fontFamily: 'CinzelBold', fontSize: 42, textAlign: 'center', marginVertical: 20 }}>{user.rank}</Text>
                             <PremiumButton
                                 title={t('awesome_btn') || "ECCELLENTE"}
                                 onPress={handleRankUpClose}
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 0,
     },
     title: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 48,
         marginBottom: 30,
         ...(Platform.OS === 'web' ? {
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     winnerName: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 32,
         marginBottom: 5,
     },
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     playerScore: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 16,
     },
     waitingText: {
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
         padding: 18,
     },
     shameTitle: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 12,
         color: '#d97706',
         letterSpacing: 1.5,
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     loserName: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 18,
         color: '#fff',
     },
@@ -636,3 +636,4 @@ const styles = StyleSheet.create({
 });
 
 export default VictoryScreen;
+

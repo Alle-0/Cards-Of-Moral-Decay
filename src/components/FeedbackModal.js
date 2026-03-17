@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
         padding: 24,
     },
     title: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 20,
         textAlign: 'center',
         marginBottom: 8,
@@ -228,17 +228,18 @@ const styles = StyleSheet.create({
         borderColor: '#444',
     },
     cancelButtonText: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         color: '#aaa',
         fontSize: 14,
     },
     submitButton: {
     },
     submitButtonText: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 14,
         letterSpacing: 1,
     }
 });
 
 export default FeedbackModal;
+

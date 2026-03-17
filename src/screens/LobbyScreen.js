@@ -511,7 +511,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                                                     return (
                                                         <Text style={{ fontSize: 8, color: '#666', marginTop: 2, fontFamily: 'Outfit', includeFontPadding: false }}>
                                                             {prefix}
-                                                            <Text style={{ color: nextRankColor, fontFamily: 'Outfit-Bold' }}>{nextRankName}</Text>
+                                                            <Text style={{ color: nextRankColor, fontFamily: 'OutfitBold' }}>{nextRankName}</Text>
                                                             {suffix}
                                                         </Text>
                                                     );
@@ -647,7 +647,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                             enableSound={true}
                             onPress={() => BackHandler.exitApp()}
                             style={{ flex: 1 }}
-                            textStyle={{ fontSize: 14, fontFamily: 'Cinzel-Bold' }}
+                            textStyle={{ fontSize: 14, fontFamily: 'CinzelBold' }}
                         />
                     </View>
                 </View>
@@ -672,7 +672,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                         <LockIcon size={32} color={theme.colors.accent} />
                     </View>
 
-                    <Text style={{ color: theme.colors.accent, fontFamily: 'Cinzel-Bold', fontSize: 18, marginBottom: 12, textAlign: 'center', letterSpacing: 1 }}>
+                    <Text style={{ color: theme.colors.accent, fontFamily: 'CinzelBold', fontSize: 18, marginBottom: 12, textAlign: 'center', letterSpacing: 1 }}>
                         {t('save_code_title')}
                     </Text>
 
@@ -715,7 +715,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                             setToast({ visible: true, message: t('code_saved_toast'), type: 'success' });
                         }}
                         style={{ backgroundColor: theme.colors.accent, width: '100%', height: 55 }}
-                        textStyle={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 15 }}
+                        textStyle={{ color: '#000', fontFamily: 'CinzelBold', fontSize: 15 }}
                     />
                 </View>
             </PremiumModal>
@@ -738,7 +738,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                             style={{ backgroundColor: theme.colors.cardBackground, borderWidth: 1, borderColor: theme.colors.accent }}
                             textStyle={{
                                 color: Platform.OS === 'web' ? '#171717ff' : 'rgba(231, 231, 231, 1)',
-                                fontFamily: 'Cinzel-Bold',
+                                fontFamily: 'CinzelBold',
                                 fontWeight: '700'
                             }}
                         />
@@ -746,7 +746,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                             title={t('visibility_public_btn')}
                             onPress={() => handleConfirmCreateRoom('public')}
                             style={{ backgroundColor: theme.colors.accent }}
-                            textStyle={{ color: '#18181b', fontFamily: 'Cinzel-Bold', fontWeight: '900' }}
+                            textStyle={{ color: '#18181b', fontFamily: 'CinzelBold', fontWeight: '900' }}
                         />
                     </View>
                 </View>
@@ -770,7 +770,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                         <ShieldIcon size={32} color="#4ade80" />
                     </View>
 
-                    <Text style={{ color: '#fff', fontFamily: 'Cinzel-Bold', fontSize: 18, marginBottom: 12, textAlign: 'center', letterSpacing: 1 }}>
+                    <Text style={{ color: '#fff', fontFamily: 'CinzelBold', fontSize: 18, marginBottom: 12, textAlign: 'center', letterSpacing: 1 }}>
                         {t('account_recovered_title')}
                     </Text>
 
@@ -782,7 +782,7 @@ const LobbyScreen = ({ onStartLoading }) => {
                         title={t('agree_btn')}
                         onPress={dismissRecovered}
                         style={{ backgroundColor: theme.colors.accent, width: '100%', height: 50 }}
-                        textStyle={{ color: '#000', fontFamily: 'Cinzel-Bold', fontSize: 14 }}
+                        textStyle={{ color: '#000', fontFamily: 'CinzelBold', fontSize: 14 }}
                     />
                 </View>
             </PremiumModal>
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     },
     mainTitle: {
         fontSize: 38,
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         textAlign: 'center',
         letterSpacing: 2,
         paddingLeft: 2, // [FIX] Compensate letterSpacing
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
         opacity: 0.8,
     },
     rankTextLabel: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 12,
         textTransform: 'uppercase',
         letterSpacing: 2,
@@ -864,3 +864,4 @@ const styles = StyleSheet.create({
 });
 
 export default LobbyScreen;
+

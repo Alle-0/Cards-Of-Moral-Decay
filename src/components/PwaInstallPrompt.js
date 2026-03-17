@@ -101,7 +101,7 @@ const PwaInstallPrompt = () => {
                         }}
                         textStyle={{
                             color: '#050505',
-                            fontFamily: 'Cinzel-Bold',
+                            fontFamily: 'CinzelBold',
                             fontSize: 11, // legible size
                             lineHeight: 13,
                             letterSpacing: 0.5,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     },
     title: {
         color: '#d4af37',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 13,
         marginBottom: 3,
         letterSpacing: 0.5
@@ -177,3 +177,4 @@ const styles = StyleSheet.create({
 });
 
 export default PwaInstallPrompt;
+

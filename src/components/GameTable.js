@@ -60,7 +60,7 @@ const FaceDownCard = memo(() => (
     <View style={styles.faceDownCard}>
         {/* Texture removed per user request */}
         <View style={{ transform: [{ rotate: '-45deg' }], alignItems: 'center' }}>
-            <Text style={{ fontFamily: 'Cinzel-Bold', color: '#ffffff', fontSize: 22, textAlign: 'center', lineHeight: 28 }}>MORAL{'\n'}DECAY</Text>
+            <Text style={{ fontFamily: 'CinzelBold', color: '#ffffff', fontSize: 22, textAlign: 'center', lineHeight: 28 }}>MORAL{'\n'}DECAY</Text>
         </View>
     </View>
 ));
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         color: '#cfcfcfff',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 18,
         marginTop: 20,
         marginBottom: 15,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         color: '#ccc',
-        fontFamily: 'Cinzel-Bold', // or Outfit
+        fontFamily: 'CinzelBold', // or Outfit
         marginTop: 10, // Adjusted globally, was 30
         marginBottom: 8,
         fontSize: 12,
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     },
     footerText: {
         color: '#888',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 12,
         fontWeight: 'bold'
     },
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
         }),
     },
     czarBtnText: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         letterSpacing: 1,
         marginLeft: 8
     },
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
     },
     winnerBtnText: {
         color: '#fff',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 11,
         fontWeight: 'bold',
         textTransform: 'uppercase',
@@ -641,3 +641,4 @@ const styles = StyleSheet.create({
 });
 
 export default memo(GameTable);
+

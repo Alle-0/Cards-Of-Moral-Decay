@@ -71,7 +71,7 @@ const ElegantSplashScreen = ({ onFinish, fastMode = false, isInitialLaunch = fal
 
         if (isThemeReady && !fastMode && isInitialLaunch) {
             // Hide native splash once JS one is ready to animate
-            SplashScreen.hideAsync().catch(() => {});
+            SplashScreen.hideAsync().catch(() => { });
 
             // Transizione colore ultra-lenta (4s) con curva in-out per evitare scatti iniziali/finali
             bgProgress.value = withTiming(1, {
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     logoText: {
-        fontFamily: 'CinzelDecorative_700Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 62,
         letterSpacing: 2,
         fontWeight: 'bold',
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
         marginHorizontal: -2,
     },
     subText: {
-        fontFamily: 'Outfit-Bold',
+        fontFamily: 'OutfitBold',
         fontSize: 14,
         letterSpacing: 7,
         textAlign: 'center',

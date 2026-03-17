@@ -446,7 +446,7 @@ const ShopDCBundleItem = React.memo(({ item, index, buyingId, onBuy, t, theme })
                     borderBottomLeftRadius: 12,
                     zIndex: 20
                 }}>
-                    <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 10, color: '#000' }}>BEST VALUE</Text>
+                    <Text style={{ fontFamily: 'CinzelBold', fontSize: 10, color: '#000' }}>BEST VALUE</Text>
                 </View>
             )}
             {item.isFreeDaily && !isClaimed && (
@@ -461,7 +461,7 @@ const ShopDCBundleItem = React.memo(({ item, index, buyingId, onBuy, t, theme })
                     borderBottomLeftRadius: 12,
                     zIndex: 20
                 }}>
-                    <Text style={{ fontFamily: 'Cinzel-Bold', fontSize: 10, color: '#000' }}>{t('shop_label_daily', { defaultValue: 'DAILY' })}</Text>
+                    <Text style={{ fontFamily: 'CinzelBold', fontSize: 10, color: '#000' }}>{t('shop_label_daily', { defaultValue: 'DAILY' })}</Text>
                 </View>
             )}
         </Animated.View>
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
         marginRight: 10
     },
     itemName: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 14,
         marginBottom: 2
     },
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
         borderWidth: 1
     },
     buyText: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 12
     },
     ownedBadge: {
@@ -555,3 +555,4 @@ const styles = StyleSheet.create({
 });
 
 export { ShopThemeItem, ShopSkinItem, ShopFrameItem, ShopPackItem, ShopDCBundleItem };
+

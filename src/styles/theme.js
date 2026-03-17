@@ -22,9 +22,9 @@ export const COLORS = {
 };
 
 export const FONTS = {
-    regular: 'Outfit', // We'll need to load these in App.js
-    secondary: 'Cinzel',
-    decorative: 'Cinzel Decorative',
+    regular: 'Outfit', // Alias for Outfit_400Regular
+    secondary: 'Cinzel', // Alias for Cinzel_400Regular
+    decorative: 'Cinzel', // Alias for Cinzel_400Regular (was CinzelDecorative)
 };
 
 export const SPACING = {

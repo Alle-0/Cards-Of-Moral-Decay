@@ -509,7 +509,7 @@ const PlayerHand = ({
                     <View>
                         <Text style={[styles.label, {
                             color: theme.colors.textPrimary,
-                            fontFamily: 'Cinzel-Bold',
+                            fontFamily: 'CinzelBold',
                             marginBottom: 0,
                             fontSize: isSmallScreen ? 12 : 14
                         }]}>
@@ -518,7 +518,7 @@ const PlayerHand = ({
                         {maxSelection > 1 && (
                             <Text style={{
                                 color: theme.colors.accent,
-                                fontFamily: 'Outfit-Bold',
+                                fontFamily: 'OutfitBold',
                                 fontSize: isSmallScreen ? 8 : 10,
                                 marginTop: 2,
                                 letterSpacing: 0.5
@@ -759,10 +759,11 @@ const styles = StyleSheet.create({
     },
     actionBtnText: {
         color: 'white',
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 12,
         letterSpacing: 1,
     },
 });
 
 export default React.memo(PlayerHand);
+

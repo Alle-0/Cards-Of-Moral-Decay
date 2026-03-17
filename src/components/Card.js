@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     },
     brand: {
         fontSize: 9,
-        fontFamily: 'Cinzel-Bold', // Premium font for brand
+        fontFamily: 'CinzelBold', // Premium font for brand
         opacity: 0.6,
         letterSpacing: 1
     },
@@ -123,3 +123,4 @@ const styles = StyleSheet.create({
 });
 
 export default memo(Card);
+

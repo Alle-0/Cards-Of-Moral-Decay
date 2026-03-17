@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
         zIndex: 1,
     },
     toggleText: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 11,
         textAlign: 'center',
     },
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     submitText: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         color: '#000',
         fontSize: 17,
         textAlign: 'center',
@@ -355,3 +355,4 @@ const styles = StyleSheet.create({
 });
 
 export default CardSuggestionModal;
+

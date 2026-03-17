@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     sectionTitle: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         color: '#FFD700',
         fontSize: 16,
         marginTop: 15,
@@ -73,3 +73,4 @@ const styles = StyleSheet.create({
 });
 
 export default EulaModal;
+

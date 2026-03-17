@@ -171,7 +171,7 @@ const PremiumModal = ({ visible, onClose, title, children, showClose = true, mod
                                                 <Text
                                                     style={[styles.title, {
                                                         color: titleColor || theme.colors.accent,
-                                                        fontFamily: 'Cinzel-Bold',
+                                                        fontFamily: 'CinzelBold',
                                                         fontSize: 24,
                                                         lineHeight: 32,
                                                         textAlign: 'center',
@@ -258,3 +258,4 @@ const styles = StyleSheet.create({
 });
 
 export default PremiumModal;
+

@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.5)'
     },
     title: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 22,
         marginBottom: 10,
         textAlign: 'center'
@@ -119,10 +119,11 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     buttonText: {
-        fontFamily: 'Cinzel-Bold',
+        fontFamily: 'CinzelBold',
         fontSize: 16,
         color: '#000'
     }
 });
 
 export default PaymentResultModal;
+

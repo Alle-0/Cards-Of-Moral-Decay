@@ -10,7 +10,7 @@ const SectionHeader = ({ title }) => (
             style={{ flex: 1, height: 1 }}
         />
         <Text style={{
-            fontFamily: 'Cinzel-Bold',
+            fontFamily: 'CinzelBold',
             color: '#d4af37',
             fontSize: 9,
             marginHorizontal: 12,
@@ -27,3 +27,4 @@ const SectionHeader = ({ title }) => (
 );
 
 export default SectionHeader;
+

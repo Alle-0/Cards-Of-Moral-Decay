@@ -94,7 +94,7 @@ const PremiumButton = ({
             }, contentContainerStyle]} // Merge prop
         >
             <Text
-                style={[styles.text, { fontFamily: 'Cinzel-Bold' }, getTextStyle(), textStyle]}
+                style={[styles.text, { fontFamily: 'CinzelBold' }, getTextStyle(), textStyle]}
                 numberOfLines={1}
                 adjustsFontSizeToFit={true}
                 minimumFontScale={0.7}
@@ -125,3 +125,4 @@ const styles = StyleSheet.create({
 });
 
 export default PremiumButton;
+
