@@ -14,7 +14,8 @@ import {
     GithubIcon,
     HornsIcon,
     CardsIcon,
-    MailIcon
+    MailIcon,
+    RedditIcon
 } from '../components/Icons';
 import ToastNotification from '../components/ToastNotification';
 import PremiumBackground from '../components/PremiumBackground';
@@ -26,8 +27,6 @@ import { useLanguage } from '../context/LanguageContext';
 import AnalyticsService from '../services/AnalyticsService';
 import { APP_VERSION } from '../constants/Config';
 import FeedbackModal from '../components/FeedbackModal'; // [NEW] Import
-
-
 
 const InfoScreen = ({ onClose }) => {
     const { theme } = useTheme();
@@ -57,7 +56,7 @@ const InfoScreen = ({ onClose }) => {
         {
             id: 'donate',
             title: t('section_donate'),
-            icon: <CrownIcon size={20} color={theme.colors.accentWeak} />,
+            icon: <CrownIcon size={20} color="#1a1a1a" />,
             content: t('donate_content'),
             action: t('donate_action'),
             url: 'https://paypal.me/AlessandroBasile0/2eur', // <--- INSERISCI IL TUO USERNAME PAYPAL
@@ -190,75 +189,76 @@ const InfoScreen = ({ onClose }) => {
                             const isSpecial = section.special;
 
                             return (
-                                <Animated.View
-                                    key={section.id}
-                                    entering={FadeIn.delay(index * 60).duration(400)}
-                                    style={[
-                                        styles.card,
-                                        isSpecial && { backgroundColor: theme.colors.accent, borderColor: '#fff' },
-                                        isExpanded && !isSpecial && styles.cardExpanded
-                                    ]}
-                                >
-                                    <TouchableOpacity
-                                        activeOpacity={0.8}
-                                        onPress={() => toggleSection(section.id)}
-                                        style={styles.cardHeader}
+                                <View key={section.id}>
+                                    <Animated.View
+                                        entering={FadeIn.delay(index * 60).duration(400)}
+                                        style={[
+                                            styles.card,
+                                            isSpecial && { backgroundColor: theme.colors.accent, borderColor: '#fff' },
+                                            isExpanded && !isSpecial && styles.cardExpanded
+                                        ]}
                                     >
-                                        <View style={styles.titleRow}>
-                                            {section.icon}
-                                            <Text style={[
-                                                styles.cardTitle,
-                                                isSpecial && { color: '#000' }
-                                            ]}>
-                                                {section.title}
-                                            </Text>
-                                        </View>
-                                        <Text style={{ color: isSpecial ? '#000' : '#666', fontSize: 18 }}>
-                                            {isExpanded ? "▲" : "▼"}
-                                        </Text>
-                                    </TouchableOpacity>
-
-                                    {isExpanded && (
-                                        <View style={styles.cardContent}>
-                                            {section.renderContent ? section.renderContent() : (
+                                        <TouchableOpacity
+                                            activeOpacity={0.8}
+                                            onPress={() => toggleSection(section.id)}
+                                            style={styles.cardHeader}
+                                        >
+                                            <View style={styles.titleRow}>
+                                                {section.icon}
                                                 <Text style={[
-                                                    styles.contentText,
-                                                    isSpecial && { color: '#1a1a1a' }
+                                                    styles.cardTitle,
+                                                    isSpecial && { color: '#000' }
                                                 ]}>
-                                                    {section.content}
+                                                    {section.title}
                                                 </Text>
-                                            )}
+                                            </View>
+                                            <Text style={{ color: isSpecial ? '#000' : '#666', fontSize: 18 }}>
+                                                {isExpanded ? "▲" : "▼"}
+                                            </Text>
+                                        </TouchableOpacity>
 
-                                            {section.action && (
-                                                <TouchableOpacity
-                                                    style={[styles.actionButton, { borderColor: isSpecial ? '#000' : theme.colors.accent }]}
-                                                    onPress={() => {
-                                                        if (section.onAction) {
-                                                            section.onAction();
-                                                        } else {
-                                                            handleLink(section.url);
-                                                        }
-                                                    }}
-                                                >
-                                                    <Text style={[styles.actionButtonText, { color: isSpecial ? '#000' : theme.colors.accent }]}>
-                                                        {section.action}
+                                        {isExpanded && (
+                                            <View style={styles.cardContent}>
+                                                {section.renderContent ? section.renderContent() : (
+                                                    <Text style={[
+                                                        styles.contentText,
+                                                        isSpecial && { color: '#1a1a1a' }
+                                                    ]}>
+                                                        {section.content}
                                                     </Text>
-                                                    {section.onAction ? (
-                                                        <CardsIcon size={16} color={isSpecial ? '#000' : theme.colors.accent} />
-                                                    ) : (
-                                                        <LinkIcon size={16} color={isSpecial ? '#000' : theme.colors.accent} />
-                                                    )}
-                                                </TouchableOpacity>
-                                            )}
+                                                )}
 
-                                            {section.link && (
-                                                <TouchableOpacity onPress={() => handleLink(section.url)}>
-                                                    <Text style={[styles.linkText, { color: theme.colors.accent }]}>{section.link}</Text>
-                                                </TouchableOpacity>
-                                            )}
-                                        </View>
-                                    )}
-                                </Animated.View>
+                                                {section.action && (
+                                                    <TouchableOpacity
+                                                        style={[styles.actionButton, { borderColor: isSpecial ? '#000' : theme.colors.accent }]}
+                                                        onPress={() => {
+                                                            if (section.onAction) {
+                                                                section.onAction();
+                                                            } else {
+                                                                handleLink(section.url);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Text style={[styles.actionButtonText, { color: isSpecial ? '#000' : theme.colors.accent }]}>
+                                                            {section.action}
+                                                        </Text>
+                                                        {section.onAction ? (
+                                                            <CardsIcon size={16} color={isSpecial ? '#000' : theme.colors.accent} />
+                                                        ) : (
+                                                            <LinkIcon size={16} color={isSpecial ? '#000' : theme.colors.accent} />
+                                                        )}
+                                                    </TouchableOpacity>
+                                                )}
+
+                                                {section.link && (
+                                                    <TouchableOpacity onPress={() => handleLink(section.url)}>
+                                                        <Text style={[styles.linkText, { color: theme.colors.accent }]}>{section.link}</Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                        )}
+                                    </Animated.View>
+                                </View>
                             );
                         })}
 
@@ -267,7 +267,6 @@ const InfoScreen = ({ onClose }) => {
                         </View>
 
                     </ScrollView>
-
 
                     <ToastNotification
                         visible={showSuccessToast}
@@ -400,4 +399,3 @@ const styles = StyleSheet.create({
 });
 
 export default InfoScreen;
-

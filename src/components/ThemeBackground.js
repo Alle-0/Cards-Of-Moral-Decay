@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, StyleSheet, Dimensions, Image, Text, Platform } from 'react-native';
+import { View, StyleSheet, Dimensions, Image, Text, Platform, useWindowDimensions } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -14,13 +14,12 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Ellipse, Circle } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
+// Removed static dimensions to support responsiveness
+// const { width, height } = Dimensions.get('window');
 
-const { width, height } = Dimensions.get('window');
-
-// ============================================
-// 1. MATRIX RAIN (Optimized + Cleanup)
 // ============================================
 const MatrixRain = React.memo(() => {
+    const { width, height } = useWindowDimensions();
     const { randomX, trailChars, headChar, duration } = useMemo(() => {
         const chars = 'ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ012345789';
         const trailLen = 12 + Math.floor(Math.random() * 10);
@@ -30,7 +29,7 @@ const MatrixRain = React.memo(() => {
             trailChars: Array.from({ length: trailLen }, () => chars.charAt(Math.floor(Math.random() * chars.length))),
             duration: 3000 + Math.random() * 1000 // Restored original speed
         };
-    }, []);
+    }, [width]);
 
     const translateY = useSharedValue(-600);
 
@@ -73,13 +72,14 @@ const MatrixRain = React.memo(() => {
 // 1B. SCRATCHES (Manicomio Theme)
 // ============================================
 const Scratches = React.memo(() => {
+    const { width, height } = useWindowDimensions();
     const { x, y, rotation, scale, opacity } = useMemo(() => ({
         x: Math.random() * width,
         y: Math.random() * height,
         rotation: (Math.random() - 0.5) * 45,
         scale: 0.5 + Math.random() * 1.5,
         opacity: 0.1 + Math.random() * 0.2
-    }), []);
+    }), [width, height]);
 
     return (
         <View style={{
@@ -156,7 +156,8 @@ const PoliceLights = React.memo(() => {
 // 2. PULSAR RIPPLE (Optimized + Cleanup)
 // ============================================
 const PulsarRipple = React.memo(({ color }) => {
-    const { x, y } = useMemo(() => ({ x: Math.random() * (width - 100), y: Math.random() * (height - 100) }), []);
+    const { width, height } = useWindowDimensions();
+    const { x, y } = useMemo(() => ({ x: Math.random() * (width - 100), y: Math.random() * (height - 100) }), [width, height]);
     return (
         <View style={{ position: 'absolute', left: x, top: y }}>
             {[0, 600, 1200, 1800].map((delay, i) => <RippleRing key={i} delay={delay} color={color} />)}
@@ -188,13 +189,14 @@ const RippleRing = React.memo(({ delay, color }) => {
 // 3. DUST PARTICLES (Cleanup)
 // ============================================
 const DustParticle = React.memo(({ color }) => {
+    const { width, height } = useWindowDimensions();
     const { x, y, size, duration, delay } = useMemo(() => ({
         x: Math.random() * width,
         y: Math.random() * height,
         size: Math.random() * 3 + 1,
         duration: 3000 + Math.random() * 4000,
         delay: Math.random() * 8000 // Spreads spawns over 8 seconds
-    }), []);
+    }), [width, height]);
 
     const opacity = useSharedValue(0);
     const translateY = useSharedValue(0);
@@ -230,13 +232,14 @@ const DustParticle = React.memo(({ color }) => {
 // 4. ASH PARTICLES (Warm Start + Cleanup)
 // ============================================
 const AshParticle = React.memo(({ color }) => {
+    const { width, height } = useWindowDimensions();
     const { startX, size, duration, delay, initialY } = useMemo(() => ({
         startX: Math.random() * width,
         size: Math.random() * 4 + 2,
         duration: 4000 + Math.random() * 3000,
         delay: Math.random() * 5000, // Reduced delay for immediate fill
         initialY: Math.random() * height // Start anywhere
-    }), []);
+    }), [width, height]);
 
     const translateY = useSharedValue(initialY);
     const translateX = useSharedValue(startX);
@@ -277,6 +280,7 @@ const AshParticle = React.memo(({ color }) => {
 // 5. BUBBLE PARTICLES (Warm Start + Refined Sway)
 // ============================================
 const BubbleParticle = React.memo(({ color }) => {
+    const { width, height } = useWindowDimensions();
     const { startX, size, duration, delay, swayAmount, initialY } = useMemo(() => ({
         startX: Math.random() * width,
         size: Math.random() * 20 + 10,
@@ -284,7 +288,7 @@ const BubbleParticle = React.memo(({ color }) => {
         delay: Math.random() * 5000,
         swayAmount: Math.random() * 40 + 20,
         initialY: Math.random() * height
-    }), []);
+    }), [width, height]);
 
     const translateY = useSharedValue(initialY);
     const translateX = useSharedValue(startX);
@@ -345,6 +349,7 @@ const BubbleParticle = React.memo(({ color }) => {
 // 6. SNOW/PETAL PARTICLES (Warm Start)
 // ============================================
 const SnowParticle = React.memo(({ colorEmoji, theme }) => { // Added theme prop
+    const { width, height } = useWindowDimensions();
     const { startX, size, duration, delay, rotationDir, initialY } = useMemo(() => ({
         startX: Math.random() * width,
         size: Math.random() * 10 + 10,
@@ -352,7 +357,7 @@ const SnowParticle = React.memo(({ colorEmoji, theme }) => { // Added theme prop
         delay: Math.random() * 5000,
         rotationDir: Math.random() > 0.5 ? 1 : -1,
         initialY: Math.random() * height
-    }), []);
+    }), [width, height]);
 
     const translateY = useSharedValue(initialY);
     const translateX = useSharedValue(startX);
@@ -431,12 +436,13 @@ const SnowParticle = React.memo(({ colorEmoji, theme }) => { // Added theme prop
 // 7. LIGHT SWEEP (Cleanup)
 // ============================================
 const LightSweep = React.memo(() => {
+    const { width, height } = useWindowDimensions();
     const translateX = useSharedValue(-width * 2);
 
     useEffect(() => {
         translateX.value = withRepeat(withDelay(10000, withTiming(width * 2, { duration: 3000, easing: Easing.inOut(Easing.quad) })), -1);
         return () => cancelAnimation(translateX);
-    }, []);
+    }, [width]);
 
     const style = useAnimatedStyle(() => ({
         position: 'absolute', top: 0, bottom: 0, width: 150, // Più largo per sfumatura più morbida
@@ -459,6 +465,7 @@ const LightSweep = React.memo(() => {
 // 8. SMOKE EFFECT (Slow Rotation & Subtle Movement)
 // ============================================
 const SmokePuff = React.memo(() => {
+    const { width, height } = useWindowDimensions();
     const { x, y, size, duration, delay, rotation } = useMemo(() => ({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -466,7 +473,7 @@ const SmokePuff = React.memo(() => {
         duration: 8000 + Math.random() * 4000,
         delay: Math.random() * 5000,
         rotation: Math.random() * 360
-    }), []);
+    }), [width, height]);
 
     const opacity = useSharedValue(0);
     const scale = useSharedValue(0.8);
@@ -499,6 +506,7 @@ const SmokePuff = React.memo(() => {
 // 9. CURRENCY RAIN (Custom Matrix Rain)
 // ============================================
 const CurrencyRain = React.memo(() => {
+    const { width, height } = useWindowDimensions();
     const { randomX, trailChars, headChar, duration, color } = useMemo(() => {
         const currencies = ['$', '€', '£', '¥', '₿', '📈', '📉', '💰'];
         const trailLen = 8 + Math.floor(Math.random() * 6);
@@ -509,7 +517,7 @@ const CurrencyRain = React.memo(() => {
             duration: 4000 + Math.random() * 2000, // Restored original speed
             color: '#10b981' // Wall Street Green
         };
-    }, []);
+    }, [width]);
 
     const translateY = useSharedValue(-400);
 
@@ -540,13 +548,14 @@ const CurrencyRain = React.memo(() => {
 // 10. VOID FLOAT (Slow, eerie eyes)
 // ============================================
 const VoidFloatParticle = React.memo(({ color }) => {
+    const { width, height } = useWindowDimensions();
     const { x, y, size, duration, delay } = useMemo(() => ({
         x: Math.random() * width,
         y: Math.random() * height,
         size: Math.random() * 40 + 20,
         duration: 8000 + Math.random() * 4000,
         delay: Math.random() * 5000
-    }), []);
+    }), [width, height]);
 
     const opacity = useSharedValue(0);
     const scale = useSharedValue(0.5);
@@ -579,6 +588,7 @@ const VoidFloatParticle = React.memo(({ color }) => {
 // MAIN COMPONENT
 // ============================================
 const ThemeBackground = ({ visible = true, forceTheme = null }) => {
+    const { width, height } = useWindowDimensions();
     const { theme: contextTheme, animationsEnabled } = useTheme(); // [FIX] Get toggle
     const theme = forceTheme || contextTheme;
     const [elements, setElements] = useState([]);
@@ -616,14 +626,15 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
         setElements([]); // Clear on theme change
 
         if (['matrix', 'pulsar', 'wallstreet'].includes(theme.id)) {
-            const intervalTime = 6000;
-            const maxElements = theme.id === 'matrix' ? 3 : (theme.id === 'wallstreet' ? 4 : 3); // Increased pulsar max slightly
-
+            // [NEW] Add initial element immediately to avoid 2s delay
+            setElements([{ id: Date.now(), type: theme.id }]);
+            
+            const maxElements = theme.id === 'matrix' ? 30 : 15;
+            const intervalTime = theme.id === 'pulsar' ? 6000 : (theme.id === 'matrix' ? 4000 : 2000);
             const interval = setInterval(() => {
-                const randomDelay = Math.random() * 2000;
-                setTimeout(() => {
+                if (animationsEnabled) {
                     setElements(prev => [...prev.slice(-(maxElements - 1)), { id: Date.now(), type: theme.id }]);
-                }, randomDelay);
+                }
             }, intervalTime);
             return () => clearInterval(interval);
         } else {
@@ -632,7 +643,8 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
                     theme.particleConfig === 'bubble' || theme.particleConfig === 'toxicBubble' ? 3 :
                         theme.particleConfig === 'snow' ? 3 :
                             theme.particleConfig === 'smoke' ? 5 :
-                                theme.particleConfig === 'voidFloat' ? 6 : 0;
+                                theme.particleConfig === 'voidFloat' ? 6 :
+                                    theme.id === 'manicomio' ? 4 : 0;
 
             if (count > 0) {
                 setElements(Array.from({ length: count }).map((_, i) => ({ id: i })));
@@ -651,9 +663,13 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
         let content = null;
 
         if (theme.id === 'manicomio') {
-            content = elements.map(el => (
-                <Scratches key={el.id} />
-            ));
+            content = elements.map(el => <Scratches key={el.id} />);
+        } else if (theme.id === 'matrix') {
+            content = elements.map(e => <MatrixRain key={e.id} />);
+        } else if (theme.id === 'pulsar') {
+            content = elements.map(e => <PulsarRipple key={e.id} color={theme.colors.accent} />);
+        } else if (theme.id === 'wallstreet') {
+            content = elements.map(e => <CurrencyRain key={e.id} />);
         } else {
             switch (theme.particleConfig) {
                 case 'dust': content = elements.map(e => <DustParticle key={e.id} color={theme.colors.particle} />); break;
@@ -663,7 +679,7 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
                 case 'snow': content = elements.map(e => <SnowParticle key={e.id} colorEmoji={theme.colors.particleEmoji} theme={theme} />); break;
                 case 'lightSweep': content = <LightSweep />; break;
                 case 'smoke': content = elements.map(e => <SmokePuff key={e.id} />); break;
-                case 'neonPulse': content = <PulsarRipple color={theme.colors.accent} />; break;
+                case 'neonPulse': content = elements.map(e => <PulsarRipple key={e.id} color={theme.colors.accent} />); break;
                 case 'policeLights': content = <PoliceLights />; break;
                 case 'voidFloat': content = elements.map(e => <VoidFloatParticle key={e.id} color={theme.colors.particle} />); break;
                 default: content = null;
@@ -677,22 +693,16 @@ const ThemeBackground = ({ visible = true, forceTheme = null }) => {
         );
     };
 
-    const renderIntervalEffects = () => {
-        if (theme.id === 'matrix') return elements.map(e => <MatrixRain key={e.id} />);
-        if (theme.id === 'pulsar') return elements.map(e => <PulsarRipple key={e.id} color={theme.colors.accent} />);
-        if (theme.id === 'wallstreet') return elements.map(e => <CurrencyRain key={e.id} />);
-        return null;
-    };
+    // Removed renderIntervalEffects in favor of consolidated renderEffects
 
-    const isParticleSystem = ['dust', 'ash', 'bubble', 'toxicBubble', 'snow', 'lightSweep', 'smoke', 'neonPulse', 'policeLights', 'voidFloat'].includes(theme.particleConfig);
+    const hasElements = elements.length > 0 || ['lightSweep', 'policeLights'].includes(theme.particleConfig);
 
     return (
         <Animated.View style={[styles.container, containerStyle]} pointerEvents="none">
             {renderStaticTexture()}
             <Animated.View style={[StyleSheet.absoluteFill, particlesStyle]} pointerEvents="none">
-                {isParticleSystem ? null : renderIntervalEffects()}
+                {renderEffects()}
             </Animated.View>
-            {isParticleSystem ? renderEffects() : null}
         </Animated.View>
     );
 };

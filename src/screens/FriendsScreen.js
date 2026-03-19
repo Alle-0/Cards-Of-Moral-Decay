@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, BackHandler, Platform, Share, useWindowDimensions, ActivityIndicator, PanResponder } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
 import PremiumInput from '../components/PremiumInput';
 import PremiumButton from '../components/PremiumButton';
 import PremiumIconButton from '../components/PremiumIconButton';
 import PremiumBackground from '../components/PremiumBackground'; // [NEW] Wrapper
 import { TrashIcon, LinkIcon, CheckIcon, CrossIcon, ShareIcon, ReportIcon } from '../components/Icons';
+import HapticsService from '../services/HapticsService';
 import Animated, { ZoomIn, ZoomOut, FadeIn, FadeOut, FadeInRight, FadeInLeft, useSharedValue, useAnimatedStyle, withSpring, interpolateColor } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 import ToastNotification from '../components/ToastNotification';
@@ -21,8 +21,6 @@ import { db } from '../services/firebase';
 import { ref, query, orderByChild, limitToLast, get } from 'firebase/database';
 import { RANK_COLORS, getRankKey } from '../constants/Ranks';
 import { useLiquidScale, updateLiquidAnchors, SNAP_SPRING_CONFIG } from '../hooks/useLiquidAnimation';
-import HapticsService from '../services/HapticsService';
-import { useRef } from 'react';
 import PremiumSkeleton from '../components/PremiumSkeleton';
 
 const TabItem = ({ title, index, tabBarWidth, tabIndicatorX, theme }) => {
@@ -84,7 +82,8 @@ const FriendsScreen = () => {
         sendFriendRequest,
         acceptFriendRequest,
         rejectFriendRequest,
-        removeFriend
+        removeFriend,
+        reportPlayer
     } = useAuth();
 
     const [friendInput, setFriendInput] = useState('');
@@ -325,7 +324,7 @@ const FriendsScreen = () => {
                     {activeTab === 0 && (
                         <Animated.View
                             key="friends-tab"
-                            entering={FadeInLeft.springify().damping(15)}
+                            entering={FadeInLeft.duration(300)}
                             exiting={FadeOut.duration(200)}
                             style={{ flex: 1 }}
                         >
@@ -380,6 +379,23 @@ const FriendsScreen = () => {
                                             {requestList.map(reqName => (
                                                 <View key={reqName} style={[styles.friendRow, { borderColor: theme.colors.accent }]}>
                                                     <Text style={[styles.friendName, { color: '#fff' }]}>{reqName}</Text>
+                                                    {(reqName || '').trim().toLowerCase() === (myUsername || '').trim().toLowerCase() && (
+                                                        <View style={{
+                                                            marginLeft: 6,
+                                                            backgroundColor: theme.colors.accent,
+                                                            paddingHorizontal: 5,
+                                                            paddingVertical: 0.5,
+                                                            borderRadius: 3,
+                                                        }}>
+                                                            <Text style={{
+                                                                fontFamily: 'OutfitBold',
+                                                                color: '#000',
+                                                                fontSize: 8.5,
+                                                            }}>
+                                                                {t('you_label') || 'TU'}
+                                                            </Text>
+                                                        </View>
+                                                    )}
                                                     <View style={{ flexDirection: 'row', gap: 5 }}>
                                                         <PremiumIconButton
                                                             icon={<CheckIcon size={16} color="#4ade80" />}
@@ -433,11 +449,11 @@ const FriendsScreen = () => {
                     {activeTab === 1 && (
                         <Animated.View
                             key="leaderboard-tab"
-                            entering={FadeInRight.springify().damping(15)}
+                            entering={FadeInRight.duration(300)}
                             exiting={FadeOut.duration(200)}
                             style={{ flex: 1 }}
                         >
-                            <LeaderboardSection t={t} theme={theme} insets={insets} players={players} setPlayers={setPlayers} loading={leaderboardLoading} setLoading={setLeaderboardLoading} isDesktop={isDesktop} />
+                            <LeaderboardSection t={t} theme={theme} insets={insets} players={players} setPlayers={setPlayers} loading={leaderboardLoading} setLoading={setLeaderboardLoading} isDesktop={isDesktop} setToast={setToast} />
                         </Animated.View>
                     )}
                 </View>
@@ -593,13 +609,44 @@ const styles = StyleSheet.create({
     leaderboardItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 15,
-        paddingHorizontal: 15,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
         backgroundColor: 'rgba(255,255,255,0.03)',
         borderRadius: 16,
         marginBottom: 10,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
+    },
+    leaderboardItemMe: {
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        borderColor: 'rgba(255, 211, 106, 0.4)', // Safe fallback
+        borderWidth: 1.2,
+    },
+    myRankSticky: {
+        marginTop: 32,
+        paddingHorizontal: 0,
+    },
+    myRankLabel: {
+        color: 'rgba(255,255,255,0.4)',
+        fontFamily: 'OutfitBold',
+        fontSize: 10,
+        textAlign: 'center',
+        marginBottom: 12,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+    },
+    meBadge: {
+        marginLeft: 6,
+        paddingHorizontal: 5,
+        paddingVertical: 1,
+        borderRadius: 4,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    meBadgeText: {
+        fontFamily: 'OutfitBold',
+        fontSize: 8,
+        color: '#000',
     },
     leaderboardIndex: {
         width: 35,
@@ -607,7 +654,7 @@ const styles = StyleSheet.create({
     },
     positionText: {
         fontFamily: 'CinzelBold',
-        fontSize: 16,
+        fontSize: 15,
     },
     playerInfo: {
         flex: 1,
@@ -615,7 +662,7 @@ const styles = StyleSheet.create({
     },
     nicknameText: {
         fontFamily: 'OutfitBold',
-        fontSize: 15,
+        fontSize: 14.5,
         marginBottom: 2,
     },
     rankText: {
@@ -630,7 +677,7 @@ const styles = StyleSheet.create({
     },
     scoreText: {
         fontFamily: 'CinzelBold',
-        fontSize: 18,
+        fontSize: 17,
     },
     scoreLabel: {
         fontFamily: 'Outfit',
@@ -640,7 +687,7 @@ const styles = StyleSheet.create({
     }
 });
 
-const LeaderboardSection = ({ t, theme, insets, players, setPlayers, loading, setLoading, isDesktop }) => {
+const LeaderboardSection = ({ t, theme, insets, players, setPlayers, loading, setLoading, isDesktop, setToast }) => {
     const { user, reportPlayer } = useAuth();
     const [playerToReport, setPlayerToReport] = useState(null);
     const [showReportModal, setShowReportModal] = useState(false);
@@ -655,7 +702,7 @@ const LeaderboardSection = ({ t, theme, insets, players, setPlayers, loading, se
 
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-                    const EXCLUDED_USERS = ["Alle", "Prova", "Prova2", "Prova3", "Friend"];
+                    const EXCLUDED_USERS = ["Alle", "Prova", "Prova2", "Prova3", "Friend", "Antigravity_Bot"];
 
                     const playersList = Object.entries(data)
                         .map(([id, val]) => ({ id, ...val }))
@@ -701,58 +748,107 @@ const LeaderboardSection = ({ t, theme, insets, players, setPlayers, loading, se
         );
     }
 
-    return (
-        <ScrollView
-            style={styles.leaderboardContainer}
-            contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
-            showsVerticalScrollIndicator={false}
-        >
-            {players.map((player, index) => (
-                <View key={player.id} style={styles.leaderboardItem}>
-                    <View style={styles.leaderboardIndex}>
-                        <Text style={[styles.positionText, {
-                            color: index === 0 ? '#FFD700' :
-                                index === 1 ? '#C0C0C0' :
-                                    index === 2 ? '#CD7F32' :
-                                        '#666'
-                        }]}>
-                            #{index + 1}
-                        </Text>
-                    </View>
-                    <View style={styles.playerInfo}>
-                        <Text style={[styles.nicknameText, { color: '#fff' }]} numberOfLines={1}>
-                            {player.nickname || player.username || player.id || 'Anonymous'}
-                        </Text>
-                        <Text style={[styles.rankText, { color: RANK_COLORS[getRankKey(player.rank)] || theme.colors.accent }]}>
-                            {t(`rank_${(player.rank || '').toLowerCase().replace(/ /g, '_')}`) || player.rank}
-                        </Text>
-                    </View>
-                    <View style={styles.scoreInfo}>
-                        <Text style={[styles.scoreText, { color: theme.colors.accent }]}>
-                            {(player.totalScore || 0).toLocaleString()}
-                        </Text>
-                        <Text style={styles.scoreLabel}>DC</Text>
-                    </View>
+    const meInTop = players.find(p => (p.username || p.id) === user?.username);
 
-                    {/* Reporting Action - Discrete IconButton with Hover for PC */}
-                    {(player.username || player.id) !== user?.username && (
-                        <PremiumIconButton
-                            icon={<ReportIcon size={14} color="rgba(239, 68, 68, 0.45)" />}
-                            onPress={() => {
-                                setPlayerToReport(player);
-                                setShowReportModal(true);
-                                HapticsService.trigger('impactLight');
-                            }}
-                            size={28}
-                            style={{ 
-                                marginLeft: 4,
-                                backgroundColor: 'transparent',
-                            }}
-                            hoverColor="rgba(239, 68, 68, 0.12)"
-                        />
-                    )}
-                </View>
-            ))}
+    return (
+        <View style={{ flex: 1 }}>
+            <ScrollView
+                style={styles.leaderboardContainer}
+                contentContainerStyle={{ paddingBottom: 160 + insets.bottom }}
+                showsVerticalScrollIndicator={false}
+            >
+                {players.map((player, index) => {
+                    const isMe = (player.username || player.id) === user?.username;
+                    return (
+                        <View key={player.id} style={[styles.leaderboardItem, isMe && styles.leaderboardItemMe]}>
+                            <View style={styles.leaderboardIndex}>
+                                <Text style={[styles.positionText, {
+                                    color: index === 0 ? '#FFD700' :
+                                        index === 1 ? '#C0C0C0' :
+                                            index === 2 ? '#CD7F32' :
+                                                '#666'
+                                }]}>
+                                    #{index + 1}
+                                </Text>
+                            </View>
+                            <View style={styles.playerInfo}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={[styles.nicknameText, { color: '#fff' }]} numberOfLines={1}>
+                                        {player.nickname || player.username || player.id || 'Anonymous'}
+                                    </Text>
+                                    {isMe && (
+                                        <View style={[styles.meBadge, { backgroundColor: theme.colors.accent }]}>
+                                            <Text style={styles.meBadgeText}>{t('you_label') || 'TU'}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <Text style={[styles.rankText, { color: RANK_COLORS[getRankKey(player.rank)] || theme.colors.accent }]}>
+                                    {t(`rank_${(player.rank || '').toLowerCase().replace(/ /g, '_')}`) || player.rank}
+                                </Text>
+                            </View>
+                            <View style={styles.scoreInfo}>
+                                <Text style={[styles.scoreText, { color: theme.colors.accent }]}>
+                                    {(player.totalScore || 0).toLocaleString()}
+                                </Text>
+                                <Text style={styles.scoreLabel}>DC</Text>
+                            </View>
+
+                            {/* Reporting Action - Discrete IconButton with Hover for PC */}
+                            {(player.username || player.id) !== user?.username && (
+                                <PremiumIconButton
+                                    icon={<ReportIcon size={14} color="rgba(239, 68, 68, 0.45)" />}
+                                    onPress={() => {
+                                        setPlayerToReport(player);
+                                        setShowReportModal(true);
+                                        HapticsService.trigger('impactLight');
+                                    }}
+                                    size={28}
+                                    style={{
+                                        marginLeft: 4,
+                                        backgroundColor: 'transparent',
+                                    }}
+                                    hoverColor="rgba(239, 68, 68, 0.12)"
+                                />
+                            )}
+                        </View>
+                    );
+                })}
+
+                {/* My Rank Footer (In-list) if not in Top list */}
+                {!meInTop && user && (
+                    <View style={styles.myRankSticky}>
+                        <Text style={styles.myRankLabel}>
+                            {t('your_position_label') || "LA TUA POSIZIONE ATTUALE"}
+                        </Text>
+                        <View style={[styles.leaderboardItem, styles.leaderboardItemMe, { marginHorizontal: 0 }, { borderColor: theme.colors.accent }]}>
+                            <View style={styles.leaderboardIndex}>
+                                <Text style={[styles.positionText, { color: '#888' }]}>
+                                    ??
+                                </Text>
+                            </View>
+                            <View style={styles.playerInfo}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={[styles.nicknameText, { color: '#fff' }]} numberOfLines={1}>
+                                        {user.nickname || user.username || 'Anonymous'}
+                                    </Text>
+                                    <View style={[styles.meBadge, { backgroundColor: theme.colors.accent }]}>
+                                        <Text style={styles.meBadgeText}>{t('you_label') || 'TU'}</Text>
+                                    </View>
+                                </View>
+                                <Text style={[styles.rankText, { color: RANK_COLORS[getRankKey(user.rank)] || theme.colors.accent }]}>
+                                    {t(`rank_${(user.rank || '').toLowerCase().replace(/ /g, '_')}`) || user.rank}
+                                </Text>
+                            </View>
+                            <View style={styles.scoreInfo}>
+                                <Text style={[styles.scoreText, { color: theme.colors.accent }]}>
+                                    {(user.totalScore || 0).toLocaleString()}
+                                </Text>
+                                <Text style={styles.scoreLabel}>DC</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+            </ScrollView>
 
             {/* Existing Modal Reuse for Reporting */}
             <ConfirmationModal
@@ -763,21 +859,43 @@ const LeaderboardSection = ({ t, theme, insets, players, setPlayers, loading, se
                 onConfirm={async () => {
                     if (playerToReport) {
                         try {
-                            await reportPlayer(playerToReport.username || playerToReport.id);
-                            HapticsService.trigger('success');
+                            const result = await reportPlayer(playerToReport.username || playerToReport.id);
+                            if (result.success) {
+                                setToast({
+                                    visible: true,
+                                    message: t('toast_report_sent'),
+                                    type: 'success'
+                                });
+                                HapticsService.trigger('success');
+                            } else {
+                                let msg = t('toast_report_error');
+                                if (result.code === 'COOLDOWN') msg = t('toast_report_cooldown');
+                                else if (result.code === 'ALREADY_REPORTED') msg = t('toast_already_reported');
+                                else if (result.code === 'SELF_REPORT') msg = t('toast_report_self');
+
+                                setToast({
+                                    visible: true,
+                                    message: msg,
+                                    type: 'error'
+                                });
+                                HapticsService.trigger('error');
+                            }
                         } catch (e) {
                             console.error("[REPORT] Failed:", e);
+                            setToast({
+                                visible: true,
+                                message: t('toast_report_error'),
+                                type: 'error'
+                            });
                         }
                         setShowReportModal(false);
-                        setPlayerToReport(null);
                     }
                 }}
                 onClose={() => {
                     setShowReportModal(false);
-                    setPlayerToReport(null);
                 }}
             />
-        </ScrollView>
+        </View>
     );
 };
 

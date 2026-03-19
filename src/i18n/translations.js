@@ -89,6 +89,7 @@ export const translations = {
         rank_capo_supremo: "Capo Supremo",
         next_rank_points: "%{points} DC per %{rank}", // [NEW] Use 'per' in Italian
         max_rank_reached: "Rank Massimo Raggiunto!",
+        you_label: "TU",
 
         ok_btn: "OK",
         agree_btn: "ACCETTO",
@@ -132,6 +133,8 @@ export const translations = {
         player_joined_toast: "%{name} SI È UNITO ALLA STANZA",
         player_offline_toast: "%{name} È ANDATO OFFLINE",
         player_online_toast: "%{name} È TORNATO ONLINE",
+        is_offline_short: "OFFLINE",
+        is_online_short: "ONLINE",
 
         // LOBBY / IDENTITY
         who_are_you: "CHI SEI?",
@@ -465,6 +468,7 @@ export const translations = {
         archive_title: "ARCHIVIO",
         archive_intro: "Dettagli tecnici, informativa legale e opzioni per supportare lo sviluppo del progetto indipendente.",
         section_leaderboard: "CLASSIFICA",
+        your_position_label: "LA TUA POSIZIONE ATTUALE",
         section_contacts: "CONTATTI", // [NEW]
         section_donate: "SUPPORTO AL PROGETTO",
         section_credits: "CREDITI",
@@ -602,6 +606,10 @@ export const translations = {
         report_player_msg: "Vuoi segnalare %{name} per comportamento inappropriato o nome offensivo?",
         report_btn: "SEGNALA",
         toast_report_sent: "Segnalazione inviata. Grazie.",
+        toast_report_cooldown: "Attendi un minuto prima di un'altra segnalazione.",
+        toast_already_reported: "Hai già segnalato questo utente nelle ultime 24 ore.",
+        toast_report_self: "Non puoi segnalare te stesso.",
+        toast_report_error: "Errore durante l'invio della segnalazione.",
 
         // PWA INSTALL
         install_app_title: "INSTALLA L'APP",
@@ -623,7 +631,7 @@ export const translations = {
         tut_quickjoin: "Tocca qui per buttarti subito in una partita pubblica!",
         tut_create_code: "Crea una stanza pubblica o privata per sfidare i tuoi amici, oppure inserisci un codice invito.",
         tut_rooms: "Qui compariranno le stanze dei tuoi complici e le partite pubbliche attive.",
-        tut_shop: "Aumenta i tuoi DC e compra Temi, Skin per le carte, Cornici per l'avatar e pacchetti espansione.",
+        tut_shop: "Aumenta i tuoi Dirty Cash (DC) e compra Temi, Skin per le carte, Cornici per l'avatar e pacchetti espansione.",
         tut_style: "Seleziona e usa i Temi, le Skin e le Cornici che hai sbloccato nello Shop.",
         tut_friends: "Aggiungi complici alla tua banda per vedere le stanze che aprono e mostrare loro le tue.",
         tut_settings: "Gestisci notifiche, suoni, animazioni, l'account o invia un'idea per una nuova carta.",
@@ -766,6 +774,8 @@ export const translations = {
         player_joined_toast: "%{name} JOINED THE ROOM",
         player_offline_toast: "%{name} WENT OFFLINE",
         player_online_toast: "%{name} IS BACK ONLINE",
+        is_offline_short: "OFFLINE",
+        is_online_short: "ONLINE",
 
         // LOBBY / IDENTITY
         who_are_you: "WHO ARE YOU?",
@@ -1131,6 +1141,7 @@ export const translations = {
         archive_title: "ARCHIVE",
         archive_intro: "Technical details, legal information, and project support options.",
         section_leaderboard: "RANKING",
+        your_position_label: "YOUR CURRENT POSITION",
         section_contacts: "CONTACTS", // [NEW]
         section_donate: "SUPPORT THE PROJECT",
         section_credits: "CREDITS",
@@ -1210,6 +1221,10 @@ export const translations = {
         report_player_msg: "Do you want to report %{name} for inappropriate behavior or offensive name?",
         report_btn: "REPORT",
         toast_report_sent: "Report sent. Thank you.",
+        toast_report_cooldown: "Wait a minute before another report.",
+        toast_already_reported: "You've already reported this user in the last 24 hours.",
+        toast_report_self: "You cannot report yourself.",
+        toast_report_error: "Error sending report.",
 
 
         contacts_content: "To report bugs, suggest new ideas, or join the community, you can open an issue on GitHub, join the official subreddit, or send an email.",
@@ -1258,7 +1273,7 @@ export const translations = {
         tut_quickjoin: "Tap here to jump straight into a public match!",
         tut_create_code: "Create a public or private room to challenge your friends, or enter an invite code.",
         tut_rooms: "Here you will find your accomplices' rooms and active public matches.",
-        tut_shop: "Increase your DC and buy Themes, Card Skins, Avatar Frames, and expansion packs.",
+        tut_shop: "Increase your Dirty Cash (DC) and buy Themes, Card Skins, Avatar Frames, and expansion packs.",
         tut_style: "Select and equip the Themes, Skins, and Frames you've unlocked in the Shop.",
         tut_friends: "Add accomplices to your gang to see the rooms they open and allow them to see yours.",
         tut_settings: "Manage notifications, sounds, animations, your account, or submit a new card idea.",
@@ -1268,5 +1283,7 @@ export const translations = {
         frame_ice_king: "Ice King",
         frame_midas_touch: "Midas Touch",
         skin_magma: "Magma",
+        you_label: "YOU",
+        your_position_label: "YOUR CURRENT POSITION"
     },
 };

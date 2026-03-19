@@ -46,7 +46,9 @@ export const useLiquidScale = (currentPos, startPos, targetPos, isDragging, maxS
  * @param {number} nextTarget 
  */
 export const updateLiquidAnchors = (startPos, targetPos, isDragging, currentVal, nextTarget) => {
-    'worklet'; // Mark as worklet if calling from UI thread, though usually called from JS
+    // [FIX] Removed 'worklet' marker as it's typically called from JS thread (PanResponder)
+    // and marking it as a worklet can lead to "Tried to modify key current" warnings if 
+    // arguments are captured in a way that Reanimated tries to serialize the scope.
     isDragging.value = false;
     startPos.value = currentVal;
     targetPos.value = nextTarget;

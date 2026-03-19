@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useRef, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef, useMemo, useCallback } from 'react';
 import { Alert, Platform, AppState } from 'react-native'; // Alert kept for fatal errors if absolutely needed, but avoiding user facing ones
 import { db } from '../services/firebase';
 import { ref, set, get, update, onValue, runTransaction, onDisconnect, child } from 'firebase/database';
@@ -30,8 +30,9 @@ export const GameProvider = ({ children }) => {
     const [roomPlayerName, setRoomPlayerName] = useState(null); // [NEW] Track the specific name used in current room
     const [gameDataLoaded, setGameDataLoaded] = useState(GameDataService.isLoaded); // [NEW]
     const [joinNotification, setJoinNotification] = useState(null); // [NEW] Track arrival of new players
+    const [statusNotification, setStatusNotification] = useState(null); // [NEW] For discreet online/offline
     const prevPlayersRef = useRef({}); // [NEW] Track previous player list for arrival logic
-    const playerOnlineListeners = useRef({}); // [FIX] Dedicated per-player online listeners for instant offline detection
+    const playerOnlineListeners = useRef({}); // [NEW] Dedicated per-player online listeners for instant detection
 
     // [NEW] Computed user state from AuthContext
     const user = useMemo(() => {
@@ -488,53 +489,34 @@ export const GameProvider = ({ children }) => {
             const currentPlayers = roomData.giocatori;
             const prevPlayers = prevPlayersRef.current || {};
 
-            // Find players in current that weren't in prev
+            // 1. Process Transitions
             Object.keys(currentPlayers).forEach(pName => {
-                const isNew = !prevPlayers[pName];
-                // Only notify for OTHER players, and ignore if it's the first load (prevPlayers empty)
                 const me = (roomPlayerName || user?.name || user?.username || '').trim().toLowerCase();
                 const pNameLower = pName.trim().toLowerCase();
                 const isNotMe = pNameLower !== me && pNameLower !== (user?.name || '').trim().toLowerCase();
-                if (isNew && isNotMe && Object.keys(prevPlayers).length > 0) {
-                    console.log(`[GAME] Player joined: ${pName}`);
+                if (!isNotMe) return;
+
+                const isNew = !prevPlayers[pName];
+                if (isNew && Object.keys(prevPlayers).length > 0) {
                     setJoinNotification({ name: pName, type: 'join', timestamp: Date.now() });
                 }
             });
 
-            // Find players that went offline
-            Object.keys(prevPlayers).forEach(pName => {
-                const wasOnline = prevPlayers[pName]?.online;
-                const isNowOffline = currentPlayers[pName] && currentPlayers[pName].online === false;
-                const isNowOnline = currentPlayers[pName] && currentPlayers[pName].online === true;
-
-                const me = (roomPlayerName || user?.name || user?.username || '').trim().toLowerCase();
-                const pNameLower = pName.trim().toLowerCase();
-                const isNotMe = pNameLower !== me && pNameLower !== (user?.name || '').trim().toLowerCase();
-
-                if (wasOnline && isNowOffline) {
-                    if (isNotMe) {
-                        console.log(`[GAME] Player went offline: ${pName}`);
-                        setJoinNotification({ name: pName, type: 'offline', timestamp: Date.now() });
-                    }
-                } else if (wasOnline === false && isNowOnline) {
-                    if (isNotMe) {
-                        console.log(`[GAME] Player back online: ${pName}`);
-                        setJoinNotification({ name: pName, type: 'online', timestamp: Date.now() });
-                    }
-                }
+            // 2. Snapshot current state into Ref (Deep-ish clone for safety)
+            const snapshot = {};
+            Object.keys(currentPlayers).forEach(k => {
+                snapshot[k] = { ...currentPlayers[k] };
             });
-
-            // Update ref
-            prevPlayersRef.current = currentPlayers;
+            prevPlayersRef.current = snapshot;
         } else {
             prevPlayersRef.current = {};
         }
     }, [roomData?.giocatori, roomPlayerName, user?.name, user?.username, roomCode]);
 
-    const clearJoinNotification = () => setJoinNotification(null);
+    const clearJoinNotification = useCallback(() => setJoinNotification(null), []);
+    const clearStatusNotification = useCallback(() => setStatusNotification(null), []);
 
-    // [FIX] Dedicated per-player online listeners — fires IMMEDIATELY on onDisconnect
-    // without waiting for any other DB write to trigger the general room listener.
+    // [FIX] Restore dedicated per-player listeners for "instant" and "accurate" status
     useEffect(() => {
         if (!roomCode || !roomData?.giocatori) return;
 
@@ -548,38 +530,41 @@ export const GameProvider = ({ children }) => {
             if (pNameLower === me) return; // Skip self
 
             const onlineRef = ref(db, `stanze/${roomCode}/giocatori/${pName}/online`);
-            let lastKnownOnline = roomData.giocatori[pName]?.online;
+            let lastValue = roomData.giocatori[pName]?.online; // Initial value
 
             const unsub = onValue(onlineRef, (snap) => {
                 const isNowOnline = snap.val() === true;
-                // Fire toast only on the transition true → false OR false → true
-                if (lastKnownOnline === true && isNowOnline === false) {
-                    setJoinNotification({ name: pName, type: 'offline', timestamp: Date.now() });
-                } else if (lastKnownOnline === false && isNowOnline === true) {
-                    setJoinNotification({ name: pName, type: 'online', timestamp: Date.now() });
+                if (lastValue !== undefined && lastValue !== isNowOnline) {
+                    // State changed!
+                    setStatusNotification({ 
+                        name: pName, 
+                        type: isNowOnline ? 'online' : 'offline', 
+                        timestamp: Date.now() 
+                    });
                 }
-                lastKnownOnline = isNowOnline;
+                lastValue = isNowOnline;
             });
 
             playerOnlineListeners.current[pName] = unsub;
         });
 
-        // Remove listeners for players who left the room entirely
+        // Cleanup: remove listeners for players who left the room
         Object.keys(playerOnlineListeners.current).forEach((pName) => {
             if (!roomData.giocatori[pName]) {
-                playerOnlineListeners.current[pName](); // unsub
+                if (typeof playerOnlineListeners.current[pName] === 'function') {
+                    playerOnlineListeners.current[pName](); // unsub
+                }
                 delete playerOnlineListeners.current[pName];
             }
         });
-
-        // Cleanup: detach all listeners when leaving the room
-        return () => { };
     }, [roomData?.giocatori, roomCode, roomPlayerName, user?.name]);
 
-    // Cleanup all player online listeners on unmount or room exit
+    // Global cleanup on room leave
     useEffect(() => {
         if (!roomCode) {
-            Object.values(playerOnlineListeners.current).forEach(unsub => unsub());
+            Object.values(playerOnlineListeners.current).forEach(unsub => {
+                if (typeof unsub === 'function') unsub();
+            });
             playerOnlineListeners.current = {};
         }
     }, [roomCode]);
@@ -1601,10 +1586,12 @@ export const GameProvider = ({ children }) => {
         updateRoomSettings,
         startGame, playCards, confirmDominusSelection, nextRound, discardCard, useAIJoker, forceReveal, bribeHand, dominusDiscardPlayerHand, // [NEW]
         isCreator, isDominus, myHand, roomPlayerName, gameDataLoaded,
-        joinNotification, clearJoinNotification // [NEW]
+        joinNotification, clearJoinNotification, // [NEW]
+        statusNotification, clearStatusNotification // [NEW]
     }), [
         user, roomCode, roomData, loading, error, availableRooms,
-        isCreator, isDominus, myHand, roomPlayerName, gameDataLoaded
+        isCreator, isDominus, myHand, roomPlayerName, gameDataLoaded,
+        joinNotification, clearJoinNotification, statusNotification, clearStatusNotification
     ]);
 
     return (

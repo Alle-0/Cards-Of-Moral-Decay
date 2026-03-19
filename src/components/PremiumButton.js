@@ -94,7 +94,7 @@ const PremiumButton = ({
             }, contentContainerStyle]} // Merge prop
         >
             <Text
-                style={[styles.text, { fontFamily: 'CinzelBold' }, getTextStyle(), textStyle]}
+                style={[styles.text, { fontFamily: 'CinzelBold' }, getTextStyle(), Platform.OS === 'web' && { paddingTop: 2.5, paddingBottom: 0 }, textStyle]}
                 numberOfLines={1}
                 adjustsFontSizeToFit={true}
                 minimumFontScale={0.7}

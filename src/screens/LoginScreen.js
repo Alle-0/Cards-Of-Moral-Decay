@@ -62,6 +62,40 @@ const TabItem = ({ label, index, dragX, onPress }) => {
     );
 };
 
+const LangItem = ({ lang, isActive, setLanguage }) => {
+    const hoverScale = useSharedValue(1);
+    const hoverStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: hoverScale.value }],
+        backgroundColor: isActive ? 'rgba(255, 215, 0, 0.25)' : 'rgba(255,255,255,0.05)'
+    }));
+
+    return (
+        <Pressable
+            onPress={() => setLanguage(lang)}
+            onHoverIn={() => { hoverScale.value = withTiming(1.1, { duration: 150 }); }}
+            onHoverOut={() => { hoverScale.value = withTiming(1, { duration: 150 }); }}
+        >
+            <Animated.View
+                style={[{
+                    paddingVertical: 5,
+                    paddingHorizontal: 10,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: isActive ? '#FFD700' : 'rgba(255,255,255,0.1)'
+                }, hoverStyle]}
+            >
+                <Text style={{
+                    color: isActive ? '#FFD700' : '#888',
+                    fontFamily: 'CinzelBold',
+                    fontSize: 11
+                }}>
+                    {lang.toUpperCase()}
+                </Text>
+            </Animated.View>
+        </Pressable>
+    );
+};
+
 export default function LoginScreen() {
     const { signUp, recoverAccount, devLogin, loading: authLoading, user: authUserSession } = useAuth();
     const { t } = useLanguage();
@@ -309,38 +343,13 @@ export default function LoginScreen() {
                 <View style={{ position: 'absolute', top: 20, right: 20, zIndex: 10, flexDirection: 'row', gap: 8 }}>
                     {['it', 'en'].map((lang) => {
                         const { language, setLanguage } = useLanguage();
-                        const isActive = language === lang;
-                        const hoverScale = useSharedValue(1);
-                        const hoverStyle = useAnimatedStyle(() => ({
-                            transform: [{ scale: hoverScale.value }],
-                            backgroundColor: isActive ? 'rgba(255, 215, 0, 0.25)' : 'rgba(255,255,255,0.05)'
-                        }));
-
                         return (
-                            <Pressable
-                                key={lang}
-                                onPress={() => setLanguage(lang)}
-                                onHoverIn={() => { hoverScale.value = withTiming(1.1, { duration: 150 }); }}
-                                onHoverOut={() => { hoverScale.value = withTiming(1, { duration: 150 }); }}
-                            >
-                                <Animated.View
-                                    style={[{
-                                        paddingVertical: 5,
-                                        paddingHorizontal: 10,
-                                        borderRadius: 8,
-                                        borderWidth: 1,
-                                        borderColor: isActive ? '#FFD700' : 'rgba(255,255,255,0.1)'
-                                    }, hoverStyle]}
-                                >
-                                    <Text style={{
-                                        color: isActive ? '#FFD700' : '#888',
-                                        fontFamily: 'CinzelBold',
-                                        fontSize: 11
-                                    }}>
-                                        {lang.toUpperCase()}
-                                    </Text>
-                                </Animated.View>
-                            </Pressable>
+                            <LangItem 
+                                key={lang} 
+                                lang={lang} 
+                                isActive={language === lang} 
+                                setLanguage={setLanguage} 
+                            />
                         );
                     })}
                 </View>

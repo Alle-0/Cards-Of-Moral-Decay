@@ -33,6 +33,7 @@ import SoundService from '../services/SoundService';
 import HapticsService from '../services/HapticsService'; // [FIX] Import added
 import * as Clipboard from 'expo-clipboard';
 import ToastNotification from '../components/ToastNotification';
+import StatusToast from '../components/StatusToast'; // [NEW]
 import EfficientBlurView from '../components/EfficientBlurView'; // [NEW]
 import { CardsIcon, CheckIcon, ThornsIcon, LockIcon, RankIcon, SettingsIcon, RobotIcon, DirtyCashIcon, CashBagIcon, ScaleIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ShareIcon, EyeIcon, EyeOffIcon, InfoIcon } from '../components/Icons';
 import ShopScreen from './ShopScreen'; // [NEW]
@@ -46,6 +47,47 @@ import { CHAOS_EVENTS, CHAOS_EVENT_DETAILS } from '../constants/ChaosEvents'; //
 
 
 
+
+// [NEW] Premium Online Dot with Pulse
+const StatusDot = ({ isOnline }) => {
+    const pulse = useSharedValue(1);
+
+    useEffect(() => {
+        if (isOnline) {
+            pulse.value = withRepeat(
+                withSequence(
+                    withTiming(1.3, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+                    withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+                ),
+                -1,
+                true
+            );
+        } else {
+            pulse.value = withTiming(1);
+        }
+    }, [isOnline]);
+
+    const dotStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: pulse.value }],
+        opacity: interpolate(pulse.value, [1, 1.3], [1, 0.6])
+    }));
+
+    return (
+        <View style={{ width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
+            {isOnline && (
+                <Animated.View style={[
+                    { position: 'absolute', width: 14, height: 14, borderRadius: 7, backgroundColor: '#4ade80' },
+                    dotStyle
+                ]} />
+            )}
+            <View style={{
+                width: 10, height: 10, borderRadius: 5,
+                backgroundColor: isOnline ? '#4ade80' : '#636e72',
+                borderWidth: 1.5, borderColor: '#111'
+            }} />
+        </View>
+    );
+};
 
 // 2. Player Item for Lobby (Desktop Hover Support)
 const PlayerLobbyItem = ({ player: p, index, t }) => {
@@ -66,10 +108,10 @@ const PlayerLobbyItem = ({ player: p, index, t }) => {
                 </Animated.View>
                 <View style={{
                     position: 'absolute', bottom: 2, right: 2,
-                    width: 14, height: 14, borderRadius: 7,
-                    backgroundColor: (p.isOnline || p.name === 'Rando') ? '#4ade80' : '#666',
-                    borderWidth: 2, borderColor: '#111'
-                }} />
+                    zIndex: 10
+                }}>
+                    <StatusDot isOnline={p.online || p.name === 'Rando'} />
+                </View>
             </Pressable>
             <Text style={{ color: '#e2e8f0', fontFamily: 'OutfitBold', fontSize: 13, textAlign: 'center', maxWidth: 80 }} numberOfLines={1}>
                 {p.name}
@@ -128,7 +170,8 @@ const GameScreen = ({ onStartLoading }) => {
         isCreator, isDominus, myHand,
         leaveRoom, startGame, playCards, confirmDominusSelection, nextRound,
         discardCard, useAIJoker, forceReveal, kickPlayer, bribeHand, dominusDiscardPlayerHand, // [NEW]
-        updateRoomSettings, roomPlayerName, gameDataLoaded
+        updateRoomSettings, roomPlayerName, gameDataLoaded,
+        statusNotification, clearStatusNotification // [NEW]
     } = useGame();
     const { theme } = useTheme();
     const { bribe: payBribe, awardMoney, logout, user: authUser } = useAuth(); // [NEW] get authUser for skins
@@ -249,10 +292,10 @@ const GameScreen = ({ onStartLoading }) => {
     }, [roomData?.vincitoreTurno, roomData?.statoTurno, roomData?.statoPartita]);
 
     // [NEW] Dictator Victim Client Effect
-    const lastDictatorTime = useRef(0);
+    const lastDictatorTime = useSharedValue(0);
     useEffect(() => {
-        if (roomData?.dictatorVictim && roomData.dictatorVictim.name === (roomPlayerName || user?.name) && roomData.dictatorVictim.timestamp > lastDictatorTime.current) {
-            lastDictatorTime.current = roomData.dictatorVictim.timestamp;
+        if (roomData?.dictatorVictim && roomData.dictatorVictim.name === (roomPlayerName || user?.name) && roomData.dictatorVictim.timestamp > lastDictatorTime.value) {
+            lastDictatorTime.value = roomData.dictatorVictim.timestamp;
             triggerShake();
             HapticsService.trigger('heavy');
             setToast({
@@ -792,7 +835,7 @@ const GameScreen = ({ onStartLoading }) => {
                     style={[
                         styles.codePill,
                         isSmallScreen && { paddingVertical: 2, paddingHorizontal: 6, height: 'auto' },
-                        !showRoomCode && { paddingHorizontal: 8, borderColor: 'rgba(212, 175, 55, 0.2)' } // Tighter padding
+                        !showRoomCode && { paddingHorizontal: 8, borderColor: theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}40` : 'rgba(212, 175, 55, 0.2)' } // Tighter padding
                     ]}
                     rippleColor="rgba(255,255,255,0.1)"
                 >
@@ -844,7 +887,7 @@ const GameScreen = ({ onStartLoading }) => {
 
     const renderGuestSettingsSummary = () => {
         const activePacks = [];
-        activePacks.push(t('base_pack'));
+        if (allowedPackages?.base) activePacks.push(t('base_pack'));
         if (allowedPackages?.dark) activePacks.push("DARK");
         if (allowedPackages?.chill) activePacks.push("CHILL");
         if (allowedPackages?.spicy) activePacks.push("SPICY");
@@ -869,13 +912,13 @@ const GameScreen = ({ onStartLoading }) => {
                     paddingHorizontal: 15,
                     borderRadius: 20,
                     borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.05)',
+                    borderColor: theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}40` : 'rgba(255,255,255,0.05)',
                     gap: 10
                 }}>
                     <Text style={{
                         fontFamily: 'CinzelBold',
                         fontSize: 10,
-                        color: '#d4af37',
+                        color: theme.colors.accent,
                         letterSpacing: 1
                     }}>
                         {roomLanguage?.toUpperCase()} <Text style={{ color: 'rgba(255,255,255,0.1)' }}>•</Text> {targetPoints} {t('points_label').toUpperCase()}
@@ -945,12 +988,12 @@ const GameScreen = ({ onStartLoading }) => {
             <View style={{ width: '100%', alignItems: 'center', marginTop: isDesktop ? 20 : 0, marginBottom: isDesktop ? 0 : 20 }}>
                 <PremiumPressable
                     onPress={handleShareRoom}
-                    style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: 'rgba(212, 175, 55, 0.05)', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.2)' }}
-                    rippleColor="rgba(212, 175, 55, 0.1)"
+                    style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}10` : 'rgba(212, 175, 55, 0.05)', borderWidth: 1, borderColor: theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}40` : 'rgba(212, 175, 55, 0.2)' }}
+                    rippleColor={theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}20` : "rgba(212, 175, 55, 0.1)"}
                 >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <ShareIcon size={12} color="#d4af37" />
-                        <Text style={{ fontFamily: 'CinzelBold', fontSize: 11, color: '#d4af37', letterSpacing: 1 }}>
+                        <ShareIcon size={12} color={theme.colors.accent} />
+                        <Text style={{ fontFamily: 'CinzelBold', fontSize: 11, color: theme.colors.accent, letterSpacing: 1 }}>
                             {t('invite_friends_btn', { defaultValue: "INVITA" })}
                         </Text>
                     </View>
@@ -1014,12 +1057,12 @@ const GameScreen = ({ onStartLoading }) => {
                                 <View style={{ alignItems: 'center', gap: 6 }}>
                                     <PremiumPressable
                                         onPress={handleShareRoom}
-                                        style={{ paddingVertical: 10, paddingHorizontal: 22, borderRadius: 22, backgroundColor: 'rgba(212, 175, 55, 0.06)', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.25)' }}
+                                        style={{ paddingVertical: 10, paddingHorizontal: 22, borderRadius: 22, backgroundColor: theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}10` : 'rgba(212, 175, 55, 0.06)', borderWidth: 1, borderColor: theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}40` : 'rgba(212, 175, 55, 0.25)' }}
                                         rippleColor="rgba(212, 175, 55, 0.1)"
                                     >
                                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                            <ShareIcon size={13} color="#d4af37" />
-                                            <Text style={{ fontFamily: 'CinzelBold', fontSize: 12, color: '#d4af37', letterSpacing: 1 }}>
+                                            <ShareIcon size={13} color={theme.colors.accent} />
+                                            <Text style={{ fontFamily: 'CinzelBold', fontSize: 12, color: theme.colors.accent, letterSpacing: 1 }}>
                                                 {t('invite_friends_btn', { defaultValue: "INVITE FRIENDS" })}
                                             </Text>
                                         </View>
@@ -1118,10 +1161,10 @@ const GameScreen = ({ onStartLoading }) => {
 
                     {playersList.length < 2 && (
                         <View style={{ width: '100%', alignItems: 'center', marginBottom: 20 }}>
-                            <PremiumPressable onPress={handleShareRoom} style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: 'rgba(212, 175, 55, 0.05)', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.2)' }} rippleColor="rgba(212, 175, 55, 0.1)">
+                            <PremiumPressable onPress={handleShareRoom} style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}10` : 'rgba(212, 175, 55, 0.05)', borderWidth: 1, borderColor: theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}40` : 'rgba(212, 175, 55, 0.2)' }} rippleColor={theme.colors.accent?.startsWith('#') ? `${theme.colors.accent}20` : "rgba(212, 175, 55, 0.1)"}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                    <ShareIcon size={12} color="#d4af37" />
-                                    <Text style={{ fontFamily: 'CinzelBold', fontSize: 11, color: '#d4af37', letterSpacing: 1 }}>{t('invite_friends_btn', { defaultValue: "INVITA" })}</Text>
+                                    <ShareIcon size={12} color={theme.colors.accent} />
+                                    <Text style={{ fontFamily: 'CinzelBold', fontSize: 11, color: theme.colors.accent, letterSpacing: 1 }}>{t('invite_friends_btn', { defaultValue: "INVITA" })}</Text>
                                 </View>
                             </PremiumPressable>
                             <Text style={{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>{t('min_players_hint', { defaultValue: "Serve almeno 1 amico." })}</Text>
@@ -1430,7 +1473,7 @@ const GameScreen = ({ onStartLoading }) => {
 
     return (
         <Animated.View style={[{ flex: 1 }, animatedContainerStyle]}>
-            <PremiumBackground showParticles={roomData?.statoPartita !== 'LOBBY'}>
+            <PremiumBackground showParticles={true}>
                 <StatusBar hidden={true} />
 
                 <View style={styles.container}>
@@ -1605,6 +1648,7 @@ const GameScreen = ({ onStartLoading }) => {
                     status={roomData?.statoTurno} // [NEW] Pass turn status
                     playedPlayers={roomData?.carteGiocate ? Object.keys(roomData.carteGiocate) : []} // [NEW] Pass who played
                     isDesktop={isDesktop}
+                    setToast={setToast}
                 />
 
                 <SettingsModal
@@ -1767,7 +1811,13 @@ const GameScreen = ({ onStartLoading }) => {
                     visible={toast.visible}
                     message={toast.message}
                     type={toast.type}
-                    onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+                    onClose={() => setToast({ ...toast, visible: false })}
+                />
+
+                <StatusToast
+                    key={statusNotification ? `status-${statusNotification.timestamp}` : 'none'}
+                    notification={statusNotification}
+                    onClear={clearStatusNotification}
                 />
 
 

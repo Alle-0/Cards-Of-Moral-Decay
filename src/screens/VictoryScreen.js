@@ -314,8 +314,8 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                                                 />
                                             </View>
                                             <View style={{ flex: 1 }}>
-                                                <Text style={[styles.playerName, { color: theme.colors.textPrimary, fontSize: isDesktop ? 20 : 16 }]}>{name}</Text>
-                                                <Text style={{ fontSize: isDesktop ? 12 : 9, color: RANK_COLORS[playerRank] || '#888', fontWeight: 'bold' }}>
+                                                <Text style={[styles.playerName, { color: theme.colors.textPrimary, fontSize: isDesktop ? 18 : 15.5 }]}>{name}</Text>
+                                                <Text style={{ fontSize: isDesktop ? 11 : 10, color: RANK_COLORS[playerRank] || '#888', fontWeight: 'bold' }}>
                                                     {isRowRando ? 'BOT' : (playerRank ? t(`rank_${playerRank.toLowerCase().replace(/ /g, '_')}`, { defaultValue: playerRank }) : t('rank_anima_candida'))}
                                                 </Text>
                                             </View>
@@ -358,8 +358,8 @@ const VictoryScreen = ({ winnerName, onExit }) => {
                         {loserName && (
                             <Animated.View
                                 entering={ZoomIn.delay(2200).springify().damping(20).stiffness(90)}
-                                style={[styles.shameContainer, { 
-                                    overflow: 'hidden', 
+                                style={[styles.shameContainer, {
+                                    overflow: 'hidden',
                                     backgroundColor: 'rgba(217, 119, 6, 0.08)',
                                     maxWidth: isDesktop ? 700 : '100%',
                                     padding: isDesktop ? 24 : 18,
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        padding: 10,
+        padding: 8,
         borderRadius: 12,
     },
     rankBadge: {
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     },
     playerName: {
         fontFamily: 'Outfit',
-        fontSize: 16,
+        fontSize: 15.5,
         flex: 1,
     },
     playerScore: {

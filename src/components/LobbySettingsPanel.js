@@ -21,7 +21,7 @@ const PointItem = ({ pts, index, dragX, theme, onPress }) => {
         const color = interpolateColor(
             dragX.value,
             [itemCenter - 70, itemCenter, itemCenter + 70],
-            [theme.colors.textPrimary?.startsWith('#') ? theme.colors.textPrimary + '44' : theme.colors.textPrimary, '#000000', theme.colors.textPrimary?.startsWith('#') ? theme.colors.textPrimary + '44' : theme.colors.textPrimary]
+            ['rgba(255,255,255,0.4)', '#000000', 'rgba(255,255,255,0.4)']
         );
         return { color, fontWeight: '900' };
     });
@@ -64,7 +64,7 @@ const LanguageItem = ({ lang, index, dragX, theme, displayLang, onPress }) => {
         const color = interpolateColor(
             dragX.value,
             [itemCenter - 52, itemCenter, itemCenter + 52],
-            ['rgba(255,255,255,0.3)', '#FFFFFF', 'rgba(255,255,255,0.3)']
+            ['rgba(255,255,255,0.4)', '#000000', 'rgba(255,255,255,0.4)']
         );
         return { color, fontWeight: 'bold', opacity: hoverOpacity.value };
     });
@@ -468,7 +468,7 @@ const LobbySettingsPanel = ({ settings, updateSettings, isHost, onPreviewPack, u
                         style={[
                             styles.langIndicator,
                             langIndicatorStyle,
-                            { backgroundColor: theme.colors.accentWeak }
+                            { backgroundColor: theme.colors.accent }
                         ]}
                         pointerEvents="none"
                     />

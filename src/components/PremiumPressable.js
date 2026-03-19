@@ -117,7 +117,7 @@ const PremiumPressable = ({
                     }
                     return [
                         { width: '100%', borderRadius: effectiveBorderRadius },
-                        Platform.OS === 'web' && { flex: 1, outlineStyle: 'none', cursor: disabled ? 'default' : 'pointer', borderRadius: effectiveBorderRadius },
+                        Platform.OS === 'web' && { flex: 1, outlineStyle: 'none', cursor: disabled ? 'default' : 'pointer', borderRadius: effectiveBorderRadius, justifyContent: 'center' },
                         pressableStyle
                     ];
                 }}

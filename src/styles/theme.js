@@ -7,6 +7,7 @@ export const COLORS = {
 
     accent: '#ffd36a', // Champagne Gold (Less saturated)
     accentDark: '#d4a942', // Muted Gold
+    accentWeak: 'rgba(255, 211, 106, 0.3)', // [NEW] Soft accent for backgrounds/icons
 
     surface: 'rgba(32, 32, 32, 0.85)', // Lighter surface
     surfaceLight: 'rgba(50, 50, 60, 0.4)',

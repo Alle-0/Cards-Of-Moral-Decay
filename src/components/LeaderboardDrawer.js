@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, memo } from 'react';
-import { StyleSheet, View, Text, Pressable, Dimensions, PanResponder, TouchableWithoutFeedback, ScrollView, Platform } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Dimensions, PanResponder, TouchableWithoutFeedback, ScrollView, Platform, Alert } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS, Easing, interpolate, Extrapolate, withRepeat, interpolateColor } from 'react-native-reanimated';
 import { useTheme, AVATAR_FRAMES } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext'; // [NEW]
@@ -14,12 +14,13 @@ import LocalAvatar from './LocalAvatar';
 import { TrashIcon, CrownIcon, HaloIcon, HornsIcon, HeartIcon, MoneyIcon, ThornsIcon, CrossIcon, ReportIcon } from './Icons';
 import AvatarWithFrame from './AvatarWithFrame'; // [NEW] Standardized
 import { useAuth, RANK_COLORS } from '../context/AuthContext'; // [FIX] Added useAuth
+import HapticsService from '../services/HapticsService';
 
 const SCREEN_HEIGHT = Dimensions.get('screen').height + 120;
 
 const getRankColor = (rank) => RANK_COLORS[rank] || '#888';
 
-const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserName, isCreator, onKick, status, playedPlayers = [], isDesktop }) => {
+const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserName, isCreator, onKick, status, playedPlayers = [], isDesktop, setToast }) => {
     const { reportPlayer } = useAuth();
     // ... (rest of component start)
 
@@ -193,79 +194,107 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                         showsVerticalScrollIndicator={false}
                     >
                         <View style={styles.list}>
-                            {players.map((player, index) => (
-                                <View key={player.name} style={[styles.playerRow, { borderColor: (player.name || '').trim().toLowerCase() === (currentUserName || '').trim().toLowerCase() ? theme.colors.accent : 'rgba(255,255,255,0.1)' }]}>
-                                    {/* ... rank and avatar ... */}
-                                    <View style={styles.rankContainer}>
-                                        <Text style={[styles.rank, { color: index === 0 ? '#ffd700' : '#888' }]}>
-                                            {index + 1}
-                                        </Text>
-                                    </View>
-
-                                    <AvatarItem
-                                        player={player}
-                                        theme={theme}
-                                        isThinking={status === 'WAITING_CARDS' && !playedPlayers.includes(player.name) && !player.isDominus}
-                                    />
-
-                                    <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center' }}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={[styles.name, { color: theme.colors.textPrimary }]} numberOfLines={1}>
-                                                {player.name}
+                            {players.map((player, index) => {
+                                const isMe = (player.name || '').trim().toLowerCase() === (currentUserName || '').trim().toLowerCase();
+                                return (
+                                    <View key={player.name} style={[
+                                        styles.playerRow,
+                                        {
+                                            borderColor: isMe ? theme.colors.accent : 'rgba(255,255,255,0.1)',
+                                            borderWidth: isMe ? 2 : 1,
+                                            backgroundColor: isMe ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'
+                                        }
+                                    ]}>
+                                        <View style={styles.rankContainer}>
+                                            <Text style={[styles.rank, { color: index === 0 ? '#ffd700' : '#888' }]}>
+                                                {index + 1}
                                             </Text>
                                         </View>
-                                        <Text style={{
-                                            fontSize: 10,
-                                            color: getRankColor(player.rank || 'Anima Candida'),
-                                            fontFamily: 'Outfit',
-                                            fontWeight: 'bold',
-                                            marginTop: 0
-                                        }}>
-                                            {(() => {
-                                                const r = player.rank || 'Anima Candida';
-                                                // If already a key (starts with rank_), use it. Else format it.
-                                                const key = r.startsWith('rank_') ? r : 'rank_' + r.toLowerCase().replace(/ /g, '_');
-                                                return t(key, { defaultValue: r });
-                                            })()}
-                                        </Text>
-                                    </View>
-                                    <View style={{ width: 45, alignItems: 'flex-end', marginRight: 10 }}>
-                                        <Text style={[styles.score, { color: theme.colors.accent }]}>
-                                            {player.points || 0}
-                                        </Text>
-                                    </View>
 
-                                    <View style={{ flexDirection: 'row', width: isCreator ? 84 : 42, justifyContent: 'flex-end', alignItems: 'center' }}>
-                                        {isCreator && (
-                                            (player.name || '').trim().toLowerCase() !== (currentUserName || '').trim().toLowerCase() && player.name !== 'Rando' ? (
+                                        <AvatarItem
+                                            player={player}
+                                            theme={theme}
+                                            isThinking={status === 'WAITING_CARDS' && !playedPlayers.includes(player.name) && !player.isDominus}
+                                        />
+
+                                        <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <Text style={[styles.name, { color: theme.colors.textPrimary, fontSize: isDesktop ? 18 : 15.5 }]} numberOfLines={1}>
+                                                        {player.name}
+                                                    </Text>
+                                                    {(player.name || '').trim().toLowerCase() === (currentUserName || '').trim().toLowerCase() && (
+                                                        <View style={{
+                                                            marginLeft: 6,
+                                                            backgroundColor: theme.colors.accent,
+                                                            paddingHorizontal: 5,
+                                                            paddingVertical: 0.5,
+                                                            borderRadius: 3,
+                                                        }}>
+                                                            <Text style={{
+                                                                fontFamily: 'OutfitBold',
+                                                                color: '#000',
+                                                                fontSize: 8,
+                                                            }}>
+                                                                {t('you_label') || 'TU'}
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </View>
+                                            <Text style={{
+                                                color: getRankColor(player.rank || 'Anima Candida'),
+                                                fontFamily: 'Outfit',
+                                                fontWeight: 'bold',
+                                                fontSize: 10,
+                                                marginTop: 0
+                                            }}>
+                                                {(() => {
+                                                    const r = player.rank || 'Anima Candida';
+                                                    // If already a key (starts with rank_), use it. Else format it.
+                                                    const key = r.startsWith('rank_') ? r : 'rank_' + r.toLowerCase().replace(/ /g, '_');
+                                                    return t(key, { defaultValue: r });
+                                                })()}
+                                            </Text>
+                                        </View>
+                                        <View style={{ width: 45, alignItems: 'flex-end', marginRight: 10 }}>
+                                            <Text style={[styles.score, { color: theme.colors.accent, fontSize: 17 }]}>
+                                                {player.points || 0}
+                                            </Text>
+                                        </View>
+
+                                        <View style={{ flexDirection: 'row', width: isCreator ? 84 : 42, justifyContent: 'flex-end', alignItems: 'center' }}>
+                                            {isCreator && (
+                                                (player.name || '').trim().toLowerCase() !== (currentUserName || '').trim().toLowerCase() && player.name !== 'Rando' ? (
+                                                    <PremiumIconButton
+                                                        icon={<TrashIcon size={18} color="#ff6b6b" />}
+                                                        size={32}
+                                                        onPress={() => onKick && onKick(player)}
+                                                        style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)', borderColor: 'rgba(255, 107, 107, 0.3)', borderWidth: 1, borderRadius: 20 }}
+                                                        hoverColor="rgba(255, 107, 107, 0.25)"
+                                                    />
+                                                ) : (
+                                                    <View style={{ width: 32 }} />
+                                                )
+                                            )}
+
+                                            {(player.name || '').trim().toLowerCase() !== (currentUserName || '').trim().toLowerCase() && player.name !== 'Rando' && (
                                                 <PremiumIconButton
-                                                    icon={<TrashIcon size={18} color="#ff6b6b" />}
+                                                    icon={<ReportIcon size={18} color="#ef4444" />}
                                                     size={32}
-                                                    onPress={() => onKick && onKick(player)}
-                                                    style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)', borderColor: 'rgba(255, 107, 107, 0.3)', borderWidth: 1, borderRadius: 20 }}
-                                                    hoverColor="rgba(255, 107, 107, 0.25)"
+                                                    onPress={() => {
+                                                        setPlayerToReport(player);
+                                                        setReportedPlayerName(player.name); // [FIX]
+                                                        setShowReportModal(true);
+                                                    }}
+                                                    style={{ marginLeft: 10, backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)', borderWidth: 1, borderRadius: 20 }}
+                                                    hoverColor="rgba(239, 68, 68, 0.2)"
                                                 />
-                                            ) : (
-                                                <View style={{ width: 32 }} />
-                                            )
-                                        )}
-
-                                        {(player.name || '').trim().toLowerCase() !== (currentUserName || '').trim().toLowerCase() && player.name !== 'Rando' && (
-                                            <PremiumIconButton
-                                                icon={<ReportIcon size={18} color="#ef4444" />}
-                                                size={32}
-                                                onPress={() => {
-                                                    setPlayerToReport(player);
-                                                    setReportedPlayerName(player.name); // [FIX]
-                                                    setShowReportModal(true);
-                                                }}
-                                                style={{ marginLeft: 10, backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)', borderWidth: 1, borderRadius: 20 }}
-                                                hoverColor="rgba(239, 68, 68, 0.2)"
-                                            />
-                                        )}
+                                            )}
+                                        </View>
                                     </View>
-                                </View>
-                            ))}
+                                );
+                            })}
                         </View>
                     </ScrollView>
                 </View>
@@ -289,14 +318,40 @@ const LeaderboardDrawer = memo(({ visible, onClose, players = [], currentUserNam
                     onConfirm={async () => {
                         if (playerToReport) {
                             try {
-                                await reportPlayer(playerToReport.name);
+                                const result = await reportPlayer(playerToReport.name);
+                                if (result.success) {
+                                    if (setToast) {
+                                        setToast({
+                                            visible: true,
+                                            message: t('toast_report_sent'),
+                                            type: 'success'
+                                        });
+                                    } else {
+                                        Alert.alert(t('ok_btn'), t('toast_report_sent'));
+                                    }
+                                    HapticsService.trigger('success');
+                                } else {
+                                    let msg = t('toast_report_error');
+                                    if (result.code === 'COOLDOWN') msg = t('toast_report_cooldown');
+                                    else if (result.code === 'ALREADY_REPORTED') msg = t('toast_already_reported');
+                                    else if (result.code === 'SELF_REPORT') msg = t('toast_report_self');
+
+                                    if (setToast) {
+                                        setToast({
+                                            visible: true,
+                                            message: msg,
+                                            type: 'error'
+                                        });
+                                    } else {
+                                        Alert.alert(t('attention'), msg);
+                                    }
+                                    HapticsService.trigger('error');
+                                }
                             } catch (e) {
                                 console.error("[REPORT] Failed:", e);
                             }
                             setShowReportModal(false);
-                            // We don't clear playerToReport here immediately to avoid "undefined" 
-                            // flashes if the modal takes time to unmount.
-                            // The onClose or a timeout can handle it.
+                            setPlayerToReport(null);
                         }
                     }}
                     onClose={() => {
@@ -356,7 +411,6 @@ const styles = StyleSheet.create({
     },
     closeText: {
         color: '#888',
-        fontSize: 20,
     },
     list: {
         flex: 1,
@@ -393,11 +447,11 @@ const styles = StyleSheet.create({
     },
     name: {
         flexShrink: 1,
-        fontSize: 16,
+        fontSize: 15.5,
         fontFamily: 'OutfitBold',
     },
     score: {
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: 'bold',
         fontFamily: 'OutfitBold',
     },

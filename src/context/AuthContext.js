@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { Linking, Alert } from 'react-native'; // [FIX] Use standard react-native Linking
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -1007,19 +1007,51 @@ export const AuthProvider = ({ children }) => {
         });
     }, [user]);
 
-    // [NEW] Report Player
+    // [NEW] Report Player with 24h lockout and 60s global cooldown
+    const lastReportTime = useRef(0);
     const reportPlayer = useCallback(async (targetUsername, reason = 'Reported from Leaderboard') => {
-        if (!user) return;
-        const reportId = `${user.username}_${targetUsername}_${Date.now()}`;
-        const reportRef = ref(db, `reports/${reportId}`);
-        await set(reportRef, {
-            reporter: user.username,
-            target: targetUsername,
-            reason,
-            timestamp: serverTimestamp(),
-            status: 'PENDING'
-        });
-    }, [user]);
+        if (!user) return { success: false, code: 'ERROR' };
+        if (user.username === targetUsername) return { success: false, code: 'SELF_REPORT' };
+
+        const now = Date.now();
+        
+        // 1. Global Cooldown (60s)
+        if (now - lastReportTime.current < 60000) {
+            return { success: false, code: 'COOLDOWN' };
+        }
+
+        // 2. 24h Lockout per Target
+        const reports = user.sentReports || {};
+        const lastReportToTarget = reports[targetUsername] || 0;
+        const ONE_DAY = 24 * 60 * 60 * 1000;
+
+        if (now - lastReportToTarget < ONE_DAY) {
+            return { success: false, code: 'ALREADY_REPORTED' };
+        }
+
+        try {
+            const reportId = `${user.username}_${targetUsername}_${now}`;
+            const reportRef = ref(db, `reports/${reportId}`);
+            
+            await set(reportRef, {
+                reporter: user.username,
+                target: targetUsername,
+                reason,
+                timestamp: serverTimestamp(),
+                status: 'PENDING'
+            });
+
+            // Update user's local reporting history
+            const userReportRef = ref(db, `users/${user.username}/sentReports/${targetUsername}`);
+            await set(userReportRef, now);
+
+            lastReportTime.current = now;
+            return { success: true, code: 'SUCCESS' };
+        } catch (e) {
+            console.error("[REPORT] Failed:", e);
+            return { success: false, code: 'ERROR' };
+        }
+    }, [user, db]);
 
     // [NEW] Delete Account (Apple Compliance)
     const deleteAccount = useCallback(async () => {
