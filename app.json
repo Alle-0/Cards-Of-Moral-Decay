@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "Cards of Moral Decay",
-    "slug": "cards-of-moral-decay",
+    "version": "4.12.8",
     "scheme": "comd",
-    "version": "4.12.7",
+    "slug": "cards-of-moral-decay",
+    "name": "Cards of Moral Decay",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -20,7 +20,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.anonymous.cardsofmoraldecay",
-      "versionCode": 59,
+      "versionCode": 60,
       "googleServicesFile": "./google-services.json",
       "splash": {
         "image": "./assets/splash-custom.png",
