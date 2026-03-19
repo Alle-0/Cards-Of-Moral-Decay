@@ -1,37 +1,32 @@
 # Changelog v4.12.8
 
-## 🎨 UI & UX Enhancements
-- **Leaderboard Overhaul**:
-    - Added a **Sticky Rank Footer** in the Friends screen, allowing players to see their position at all times.
-    - Implemented **Skeleton Loading** states for a smoother user experience during data fetching.
-    - Optimized the `LeaderboardSection` component with improved list animations and responsive layouts.
-- **Victory Screen (PC Adaptation)**:
-    - Centered the main content for desktop users to avoid stretching on wide screens.
-    - Optimized avatar scaling and layout for the Winner and Shame Award sections.
-    - Refined typography and spacing for better readability on larger displays.
-- **Text Centering & Layout**:
-    - Performed a global audit and fix for text centering across multiple screens (Game, Victory, Settings, Bank).
-    - Improved the alignment of info pills and status notifications in the game lobby.
+## 🏆 Leaderboard & Social Revamp
+- **Nuova Classifica Globale**:
+    - Introdotto un **Footer Sticky per il proprio Rank**: Ora puoi vedere la tua posizione in tempo reale anche mentre scorri la classifica dei top 50.
+    - **Colorazione per Grado**: Il podio è ora evidenziato con colori dedicati (#1 Oro, #2 Argento, #3 Bronzo).
+    - **Skeleton Loading**: Aggiunti caricamenti animati professionali per la transizione dei dati.
+    - **Sistema di Report**: Integrata la possibilità di segnalare giocatori direttamente dalla classifica con una nuova interfaccia dedicata.
+- **Gestione Amici**:
+    - Aggiunta la protezione per impedire l'auto-invio di richieste di amicizia.
+    - Layout delle righe ottimizzato con badge "TU" per identificarsi facilmente nelle liste.
 
-## 🔤 Core Infrastructure & Fonts
-- **Font Normalization**: Standardized font naming conventions (e.g., `Cinzel-Bold` -> `CinzelBold`) project-wide to resolve native Android crashes (`NoSuchMethodError`) and ensure cross-platform compatibility.
-- **Animated Components**: Refined Reanimated worklets and layout transitions to prevent "Worklet" warnings on the web.
+## 🎨 UI & UX Optimizations
+- **Adattamento Desktop (Vetrina & Gioco)**:
+    - Centramento e responsive design per schermi PC nella schermata di Vittoria e nel sito ufficiale.
+    - Ottimizzazione degli avatar e dei badge di rango per display più grandi.
+- **Correzione Font**: Normalizzati i nomi dei font (`CinzelBold`, `OutfitBold`) per eliminare i crash nativi su Android e garantire la coerenza tra Web e Mobile.
+- **Centramento Globale**: Revisione di testi, info-pill e pulsanti in tutte le schermate principali per un allineamento perfetto.
 
-## 🔥 Theme & Visual Effects
-- **Pulsar Theme**: Fixed the component mapping to use `PulsarRipple` correctly. Increased the interval to **6000ms** to avoid ripple overlap.
-- **Matrix Theme**: Adjusted the code rain interval to **4000ms**.
-- **Manicomio Theme**: Restored the "scratches" effect by fixing the conditional rendering logic in `ThemeBackground.js`.
-- **Interval Optimization**: Eliminated the initial 2-second delay for interval-based themes.
-- **Lobby Visibility**: Enabled theme particle effects in the game lobby.
-- **Web Responsiveness**: Implemented `useWindowDimensions` in `ThemeBackground.js` for perfect scaling on browser resize.
+## 🔥 Temi & Effetti Grafici
+- **Pulsar Theme**: Corretto il mapping delle onde e aumentato l'intervallo a **6s** per evitare sovrapposizioni.
+- **Matrix Theme**: Intervallo del codice rain portato a **4s** per una resa più cinematografica.
+- **Manicomio Theme**: Ripristinato l'effetto "graffi" (scratches) che non veniva renderizzato correttamente.
+- **Zero Delay**: Rimosso il ritardo iniziale di 2 secondi; gli effetti partono all'istante al cambio tema.
+- **Lobby Particles**: Gli effetti particellari del tema attivo sono ora visibili anche nella lobby pre-partita.
+- **Web Responsiveness**: Integrazione di `useWindowDimensions` per il ridimensionamento dinamico degli sfondi su browser.
 
-## 🔍 SEO & Branding (Landing Page)
-- **Metadata Fix**: Added `og:site_name` and `apple-mobile-web-app-title` meta tags to ensure the correct name ("Cards of Moral Decay") appears in search engines.
-- **Authority**: Set the `canonical` URL to the official domain `https://carte-vs-umani.web.app/`.
-- **Assets Localization**: Localized 7 gameplay screenshots into `assets/images/gallery/`, removing external GitHub dependencies.
-
-## ⚙️ Versioning & Deployment
-- **Version Bump**: Updated to **v4.12.8** (Android Build **60**).
-- **Web**: Deployed the latest build to Firebase Hosting.
-- **Android**: Generated a fresh local Release APK via `gradlew`.
-- **Translations**: Added 20+ new keys for leaderboard, position tracking, and reporting features.
+## ⚙️ Versione & Deployment
+- **Aggiornamento Versione**: Portata alla **v4.12.8** (Android Build **60**).
+- **SEO Landing Page**: Aggiunti tag `og:site_name` e `apple-mobile-web-app-title` per mostrare correttamente il nome "Cards of Moral Decay" su Google.
+- **Immagini Locali**: Screenshot caricati direttamente nel progetto (`assets/images/gallery/`) per eliminare la dipendenza da GitHub.
+- **Deployment**: Nuova build ufficiale pubblicata su Firebase Hosting e APK Android generato.
